@@ -1,0 +1,1575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>VisionScreen</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Sora:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#04091a;--ink2:#0b1530;--ink3:#162040;
+  --teal:#0d9488;--teal2:#14b8a6;--teal3:#5eead4;--teal-glow:rgba(13,148,136,.22);
+  --sky:#38bdf8;--ice:#e0f2fe;
+  --w:#fff;--g50:#f8fafb;--g100:#f0f4f7;--g200:#dde4ec;
+  --g300:#c4cfdb;--g400:#8fa0b4;--g500:#5e7291;--g600:#3d5470;--g800:#1a2a3d;
+  --green:#22c55e;--gbg:#dcfce7;--gtext:#15803d;
+  --amber:#f59e0b;--abg:#fef3c7;--atext:#92400e;
+  --red:#ef4444;--rbg:#fee2e2;--rtext:#991b1b;
+  --orange:#f97316;--obg:#ffedd5;--otext:#9a3412;
+  --r:10px;--R:16px;--RL:22px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'Sora',sans-serif;background:var(--g50);display:flex;justify-content:center;align-items:flex-start;min-height:100vh;padding:0}
+
+/* ── PHONE ── */
+.phone{width:100%;max-width:430px;min-height:100vh;background:var(--g50);border-radius:0;overflow:hidden;position:relative;
+  box-shadow:none;
+  display:flex;flex-direction:column}
+.notch{display:none}
+
+/* ── STATUS BAR ── */
+.sbar{display:none!important}
+
+/* ── SCREENS ── */
+.scr{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;opacity:0;pointer-events:none;transition:opacity .28s,transform .28s;transform:translateX(20px)}
+.scr.on{opacity:1;pointer-events:all;transform:translateX(0)}
+.scr.out{transform:translateX(-20px);opacity:0}
+::-webkit-scrollbar{width:0}
+
+/* ── FORMS ── */
+.fl{font-size:11px;font-weight:700;color:var(--g500);letter-spacing:.8px;text-transform:uppercase;margin-bottom:5px;display:block}
+.fi,.fs{width:100%;padding:12px 14px;border-radius:var(--r);border:1.5px solid var(--g200);font-family:'Sora',sans-serif;font-size:13px;color:var(--g800);background:var(--w);outline:none;transition:all .2s;margin-bottom:13px}
+.fi:focus,.fs:focus{border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-glow)}
+.fi::placeholder{color:var(--g300)}
+textarea.fi{resize:none;line-height:1.6}
+.bP{width:100%;padding:14px;border-radius:var(--r);background:linear-gradient(135deg,var(--teal),var(--teal2));color:var(--w);border:none;font-family:'Sora',sans-serif;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 18px var(--teal-glow);transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.bP:active{transform:scale(.98)}
+.bO{width:100%;padding:12px;border-radius:var(--r);background:var(--w);color:var(--teal);border:1.5px solid var(--teal3);font-family:'Sora',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.bO:active{background:var(--ice)}
+.bR{width:100%;padding:12px;border-radius:var(--r);background:var(--rbg);color:var(--rtext);border:1.5px solid var(--red);font-family:'Sora',sans-serif;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+
+/* ── SPLASH ── */
+#s0{background:var(--ink);align-items:center;justify-content:center}
+.s-bg{position:absolute;inset:0;overflow:hidden}
+.s-mesh{position:absolute;inset:0;background:radial-gradient(ellipse 300px 300px at 30% 20%,rgba(13,148,136,.2),transparent),radial-gradient(ellipse 250px 250px at 80% 70%,rgba(56,189,248,.12),transparent)}
+.s-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(13,148,136,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(13,148,136,.07) 1px,transparent 1px);background-size:32px 32px}
+.s-content{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;animation:sIn .9s cubic-bezier(.34,1.56,.64,1) .5s both}
+@keyframes sIn{from{opacity:0;transform:scale(.75) translateY(28px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.s-eye{width:90px;height:90px;background:linear-gradient(145deg,var(--ink2),var(--ink3));border:1px solid rgba(13,148,136,.3);border-radius:28px;display:flex;align-items:center;justify-content:center;margin-bottom:28px;box-shadow:0 0 40px rgba(13,148,136,.25),0 0 0 1px rgba(255,255,255,.04) inset;position:relative}
+.s-eye-ring{position:absolute;width:110px;height:110px;border-radius:50%;border:1px solid rgba(13,148,136,.15);animation:pulse 3s ease infinite}
+.s-eye-ring2{width:135px;height:135px;border:1px solid rgba(13,148,136,.08);animation:pulse 3s ease 1s infinite}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.06);opacity:1}}
+.s-name{font-family:'DM Serif Display',serif;font-size:44px;color:var(--w);letter-spacing:-1.5px;margin-bottom:8px}
+.s-name em{color:var(--teal3);font-style:normal}
+.s-tag{font-size:10px;color:rgba(94,234,212,.6);letter-spacing:3.5px;text-transform:uppercase;font-weight:400;margin-bottom:60px}
+.s-track{width:140px;height:1.5px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden}
+.s-fill{height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--teal3));animation:bF 3s ease 1.2s forwards}
+@keyframes bF{to{width:100%}}
+.s-lbl{font-size:9px;color:rgba(255,255,255,.2);margin-top:10px;letter-spacing:2.5px}
+
+/* ── ONBOARDING ── */
+#s1{background:var(--ink)}
+.ob-wrap{flex:1;position:relative;overflow:hidden}
+.ob-slide{position:absolute;inset:0;padding:50px 28px 28px;opacity:0;transition:opacity .4s,transform .4s;transform:translateX(30px)}
+.ob-slide.on{opacity:1;transform:translateX(0)}
+.ob-slide.gone{opacity:0;transform:translateX(-30px)}
+.ob-logo{display:flex;align-items:center;gap:9px;margin-bottom:44px}
+.ob-logo-box{width:34px;height:34px;background:linear-gradient(135deg,var(--teal),var(--teal2));border-radius:10px;display:flex;align-items:center;justify-content:center}
+.ob-brand{font-family:'DM Serif Display',serif;font-size:19px;color:var(--w)}
+.ob-brand em{color:var(--teal3);font-style:normal}
+.ob-illo{width:72px;height:72px;border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:24px;border:1px solid rgba(255,255,255,.06)}
+.ob-h{font-family:'DM Serif Display',serif;font-size:32px;color:var(--w);line-height:1.2;margin-bottom:14px}
+.ob-h em{color:var(--teal3);font-style:italic}
+.ob-p{font-size:13px;color:rgba(94,234,212,.65);line-height:1.8;flex:1}
+.ob-foot{padding:0 28px 36px;flex-shrink:0}
+.ob-dots{display:flex;gap:5px;margin-bottom:18px}
+.ob-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.15);transition:all .3s}
+.ob-dot.on{background:var(--teal3);width:18px;border-radius:99px}
+
+/* ── AUTH ── */
+.ah{padding:52px 24px 28px;position:relative;overflow:hidden;flex-shrink:0}
+.ah.dark{background:linear-gradient(160deg,var(--ink),var(--ink2))}
+.ah-pat{position:absolute;inset:0;background-image:radial-gradient(rgba(13,148,136,.06) 1px,transparent 1px);background-size:22px 22px}
+.ah-logo{display:flex;align-items:center;gap:9px;margin-bottom:20px;position:relative;z-index:1}
+.ah-logo-box{width:34px;height:34px;background:linear-gradient(135deg,var(--teal),var(--teal2));border-radius:10px;display:flex;align-items:center;justify-content:center}
+.ah-brand{font-family:'DM Serif Display',serif;font-size:19px;color:var(--w)}
+.ah-brand em{color:var(--teal3);font-style:normal}
+.ah-title{font-family:'DM Serif Display',serif;font-size:28px;color:var(--w);line-height:1.25;position:relative;z-index:1}
+.ah-sub{font-size:12px;color:rgba(94,234,212,.6);margin-top:7px;position:relative;z-index:1}
+.ab{flex:1;overflow-y:auto;padding:22px}
+.tabs{display:flex;background:var(--g100);border-radius:9px;padding:3px;margin-bottom:22px}
+.tab{flex:1;padding:9px;border-radius:7px;border:none;background:none;font-family:'Sora',sans-serif;font-size:12px;font-weight:700;color:var(--g400);cursor:pointer;transition:all .2s}
+.tab.on{background:var(--w);color:var(--teal);box-shadow:0 2px 8px rgba(0,0,0,.07)}
+.role-row{display:flex;gap:8px;margin-bottom:16px}
+.role-btn{flex:1;padding:11px 8px;border-radius:var(--r);border:1.5px solid var(--g200);background:var(--w);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;color:var(--g500);cursor:pointer;text-align:center;transition:all .2s}
+.role-btn.on{border-color:var(--teal);background:var(--ice);color:var(--teal)}
+.role-icon{font-size:20px;display:block;margin-bottom:4px}
+
+/* ── HOME ── */
+.hh{background:linear-gradient(160deg,var(--ink),var(--ink2));padding:50px 22px 0;position:relative;overflow:hidden;flex-shrink:0}
+.hh-pat{position:absolute;inset:0;background-image:radial-gradient(rgba(13,148,136,.05) 1px,transparent 1px);background-size:18px 18px}
+.hh-orb{position:absolute;width:200px;height:200px;background:radial-gradient(circle,rgba(13,148,136,.22),transparent);border-radius:50%;filter:blur(40px);top:-50px;right:-30px}
+.ur{display:flex;align-items:center;gap:11px;margin-bottom:16px;position:relative;z-index:1}
+.av{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,var(--teal),var(--teal2));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--w);flex-shrink:0}
+.un{font-size:14px;font-weight:700;color:var(--w)}
+.uro{font-size:11px;color:rgba(94,234,212,.6);margin-top:2px}
+.ntf{margin-left:auto;width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative}
+.ntfd{position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:var(--amber);border:1.5px solid var(--ink2)}
+.gr{font-family:'DM Serif Display',serif;font-size:24px;color:var(--w);line-height:1.3;position:relative;z-index:1;margin-bottom:4px}
+.gr em{color:var(--teal3);font-style:italic}
+.gs{font-size:12px;color:rgba(94,234,212,.55);position:relative;z-index:1;margin-bottom:16px}
+
+/* ── SYNC BAR ── */
+.sync-bar{display:flex;align-items:center;gap:8px;background:rgba(13,148,136,.12);border:1px solid rgba(13,148,136,.2);border-radius:8px;padding:8px 12px;margin-bottom:16px;position:relative;z-index:1}
+.sync-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sync-dot.ok{background:var(--green);box-shadow:0 0 8px rgba(34,197,94,.5)}
+.sync-dot.pending{background:var(--amber);animation:blink .8s ease infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.sync-txt{font-size:11px;color:rgba(94,234,212,.8);font-weight:600;flex:1}
+.sync-action{font-size:10px;color:var(--teal3);font-weight:700;cursor:pointer}
+
+.sr-row{display:flex;gap:8px;position:relative;z-index:1;padding-bottom:18px}
+.sp{flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:var(--r);padding:11px;text-align:center}
+.spn{font-size:20px;font-weight:800;color:var(--w)}
+.spl{font-size:9px;color:rgba(94,234,212,.55);text-transform:uppercase;letter-spacing:.8px;margin-top:2px}
+.spc{font-size:10px;margin-top:3px;font-weight:600}
+.hb{flex:1;overflow-y:auto;padding:16px 18px}
+.slb{font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:11px}
+
+/* ── ACTION CARDS ── */
+.ag{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.ac{border-radius:var(--R);padding:16px 13px;cursor:pointer;position:relative;overflow:hidden;transition:transform .18s}
+.ac:active{transform:scale(.97)}
+.ac.teal{background:linear-gradient(145deg,#0d3d38,var(--teal))}
+.ac.dark{background:linear-gradient(145deg,var(--ink),var(--ink2))}
+.ac.emerald{background:linear-gradient(145deg,#064e3b,#10b981)}
+.ac.slate{background:linear-gradient(145deg,#1e3a5f,#3b82f6)}
+.acs{position:absolute;top:-18px;right:-18px;width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,.06)}
+.ai{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.13);display:flex;align-items:center;justify-content:center;margin-bottom:11px}
+.at2{font-size:12px;font-weight:700;color:var(--w);margin-bottom:2px}
+.as2{font-size:10px;color:rgba(255,255,255,.55);line-height:1.4}
+
+/* ── RECENT CARD ── */
+.rc{background:var(--w);border-radius:var(--R);border:1px solid var(--g200);overflow:hidden;margin-bottom:12px;box-shadow:0 2px 12px rgba(0,0,0,.05)}
+.rch{padding:12px 14px;border-bottom:1px solid var(--g100);display:flex;align-items:center;justify-content:space-between}
+.rct{font-size:13px;font-weight:700;color:var(--g800)}
+.sa{font-size:11px;color:var(--teal);font-weight:700;cursor:pointer;border:none;background:none;font-family:inherit}
+.pr{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--g100);cursor:pointer;transition:background .15s}
+.pr:last-child{border-bottom:none}
+.pr:active{background:var(--g50)}
+.pa{width:38px;height:38px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--w)}
+.pa.tl{background:linear-gradient(135deg,var(--teal),var(--teal2))}
+.pa.gn{background:linear-gradient(135deg,#065f46,var(--green))}
+.pa.am{background:linear-gradient(135deg,#78350f,var(--amber))}
+.pa.rd{background:linear-gradient(135deg,#7f1d1d,var(--red))}
+.pa.bl{background:linear-gradient(135deg,#1e3a5f,#3b82f6)}
+.pn{font-size:13px;font-weight:600;color:var(--g800)}
+.pm{font-size:11px;color:var(--g400);margin-top:2px}
+.bdg{padding:3px 9px;border-radius:99px;font-size:10px;font-weight:700;flex-shrink:0}
+.b-pass{background:var(--gbg);color:var(--gtext)}
+.b-ref{background:var(--rbg);color:var(--rtext)}
+.b-wait{background:var(--ice);color:#0369a1}
+.b-over{background:var(--abg);color:var(--atext)}
+.b-att{background:#ede9fe;color:#6d28d9}
+.b-comp{background:var(--gbg);color:var(--gtext)}
+
+/* ── INNER SCREENS ── */
+.is{background:var(--w);flex:1;display:flex;flex-direction:column;overflow:hidden}
+.ih{background:var(--w);padding:50px 20px 16px;border-bottom:1px solid var(--g100);flex-shrink:0}
+.iht{display:flex;align-items:center;gap:11px;margin-bottom:12px}
+.bk{width:36px;height:36px;border-radius:10px;background:var(--g100);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--g800);transition:background .15s;flex-shrink:0}
+.bk:active{background:var(--g200)}
+.bk.wht{background:rgba(255,255,255,.13);color:var(--w)}
+.it{font-size:18px;font-weight:800;color:var(--g800)}
+.isu{font-size:12px;color:var(--g400);margin-top:2px}
+.ib{flex:1;overflow-y:auto;padding:20px}
+.steps{display:flex;align-items:center;gap:4px}
+.step{width:6px;height:6px;border-radius:50%;background:var(--g200);transition:all .3s}
+.step.on{background:var(--teal);width:20px;border-radius:99px}
+.step.dn{background:var(--green)}
+
+/* ── CALIBRATION SCREEN ── */
+.calib-scr{background:var(--ink);flex:1;display:flex;flex-direction:column;overflow:hidden}
+.calib-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+.calib-ring{width:120px;height:120px;border-radius:50%;border:2px solid rgba(13,148,136,.3);display:flex;align-items:center;justify-content:center;position:relative;margin:0 auto 20px}
+.calib-ring::before{content:'';position:absolute;inset:-10px;border-radius:50%;border:1px solid rgba(13,148,136,.15);animation:cPulse 2s ease infinite}
+.calib-ring::after{content:'';position:absolute;inset:-20px;border-radius:50%;border:1px solid rgba(13,148,136,.08);animation:cPulse 2s ease .5s infinite}
+@keyframes cPulse{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.05);opacity:1}}
+.calib-icon{font-size:44px}
+.calib-status{font-size:14px;font-weight:700;color:var(--teal3);margin-bottom:6px}
+.calib-sub{font-size:12px;color:rgba(94,234,212,.5);line-height:1.6;margin-bottom:28px}
+.calib-info{background:rgba(13,148,136,.1);border:1px solid rgba(13,148,136,.2);border-radius:var(--r);padding:14px;margin-bottom:20px;width:100%;text-align:left}
+.calib-info-row{display:flex;justify-content:space-between;padding:5px 0;font-size:12px}
+.calib-info-lbl{color:rgba(94,234,212,.5)}
+.calib-info-val{color:var(--teal3);font-weight:700}
+.dist-meter{width:100%;height:8px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;margin-bottom:8px}
+.dist-fill{height:100%;border-radius:99px;transition:width .5s,background .5s}
+.dist-fill.bad{background:var(--red)}
+.dist-fill.warn{background:var(--amber)}
+.dist-fill.ok{background:var(--green)}
+.dist-label{font-size:12px;color:rgba(255,255,255,.5);margin-bottom:20px}
+
+/* ── TEST SCREEN ── */
+.ts{background:var(--ink);flex:1;display:flex;flex-direction:column;overflow:hidden}
+.th{padding:50px 20px 16px;position:relative;flex-shrink:0}
+.th-bg{position:absolute;inset:0;background-image:radial-gradient(rgba(13,148,136,.04) 1px,transparent 1px);background-size:18px 18px}
+.eye-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:4px 11px;font-size:11px;color:rgba(255,255,255,.65);font-weight:700}
+.eye-dot{width:6px;height:6px;border-radius:50%;background:var(--teal3)}
+.tp{height:2px;background:rgba(255,255,255,.07);border-radius:99px;margin-top:12px;overflow:hidden}
+.tpf{height:100%;background:linear-gradient(90deg,var(--teal),var(--teal3));border-radius:99px;transition:width .5s}
+
+/* ── TUMBLING E CHART ── */
+.chart-wrap{flex:1;display:flex;flex-direction:column;padding:8px 14px;overflow:hidden}
+.chart-card{flex:1;background:var(--w);border-radius:var(--RL);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.chart-wm{position:absolute;font-size:160px;color:rgba(13,148,136,.03);font-weight:900;user-select:none;pointer-events:none;font-family:'DM Serif Display',serif}
+.chart-acuity-lbl{position:absolute;right:10px;top:50%;transform:translateY(-50%);writing-mode:vertical-rl;font-size:8px;color:var(--g300);letter-spacing:1px;font-weight:700}
+.e-row{display:flex;gap:12px;justify-content:center;align-items:center;transition:opacity .3s}
+.e-char{font-family:'DM Serif Display',serif;font-weight:700;color:var(--ink);transition:transform .2s;display:flex;align-items:center;justify-content:center}
+.e-row.fd{opacity:.1}
+.e-row.cu .e-char{color:var(--teal)}
+
+/* ── DIRECTION BUTTONS ── */
+.dir-grid{display:grid;grid-template-columns:repeat(3,56px);grid-template-rows:repeat(3,56px);gap:7px;margin:12px auto}
+.dir-btn{width:56px;height:56px;border-radius:12px;border:1.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;color:rgba(255,255,255,.7);transition:all .2s;font-family:'Sora',sans-serif}
+.dir-btn:active{transform:scale(.93)}
+.dir-btn.correct{border-color:var(--green);background:rgba(34,197,94,.15);animation:cPop .35s ease}
+.dir-btn.wrong{border-color:var(--red);background:rgba(239,68,68,.15);animation:wShake .35s ease}
+.dir-btn.center-lbl{background:rgba(255,255,255,.04);cursor:default;font-size:10px;color:rgba(255,255,255,.3);font-weight:700;letter-spacing:.5px;border-color:rgba(255,255,255,.06)}
+@keyframes cPop{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+@keyframes wShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+
+.score-bar{display:flex;justify-content:center;gap:20px;padding:8px 0}
+.sc-item{text-align:center}
+.sc-n{font-size:22px;font-weight:800;color:var(--w)}
+.sc-l{font-size:9px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.8px;margin-top:2px}
+.test-footer{padding:10px 14px 16px;flex-shrink:0}
+
+/* ── AGE MODAL ── */
+.age-modal{position:absolute;inset:0;background:rgba(4,9,26,.85);backdrop-filter:blur(4px);z-index:500;display:flex;align-items:flex-end;justify-content:center}
+.age-sheet{background:var(--ink2);border-radius:24px 24px 0 0;padding:24px 22px 32px;width:100%;border:1px solid rgba(13,148,136,.15);border-bottom:none}
+.age-title{font-size:16px;font-weight:800;color:var(--w);margin-bottom:4px}
+.age-sub{font-size:12px;color:rgba(94,234,212,.5);margin-bottom:20px}
+.age-opts{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:18px}
+.age-opt{padding:13px;border-radius:var(--r);border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);cursor:pointer;text-align:center;transition:all .2s}
+.age-opt.on{border-color:var(--teal);background:rgba(13,148,136,.12)}
+.age-opt-n{font-size:14px;font-weight:700;color:var(--w)}
+.age-opt-l{font-size:10px;color:rgba(94,234,212,.5);margin-top:3px}
+.age-opt-thresh{font-size:10px;color:var(--teal3);font-weight:700;margin-top:4px}
+
+/* ── RESULTS ── */
+.res-hero{padding:50px 22px 22px;position:relative;overflow:hidden;flex-shrink:0}
+.res-hero.pass{background:linear-gradient(160deg,#052e16,#065f46)}
+.res-hero.refer{background:linear-gradient(160deg,#450a0a,#7f1d1d)}
+.res-ico{width:64px;height:64px;border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 13px;font-size:32px;background:rgba(255,255,255,.13)}
+.res-v{font-family:'DM Serif Display',serif;font-size:26px;color:var(--w);text-align:center;margin-bottom:4px}
+.res-s{font-size:12px;color:rgba(255,255,255,.55);text-align:center}
+.res-body{flex:1;overflow-y:auto;padding:18px}
+.res-card{background:var(--g50);border-radius:var(--R);border:1px solid var(--g200);padding:14px 15px;margin-bottom:11px}
+.res-sec{font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.res-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--g100)}
+.res-row:last-child{border-bottom:none}
+.rl{font-size:12px;color:var(--g400)}
+.rv{font-size:13px;font-weight:700;color:var(--g800)}
+.rv.va{font-size:19px;color:var(--teal)}
+.rv.pass{color:var(--green)}
+.rv.refer{color:var(--red)}
+.threshold-info{background:var(--ice);border:1px solid rgba(37,99,235,.15);border-radius:var(--r);padding:11px 13px;margin-bottom:11px}
+.th-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0}
+.th-lbl{color:var(--g500)}
+.th-val{font-weight:700;color:#1d4ed8}
+.ar{display:flex;gap:8px;margin-bottom:8px}
+.ar .bP,.ar .bO,.ar .bR{flex:1}
+
+/* ── REFERRAL LIFECYCLE ── */
+.ref-status-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:14px}
+.ref-status-chip{padding:6px 12px;border-radius:99px;font-size:11px;font-weight:700;flex-shrink:0;cursor:pointer;transition:all .2s;border:1.5px solid transparent}
+.ref-status-chip.pending{background:var(--abg);color:var(--atext);border-color:var(--amber)}
+.ref-status-chip.notified{background:var(--ice);color:#0369a1;border-color:#38bdf8}
+.ref-status-chip.attended{background:#ede9fe;color:#6d28d9;border-color:#a78bfa}
+.ref-status-chip.completed{background:var(--gbg);color:var(--gtext);border-color:var(--green)}
+.ref-status-chip.overdue{background:var(--rbg);color:var(--rtext);border-color:var(--red)}
+.ref-status-chip.cancelled{background:var(--g100);color:var(--g500);border-color:var(--g300)}
+.ref-status-chip.active{transform:scale(1.05);box-shadow:0 2px 8px rgba(0,0,0,.1)}
+
+/* ── ANALYTICS ── */
+.an-h{background:linear-gradient(160deg,var(--ink),var(--ink2));padding:50px 20px 20px;flex-shrink:0}
+.mr{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:11px}
+.mc{background:var(--w);border-radius:var(--r);border:1px solid var(--g200);padding:13px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.ml{font-size:10px;color:var(--g400);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.mv{font-size:26px;font-weight:800;color:var(--g800)}
+.mch{font-size:10px;margin-top:3px;font-weight:700}
+.up{color:var(--green)}.dn{color:var(--red)}
+.chc{background:var(--w);border-radius:var(--R);border:1px solid var(--g200);padding:14px 15px;margin-bottom:11px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.cht{font-size:12px;font-weight:700;color:var(--g800);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.chb{font-size:10px;font-weight:700;color:var(--teal);background:var(--ice);padding:3px 8px;border-radius:99px}
+.brc{display:flex;align-items:flex-end;gap:6px;height:80px}
+.bc{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.bb{width:100%;border-radius:4px 4px 0 0}
+.bl2{font-size:9px;color:var(--g400);font-weight:600}
+.bv{font-size:9px;color:var(--g500);font-weight:700}
+.dw{display:flex;align-items:center;gap:16px}
+.dl{flex:1;display:flex;flex-direction:column;gap:6px}
+.li{display:flex;align-items:center;gap:6px}
+.ld{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ll{font-size:11px;color:var(--g500);flex:1}
+.lv{font-size:11px;font-weight:700;color:var(--g800)}
+
+/* ── SETTINGS ── */
+.ss{background:var(--w);border-radius:var(--R);margin-bottom:11px;overflow:hidden;border:1px solid var(--g200)}
+.sst{font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:1px;padding:11px 14px 7px;border-bottom:1px solid var(--g100)}
+.srow{display:flex;align-items:center;gap:11px;padding:12px 14px;border-bottom:1px solid var(--g100);cursor:pointer;transition:background .15s}
+.srow:last-child{border-bottom:none}
+.srow:active{background:var(--g50)}
+.sico{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.slbl{font-size:13px;font-weight:600;color:var(--g800);flex:1}
+.ssub{font-size:11px;color:var(--g400);margin-top:1px}
+.sarr{color:var(--g300);font-size:14px}
+.tgl{width:40px;height:22px;border-radius:99px;border:none;cursor:pointer;transition:background .2s;position:relative;flex-shrink:0}
+.tgl.on{background:var(--teal)}.tgl.off{background:var(--g200)}
+.tth{position:absolute;top:2px;width:18px;height:18px;border-radius:50%;background:var(--w);transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.tgl.on .tth{left:20px}.tgl.off .tth{left:2px}
+
+/* ── PATIENT CARDS ── */
+.pat-card{display:flex;align-items:flex-start;gap:11px;background:var(--w);border-radius:var(--R);border:1px solid var(--g200);padding:13px 14px;margin-bottom:9px;box-shadow:0 2px 8px rgba(0,0,0,.04);cursor:pointer;transition:background .15s}
+.pat-card:active{background:var(--g50)}
+.pat-card.hidden{display:none}
+
+/* ── PATIENT FILTER BUTTON ── */
+.pat-filter-btn{transition:all .2s}
+.pat-filter-btn.pf-on{border-color:var(--teal3)!important;background:rgba(13,148,136,.25)!important;color:var(--teal3)!important}
+.bn{background:var(--w);border-top:1px solid var(--g100);padding:8px 4px 18px;display:flex;gap:2px;flex-shrink:0;box-shadow:0 -3px 14px rgba(0,0,0,.05)}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 2px;border-radius:9px;border:none;background:none;cursor:pointer;transition:background .15s}
+.ni.on{background:rgba(13,148,136,.08)}
+.nii{font-size:18px;transition:transform .2s}
+.ni.on .nii{transform:scale(1.1)}
+.nil{font-size:9px;font-weight:700;color:var(--g400);font-family:'Sora',sans-serif}
+.ni.on .nil{color:var(--teal)}
+
+/* ── TOAST ── */
+.toast{position:absolute;bottom:84px;left:12px;right:12px;z-index:999;background:var(--ink2);color:var(--w);padding:12px 14px;border-radius:var(--r);font-size:12px;font-weight:500;display:flex;align-items:center;gap:8px;box-shadow:0 8px 32px rgba(0,0,0,.4);animation:tIn .4s cubic-bezier(.34,1.56,.64,1);border:1px solid rgba(13,148,136,.2)}
+.toast.hide{animation:tOut .3s ease forwards}
+@keyframes tIn{from{opacity:0;transform:translateY(14px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes tOut{to{opacity:0;transform:translateY(8px)}}
+.td{width:6px;height:6px;border-radius:50%;background:var(--teal3);flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="phone">
+
+
+<!-- ══ SPLASH ══ -->
+<div class="scr on" id="s0" style="align-items:center;justify-content:center">
+  <div class="s-bg"><div class="s-mesh"></div><div class="s-grid"></div></div>
+  <div class="s-content">
+    <div class="s-eye">
+      <div class="s-eye-ring"></div><div class="s-eye-ring s-eye-ring2"></div>
+      <svg width="50" height="50" viewBox="0 0 50 50" fill="none">
+        <ellipse cx="25" cy="25" rx="20" ry="12" stroke="#5eead4" stroke-width="1.8" opacity=".9"/>
+        <circle cx="25" cy="25" r="8" fill="none" stroke="#14b8a6" stroke-width="1.8"/>
+        <circle cx="25" cy="25" r="4" fill="#14b8a6"/>
+        <circle cx="25" cy="25" r="1.8" fill="#fff"/>
+        <circle cx="27" cy="23" r="1" fill="rgba(255,255,255,.5)"/>
+      </svg>
+    </div>
+    <div class="s-name">Vision<em>Screen</em></div>
+    <div class="s-tag">Offline-First · Tumbling E · Community Health</div>
+    <div class="s-track"><div class="s-fill"></div></div>
+    <div class="s-lbl">LOADING</div>
+  </div>
+</div>
+
+<!-- ══ ONBOARDING ══ -->
+<div class="scr" id="s1" style="background:var(--ink)">
+  <div class="ob-wrap" id="obWrap">
+    <div class="ob-slide on" id="ob0">
+      <div class="ob-logo"><div class="ob-logo-box"><svg width="18" height="18" viewBox="0 0 50 50" fill="none"><ellipse cx="25" cy="25" rx="20" ry="12" stroke="white" stroke-width="2"/><circle cx="25" cy="25" r="8" fill="none" stroke="white" stroke-width="2"/><circle cx="25" cy="25" r="4" fill="white"/></svg></div><div class="ob-brand">Vision<em>Screen</em></div></div>
+      <div class="ob-illo" style="background:rgba(13,148,136,.1)">👥</div>
+      <div class="ob-h">Community<br><em>Health Workers</em></div>
+      <div class="ob-p">Designed specifically for field-based Community Health Workers conducting vision screenings in Ugandan communities — no specialist training required.</div>
+    </div>
+    <div class="ob-slide" id="ob1">
+      <div class="ob-logo"><div class="ob-logo-box"><svg width="18" height="18" viewBox="0 0 50 50" fill="none"><ellipse cx="25" cy="25" rx="20" ry="12" stroke="white" stroke-width="2"/><circle cx="25" cy="25" r="8" fill="none" stroke="white" stroke-width="2"/><circle cx="25" cy="25" r="4" fill="white"/></svg></div><div class="ob-brand">Vision<em>Screen</em></div></div>
+      <div class="ob-illo" style="background:rgba(13,148,136,.1)">👁️</div>
+      <div class="ob-h">Tumbling E<br><em>Vision Testing</em></div>
+      <div class="ob-p">Uses the clinically validated Tumbling E chart — the literacy-independent optotype recommended for community settings. Works for children, adults and the elderly.</div>
+    </div>
+    <div class="ob-slide" id="ob2">
+      <div class="ob-logo"><div class="ob-logo-box"><svg width="18" height="18" viewBox="0 0 50 50" fill="none"><ellipse cx="25" cy="25" rx="20" ry="12" stroke="white" stroke-width="2"/><circle cx="25" cy="25" r="8" fill="none" stroke="white" stroke-width="2"/><circle cx="25" cy="25" r="4" fill="white"/></svg></div><div class="ob-brand">Vision<em>Screen</em></div></div>
+      <div class="ob-illo" style="background:rgba(245,158,11,.1)">❤️</div>
+      <div class="ob-h">Patient<br><em>Care</em></div>
+      <div class="ob-p">Register patients, track test history per eye, generate structured referral documents, and follow up on every referred patient — all stored locally offline.</div>
+    </div>
+    <div class="ob-slide" id="ob3">
+      <div class="ob-logo"><div class="ob-logo-box"><svg width="18" height="18" viewBox="0 0 50 50" fill="none"><ellipse cx="25" cy="25" rx="20" ry="12" stroke="white" stroke-width="2"/><circle cx="25" cy="25" r="8" fill="none" stroke="white" stroke-width="2"/><circle cx="25" cy="25" r="4" fill="white"/></svg></div><div class="ob-brand">Vision<em>Screen</em></div></div>
+      <div class="ob-illo" style="background:rgba(239,68,68,.1)">📊</div>
+      <div class="ob-h">Data<br><em>Tracking</em></div>
+      <div class="ob-p">Monitor screening impact. All data syncs automatically to MongoDB Atlas cloud when internet is available. Core functions always work fully offline.</div>
+    </div>
+  </div>
+  <div class="ob-foot">
+    <div class="ob-dots" id="obDots">
+      <div class="ob-dot on"></div><div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot"></div>
+    </div>
+    <button class="bP" id="obBtn" onclick="obStep()" style="margin-bottom:10px">Next →</button>
+    <button class="bO" style="border-color:rgba(255,255,255,.1);color:rgba(255,255,255,.5)" onclick="goTo('s2')">Skip</button>
+  </div>
+</div>
+
+<!-- ══ LOGIN ══ -->
+<div class="scr" id="s2" style="background:var(--w)">
+  <div class="ah dark">
+    <div class="ah-pat"></div>
+    <div class="ah-logo"><div class="ah-logo-box"><svg width="18" height="18" viewBox="0 0 50 50" fill="none"><ellipse cx="25" cy="25" rx="20" ry="12" stroke="white" stroke-width="2"/><circle cx="25" cy="25" r="8" fill="none" stroke="white" stroke-width="2"/><circle cx="25" cy="25" r="4" fill="white"/></svg></div><div class="ah-brand">Vision<em>Screen</em></div></div>
+    <div class="ah-title">Welcome<br>Back 👋</div>
+    <div class="ah-sub">Sign in to begin community screening</div>
+  </div>
+  <div class="ab">
+    <div class="tabs"><button class="tab on" id="tl" onclick="swTab('l')">Login</button><button class="tab" id="ts" onclick="swTab('s')">Sign Up</button></div>
+    <div id="lf">
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;color:var(--g500);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px">Login as</div>
+        <div class="role-row">
+          <div class="role-btn on" id="rl-chw" onclick="selRole('chw')"><span class="role-icon">👤</span>Community Health Worker</div>
+          <div class="role-btn" id="rl-adm" onclick="selRole('adm')"><span class="role-icon">🛡️</span>Administrator</div>
+        </div>
+      </div>
+      <label class="fl">Email Address</label><input class="fi" type="email" placeholder="health@worker.ug">
+      <label class="fl">Password</label><input class="fi" type="password" placeholder="••••••••">
+      <button class="bP" style="margin-top:6px" onclick="loginAs()">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>Login
+      </button>
+      <div style="text-align:center;margin-top:12px"><button style="background:none;border:none;color:var(--teal);font-family:'Sora',sans-serif;font-size:12px;font-weight:700;cursor:pointer">Forgot password?</button></div>
+    </div>
+    <div id="sf" style="display:none">
+      <label class="fl">Full Name</label><input class="fi" placeholder="Your full name">
+      <label class="fl">Health Center</label><input class="fi" placeholder="e.g. Nakawa HC III, Wakiso District">
+      <label class="fl">District</label><input class="fi" placeholder="e.g. Kampala">
+      <label class="fl">Email</label><input class="fi" type="email" placeholder="your@email.ug">
+      <label class="fl">Password</label><input class="fi" type="password" placeholder="Create a strong password">
+      <button class="bP" onclick="loginAs()">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HOME (CHW) ══ -->
+<div class="scr" id="s3" style="background:var(--g50)">
+  <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+    <div class="hh">
+      <div class="hh-pat"></div><div class="hh-orb"></div>
+      <div class="ur">
+        <div class="av">NM</div>
+        <div><div class="un">Nakato Mary</div><div class="uro">CHW · Nakawa HC III</div></div>
+        <div class="ntf" onclick="showToast('3 patients pending follow-up')"><svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg><div class="ntfd"></div></div>
+      </div>
+      <div class="gr">Ready to screen,<br><em>let's go!</em></div>
+      <div class="gs">Wakiso District · Today 27 Mar 2026</div>
+      <div class="sync-bar">
+        <div class="sync-dot pending" id="syncDot"></div>
+        <div class="sync-txt" id="syncTxt">3 records pending sync to MongoDB Atlas</div>
+        <div class="sync-action" onclick="doSync()">Sync Now</div>
+      </div>
+      <div class="sr-row">
+        <div class="sp"><div class="spn">47</div><div class="spl">Screened</div><div class="spc" style="color:var(--teal3)">↑ 8 today</div></div>
+        <div class="sp"><div class="spn">6</div><div class="spl">Referrals</div><div class="spc" style="color:var(--amber)">↑ 2 today</div></div>
+        <div class="sp"><div class="spn">3</div><div class="spl">High Risk</div><div class="spc" style="color:var(--red)">↑ 1 today</div></div>
+      </div>
+    </div>
+    <div class="hb">
+      <div class="slb" style="margin-top:2px">Quick Actions</div>
+      <div class="ag">
+        <div class="ac teal" onclick="goTo('s4')"><div class="acs"></div><div class="ai"><svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg></div><div class="at2">New Screening</div><div class="as2">Register & test patient</div></div>
+        <div class="ac dark" onclick="goTo('sBulk')"><div class="acs"></div><div class="ai"><svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8z" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg></div><div class="at2">Bulk Mode</div><div class="as2">Campaign screening</div></div>
+        <div class="ac emerald" onclick="goTo('sTraining')"><div class="acs"></div><div class="ai"><svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg></div><div class="at2">Training</div><div class="as2">Learn the system</div></div>
+        <div class="ac slate" onclick="sNav('analytics')"><div class="acs"></div><div class="ai"><svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6" stroke="white" stroke-width="2.2" stroke-linecap="round"/></svg></div><div class="at2">Analytics</div><div class="as2">Programme data</div></div>
+      </div>
+      <div class="slb">Recent Patients</div>
+      <div class="rc">
+        <div class="rch"><div class="rct">Today's Screenings</div><button class="sa" onclick="sNav('patients')">See all →</button></div>
+        <div class="pr" onclick="goTo('sPatDet')"><div class="pa tl">AK</div><div style="flex:1;min-width:0"><div class="pn">Akello Mercy, F34</div><div class="pm">Tumbling E · OD 6/6, OS 6/9 · 8m ago</div></div><span class="bdg b-pass">Pass</span></div>
+        <div class="pr" onclick="goTo('sRef')"><div class="pa rd">OJ</div><div style="flex:1;min-width:0"><div class="pn">Okello James, M58</div><div class="pm">Tumbling E · OD 6/12, OS 6/18 · 22m ago</div></div><span class="bdg b-ref">Refer</span></div>
+        <div class="pr" onclick="goTo('sPatDet')"><div class="pa gn">NA</div><div style="flex:1;min-width:0"><div class="pn">Nakato Aisha, F27</div><div class="pm">Tumbling E · OU 6/9 · 1hr ago</div></div><span class="bdg b-pass">Pass</span></div>
+        <div class="pr"><div class="pa am">MW</div><div style="flex:1;min-width:0"><div class="pn">Mugisha Wilson, M45</div><div class="pm">Awaiting screening</div></div><span class="bdg b-wait">Waiting</span></div>
+      </div>
+      <div class="rc" style="margin-bottom:20px">
+        <div class="rch"><div class="rct">Referral Follow-Ups Due</div><button class="sa" onclick="sNav('referrals')">View →</button></div>
+        <div class="pr" onclick="goTo('sRefUp')"><div class="pa rd">OJ</div><div style="flex:1;min-width:0"><div class="pn">Okello James</div><div class="pm">Mulago Hospital · Due 29 Mar</div></div><span class="bdg b-over">Overdue</span></div>
+        <div class="pr" onclick="goTo('sRefUp')"><div class="pa bl">BS</div><div style="flex:1;min-width:0"><div class="pn">Byaruhanga Sam</div><div class="pm">Kampala Eye Clinic · Due 2 Apr</div></div><span class="bdg b-wait">Notified</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="bn">
+    <button class="ni on" onclick="sNav('home')"><div class="nii">🏠</div><div class="nil">Home</div></button>
+    <button class="ni" onclick="sNav('patients')"><div class="nii">👥</div><div class="nil">Patients</div></button>
+    <button class="ni" onclick="sNav('referrals')"><div class="nii">📋</div><div class="nil">Referrals</div></button>
+    <button class="ni" onclick="sNav('analytics')"><div class="nii">📊</div><div class="nil">Analytics</div></button>
+    <button class="ni" onclick="sNav('settings')"><div class="nii">⚙️</div><div class="nil">Settings</div></button>
+  </div>
+</div>
+
+<!-- ══ REGISTER PATIENT ══ -->
+<div class="scr" id="s4">
+  <div class="is">
+    <div class="ih">
+      <div class="iht"><button class="bk" onclick="goBack()">←</button><div><div class="it">Register Patient</div><div class="isu">Step 1 of 3 — Demographics</div></div></div>
+      <div class="steps"><div class="step on"></div><div class="step"></div><div class="step"></div></div>
+    </div>
+    <div class="ib">
+      <label class="fl">Full Name *</label><input class="fi" placeholder="e.g. Akello Mercy" id="reg-name">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="fl">Age *</label><input class="fi" type="number" placeholder="e.g. 34" id="reg-age" style="margin-bottom:0"></div>
+        <div><label class="fl">Gender *</label><select class="fs" style="margin-bottom:0"><option value="">Select</option><option>Male</option><option>Female</option></select></div>
+      </div>
+      <div style="height:13px"></div>
+      <label class="fl">Phone Number</label><input class="fi" type="tel" placeholder="0700 123 456">
+      <label class="fl">Village / Location *</label><input class="fi" placeholder="e.g. Nakawa, Kampala">
+      <div style="background:var(--ice);border-radius:var(--r);padding:11px 13px;margin-bottom:14px;border:1px solid rgba(37,99,235,.12);display:flex;gap:9px;align-items:flex-start">
+        <span style="font-size:16px">ℹ️</span>
+        <div style="font-size:11px;color:#1d4ed8;line-height:1.6">Age is required to apply the correct clinical threshold. Children (6–12 yrs) and adults have different pass/fail standards.</div>
+      </div>
+      <button class="bP" onclick="goTo('sCalib')" style="margin-top:4px">Proceed to Calibration →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCREEN CALIBRATION ══ -->
+<div class="scr" id="sCalib">
+  <div class="calib-scr">
+    <div style="padding:50px 20px 0;position:relative;z-index:1;flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:11px;margin-bottom:16px">
+        <button class="bk wht" onclick="goBack()">←</button>
+        <div><div style="font-size:16px;font-weight:800;color:var(--w)">Screen Calibration</div><div style="font-size:11px;color:rgba(94,234,212,.55);margin-top:2px">Step 2 of 3 — Auto-calibrating device</div></div>
+      </div>
+    </div>
+    <div class="calib-body">
+      <div class="calib-ring"><div class="calib-icon">📱</div></div>
+      <div class="calib-status" id="calibStat">Detecting screen properties...</div>
+      <div class="calib-sub">VisionScreen automatically detects your device's screen size and pixel density (PPI) to render Tumbling E optotypes at clinically correct physical sizes.</div>
+      <div class="calib-info" style="max-width:300px">
+        <div class="calib-info-row"><span class="calib-info-lbl">Screen PPI</span><span class="calib-info-val" id="ciPPI">Detecting...</span></div>
+        <div class="calib-info-row"><span class="calib-info-lbl">Screen Size</span><span class="calib-info-val" id="ciSize">Detecting...</span></div>
+        <div class="calib-info-row"><span class="calib-info-lbl">Optotype Scale</span><span class="calib-info-val" id="ciScale">Pending</span></div>
+        <div class="calib-info-row"><span class="calib-info-lbl">Calibration Status</span><span class="calib-info-val" id="ciStatus" style="color:var(--amber)">In progress</span></div>
+      </div>
+      <button class="bP" style="max-width:300px;width:100%" id="calibBtn" onclick="goTo('sDist')" disabled style="opacity:.5">Verifying Distance →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DISTANCE VERIFICATION ══ -->
+<div class="scr" id="sDist">
+  <div class="calib-scr">
+    <div style="padding:50px 20px 0;position:relative;z-index:1;flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:11px;margin-bottom:16px">
+        <button class="bk wht" onclick="goBack()">←</button>
+        <div><div style="font-size:16px;font-weight:800;color:var(--w)">Distance Verification</div><div style="font-size:11px;color:rgba(94,234,212,.55);margin-top:2px">Step 3 of 3 — Position patient correctly</div></div>
+      </div>
+    </div>
+    <div class="calib-body">
+      <div class="calib-ring"><div class="calib-icon">📏</div></div>
+      <div class="calib-status" id="distStat">Move patient to correct distance</div>
+      <div class="calib-sub">The testing distance is critical for accurate results.<br>Patient must stand exactly <strong style="color:var(--teal3)">3 metres</strong> from the screen.</div>
+      <div style="max-width:300px;width:100%;margin-bottom:6px">
+        <div class="dist-label" id="distLbl">Current distance: measuring...</div>
+        <div class="dist-meter"><div class="dist-fill bad" id="distFill" style="width:20%"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:rgba(255,255,255,.25);margin-top:4px"><span>Too close</span><span>3m ✓</span><span>Too far</span></div>
+      </div>
+      <div style="background:rgba(13,148,136,.1);border:1px solid rgba(13,148,136,.2);border-radius:var(--r);padding:13px;max-width:300px;width:100%;margin:12px 0 20px;text-align:left">
+        <div style="font-size:11px;color:rgba(94,234,212,.7);line-height:1.7">
+          💡 Ask patient to remove glasses first<br>
+          💡 Ensure good lighting in the room<br>
+          💡 Device camera is being used for distance
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;max-width:300px;width:100%">
+        <button class="bO" style="flex:1;border-color:rgba(255,255,255,.15);color:rgba(255,255,255,.6)" onclick="showToast('Using proximity sensor...')">📡 Sensor</button>
+        <button class="bP" style="flex:1" id="distBtn" onclick="startTest()">✓ Distance OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ AGE MODAL ══ -->
+<div id="ageModal" style="display:none;position:absolute;inset:0;background:rgba(4,9,26,.85);z-index:500;display:none;align-items:flex-end;justify-content:center">
+  <div class="age-sheet">
+    <div class="age-title">Select Patient Age Group</div>
+    <div class="age-sub">This determines the clinical pass/fail threshold for the Tumbling E test</div>
+    <div class="age-opts">
+      <div class="age-opt on" id="ag-child" onclick="selAge('child',this)">
+        <div class="age-opt-n">Child</div>
+        <div class="age-opt-l">Ages 6–12 years</div>
+        <div class="age-opt-thresh">Pass: ≥ 6/9</div>
+      </div>
+      <div class="age-opt" id="ag-adult" onclick="selAge('adult',this)">
+        <div class="age-opt-n">Adult</div>
+        <div class="age-opt-l">Ages 13–60 years</div>
+        <div class="age-opt-thresh">Pass: ≥ 6/12</div>
+      </div>
+      <div class="age-opt" id="ag-elderly" onclick="selAge('elderly',this)">
+        <div class="age-opt-n">Elderly</div>
+        <div class="age-opt-l">Ages 60+ years</div>
+        <div class="age-opt-thresh">Pass: ≥ 6/18</div>
+      </div>
+      <div class="age-opt" id="ag-preschool" onclick="selAge('preschool',this)">
+        <div class="age-opt-n">Pre-school</div>
+        <div class="age-opt-l">Ages 3–5 years</div>
+        <div class="age-opt-thresh">Pass: ≥ 6/12</div>
+      </div>
+    </div>
+    <button class="bP" onclick="beginTest()">Begin Tumbling E Test →</button>
+  </div>
+</div>
+
+<!-- ══ TUMBLING E TEST ══ -->
+<div class="scr" id="sTest">
+  <div class="ts">
+    <div class="th">
+      <div class="th-bg"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;position:relative;z-index:1">
+        <button class="bk wht" onclick="goTo('s3')">✕</button>
+        <div class="eye-badge"><div class="eye-dot"></div><span id="eyeLbl">Right Eye (OD)</span></div>
+        <div style="font-size:11px;color:rgba(255,255,255,.4);font-weight:700" id="scoreDisp">0/0</div>
+      </div>
+      <div style="position:relative;z-index:1">
+        <div style="font-size:11px;color:rgba(94,234,212,.55);margin-bottom:4px" id="tll">Row 1 of 7 · LogMAR 1.0</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.65);font-weight:500">Patient points direction — tap to record response</div>
+        <div class="tp"><div class="tpf" id="tpf" style="width:14%"></div></div>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-card" id="chartCard">
+        <div class="chart-wm">E</div>
+        <div class="e-row fd" data-va="6/60" data-logmar="1.0" id="cr0"><div class="e-char" style="font-size:46px" id="e0">Ǝ</div></div>
+        <div class="e-row fd" data-va="6/36" data-logmar="0.8"><div class="e-char" style="font-size:34px" id="e1">E</div><div class="e-char" style="font-size:34px" id="e2">Ǝ</div></div>
+        <div class="e-row cu" data-va="6/18" data-logmar="0.5" id="cr2"><div class="e-char" style="font-size:24px" id="e3">E</div><div class="e-char" style="font-size:24px" id="e4">Ǝ</div><div class="e-char" style="font-size:24px" id="e5">⊔</div></div>
+        <div class="e-row" data-va="6/12" data-logmar="0.3"><div class="e-char" style="font-size:18px" id="e6">Ǝ</div><div class="e-char" style="font-size:18px" id="e7">⊓</div><div class="e-char" style="font-size:18px" id="e8">E</div><div class="e-char" style="font-size:18px" id="e9">⊔</div></div>
+        <div class="e-row" data-va="6/9" data-logmar="0.18"><div class="e-char" style="font-size:13px" id="e10">E</div><div class="e-char" style="font-size:13px" id="e11">Ǝ</div><div class="e-char" style="font-size:13px" id="e12">⊓</div><div class="e-char" style="font-size:13px" id="e13">⊔</div><div class="e-char" style="font-size:13px" id="e14">E</div></div>
+        <div class="e-row" data-va="6/6" data-logmar="0.0"><div class="e-char" style="font-size:10px" id="e15">Ǝ</div><div class="e-char" style="font-size:10px" id="e16">E</div><div class="e-char" style="font-size:10px" id="e17">⊓</div><div class="e-char" style="font-size:10px" id="e18">⊔</div><div class="e-char" style="font-size:10px" id="e19">E</div><div class="e-char" style="font-size:10px" id="e20">Ǝ</div></div>
+        <div class="e-row" data-va="6/5" data-logmar="-0.1"><div class="e-char" style="font-size:8px">E</div><div class="e-char" style="font-size:8px">Ǝ</div><div class="e-char" style="font-size:8px">⊓</div><div class="e-char" style="font-size:8px">⊔</div><div class="e-char" style="font-size:8px">E</div><div class="e-char" style="font-size:8px">Ǝ</div><div class="e-char" style="font-size:8px">⊓</div></div>
+        <div class="chart-acuity-lbl">TUMBLING E · LOGMAR SCALE</div>
+      </div>
+    </div>
+    <div class="score-bar">
+      <div class="sc-item"><div class="sc-n" id="scC" style="color:var(--green)">0</div><div class="sc-l">Correct</div></div>
+      <div class="sc-item"><div class="sc-n" id="scW" style="color:var(--red)">0</div><div class="sc-l">Wrong</div></div>
+      <div class="sc-item"><div class="sc-n" id="scT">0</div><div class="sc-l">Total</div></div>
+    </div>
+    <div class="dir-grid">
+      <div></div>
+      <button class="dir-btn" id="db-up" onclick="checkDir('up')">↑</button>
+      <div></div>
+      <button class="dir-btn" id="db-left" onclick="checkDir('left')">←</button>
+      <div class="dir-btn center-lbl">TAP DIR</div>
+      <button class="dir-btn" id="db-right" onclick="checkDir('right')">→</button>
+      <div></div>
+      <button class="dir-btn" id="db-down" onclick="checkDir('down')">↓</button>
+      <div></div>
+    </div>
+    <div class="test-footer">
+      <div style="display:flex;gap:7px;margin-bottom:8px">
+        <button style="flex:1;padding:9px;border-radius:var(--r);border:1.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:rgba(255,255,255,.55);font-family:'Sora',sans-serif;font-size:11px;font-weight:600;cursor:pointer" onclick="prevRow()">← Prev Row</button>
+        <button style="flex:1;padding:9px;border-radius:var(--r);border:1.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:rgba(255,255,255,.55);font-family:'Sora',sans-serif;font-size:11px;font-weight:600;cursor:pointer" onclick="nextRow()">Next Row →</button>
+        <button style="padding:9px 13px;border-radius:var(--r);border:1.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:rgba(255,255,255,.55);font-family:'Sora',sans-serif;font-size:11px;font-weight:600;cursor:pointer" onclick="switchEye()">Switch Eye</button>
+      </div>
+      <button class="bP" onclick="finishTest()">Complete Test → View Results</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RESULTS ══ -->
+<div class="scr" id="sRes" style="background:var(--w)">
+  <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+    <div class="res-hero refer">
+      <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.04) 1px,transparent 1px);background-size:18px 18px"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;position:relative;z-index:1">
+        <button class="bk wht" onclick="goTo('s3')">←</button>
+        <span style="font-size:11px;color:rgba(255,255,255,.45);font-weight:700">VS-2026-0312</span>
+      </div>
+      <div style="position:relative;z-index:1">
+        <div class="res-ico">⚠️</div>
+        <div class="res-v">Refer to Specialist</div>
+        <div class="res-s">Visual acuity below age-appropriate threshold</div>
+      </div>
+    </div>
+    <div class="res-body">
+      <div class="res-card">
+        <div class="res-sec">Patient</div>
+        <div class="res-row"><span class="rl">Name</span><span class="rv">Okello James</span></div>
+        <div class="res-row"><span class="rl">Age / Gender</span><span class="rv">58 yrs · Male</span></div>
+        <div class="res-row"><span class="rl">Location</span><span class="rv">Bwaise, Kampala</span></div>
+        <div class="res-row"><span class="rl">Age Group</span><span class="rv">Adult (13–60 yrs)</span></div>
+      </div>
+      <div class="threshold-info">
+        <div class="res-sec" style="color:#1d4ed8;margin-bottom:7px">Clinical Threshold Applied</div>
+        <div class="th-row"><span class="th-lbl">Age group standard</span><span class="th-val">Adult (Pass: ≥ 6/12)</span></div>
+        <div class="th-row"><span class="th-lbl">Child standard</span><span class="th-val">Pass: ≥ 6/9</span></div>
+        <div class="th-row"><span class="th-lbl">Elderly standard</span><span class="th-val">Pass: ≥ 6/18</span></div>
+      </div>
+      <div class="res-card">
+        <div class="res-sec">Visual Acuity Results (Tumbling E)</div>
+        <div class="res-row"><span class="rl">Right Eye (OD)</span><span class="rv va">6/12</span></div>
+        <div class="res-row"><span class="rl">Left Eye (OS)</span><span class="rv va" style="color:var(--red)">6/18</span></div>
+        <div class="res-row"><span class="rl">Binocular (OU)</span><span class="rv va">6/12</span></div>
+        <div class="res-row"><span class="rl">LogMAR Score</span><span class="rv">0.30 / 0.48 / 0.30</span></div>
+        <div class="res-row"><span class="rl">Outcome</span><span class="rv refer">Refer to Specialist</span></div>
+        <div class="res-row"><span class="rl">Test Date</span><span class="rv">27 Mar 2026, 09:41</span></div>
+        <div class="res-row"><span class="rl">Screened by</span><span class="rv">Nakato Mary · Nakawa HC III</span></div>
+      </div>
+      <div class="ar">
+        <button class="bP" onclick="goTo('sRef')">📋 Generate Referral</button>
+        <button class="bO" onclick="showToast('Printing results...')">🖨️ Print</button>
+      </div>
+      <div style="margin-top:8px"><button class="bO" onclick="goTo('s3')">← Back to Home</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ REFERRAL GENERATION ══ -->
+<div class="scr" id="sRef" style="background:var(--w)">
+  <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+    <div style="background:linear-gradient(160deg,#450a0a,#7f1d1d);padding:50px 20px 18px;position:relative;overflow:hidden;flex-shrink:0">
+      <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.04) 1px,transparent 1px);background-size:18px 18px"></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;position:relative;z-index:1">
+        <button class="bk wht" onclick="goBack()">←</button>
+        <div><div style="font-size:17px;font-weight:800;color:var(--w)">Generate Referral</div><div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:2px">Okello James · OD 6/12, OS 6/18</div></div>
+      </div>
+      <div style="background:rgba(239,68,68,.18);border:1px solid rgba(239,68,68,.28);border-radius:var(--r);padding:10px 12px;display:flex;gap:8px;position:relative;z-index:1">
+        <span style="font-size:14px">⚠️</span>
+        <div style="font-size:11px;color:rgba(255,255,255,.8);line-height:1.5">VA below adult threshold (6/12). <strong>Specialist referral generated automatically.</strong></div>
+      </div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:18px">
+      <label class="fl">Refer to Facility *</label>
+      <select class="fs"><option value="">Select Facility</option><option>Mengo Hospital</option><option>Mulago National Referral Hospital</option><option>Nsambya Hospital</option><option>Kampala Eye Clinic</option><option>Makerere University Hospital</option></select>
+      <label class="fl">Priority Level *</label>
+      <div style="display:flex;gap:8px;margin-bottom:13px">
+        <button id="prR" onclick="setPrio('r')" style="flex:1;padding:11px;border-radius:var(--r);border:1.5px solid var(--g200);background:var(--w);font-family:'Sora',sans-serif;font-size:12px;font-weight:700;color:var(--g500);cursor:pointer">Routine</button>
+        <button id="prU" onclick="setPrio('u')" style="flex:1;padding:11px;border-radius:var(--r);border:1.5px solid var(--red);background:var(--rbg);font-family:'Sora',sans-serif;font-size:12px;font-weight:700;color:var(--rtext);cursor:pointer">Urgent</button>
+      </div>
+      <label class="fl">Appointment Date</label><input class="fi" type="date">
+      <label class="fl">Patient Eye Photos (Optional)</label>
+      <div style="border:2px dashed var(--g200);border-radius:var(--r);padding:18px;text-align:center;cursor:pointer;margin-bottom:13px" onclick="showToast('Camera / gallery opening...')">
+        <div style="font-size:26px;margin-bottom:6px">📷</div>
+        <div style="font-size:12px;color:var(--g400)">Tap to add eye photo</div>
+        <div style="font-size:10px;color:var(--g300);margin-top:3px">Camera or gallery · JPG, PNG</div>
+      </div>
+      <label class="fl">Additional Notes</label>
+      <textarea class="fi" rows="3" placeholder="Any additional clinical observations..."></textarea>
+      <div style="display:flex;align-items:center;gap:10px;background:var(--g50);border-radius:var(--r);padding:12px;margin-bottom:13px;border:1px solid var(--g200)">
+        <span style="font-size:15px">💬</span>
+        <div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--g800)">Send SMS Reminder</div><div style="font-size:11px;color:var(--g400);margin-top:1px">Send appointment reminder to patient</div></div>
+        <button class="tgl on" onclick="tgl(this)"><div class="tth"></div></button>
+      </div>
+      <div style="background:var(--ice);border-radius:var(--r);padding:11px 13px;margin-bottom:13px;border:1px solid rgba(37,99,235,.12)">
+        <div style="font-size:10px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">Auto-generated referral document includes</div>
+        ${['Patient demographics (name, age, gender, village)','Visual acuity scores: OD 6/12, OS 6/18, OU 6/12','Date of screening: 27 Mar 2026','Screened by: Nakato Mary, Nakawa HC III','Reason for referral: VA below adult threshold'].map(i=>`<div style="font-size:11px;color:#1d4ed8;padding:3px 0;display:flex;gap:6px"><span>✓</span>${i}</div>`).join('')}
+      </div>
+      <button class="bP" onclick="saveRef()">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z" stroke="white" stroke-width="2"/><polyline points="17,21 17,13 7,13 7,21" stroke="white" stroke-width="2"/></svg>Save Referral
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ UPDATE REFERRAL STATUS ══ -->
+<div class="scr" id="sRefUp" style="background:var(--w)">
+  <div class="is">
+    <div class="ih">
+      <div class="iht"><button class="bk" onclick="goBack()">←</button><div><div class="it">Update Referral Status</div><div class="isu">Okello James · Mulago Hospital</div></div></div>
+    </div>
+    <div class="ib">
+      <div style="font-size:11px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Referral Lifecycle Status</div>
+      <div class="ref-status-row">
+        <div class="ref-status-chip pending active" onclick="selRefStatus(this,'pending')">● Pending</div>
+        <div class="ref-status-chip notified" onclick="selRefStatus(this,'notified')">● Notified</div>
+        <div class="ref-status-chip attended" onclick="selRefStatus(this,'attended')">● Attended</div>
+        <div class="ref-status-chip completed" onclick="selRefStatus(this,'completed')">● Completed</div>
+        <div class="ref-status-chip overdue" onclick="selRefStatus(this,'overdue')">● Overdue</div>
+        <div class="ref-status-chip cancelled" onclick="selRefStatus(this,'cancelled')">● Cancelled</div>
+      </div>
+      <div style="background:var(--abg);border-radius:var(--r);padding:11px 13px;margin-bottom:16px;border:1px solid var(--amber);font-size:11px;color:var(--atext);line-height:1.6" id="statusDesc">
+        <strong>Pending:</strong> Referral generated but not yet communicated to patient.
+      </div>
+      <label class="fl">Patient Attended Appointment?</label>
+      <select class="fs"><option value="">Select Status</option><option>Yes</option><option>No</option></select>
+      <label class="fl">Treatment Received?</label>
+      <select class="fs"><option value="">Select Status</option><option>Yes — Glasses Prescribed</option><option>Partial — Further Tests Needed</option><option>No — Patient Declined</option></select>
+      <label class="fl">Follow-up Required?</label>
+      <div style="display:flex;gap:8px;margin-bottom:13px">
+        <button style="flex:1;padding:11px;border-radius:var(--r);border:1.5px solid var(--g200);background:var(--w);font-family:'Sora',sans-serif;font-size:12px;font-weight:700;color:var(--g500);cursor:pointer">No</button>
+        <button style="flex:1;padding:11px;border-radius:var(--r);border:1.5px solid var(--teal);background:var(--ice);font-family:'Sora',sans-serif;font-size:12px;font-weight:700;color:var(--teal);cursor:pointer">Yes</button>
+      </div>
+      <label class="fl">Follow-up Notes</label>
+      <textarea class="fi" rows="3" placeholder="Notes about outcome or follow-up plan..."></textarea>
+      <button class="bP" onclick="showToast('Referral status updated!');goBack()">✓ Update Status</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ BULK CAMPAIGN ══ -->
+<div class="scr" id="sBulk">
+  <div class="is">
+    <div class="ih"><div class="iht"><button class="bk" onclick="goBack()">←</button><div><div class="it">Bulk Screening Mode</div><div class="isu">Mass community campaign</div></div></div></div>
+    <div class="ib">
+      <div style="background:linear-gradient(145deg,var(--ink),var(--ink2));border-radius:var(--RL);padding:20px;margin-bottom:16px">
+        <div style="font-size:10px;color:rgba(94,234,212,.6);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Campaign Details</div>
+        <label class="fl" style="color:rgba(94,234,212,.6)">Campaign Name</label>
+        <input class="fi" placeholder="e.g. Nakawa School Drive 2026" style="background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.1);color:var(--w)">
+        <label class="fl" style="color:rgba(94,234,212,.6)">Expected Participants</label>
+        <input class="fi" type="number" placeholder="e.g. 150" style="background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.1);color:var(--w);margin-bottom:0">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
+        <div style="background:var(--w);border-radius:var(--r);border:1px solid var(--g200);padding:11px;text-align:center"><div style="font-size:22px;font-weight:800;color:var(--teal)" id="bScr">0</div><div style="font-size:9px;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Screened</div></div>
+        <div style="background:var(--w);border-radius:var(--r);border:1px solid var(--g200);padding:11px;text-align:center"><div style="font-size:22px;font-weight:800;color:var(--red)" id="bRef">0</div><div style="font-size:9px;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Referred</div></div>
+        <div style="background:var(--w);border-radius:var(--r);border:1px solid var(--g200);padding:11px;text-align:center"><div style="font-size:22px;font-weight:800;color:var(--green)" id="bPR">—</div><div style="font-size:9px;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Pass Rate</div></div>
+      </div>
+      <button class="bP" style="margin-bottom:8px" onclick="startCamp()">▶ Start Campaign</button>
+      <button class="bO" style="margin-bottom:8px" onclick="screenNext()">👁 Screen Next Patient</button>
+      <button class="bO" style="margin-bottom:8px" onclick="showToast('Campaign report generating...')">📊 Campaign Report</button>
+      <button class="bR" onclick="showToast('Campaign ended. Data saved to SQLite.')">⏹ End Campaign</button>
+      <div style="display:flex;gap:7px;margin-top:14px">
+        <button style="flex:1;padding:8px;border-radius:var(--r);border:none;background:var(--teal);color:var(--w);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer">Pending</button>
+        <button style="flex:1;padding:8px;border-radius:var(--r);border:1.5px solid var(--g200);background:var(--w);color:var(--g500);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer">Completed</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TRAINING ══ -->
+<div class="scr" id="sTraining">
+  <div class="is">
+    <div class="ih"><div class="iht"><button class="bk" onclick="goBack()">←</button><div><div class="it">Training Mode</div><div class="isu">Learn VisionScreen step-by-step</div></div></div></div>
+    <div class="ib">
+      <div style="background:linear-gradient(145deg,#052e16,#065f46);border-radius:var(--RL);padding:20px;text-align:center;margin-bottom:16px">
+        <div style="font-size:32px;margin-bottom:7px">🎓</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--w);margin-bottom:4px">Welcome to VisionScreen Training</div>
+        <div style="font-size:12px;color:rgba(167,243,208,.65)">Learn how to conduct vision screenings step-by-step</div>
+      </div>
+      ${[['📝','Patient Registration','Learn how to register patients correctly','3 min'],['📏','Distance Calibration','Set up the correct testing distance','2 min'],['👁️','Vision Testing','Conduct the Tumbling E test','5 min'],['📋','Referral Generation','Create and manage referrals','4 min']].map(([ic,t,d,tm],i)=>`
+      <div style="background:var(--w);border-radius:var(--r);border:1px solid var(--g200);padding:13px 14px;margin-bottom:8px;display:flex;align-items:center;gap:11px;cursor:pointer" onclick="showToast('Opening Module ${i+1}...')">
+        <div style="width:40px;height:40px;border-radius:12px;background:var(--ice);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${ic}</div>
+        <div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--g800)">Module ${i+1}: ${t}</div><div style="font-size:11px;color:var(--g400);margin-top:2px">${d}</div></div>
+        <div style="text-align:right"><div style="font-size:10px;color:var(--g400)">⏱ ${tm}</div><div style="color:var(--g300);font-size:13px;margin-top:2px">›</div></div>
+      </div>`).join('')}
+      <div style="background:var(--ice);border-radius:var(--r);border:1px solid rgba(37,99,235,.15);padding:13px 14px;display:flex;align-items:center;gap:11px;cursor:pointer;margin-top:4px" onclick="showToast('Practice mode starting...')">
+        <div style="width:40px;height:40px;border-radius:12px;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">⚡</div>
+        <div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--teal)">Practice Mode</div><div style="font-size:11px;color:var(--teal2);margin-top:2px">Test with dummy patients · Unlimited</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PATIENT DETAIL ══ -->
+<div class="scr" id="sPatDet" style="background:var(--g50)">
+  <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+    <div style="background:linear-gradient(160deg,var(--ink),var(--ink2));padding:50px 20px 20px;position:relative;overflow:hidden;flex-shrink:0">
+      <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(13,148,136,.05) 1px,transparent 1px);background-size:18px 18px"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;position:relative;z-index:1">
+        <button class="bk wht" onclick="goBack()">←</button>
+        <button style="padding:6px 12px;border-radius:99px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:rgba(255,255,255,.75);font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer" onclick="goTo('s4')">+ New Test</button>
+      </div>
+      <div style="width:60px;height:60px;border-radius:18px;background:linear-gradient(135deg,var(--teal),var(--teal2));display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:var(--w);margin:0 auto 11px;position:relative;z-index:1">AK</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--w);text-align:center;position:relative;z-index:1">Akello Mercy</div>
+      <div style="font-size:11px;color:rgba(94,234,212,.6);text-align:center;margin-top:4px;position:relative;z-index:1">34 years · Female · Nakawa, Kampala</div>
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:14px;position:relative;z-index:1">
+        ${[['3','Tests'],['6/6','Best VA'],['0','Referrals']].map(([n,l])=>`<div style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:var(--r);padding:9px 14px;text-align:center"><div style="font-size:17px;font-weight:800;color:var(--w)">${n}</div><div style="font-size:9px;color:rgba(94,234,212,.5);text-transform:uppercase;letter-spacing:.7px;margin-top:2px">${l}</div></div>`).join('')}
+      </div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:16px">
+      <div class="rc">
+        <div class="rch"><div class="rct">Patient Information</div></div>
+        ${[['Phone','0700 234 567'],['Village','Nakawa, Kampala'],['Registered by','Nakato Mary'],['Known Conditions','None reported'],['Patient ID','PAT-00312'],['SQLite Record','Synced ✓']].map(([l,v])=>`
+        <div style="display:flex;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--g100)">
+          <span style="font-size:12px;color:var(--g400)">${l}</span>
+          <span style="font-size:12px;font-weight:700;color:var(--g800)">${v}</span>
+        </div>`).join('')}
+      </div>
+      <div class="rc">
+        <div class="rch"><div class="rct">Screening History (Tumbling E)</div></div>
+        ${[['27 Mar 2026','OD 6/6 · OS 6/9 · OU 6/6','Pass'],['14 Feb 2026','OD 6/9 · OS 6/9 · OU 6/6','Pass'],['3 Jan 2026','OD 6/6 · OS 6/6 · OU 6/6','Pass']].map(([d,s,r])=>`
+        <div class="pr" onclick="goTo('sRes')">
+          <div style="width:36px;height:36px;border-radius:10px;background:var(--ice);display:flex;align-items:center;justify-content:center;font-size:15px">👁️</div>
+          <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;color:var(--g800)">${s}</div><div style="font-size:10px;color:var(--g400);margin-top:2px">${d}</div></div>
+          <span class="bdg b-pass">${r}</span>
+        </div>`).join('')}
+      </div>
+      <button class="bP" style="margin-bottom:8px" onclick="goTo('sCalib')">👁 Start New Screening</button>
+      <button class="bO" onclick="showToast('Generating patient report...')">📄 Generate Report</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PATIENTS LIST ══ -->
+<div class="scr" id="sPat" style="background:var(--g50)">
+  <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+
+    <!-- Header -->
+    <div style="background:linear-gradient(160deg,var(--ink),var(--ink2));padding:24px 20px 0;flex-shrink:0;position:relative;overflow:hidden">
+      <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(13,148,136,.05) 1px,transparent 1px);background-size:18px 18px"></div>
+      <div style="position:absolute;width:180px;height:180px;background:radial-gradient(circle,rgba(13,148,136,.18),transparent);border-radius:50%;filter:blur(36px);top:-40px;right:-20px"></div>
+
+      <!-- Title row -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;position:relative;z-index:1">
+        <div>
+          <div style="font-family:'DM Serif Display',serif;font-size:24px;color:var(--w);line-height:1.2">Patients</div>
+          <div style="font-size:11px;color:rgba(94,234,212,.55);margin-top:3px">247 registered · Wakiso &amp; Kampala</div>
+        </div>
+        <button class="bP" style="width:auto;padding:9px 14px;font-size:12px;border-radius:var(--r)" onclick="goTo('s4')">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg>New Patient
+        </button>
+      </div>
+
+      <!-- Summary stats -->
+      <div style="display:flex;gap:8px;margin-bottom:14px;position:relative;z-index:1">
+        <div style="flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.08);border-radius:var(--r);padding:10px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:var(--w)">247</div>
+          <div style="font-size:9px;color:rgba(94,234,212,.5);text-transform:uppercase;letter-spacing:.7px;margin-top:2px">Total</div>
+        </div>
+        <div style="flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.08);border-radius:var(--r);padding:10px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:var(--green)">183</div>
+          <div style="font-size:9px;color:rgba(94,234,212,.5);text-transform:uppercase;letter-spacing:.7px;margin-top:2px">Passed</div>
+        </div>
+        <div style="flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.08);border-radius:var(--r);padding:10px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:var(--red)">55</div>
+          <div style="font-size:9px;color:rgba(94,234,212,.5);text-transform:uppercase;letter-spacing:.7px;margin-top:2px">Referred</div>
+        </div>
+        <div style="flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.08);border-radius:var(--r);padding:10px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:var(--amber)">9</div>
+          <div style="font-size:9px;color:rgba(94,234,212,.5);text-transform:uppercase;letter-spacing:.7px;margin-top:2px">Pending</div>
+        </div>
+      </div>
+
+      <!-- Search bar -->
+      <div style="position:relative;margin-bottom:14px;z-index:1">
+        <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none" width="15" height="15" fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="rgba(94,234,212,.5)" stroke-width="2"/><path d="M21 21l-4.35-4.35" stroke="rgba(94,234,212,.5)" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="patSearch" oninput="filterPats()" class="fi" placeholder="Search by name, ID or village..." style="margin-bottom:0;padding-left:36px;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.12);color:var(--w);">
+      </div>
+
+      <!-- Filter chips -->
+      <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:14px;position:relative;z-index:1" id="patFilters">
+        ${['All','Pass','Refer','Pending','Child','Adult','Elderly'].map((t,i)=>`
+        <button class="pat-filter-btn${i===0?' pf-on':''}" onclick="setPatFilter(this,'${t}')" style="flex-shrink:0;padding:5px 13px;border-radius:99px;border:1.5px solid ${i===0?'var(--teal3)':'rgba(255,255,255,.15)'};background:${i===0?'rgba(13,148,136,.25)':'rgba(255,255,255,.06)'};color:${i===0?'var(--teal3)':'rgba(255,255,255,.55)'};font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s">${t}</button>`).join('')}
+      </div>
+    </div>
+
+    <!-- Patient list -->
+    <div style="flex:1;overflow-y:auto;padding:12px 14px" id="patList">
+
+      <!-- Today section -->
+      <div style="font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;margin-top:2px">Today · 27 Mar 2026</div>
+
+      <div class="pat-card" data-outcome="pass" data-age-group="adult" onclick="goTo('sPatDet')">
+        <div class="pa tl">AK</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="pn">Akello Mercy</div>
+            <span style="font-size:9px;background:rgba(13,148,136,.1);color:var(--teal);border-radius:99px;padding:2px 7px;font-weight:700">Adult</span>
+          </div>
+          <div class="pm">34 yrs · F · Nakawa, Kampala</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:5px">
+            <div style="display:flex;gap:6px">
+              <span style="font-size:10px;color:var(--g400)">OD</span><span style="font-size:10px;font-weight:700;color:var(--g800)">6/6</span>
+              <span style="font-size:10px;color:var(--g400)">OS</span><span style="font-size:10px;font-weight:700;color:var(--g800)">6/9</span>
+              <span style="font-size:10px;color:var(--g400)">OU</span><span style="font-size:10px;font-weight:700;color:var(--g800)">6/6</span>
+            </div>
+            <span style="font-size:10px;color:var(--g300)">· 8m ago</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+          <span class="bdg b-pass">Pass</span>
+          <span style="font-size:10px;color:var(--g300)">PAT-00312</span>
+        </div>
+      </div>
+
+      <div class="pat-card" data-outcome="refer" data-age-group="adult" onclick="goTo('sPatDet')">
+        <div class="pa rd">OJ</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="pn">Okello James</div>
+            <span style="font-size:9px;background:rgba(239,68,68,.08);color:var(--red);border-radius:99px;padding:2px 7px;font-weight:700">Adult</span>
+          </div>
+          <div class="pm">58 yrs · M · Bwaise, Kampala</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:5px">
+            <div style="display:flex;gap:6px">
+              <span style="font-size:10px;color:var(--g400)">OD</span><span style="font-size:10px;font-weight:700;color:var(--teal)">6/12</span>
+              <span style="font-size:10px;color:var(--g400)">OS</span><span style="font-size:10px;font-weight:700;color:var(--red)">6/18</span>
+              <span style="font-size:10px;color:var(--g400)">OU</span><span style="font-size:10px;font-weight:700;color:var(--teal)">6/12</span>
+            </div>
+            <span style="font-size:10px;color:var(--g300)">· 22m ago</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+          <span class="bdg b-ref">Refer</span>
+          <span style="font-size:10px;color:var(--g300)">PAT-00298</span>
+        </div>
+      </div>
+
+      <div class="pat-card" data-outcome="pass" data-age-group="adult" onclick="goTo('sPatDet')">
+        <div class="pa gn">NA</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="pn">Nakato Aisha</div>
+            <span style="font-size:9px;background:rgba(13,148,136,.1);color:var(--teal);border-radius:99px;padding:2px 7px;font-weight:700">Adult</span>
+          </div>
+          <div class="pm">27 yrs · F · Ntinda, Kampala</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:5px">
+            <div style="display:flex;gap:6px">
+              <span style="font-size:10px;color:var(--g400)">OD</span><span style="font-size:10px;font-weight:700;color:var(--g800)">6/9</span>
+              <span style="font-size:10px;color:var(--g400)">OS</span><span style="font-size:10px;font-weight:700;color:var(--g800)">6/9</span>
+              <span style="font-size:10px;color:var(--g400)">OU</span><span style="font-size:10px;font-weight:700;color:var(--g800)">6/6</span>
+            </div>
+            <span style="font-size:10px;color:var(--g300)">· 1hr ago</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+          <span class="bdg b-pass">Pass</span>
+          <span style="font-size:10px;color:var(--g300)">PAT-00301</span>
+        </div>
+      </div>
+
+      <div class="pat-card" data-outcome="pending" data-age-group="adult" onclick="goTo('sPatDet')">
+        <div class="pa am">MW</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="pn">Mugisha Wilson</div>
+            <span style="font-size:9px;background:rgba(245,158,11,.1);color:var(--amber);border-radius:99px;padding:2px 7px;font-weight:700">Adult</span>
+          </div>
+          <div class="pm">45 yrs · M · Kireka, Wakiso</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:5px">
+            <span style="font-size:10px;color:var(--g400)">Awaiting screening</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+          <span class="bdg b-wait">Pending</span>
+          <span style="font-size:10px;color:var(--g300)">PAT-00315</span>
+        </div>
+      </div>
+
+      <!-- Earlier section -->
+      <div style="font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:1.5px;margin:14px 0 8px">Earlier</div>
+
+      <div class="pat-card" data-outcome="pass" data-age-group="adult" onclick="goTo('sPatDet')">
+        <div class="pa tl">KR</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="pn">Kyomuhendo Rose</div>
+            <span style="font-size:9px;background:rgba(13,148,136,.1);color:var(--teal);border-radius:99px;padding:2px 7px;font-weight:700">Adult</span>
+          </div>
+          <div class="pm">19 yrs · F · Rubaga, Kampala</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:5px">
+            <div style="display:flex;gap:6px">
+              <span style="font-size:10px;color:var(--g400)">OD</span><span style="font-size:10px;font-weight:700;color:var(--g800)">6/6</span>
+              <span style="font-size:10px;color:var(--g400)">OS</span><span style="font-size:10px;font-weight:700;color:var(--g800)">6/6</span>
+              <span style="font-size:10px;color:var(--g400)">OU</span><span style="font-size:10px;font-weight:700;color:var(--g800)">6/6</span>
+            </div>
+            <span style="font-size:10px;color:var(--g300)">· 26 Mar</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+          <span class="bdg b-pass">Pass</span>
+          <span style="font-size:10px;color:var(--g300)">PAT-00289</span>
+        </div>
+      </div>
+
+      <div class="pat-card" data-outcome="refer" data-age-group="elderly" onclick="goTo('sPatDet')">
+        <div class="pa rd">BS</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="pn">Byaruhanga Sam</div>
+            <span style="font-size:9px;background:rgba(239,68,68,.08);color:var(--red);border-radius:99px;padding:2px 7px;font-weight:700">Elderly</span>
+          </div>
+          <div class="pm">62 yrs · M · Kawempe, Kampala</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:5px">
+            <div style="display:flex;gap:6px">
+              <span style="font-size:10px;color:var(--g400)">OD</span><span style="font-size:10px;font-weight:700;color:var(--red)">6/24</span>
+              <span style="font-size:10px;color:var(--g400)">OS</span><span style="font-size:10px;font-weight:700;color:var(--red)">6/36</span>
+              <span style="font-size:10px;color:var(--g400)">OU</span><span style="font-size:10px;font-weight:700;color:var(--red)">6/24</span>
+            </div>
+            <span style="font-size:10px;color:var(--g300)">· 25 Mar</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+          <span class="bdg b-ref">Refer</span>
+          <span style="font-size:10px;color:var(--g300)">PAT-00276</span>
+        </div>
+      </div>
+
+      <div class="pat-card" data-outcome="pass" data-age-group="child" onclick="goTo('sPatDet')">
+        <div class="pa" style="background:linear-gradient(135deg,#1e3a5f,#3b82f6)">TK</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="pn">Tendo Kevin</div>
+            <span style="font-size:9px;background:rgba(59,130,246,.1);color:#3b82f6;border-radius:99px;padding:2px 7px;font-weight:700">Child</span>
+          </div>
+          <div class="pm">9 yrs · M · Nansana, Wakiso</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:5px">
+            <div style="display:flex;gap:6px">
+              <span style="font-size:10px;color:var(--g400)">OD</span><span style="font-size:10px;font-weight:700;color:var(--g800)">6/9</span>
+              <span style="font-size:10px;color:var(--g400)">OS</span><span style="font-size:10px;font-weight:700;color:var(--g800)">6/9</span>
+              <span style="font-size:10px;color:var(--g400)">OU</span><span style="font-size:10px;font-weight:700;color:var(--g800)">6/6</span>
+            </div>
+            <span style="font-size:10px;color:var(--g300)">· 24 Mar</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+          <span class="bdg b-pass">Pass</span>
+          <span style="font-size:10px;color:var(--g300)">PAT-00261</span>
+        </div>
+      </div>
+
+      <div class="pat-card" data-outcome="refer" data-age-group="child" onclick="goTo('sPatDet')">
+        <div class="pa" style="background:linear-gradient(135deg,#4c1d95,#7c3aed)">AN</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="pn">Apio Norah</div>
+            <span style="font-size:9px;background:rgba(59,130,246,.1);color:#3b82f6;border-radius:99px;padding:2px 7px;font-weight:700">Child</span>
+          </div>
+          <div class="pm">8 yrs · F · Kira, Wakiso</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:5px">
+            <div style="display:flex;gap:6px">
+              <span style="font-size:10px;color:var(--g400)">OD</span><span style="font-size:10px;font-weight:700;color:var(--red)">6/18</span>
+              <span style="font-size:10px;color:var(--g400)">OS</span><span style="font-size:10px;font-weight:700;color:var(--red)">6/12</span>
+              <span style="font-size:10px;color:var(--g400)">OU</span><span style="font-size:10px;font-weight:700;color:var(--red)">6/12</span>
+            </div>
+            <span style="font-size:10px;color:var(--g300)">· 23 Mar</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+          <span class="bdg b-ref">Refer</span>
+          <span style="font-size:10px;color:var(--g300)">PAT-00254</span>
+        </div>
+      </div>
+
+      <!-- Empty state (hidden by default) -->
+      <div id="patEmpty" style="display:none;text-align:center;padding:48px 20px">
+        <div style="font-size:40px;margin-bottom:12px">🔍</div>
+        <div style="font-size:15px;font-weight:700;color:var(--g800);margin-bottom:6px">No patients found</div>
+        <div style="font-size:12px;color:var(--g400);line-height:1.6">Try a different name, ID or village,<br>or clear the filter.</div>
+      </div>
+
+      <div style="height:16px"></div>
+    </div>
+  </div>
+
+  <div class="bn">
+    <button class="ni" onclick="sNav('home')"><div class="nii">🏠</div><div class="nil">Home</div></button>
+    <button class="ni on" onclick="sNav('patients')"><div class="nii">👥</div><div class="nil">Patients</div></button>
+    <button class="ni" onclick="sNav('referrals')"><div class="nii">📋</div><div class="nil">Referrals</div></button>
+    <button class="ni" onclick="sNav('analytics')"><div class="nii">📊</div><div class="nil">Analytics</div></button>
+    <button class="ni" onclick="sNav('settings')"><div class="nii">⚙️</div><div class="nil">Settings</div></button>
+  </div>
+</div>
+
+<!-- ══ REFERRALS LIST ══ -->
+<div class="scr" id="sRefs" style="background:var(--g50)">
+  <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+    <div class="ih">
+      <div style="padding-top:4px;margin-bottom:10px"><div style="font-size:19px;font-weight:800;color:var(--g800)">Referrals</div><div style="font-size:11px;color:var(--g400);margin-top:2px">6 active · 3 completed · 2 overdue</div></div>
+      <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px">
+        ${['All','Pending','Notified','Attended','Overdue','Completed','Cancelled'].map((t,i)=>`<button style="flex-shrink:0;padding:6px 13px;border-radius:99px;border:${i===0?'none':'1.5px solid var(--g200)'};background:${i===0?'var(--teal)':'var(--w)'};color:${i===0?'var(--w)':'var(--g500)'};font-family:'Sora',sans-serif;font-size:11px;font-weight:700;cursor:pointer" onclick="showToast('Filtering: ${t}')">${t}</button>`).join('')}
+      </div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:12px 14px">
+      ${[['OJ','rd','Okello James','Mulago Hospital','29 Mar 2026','Overdue','b-over'],['BS','bl','Byaruhanga Sam','Kampala Eye Clinic','2 Apr 2026','Notified','b-wait'],['KK','am','Kabanda Kevin','Nsambya Hospital','5 Apr 2026','Pending','b-over']].map(([i,c,n,f,d,u,bc])=>`
+      <div style="background:var(--w);border-radius:var(--R);border:1px solid var(--g200);padding:12px;margin-bottom:9px;box-shadow:0 2px 8px rgba(0,0,0,.04);cursor:pointer" onclick="goTo('sRefUp')">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:9px">
+          <div class="pa ${c}">${i}</div>
+          <div style="flex:1"><div class="pn">${n}</div><div class="pm">${f}</div></div>
+          <span class="bdg ${bc}">${u}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:9px;border-top:1px solid var(--g100)">
+          <div style="font-size:11px;color:var(--g400)">📅 ${d}</div>
+          <button style="font-size:11px;color:var(--teal);font-weight:700;border:none;background:none;font-family:'Sora',sans-serif;cursor:pointer" onclick="event.stopPropagation();goTo('sRefUp')">Update Status →</button>
+        </div>
+      </div>`).join('')}
+    </div>
+  </div>
+  <div class="bn">
+    <button class="ni" onclick="sNav('home')"><div class="nii">🏠</div><div class="nil">Home</div></button>
+    <button class="ni" onclick="sNav('patients')"><div class="nii">👥</div><div class="nil">Patients</div></button>
+    <button class="ni on" onclick="sNav('referrals')"><div class="nii">📋</div><div class="nil">Referrals</div></button>
+    <button class="ni" onclick="sNav('analytics')"><div class="nii">📊</div><div class="nil">Analytics</div></button>
+    <button class="ni" onclick="sNav('settings')"><div class="nii">⚙️</div><div class="nil">Settings</div></button>
+  </div>
+</div>
+
+<!-- ══ ANALYTICS ══ -->
+<div class="scr" id="sAn" style="background:var(--g50)">
+  <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+    <div class="an-h">
+      <div style="font-size:10px;color:rgba(94,234,212,.55);font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:5px;margin-top:4px">Programme Overview</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:24px;color:var(--w);margin-bottom:3px">Your Impact</div>
+      <div style="font-size:11px;color:rgba(94,234,212,.5)">Last 30 days · Wakiso & Kampala</div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:14px 16px">
+      <div class="mr">
+        <div class="mc"><div class="ml">Pass Rate</div><div class="mv" style="color:var(--green)">74%</div><div class="mch up">↑ 3% this week</div></div>
+        <div class="mc"><div class="ml">Referral Rate</div><div class="mv" style="color:var(--amber)">26%</div><div class="mch dn">↑ 2% this week</div></div>
+      </div>
+      <div class="chc">
+        <div class="cht">Screening Trends <span class="chb">Last 7 days</span></div>
+        <div class="brc">${[['Mon',8],['Tue',12],['Wed',6],['Thu',15],['Fri',9],['Sat',18],['Sun',7]].map(([d,v])=>`<div class="bc"><div class="bv">${v}</div><div class="bb" style="height:${v*2.8}px;background:linear-gradient(180deg,var(--teal),var(--teal2))"></div><div class="bl2">${d}</div></div>`).join('')}</div>
+      </div>
+      <div class="chc">
+        <div class="cht">Result Breakdown</div>
+        <div class="dw">
+          <svg width="84" height="84" viewBox="0 0 84 84">
+            <circle cx="42" cy="42" r="30" fill="none" stroke="var(--g100)" stroke-width="13"/>
+            <circle cx="42" cy="42" r="30" fill="none" stroke="var(--teal)" stroke-width="13" stroke-dasharray="140 48" stroke-dashoffset="35" stroke-linecap="round"/>
+            <circle cx="42" cy="42" r="30" fill="none" stroke="var(--red)" stroke-width="13" stroke-dasharray="48 140" stroke-dashoffset="-105" stroke-linecap="round"/>
+            <text x="42" y="46" text-anchor="middle" fill="var(--g800)" font-size="12" font-weight="800" font-family="'Sora',sans-serif">74%</text>
+          </svg>
+          <div class="dl">
+            <div class="li"><div class="ld" style="background:var(--teal)"></div><span class="ll">Pass</span><span class="lv">156</span></div>
+            <div class="li"><div class="ld" style="background:var(--red)"></div><span class="ll">Refer to Specialist</span><span class="lv">55</span></div>
+            <div class="li"><div class="ld" style="background:var(--g200)"></div><span class="ll">Pending</span><span class="lv">36</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="chc">
+        <div class="cht">Follow-up Completion <span class="chb">0%</span></div>
+        <div style="height:5px;background:var(--g100);border-radius:99px;overflow:hidden;margin-bottom:5px"><div style="height:100%;width:0%;background:linear-gradient(90deg,var(--green),#4ade80);border-radius:99px"></div></div>
+        <div style="font-size:11px;color:var(--g400)">Patients who completed referral visits</div>
+      </div>
+      <div class="chc">
+        <div class="cht">Age Distribution</div>
+        <div class="brc" style="height:72px">${[['3-5',4],['6-12',12],['13-35',18],['36-60',11],['60+',7]].map(([d,v])=>`<div class="bc"><div class="bv">${v}</div><div class="bb" style="height:${v*2.4}px;background:linear-gradient(180deg,var(--amber),#fbbf24)"></div><div class="bl2">${d}</div></div>`).join('')}</div>
+      </div>
+      <div class="chc">
+        <div class="cht">Top Locations</div>
+        ${[['Nakawa',42,85],['Ntinda',31,60],['Bwaise',28,54],['Kawempe',19,36]].map(([l,n,p])=>`
+        <div style="margin-bottom:9px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="font-weight:700;color:var(--g800)">${l}</span><span style="color:var(--g400)">${n} patients</span></div>
+          <div style="height:4px;background:var(--g100);border-radius:99px;overflow:hidden"><div style="height:100%;width:${p}%;background:linear-gradient(90deg,var(--teal),var(--teal2));border-radius:99px"></div></div>
+        </div>`).join('')}
+      </div>
+      <div class="chc" style="margin-bottom:20px">
+        <div class="cht">Sync Status</div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:1px solid var(--g100)"><span style="color:var(--g400)">Synced to MongoDB Atlas</span><span style="font-weight:700;color:var(--green)">244 records</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 0"><span style="color:var(--g400)">Pending sync</span><span style="font-weight:700;color:var(--amber)">3 records</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="bn">
+    <button class="ni" onclick="sNav('home')"><div class="nii">🏠</div><div class="nil">Home</div></button>
+    <button class="ni" onclick="sNav('patients')"><div class="nii">👥</div><div class="nil">Patients</div></button>
+    <button class="ni" onclick="sNav('referrals')"><div class="nii">📋</div><div class="nil">Referrals</div></button>
+    <button class="ni on" onclick="sNav('analytics')"><div class="nii">📊</div><div class="nil">Analytics</div></button>
+    <button class="ni" onclick="sNav('settings')"><div class="nii">⚙️</div><div class="nil">Settings</div></button>
+  </div>
+</div>
+
+<!-- ══ SETTINGS ══ -->
+<div class="scr" id="sSet" style="background:var(--g50)">
+  <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+    <div style="background:linear-gradient(160deg,var(--ink),var(--ink2));padding:50px 20px 20px;flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:11px">
+        <div style="width:48px;height:48px;border-radius:15px;background:linear-gradient(135deg,var(--teal),var(--teal2));display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:var(--w)">NM</div>
+        <div><div style="font-size:16px;font-weight:800;color:var(--w)">Nakato Mary</div><div style="font-size:11px;color:rgba(94,234,212,.55);margin-top:2px">CHW · Nakawa Health Centre III</div></div>
+      </div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:14px 16px">
+      <div class="ss">
+        <div class="sst">Profile Information</div>
+        <div style="padding:13px 14px">
+          <label class="fl">Health Worker Name</label><input class="fi" value="Nakato Mary">
+          <label class="fl">Health Center</label><input class="fi" value="Nakawa Health Centre III" style="margin-bottom:0">
+        </div>
+      </div>
+      <div class="ss">
+        <div class="sst">Preferences</div>
+        <div class="srow">
+          <div class="sico" style="background:var(--ice)">🌐</div>
+          <div style="flex:1"><div class="slbl">Referral Language</div><div class="ssub">Olulimi lw'okuweereza</div></div>
+          <select style="border:none;background:none;font-family:'Sora',sans-serif;font-size:11px;color:var(--teal);font-weight:700;cursor:pointer;outline:none">
+            <option>English Only</option><option>Luganda</option><option>Runyankole/Rukiga</option><option>Acholi</option><option>Ateso</option><option>Lugbara</option><option>Luo</option><option>Runyoro</option><option>Swahili</option>
+          </select>
+        </div>
+        <div class="srow">
+          <div class="sico" style="background:var(--abg)">📴</div>
+          <div style="flex:1"><div class="slbl">Offline Mode</div><div class="ssub">Store data locally on device (SQLite)</div></div>
+          <button class="tgl on" onclick="tgl(this)"><div class="tth"></div></button>
+        </div>
+        <div class="srow">
+          <div class="sico" style="background:var(--gbg)">💬</div>
+          <div style="flex:1"><div class="slbl">SMS Notifications</div><div class="ssub">Send appointment reminders</div></div>
+          <button class="tgl off" onclick="tgl(this)"><div class="tth"></div></button>
+        </div>
+        <div class="srow">
+          <div class="sico" style="background:var(--rbg)">🔋</div>
+          <div style="flex:1"><div class="slbl">Battery Saver Mode</div><div class="ssub">Reduce brightness during test</div></div>
+          <button class="tgl on" onclick="tgl(this)"><div class="tth"></div></button>
+        </div>
+      </div>
+      <div class="ss">
+        <div class="sst">Data Sync — MongoDB Atlas</div>
+        <div class="srow">
+          <div class="sico" style="background:var(--gbg)">☁️</div>
+          <div style="flex:1"><div class="slbl">Sync Status</div><div class="ssub" style="color:var(--amber);font-weight:700">3 records pending · 244 synced</div></div>
+          <button style="padding:5px 11px;border-radius:99px;border:1.5px solid var(--teal);background:var(--ice);color:var(--teal);font-family:'Sora',sans-serif;font-size:10px;font-weight:700;cursor:pointer" onclick="doSync()">Sync Now</button>
+        </div>
+        <div class="srow"><div class="sico" style="background:var(--ice)">📤</div><div style="flex:1"><div class="slbl">Export All Data</div></div><div class="sarr">›</div></div>
+      </div>
+      <div class="ss">
+        <div class="sst">Actions</div>
+        <div class="srow" onclick="showToast('Clearing all local data...')"><div class="sico" style="background:var(--rbg)">🗑️</div><div style="flex:1"><div class="slbl" style="color:var(--red)">Clear All Local Data</div></div><div class="sarr">›</div></div>
+        <div class="srow" onclick="goTo('s2')"><div class="sico" style="background:var(--g100)">🚪</div><div style="flex:1"><div class="slbl">Logout</div></div><div class="sarr">›</div></div>
+      </div>
+      <div style="text-align:center;padding:14px 0 6px;font-size:11px;color:var(--g400)">VisionScreen v1.0 · Flutter / SQLite / MongoDB Atlas<br><span style="font-size:10px">Made for Community Health Workers · Uganda</span></div>
+    </div>
+  </div>
+  <div class="bn">
+    <button class="ni" onclick="sNav('home')"><div class="nii">🏠</div><div class="nil">Home</div></button>
+    <button class="ni" onclick="sNav('patients')"><div class="nii">👥</div><div class="nil">Patients</div></button>
+    <button class="ni" onclick="sNav('referrals')"><div class="nii">📋</div><div class="nil">Referrals</div></button>
+    <button class="ni" onclick="sNav('analytics')"><div class="nii">📊</div><div class="nil">Analytics</div></button>
+    <button class="ni on" onclick="sNav('settings')"><div class="nii">⚙️</div><div class="nil">Settings</div></button>
+  </div>
+</div>
+
+</div><!-- /phone -->
+
+<script>
+  // ── STATE ──
+  let hist=['s0'], cl=2, obIdx=0;
+  let correct=0, wrong=0, currentDir='left';
+  let campRunning=false, campScr=0, campRef=0;
+  let currentRole='chw', selectedAge='adult';
+  const dirs=['up','down','left','right'];
+  const rotMap={up:'rotate(-90deg)',down:'rotate(90deg)',left:'rotate(0deg)',right:'rotate(180deg)'};
+  const statusDescs={
+    pending:'<strong>Pending:</strong> Referral generated but not yet communicated to patient.',
+    notified:'<strong>Notified:</strong> Referral document sent to patient. Attendance not yet confirmed.',
+    attended:'<strong>Attended:</strong> CHW confirmed patient visited the referred facility.',
+    completed:'<strong>Completed:</strong> Clinical outcome has been recorded. Referral resolved.',
+    overdue:'<strong>Overdue:</strong> Follow-up timeout. Patient has not confirmed attendance. Re-send or mark as lost to follow-up.',
+    cancelled:'<strong>Cancelled:</strong> Referral withdrawn before action was taken.'
+  };
+
+  // ── SPLASH ──
+  setTimeout(()=>goTo('s1'), 3800);
+
+  // ── NAV ──
+  function goTo(id){
+    const cur=document.querySelector('.scr.on');
+    if(!cur||cur.id===id)return;
+    cur.classList.remove('on');cur.classList.add('out');
+    setTimeout(()=>cur.classList.remove('out'),280);
+    const nxt=document.getElementById(id);
+    if(nxt){nxt.classList.add('on');hist.push(id);}
+    // show status bar after login
+
+  }
+  function goBack(){
+    if(hist.length<2)return;
+    hist.pop();
+    const prev=hist[hist.length-1];
+    document.querySelector('.scr.on')?.classList.remove('on');
+    document.getElementById(prev)?.classList.add('on');
+  }
+  const navMap={home:'s3',patients:'sPat',referrals:'sRefs',analytics:'sAn',settings:'sSet'};
+  function sNav(t){goTo(navMap[t]);}
+
+  // ── ONBOARDING ──
+  function obStep(){
+    const slides=document.querySelectorAll('.ob-slide');
+    const dots=document.querySelectorAll('.ob-dot');
+    const btn=document.getElementById('obBtn');
+    slides[obIdx].classList.remove('on');slides[obIdx].classList.add('gone');
+    setTimeout(()=>slides[obIdx].classList.remove('gone'),320);
+    dots[obIdx].classList.remove('on');
+    obIdx++;
+    if(obIdx>=4){goTo('s2');return;}
+    slides[obIdx].classList.add('on');dots[obIdx].classList.add('on');
+    if(obIdx===3) btn.textContent='Get Started →';
+  }
+
+  // ── AUTH ──
+  function swTab(t){
+    document.getElementById('tl').classList.toggle('on',t==='l');
+    document.getElementById('ts').classList.toggle('on',t==='s');
+    document.getElementById('lf').style.display=t==='l'?'block':'none';
+    document.getElementById('sf').style.display=t==='s'?'block':'none';
+  }
+  function selRole(r){
+    currentRole=r;
+    document.getElementById('rl-chw').classList.toggle('on',r==='chw');
+    document.getElementById('rl-adm').classList.toggle('on',r==='adm');
+  }
+  // ── PROTOTYPE AUTH — bypass only, replace with real auth in production ──
+  function loginAs(){
+    if(currentRole==='adm') goTo('sAn');
+    else goTo('s3');
+  }
+
+  // ── CALIBRATION ──
+  function runCalib(){
+    const ppi=Math.round(96+Math.random()*60);
+    let i=0;
+    const steps=[
+      ()=>{document.getElementById('calibStat').textContent='Detecting screen PPI...';document.getElementById('ciPPI').textContent='Detecting...'},
+      ()=>{document.getElementById('ciPPI').textContent=ppi+' PPI';document.getElementById('calibStat').textContent='Measuring screen dimensions...'},
+      ()=>{document.getElementById('ciSize').textContent='6.1" · 2532×1170px';document.getElementById('calibStat').textContent='Calculating optotype scale...'},
+      ()=>{document.getElementById('ciScale').textContent='1.0× (calibrated)';document.getElementById('calibStat').textContent='Calibration complete ✓';document.getElementById('ciStatus').textContent='✓ Complete';document.getElementById('ciStatus').style.color='var(--green)';const b=document.getElementById('calibBtn');b.removeAttribute('disabled');b.style.opacity='1';}
+    ];
+    const t=setInterval(()=>{if(i<steps.length){steps[i]();i++;}else clearInterval(t);},700);
+  }
+
+  // ── DISTANCE ──
+  let distTimer;
+  function animateDist(){
+    const targets=[20,35,55,70,85,100,85,70];let di=0;
+    distTimer=setInterval(()=>{
+      const pct=targets[di%targets.length];
+      const fill=document.getElementById('distFill');
+      const lbl=document.getElementById('distLbl');
+      const stat=document.getElementById('distStat');
+      fill.style.width=pct+'%';
+      if(pct<45){fill.className='dist-fill bad';lbl.textContent='Too close — move patient back';stat.textContent='Patient too close'}
+      else if(pct>75){fill.className='dist-fill warn';lbl.textContent='Too far — move patient closer';stat.textContent='Patient too far'}
+      else{fill.className='dist-fill ok';lbl.textContent='✓ Distance confirmed: ~3 metres';stat.textContent='Distance correct — ready to test!'}
+      di++;
+    },600);
+  }
+
+  // ── TEST ──
+  function startTest(){
+    clearInterval(distTimer);
+    document.getElementById('ageModal').style.display='flex';
+  }
+  function selAge(a,el){
+    selectedAge=a;
+    document.querySelectorAll('.age-opt').forEach(o=>o.classList.remove('on'));
+    el.classList.add('on');
+  }
+  function beginTest(){
+    document.getElementById('ageModal').style.display='none';
+    correct=0;wrong=0;cl=2;
+    updateScores();updChart();newDir();
+    goTo('sTest');
+  }
+  function rows(){return document.querySelectorAll('#chartCard .e-row');}
+  function updChart(){
+    rows().forEach((r,i)=>{r.classList.remove('cu','fd');if(i<cl)r.classList.add('fd');else if(i===cl)r.classList.add('cu');});
+    const r=rows()[cl];
+    document.getElementById('tll').textContent=`Row ${cl+1} of ${rows().length} · LogMAR ${r?.dataset.logmar||'—'} · VA ${r?.dataset.va||'—'}`;
+    document.getElementById('tpf').style.width=((cl+1)/rows().length*100)+'%';
+  }
+  function nextRow(){if(cl<rows().length-1){cl++;updChart();}}
+  function prevRow(){if(cl>0){cl--;updChart();}}
+  function switchEye(){
+    const lbl=document.getElementById('eyeLbl');
+    const eyes=['Right Eye (OD)','Left Eye (OS)','Both Eyes (OU)'];
+    const idx=eyes.indexOf(lbl.textContent);
+    lbl.textContent=eyes[(idx+1)%3];
+    correct=0;wrong=0;cl=0;updateScores();updChart();newDir();
+    showToast('Switched to '+lbl.textContent+' — resetting test');
+  }
+  function newDir(){
+    currentDir=dirs[Math.floor(Math.random()*4)];
+    const eChars=['E','Ǝ','⊓','⊔'];
+    document.querySelectorAll('.e-char').forEach(e=>{
+      e.style.transform=rotMap[currentDir];
+    });
+  }
+  function checkDir(dir){
+    const btns={up:'db-up',left:'db-left',right:'db-right',down:'db-down'};
+    const btn=document.getElementById(btns[dir]);
+    if(dir===currentDir){correct++;btn.classList.add('correct');}
+    else{wrong++;btn.classList.add('wrong');}
+    updateScores();
+    setTimeout(()=>{btn.classList.remove('correct','wrong');if(cl<rows().length-1)cl++;updChart();newDir();},500);
+  }
+  function updateScores(){
+    document.getElementById('scC').textContent=correct;
+    document.getElementById('scW').textContent=wrong;
+    document.getElementById('scT').textContent=correct+wrong;
+    document.getElementById('scoreDisp').textContent=correct+'/'+(correct+wrong);
+  }
+  function finishTest(){goTo('sRes');}
+
+  // ── REFERRAL STATUS ──
+  function selRefStatus(el,status){
+    document.querySelectorAll('.ref-status-chip').forEach(c=>c.classList.remove('active'));
+    el.classList.add('active');
+    const d=document.getElementById('statusDesc');
+    d.innerHTML=statusDescs[status];
+    const colors={pending:'var(--abg)',notified:'var(--ice)',attended:'#ede9fe',completed:'var(--gbg)',overdue:'var(--rbg)',cancelled:'var(--g100)'};
+    const textColors={pending:'var(--atext)',notified:'#0369a1',attended:'#6d28d9',completed:'var(--gtext)',overdue:'var(--rtext)',cancelled:'var(--g500)'};
+    d.style.background=colors[status];d.style.color=textColors[status];d.style.borderColor=el.style.borderColor||'transparent';
+  }
+
+  // ── REFERRAL PRIORITY ──
+  function setPrio(t){
+    const r=document.getElementById('prR'),u=document.getElementById('prU');
+    if(t==='u'){u.style.cssText='flex:1;padding:11px;border-radius:var(--r);border:1.5px solid var(--red);background:var(--rbg);font-family:"Sora",sans-serif;font-size:12px;font-weight:700;color:var(--rtext);cursor:pointer';r.style.cssText='flex:1;padding:11px;border-radius:var(--r);border:1.5px solid var(--g200);background:var(--w);font-family:"Sora",sans-serif;font-size:12px;font-weight:700;color:var(--g500);cursor:pointer';}
+    else{r.style.cssText='flex:1;padding:11px;border-radius:var(--r);border:1.5px solid var(--teal);background:var(--ice);font-family:"Sora",sans-serif;font-size:12px;font-weight:700;color:var(--teal);cursor:pointer';u.style.cssText='flex:1;padding:11px;border-radius:var(--r);border:1.5px solid var(--g200);background:var(--w);font-family:"Sora",sans-serif;font-size:12px;font-weight:700;color:var(--g500);cursor:pointer';}
+  }
+  function saveRef(){showToast('Referral saved! Referral status: Pending');goTo('s3');}
+
+  // ── BULK ──
+  function startCamp(){campRunning=true;campScr=0;campRef=0;document.getElementById('bScr').textContent=0;document.getElementById('bRef').textContent=0;document.getElementById('bPR').textContent='—';showToast('Campaign started!');}
+  function screenNext(){if(!campRunning){showToast('Start a campaign first!');return;}campScr++;const r=Math.random()>.72;if(r)campRef++;document.getElementById('bScr').textContent=campScr;document.getElementById('bRef').textContent=campRef;const pr=campScr>0?Math.round(((campScr-campRef)/campScr)*100):0;document.getElementById('bPR').textContent=pr+'%';showToast(r?'Patient screened — Refer to Specialist':'Patient screened — Pass ✓');}
+
+  // ── PATIENT SEARCH & FILTER ──
+  let activePatFilter = 'All';
+  function setPatFilter(btn, filter) {
+    activePatFilter = filter;
+    document.querySelectorAll('.pat-filter-btn').forEach(b => b.classList.remove('pf-on'));
+    btn.classList.add('pf-on');
+    filterPats();
+  }
+  function filterPats() {
+    const q = (document.getElementById('patSearch')?.value || '').toLowerCase();
+    const cards = document.querySelectorAll('.pat-card');
+    let visible = 0;
+    cards.forEach(c => {
+      const text = c.textContent.toLowerCase();
+      const outcome = c.dataset.outcome;   // pass | refer | pending
+      const ageGroup = c.dataset.ageGroup; // adult | child | elderly
+      const matchSearch = !q || text.includes(q);
+      const matchFilter =
+        activePatFilter === 'All' ||
+        (activePatFilter === 'Pass'    && outcome === 'pass') ||
+        (activePatFilter === 'Refer'   && outcome === 'refer') ||
+        (activePatFilter === 'Pending' && outcome === 'pending') ||
+        (activePatFilter === 'Child'   && ageGroup === 'child') ||
+        (activePatFilter === 'Adult'   && ageGroup === 'adult') ||
+        (activePatFilter === 'Elderly' && ageGroup === 'elderly');
+      const show = matchSearch && matchFilter;
+      c.classList.toggle('hidden', !show);
+      if (show) visible++;
+    });
+    document.getElementById('patEmpty').style.display = visible === 0 ? 'block' : 'none';
+  }
+
+  // ── SYNC ──
+  function doSync(){
+    document.getElementById('syncDot').className='sync-dot ok';
+    document.getElementById('syncTxt').textContent='All records synced to MongoDB Atlas ✓';
+    showToast('Sync complete! 3 records uploaded to MongoDB Atlas');
+  }
+
+  // ── TOGGLE ──
+  function tgl(b){b.classList.toggle('on');b.classList.toggle('off');}
+
+  // ── TOAST ──
+  let tT;
+  function showToast(msg){
+    document.querySelectorAll('.toast').forEach(t=>t.remove());
+    const t=document.createElement('div');t.className='toast';t.innerHTML=`<div class="td"></div>${msg}`;
+    document.querySelector('.phone').appendChild(t);
+    clearTimeout(tT);tT=setTimeout(()=>{t.classList.add('hide');setTimeout(()=>t.remove(),300);},2800);
+  }
+
+  // ── INIT CALIBRATION & DISTANCE ON SCREEN SHOW ──
+  const observer=new MutationObserver(muts=>{
+    muts.forEach(m=>{
+      if(m.target.id==='sCalib'&&m.target.classList.contains('on')) runCalib();
+      if(m.target.id==='sDist'&&m.target.classList.contains('on')) animateDist();
+      if(m.target.id==='sDist'&&!m.target.classList.contains('on')) clearInterval(distTimer);
+    });
+  });
+  document.querySelectorAll('.scr').forEach(s=>observer.observe(s,{attributes:true,attributeFilter:['class']}));
+</script>
+</body>
+</html>
