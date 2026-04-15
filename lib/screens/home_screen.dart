@@ -8,6 +8,7 @@ import 'package:geocoding/geocoding.dart';
 import 'training_screen.dart';
 import 'notifications_screen.dart';
 import 'patients_screen.dart';
+import 'referrals_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -590,8 +591,8 @@ class _HomeScreenState extends State<HomeScreen>
             await Navigator.push(
               context,
               PageRouteBuilder(
-                pageBuilder: (_, anim, __) => const NotificationsScreen(),
-                transitionsBuilder: (_, anim, __, child) {
+                pageBuilder: (_, anim, _) => const NotificationsScreen(),
+                transitionsBuilder: (_, anim, _, child) {
                   final slide = Tween<Offset>(
                     begin: const Offset(1.0, 0),
                     end: Offset.zero,
@@ -1566,7 +1567,7 @@ class _HomeScreenState extends State<HomeScreen>
               ],
             ),
             TextButton.icon(
-              onPressed: () {},
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReferralsScreen())),
               icon: const Icon(Icons.arrow_forward_rounded,
                   size: 13, color: Color(0xFF0D9488)),
               label: Text('View all',
@@ -1810,11 +1811,11 @@ class _HomeScreenState extends State<HomeScreen>
             child: GestureDetector(
               onTap: () {
                 if (e.key == 1) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const PatientsScreen()),
-                  );
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const PatientsScreen()));
+                  return;
+                }
+                if (e.key == 2) {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ReferralsScreen()));
                   return;
                 }
                 setState(() => _currentIndex = e.key);
@@ -1939,7 +1940,9 @@ class _NotificationsSheetState extends State<_NotificationsSheet> {
                   if (unread > 0)
                     GestureDetector(
                       onTap: () => setState(() {
-                        for (final n in _notifications) n['read'] = true;
+                        for (final n in _notifications) {
+                          n['read'] = true;
+                        }
                       }),
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
@@ -1969,7 +1972,7 @@ class _NotificationsSheetState extends State<_NotificationsSheet> {
                 controller: controller,
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                 itemCount: _notifications.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
                 itemBuilder: (_, i) => _buildCard(i),
               ),
             ),

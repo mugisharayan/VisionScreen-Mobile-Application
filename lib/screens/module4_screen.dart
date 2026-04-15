@@ -232,7 +232,7 @@ class _Module4ScreenState extends State<Module4Screen> {
                 height: 180,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                errorBuilder: (_, _, _) => Container(
                   height: 180,
                   color: color.withOpacity(0.15),
                   child: Icon(step['icon'] as IconData, size: 60, color: color),

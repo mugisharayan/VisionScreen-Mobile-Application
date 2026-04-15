@@ -14,7 +14,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'icon': Icons.warning_rounded,
       'color': Color(0xFFEF4444),
       'title': 'Referral Overdue',
-      'body': 'Okello James has not attended Mulago Hospital. Immediate follow-up required.',
+      'body':
+          'Okello James has not attended Mulago Hospital. Immediate follow-up required.',
       'time': '2 min ago',
       'read': false,
       'tag': 'URGENT',
@@ -50,7 +51,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'icon': Icons.notifications_active_rounded,
       'color': Color(0xFF8B5CF6),
       'title': 'Appointment Reminder',
-      'body': 'Byaruhanga Sam has an appointment at Kampala Eye Clinic on 2 Apr.',
+      'body':
+          'Byaruhanga Sam has an appointment at Kampala Eye Clinic on 2 Apr.',
       'time': '3 hr ago',
       'read': true,
       'tag': 'REMINDER',
@@ -67,14 +69,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   ];
 
   void _markAllRead() => setState(() {
-        for (final n in _notifications) n['read'] = true;
-      });
+    for (final n in _notifications) {
+      n['read'] = true;
+    }
+  });
 
   @override
   Widget build(BuildContext context) {
     final unread = _notifications.where((n) => n['read'] == false).length;
     final newNotifs = _notifications.where((n) => n['read'] == false).toList();
-    final earlierNotifs = _notifications.where((n) => n['read'] == true).toList();
+    final earlierNotifs = _notifications
+        .where((n) => n['read'] == true)
+        .toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4F7),
@@ -89,14 +95,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     children: [
                       if (newNotifs.isNotEmpty) ...[
                         _buildGroupLabel('New', newNotifs.length),
-                        ...newNotifs.map((n) =>
-                            _buildNotifCard(_notifications.indexOf(n))),
+                        ...newNotifs.map(
+                          (n) => _buildNotifCard(_notifications.indexOf(n)),
+                        ),
                         const SizedBox(height: 20),
                       ],
                       if (earlierNotifs.isNotEmpty) ...[
                         _buildGroupLabel('Earlier', null),
-                        ...earlierNotifs.map((n) =>
-                            _buildNotifCard(_notifications.indexOf(n))),
+                        ...earlierNotifs.map(
+                          (n) => _buildNotifCard(_notifications.indexOf(n)),
+                        ),
                       ],
                       const SizedBox(height: 12),
                       // Bottom hint
@@ -104,9 +112,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         child: Text(
                           'Swipe left on any card to delete',
                           style: GoogleFonts.ibmPlexSans(
-                              fontSize: 10,
-                              color: const Color(0xFFB0BEC5),
-                              fontWeight: FontWeight.w500),
+                            fontSize: 10,
+                            color: const Color(0xFFB0BEC5),
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     ],
@@ -136,9 +145,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         children: [
           // Background orb
           Positioned(
-            top: -20, right: -20,
+            top: -20,
+            right: -20,
             child: Container(
-              width: 160, height: 160,
+              width: 160,
+              height: 160,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
@@ -166,10 +177,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.08),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white.withOpacity(0.15)),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.15),
+                          ),
                         ),
-                        child: const Icon(Icons.arrow_back_ios_new_rounded,
-                            color: Colors.white, size: 16),
+                        child: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
                       ),
                     ),
                     const Spacer(),
@@ -177,23 +193,33 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       GestureDetector(
                         onTap: _markAllRead,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 7,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFF0D9488).withOpacity(0.2),
                             borderRadius: BorderRadius.circular(99),
                             border: Border.all(
-                                color: const Color(0xFF5EEAD4).withOpacity(0.35)),
+                              color: const Color(0xFF5EEAD4).withOpacity(0.35),
+                            ),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.done_all_rounded,
-                                  size: 13, color: Color(0xFF5EEAD4)),
+                              const Icon(
+                                Icons.done_all_rounded,
+                                size: 13,
+                                color: Color(0xFF5EEAD4),
+                              ),
                               const SizedBox(width: 5),
-                              Text('Mark all read',
-                                  style: GoogleFonts.ibmPlexSans(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w800,
-                                      color: const Color(0xFF5EEAD4))),
+                              Text(
+                                'Mark all read',
+                                style: GoogleFonts.ibmPlexSans(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF5EEAD4),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -220,24 +246,31 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             color: const Color(0xFF0D9488).withOpacity(0.35),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
-                          )
+                          ),
                         ],
                       ),
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
-                          const Icon(Icons.notifications_active_rounded,
-                              color: Colors.white, size: 24),
+                          const Icon(
+                            Icons.notifications_active_rounded,
+                            color: Colors.white,
+                            size: 24,
+                          ),
                           if (unread > 0)
                             Positioned(
-                              top: 7, right: 7,
+                              top: 7,
+                              right: 7,
                               child: Container(
-                                width: 9, height: 9,
+                                width: 9,
+                                height: 9,
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFEF4444),
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                      color: const Color(0xFF0D9488), width: 1.5),
+                                    color: const Color(0xFF0D9488),
+                                    width: 1.5,
+                                  ),
                                 ),
                               ),
                             ),
@@ -249,17 +282,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Notifications',
-                              style: GoogleFonts.barlow(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.white,
-                                  letterSpacing: -0.5)),
+                          Text(
+                            'Notifications',
+                            style: GoogleFonts.barlow(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
                           const SizedBox(height: 3),
                           Row(
                             children: [
                               Container(
-                                width: 6, height: 6,
+                                width: 6,
+                                height: 6,
                                 decoration: BoxDecoration(
                                   color: unread > 0
                                       ? const Color(0xFFF59E0B)
@@ -275,9 +312,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                       : 'All caught up ✓',
                                   overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.ibmPlexSans(
-                                      fontSize: 11,
-                                      color: const Color(0xFF5EEAD4).withOpacity(0.7),
-                                      fontWeight: FontWeight.w500),
+                                    fontSize: 11,
+                                    color: const Color(
+                                      0xFF5EEAD4,
+                                    ).withOpacity(0.7),
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ),
                             ],
@@ -299,15 +339,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               color: const Color(0xFFEF4444).withOpacity(0.45),
                               blurRadius: 10,
                               offset: const Offset(0, 3),
-                            )
+                            ),
                           ],
                         ),
                         child: Center(
-                          child: Text('$unread',
-                              style: GoogleFonts.barlow(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.white)),
+                          child: Text(
+                            '$unread',
+                            style: GoogleFonts.barlow(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                       ),
                   ],
@@ -316,14 +359,26 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 // Stats row
                 Row(
                   children: [
-                    _buildHeaderStat('Total', '${_notifications.length}',
-                        const Color(0xFF5EEAD4), Icons.list_alt_rounded),
+                    _buildHeaderStat(
+                      'Total',
+                      '${_notifications.length}',
+                      const Color(0xFF5EEAD4),
+                      Icons.list_alt_rounded,
+                    ),
                     const SizedBox(width: 8),
-                    _buildHeaderStat('Unread', '$unread',
-                        const Color(0xFFF59E0B), Icons.mark_email_unread_rounded),
+                    _buildHeaderStat(
+                      'Unread',
+                      '$unread',
+                      const Color(0xFFF59E0B),
+                      Icons.mark_email_unread_rounded,
+                    ),
                     const SizedBox(width: 8),
-                    _buildHeaderStat('Read', '${_notifications.length - unread}',
-                        const Color(0xFF22C55E), Icons.mark_email_read_rounded),
+                    _buildHeaderStat(
+                      'Read',
+                      '${_notifications.length - unread}',
+                      const Color(0xFF22C55E),
+                      Icons.mark_email_read_rounded,
+                    ),
                   ],
                 ),
               ],
@@ -334,7 +389,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  Widget _buildHeaderStat(String label, String value, Color color, IconData icon) {
+  Widget _buildHeaderStat(
+    String label,
+    String value,
+    Color color,
+    IconData icon,
+  ) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
@@ -347,15 +407,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           children: [
             Icon(icon, size: 14, color: color),
             const SizedBox(height: 4),
-            Text(value,
-                style: GoogleFonts.barlow(
-                    fontSize: 20, fontWeight: FontWeight.w900, color: color)),
-            Text(label,
-                style: GoogleFonts.ibmPlexSans(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white.withOpacity(0.45),
-                    letterSpacing: 0.8)),
+            Text(
+              value,
+              style: GoogleFonts.barlow(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: color,
+              ),
+            ),
+            Text(
+              label,
+              style: GoogleFonts.ibmPlexSans(
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+                color: Colors.white.withOpacity(0.45),
+                letterSpacing: 0.8,
+              ),
+            ),
           ],
         ),
       ),
@@ -381,7 +449,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       BoxShadow(
                         color: const Color(0xFF0D9488).withOpacity(0.5),
                         blurRadius: 6,
-                      )
+                      ),
                     ]
                   : [],
             ),
@@ -390,18 +458,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           Text(
             label.toUpperCase(),
             style: GoogleFonts.ibmPlexSans(
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-                color: count != null
-                    ? const Color(0xFF1A2A3D)
-                    : const Color(0xFF8FA0B4),
-                letterSpacing: 2.0),
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              color: count != null
+                  ? const Color(0xFF1A2A3D)
+                  : const Color(0xFF8FA0B4),
+              letterSpacing: 2.0,
+            ),
           ),
           if (count != null) ...[
             const SizedBox(width: 8),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [Color(0xFF0D9488), Color(0xFF14B8A6)],
@@ -412,16 +480,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     color: const Color(0xFF0D9488).withOpacity(0.35),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
-                  )
+                  ),
                 ],
               ),
               child: Text(
                 '$count new',
                 style: GoogleFonts.ibmPlexSans(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    letterSpacing: 0.5),
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: 0.5,
+                ),
               ),
             ),
           ],
@@ -469,21 +538,28 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 42, height: 42,
+                width: 42,
+                height: 42,
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.15),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.delete_rounded,
-                    color: Colors.white, size: 22),
+                child: const Icon(
+                  Icons.delete_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
               ),
               const SizedBox(height: 4),
-              Text('Delete',
-                  style: GoogleFonts.ibmPlexSans(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                      letterSpacing: 0.5)),
+              Text(
+                'Delete',
+                style: GoogleFonts.ibmPlexSans(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: 0.5,
+                ),
+              ),
             ],
           ),
         ),
@@ -509,7 +585,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       : color.withOpacity(0.12),
                   blurRadius: isRead ? 8 : 20,
                   offset: const Offset(0, 4),
-                )
+                ),
               ],
             ),
             child: ClipRRect(
@@ -525,7 +601,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: isRead
-                              ? [const Color(0xFFEEF2F6), const Color(0xFFEEF2F6)]
+                              ? [
+                                  const Color(0xFFEEF2F6),
+                                  const Color(0xFFEEF2F6),
+                                ]
                               : [color, color.withOpacity(0.5)],
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
@@ -556,14 +635,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                     ),
                                     borderRadius: BorderRadius.circular(14),
                                     border: Border.all(
-                                        color: color.withOpacity(
-                                            isRead ? 0.1 : 0.35),
-                                        width: 1.5),
+                                      color: color.withOpacity(
+                                        isRead ? 0.1 : 0.35,
+                                      ),
+                                      width: 1.5,
+                                    ),
                                   ),
-                                  child: Icon(n['icon'] as IconData,
-                                      color: color
-                                          .withOpacity(isRead ? 0.45 : 1.0),
-                                      size: 22),
+                                  child: Icon(
+                                    n['icon'] as IconData,
+                                    color: color.withOpacity(
+                                      isRead ? 0.45 : 1.0,
+                                    ),
+                                    size: 22,
+                                  ),
                                 ),
                                 const SizedBox(width: 12),
                                 // Text
@@ -578,14 +662,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                             child: Text(
                                               n['title'] as String,
                                               style: GoogleFonts.ibmPlexSans(
-                                                  fontSize: 13,
-                                                  fontWeight: isRead
-                                                      ? FontWeight.w600
-                                                      : FontWeight.w800,
-                                                  color: isRead
-                                                      ? const Color(0xFF5E7291)
-                                                      : const Color(
-                                                          0xFF1A2A3D)),
+                                                fontSize: 13,
+                                                fontWeight: isRead
+                                                    ? FontWeight.w600
+                                                    : FontWeight.w800,
+                                                color: isRead
+                                                    ? const Color(0xFF5E7291)
+                                                    : const Color(0xFF1A2A3D),
+                                              ),
                                             ),
                                           ),
                                           if (!isRead)
@@ -593,16 +677,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                               width: 9,
                                               height: 9,
                                               margin: const EdgeInsets.only(
-                                                  left: 6, top: 2),
+                                                left: 6,
+                                                top: 2,
+                                              ),
                                               decoration: BoxDecoration(
                                                 color: color,
                                                 shape: BoxShape.circle,
                                                 boxShadow: [
                                                   BoxShadow(
-                                                    color: color
-                                                        .withOpacity(0.55),
+                                                    color: color.withOpacity(
+                                                      0.55,
+                                                    ),
                                                     blurRadius: 8,
-                                                  )
+                                                  ),
                                                 ],
                                               ),
                                             ),
@@ -612,10 +699,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                       Text(
                                         n['body'] as String,
                                         style: GoogleFonts.ibmPlexSans(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w400,
-                                            color: const Color(0xFF8FA0B4),
-                                            height: 1.6),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w400,
+                                          color: const Color(0xFF8FA0B4),
+                                          height: 1.6,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -626,7 +714,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           // Bottom bar
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 9),
+                              horizontal: 14,
+                              vertical: 9,
+                            ),
                             decoration: BoxDecoration(
                               color: isRead
                                   ? const Color(0xFFF8FAFB)
@@ -644,22 +734,29 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                 // Time
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 3),
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.black.withOpacity(0.04),
                                     borderRadius: BorderRadius.circular(99),
                                   ),
                                   child: Row(
                                     children: [
-                                      Icon(Icons.access_time_rounded,
-                                          size: 10,
-                                          color: const Color(0xFFB0BEC5)),
+                                      Icon(
+                                        Icons.access_time_rounded,
+                                        size: 10,
+                                        color: const Color(0xFFB0BEC5),
+                                      ),
                                       const SizedBox(width: 4),
-                                      Text(n['time'] as String,
-                                          style: GoogleFonts.ibmPlexSans(
-                                              fontSize: 10,
-                                              color: const Color(0xFFB0BEC5),
-                                              fontWeight: FontWeight.w600)),
+                                      Text(
+                                        n['time'] as String,
+                                        style: GoogleFonts.ibmPlexSans(
+                                          fontSize: 10,
+                                          color: const Color(0xFFB0BEC5),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -667,59 +764,81 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                 // Tag chip
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 9, vertical: 3),
+                                    horizontal: 9,
+                                    vertical: 3,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: color
-                                        .withOpacity(isRead ? 0.06 : 0.14),
+                                    color: color.withOpacity(
+                                      isRead ? 0.06 : 0.14,
+                                    ),
                                     borderRadius: BorderRadius.circular(99),
                                     border: Border.all(
-                                        color: color.withOpacity(
-                                            isRead ? 0.1 : 0.3)),
+                                      color: color.withOpacity(
+                                        isRead ? 0.1 : 0.3,
+                                      ),
+                                    ),
                                   ),
-                                  child: Text(n['tag'] as String,
-                                      style: GoogleFonts.ibmPlexSans(
-                                          fontSize: 8,
-                                          fontWeight: FontWeight.w900,
-                                          color: color.withOpacity(
-                                              isRead ? 0.55 : 1.0),
-                                          letterSpacing: 1.0)),
+                                  child: Text(
+                                    n['tag'] as String,
+                                    style: GoogleFonts.ibmPlexSans(
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.w900,
+                                      color: color.withOpacity(
+                                        isRead ? 0.55 : 1.0,
+                                      ),
+                                      letterSpacing: 1.0,
+                                    ),
+                                  ),
                                 ),
                                 const Spacer(),
                                 // Action button
                                 if (!isRead)
                                   GestureDetector(
-                                    onTap: () => setState(() =>
-                                        _notifications[index]['read'] = true),
+                                    onTap: () => setState(
+                                      () =>
+                                          _notifications[index]['read'] = true,
+                                    ),
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 10, vertical: 4),
+                                        horizontal: 10,
+                                        vertical: 4,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: color.withOpacity(0.12),
-                                        borderRadius:
-                                            BorderRadius.circular(99),
+                                        borderRadius: BorderRadius.circular(99),
                                         border: Border.all(
-                                            color: color.withOpacity(0.3)),
+                                          color: color.withOpacity(0.3),
+                                        ),
                                       ),
-                                      child: Text('Mark read',
-                                          style: GoogleFonts.ibmPlexSans(
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.w800,
-                                              color: color)),
+                                      child: Text(
+                                        'Mark read',
+                                        style: GoogleFonts.ibmPlexSans(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w800,
+                                          color: color,
+                                        ),
+                                      ),
                                     ),
                                   )
                                 else
                                   Row(
                                     children: [
-                                      Icon(Icons.check_circle_rounded,
-                                          size: 12,
-                                          color: const Color(0xFF22C55E)
-                                              .withOpacity(0.6)),
+                                      Icon(
+                                        Icons.check_circle_rounded,
+                                        size: 12,
+                                        color: const Color(
+                                          0xFF22C55E,
+                                        ).withOpacity(0.6),
+                                      ),
                                       const SizedBox(width: 4),
-                                      Text('Read',
-                                          style: GoogleFonts.ibmPlexSans(
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.w700,
-                                              color: const Color(0xFFB0BEC5))),
+                                      Text(
+                                        'Read',
+                                        style: GoogleFonts.ibmPlexSans(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFFB0BEC5),
+                                        ),
+                                      ),
                                     ],
                                   ),
                               ],
@@ -744,108 +863,123 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  width: 110,
-                  height: 110,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(0xFF0D9488).withOpacity(0.06),
-                  ),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 110,
+                height: 110,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF0D9488).withOpacity(0.06),
                 ),
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF04091A), Color(0xFF0D2137)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+              ),
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF04091A), Color(0xFF0D2137)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF0D9488).withOpacity(0.25),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
                     ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.notifications_off_rounded,
+                  color: Color(0xFF5EEAD4),
+                  size: 36,
+                ),
+              ),
+              Positioned(
+                bottom: 8,
+                right: 8,
+                child: Container(
+                  width: 26,
+                  height: 26,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF22C55E),
                     shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFF8FAFB),
+                      width: 2.5,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF0D9488).withOpacity(0.25),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
-                      )
+                        color: const Color(0xFF22C55E).withOpacity(0.4),
+                        blurRadius: 8,
+                      ),
                     ],
                   ),
-                  child: const Icon(Icons.notifications_off_rounded,
-                      color: Color(0xFF5EEAD4), size: 36),
+                  child: const Icon(
+                    Icons.check_rounded,
+                    color: Colors.white,
+                    size: 14,
+                  ),
                 ),
-                Positioned(
-                  bottom: 8,
-                  right: 8,
-                  child: Container(
-                    width: 26,
-                    height: 26,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF22C55E),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                          color: const Color(0xFFF8FAFB), width: 2.5),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF22C55E).withOpacity(0.4),
-                          blurRadius: 8,
-                        )
-                      ],
-                    ),
-                    child: const Icon(Icons.check_rounded,
-                        color: Colors.white, size: 14),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'All caught up!',
+            style: GoogleFonts.barlow(
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
+              color: const Color(0xFF1A2A3D),
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'No new notifications right now.\nCheck back after your next screening.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.ibmPlexSans(
+              fontSize: 13,
+              color: const Color(0xFF8FA0B4),
+              fontWeight: FontWeight.w500,
+              height: 1.6,
+            ),
+          ),
+          const SizedBox(height: 28),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF0D9488), Color(0xFF14B8A6)],
+              ),
+              borderRadius: BorderRadius.circular(99),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF0D9488).withOpacity(0.3),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.home_rounded, color: Colors.white, size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  'Back to Home',
+                  style: GoogleFonts.ibmPlexSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-            Text('All caught up!',
-                style: GoogleFonts.barlow(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    color: const Color(0xFF1A2A3D),
-                    letterSpacing: -0.3)),
-            const SizedBox(height: 8),
-            Text(
-              'No new notifications right now.\nCheck back after your next screening.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.ibmPlexSans(
-                  fontSize: 13,
-                  color: const Color(0xFF8FA0B4),
-                  fontWeight: FontWeight.w500,
-                  height: 1.6),
-            ),
-            const SizedBox(height: 28),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF0D9488), Color(0xFF14B8A6)],
-                ),
-                borderRadius: BorderRadius.circular(99),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF0D9488).withOpacity(0.3),
-                    blurRadius: 14,
-                    offset: const Offset(0, 4),
-                  )
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.home_rounded, color: Colors.white, size: 16),
-                  const SizedBox(width: 8),
-                  Text('Back to Home',
-                      style: GoogleFonts.ibmPlexSans(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white)),
-                ],
-              ),
-            ),
+          ),
         ],
       ),
     );

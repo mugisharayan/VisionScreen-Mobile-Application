@@ -221,7 +221,7 @@ class _Module2ScreenState extends State<Module2Screen> {
                 height: 180,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                errorBuilder: (_, _, _) => Container(
                   height: 180,
                   color: color.withOpacity(0.15),
                   child:

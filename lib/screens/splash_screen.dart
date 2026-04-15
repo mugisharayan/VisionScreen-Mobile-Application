@@ -31,9 +31,10 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     );
-    _entryScale = Tween<double>(begin: 0.75, end: 1.0).animate(
-      CurvedAnimation(parent: _entryCtrl, curve: Curves.elasticOut),
-    );
+    _entryScale = Tween<double>(
+      begin: 0.75,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _entryCtrl, curve: Curves.elasticOut));
     _entryOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _entryCtrl,
@@ -45,35 +46,46 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
       duration: const Duration(milliseconds: 2000),
     )..repeat(reverse: true);
-    _ring1Scale = Tween<double>(begin: 1.0, end: 1.12).animate(
-      CurvedAnimation(parent: _ring1Ctrl, curve: Curves.easeInOut),
-    );
-    _ring1Opacity = Tween<double>(begin: 0.3, end: 0.7).animate(
-      CurvedAnimation(parent: _ring1Ctrl, curve: Curves.easeInOut),
-    );
+    _ring1Scale = Tween<double>(
+      begin: 1.0,
+      end: 1.12,
+    ).animate(CurvedAnimation(parent: _ring1Ctrl, curve: Curves.easeInOut));
+    _ring1Opacity = Tween<double>(
+      begin: 0.3,
+      end: 0.7,
+    ).animate(CurvedAnimation(parent: _ring1Ctrl, curve: Curves.easeInOut));
 
     _ring2Ctrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2600),
     );
-    _ring2Scale = Tween<double>(begin: 1.0, end: 1.18).animate(
-      CurvedAnimation(parent: _ring2Ctrl, curve: Curves.easeInOut),
-    );
-    _ring2Opacity = Tween<double>(begin: 0.15, end: 0.45).animate(
-      CurvedAnimation(parent: _ring2Ctrl, curve: Curves.easeInOut),
-    );
+    _ring2Scale = Tween<double>(
+      begin: 1.0,
+      end: 1.18,
+    ).animate(CurvedAnimation(parent: _ring2Ctrl, curve: Curves.easeInOut));
+    _ring2Opacity = Tween<double>(
+      begin: 0.15,
+      end: 0.45,
+    ).animate(CurvedAnimation(parent: _ring2Ctrl, curve: Curves.easeInOut));
 
     _loadCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 3000),
     );
-    _loadProgress = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _loadCtrl, curve: Curves.easeInOut),
-    );
+    _loadProgress = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _loadCtrl, curve: Curves.easeInOut));
 
-    Future.delayed(const Duration(milliseconds: 300),  () { if (mounted) _entryCtrl.forward(); });
-    Future.delayed(const Duration(milliseconds: 900),  () { if (mounted) _ring2Ctrl.repeat(reverse: true); });
-    Future.delayed(const Duration(milliseconds: 1000), () { if (mounted) _loadCtrl.forward(); });
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) _entryCtrl.forward();
+    });
+    Future.delayed(const Duration(milliseconds: 900), () {
+      if (mounted) _ring2Ctrl.repeat(reverse: true);
+    });
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      if (mounted) _loadCtrl.forward();
+    });
 
     Future.delayed(const Duration(milliseconds: 4200), () {
       if (mounted) Navigator.of(context).pushReplacementNamed('/onboarding');
@@ -118,9 +130,9 @@ class _SplashScreenState extends State<SplashScreen>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _EyeLogo(
-                        ring1Scale:   _ring1Scale,
+                        ring1Scale: _ring1Scale,
                         ring1Opacity: _ring1Opacity,
-                        ring2Scale:   _ring2Scale,
+                        ring2Scale: _ring2Scale,
                         ring2Opacity: _ring2Opacity,
                       ),
                       const SizedBox(height: 32),
@@ -154,13 +166,13 @@ class _SplashScreenState extends State<SplashScreen>
 // ─────────────────────────────────────────────────────────────
 class AppColors {
   AppColors._();
-  static const Color ink  = Color(0xFF04091A);
+  static const Color ink = Color(0xFF04091A);
   static const Color ink2 = Color(0xFF0B1530);
   static const Color ink3 = Color(0xFF162040);
-  static const Color teal  = Color(0xFF0D9488);
+  static const Color teal = Color(0xFF0D9488);
   static const Color teal2 = Color(0xFF14B8A6);
   static const Color teal3 = Color(0xFF5EEAD4);
-  static const Color sky   = Color(0xFF38BDF8);
+  static const Color sky = Color(0xFF38BDF8);
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -253,20 +265,14 @@ class _EyeLogo extends StatelessWidget {
             animation: ring2Scale,
             builder: (_, child) => Transform.scale(
               scale: ring2Scale.value,
-              child: Opacity(
-                opacity: ring2Opacity.value,
-                child: child,
-              ),
+              child: Opacity(opacity: ring2Opacity.value, child: child),
             ),
             child: Container(
               width: 160,
               height: 160,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppColors.teal,
-                  width: 1.5,
-                ),
+                border: Border.all(color: AppColors.teal, width: 1.5),
               ),
             ),
           ),
@@ -276,20 +282,14 @@ class _EyeLogo extends StatelessWidget {
             animation: ring1Scale,
             builder: (_, child) => Transform.scale(
               scale: ring1Scale.value,
-              child: Opacity(
-                opacity: ring1Opacity.value,
-                child: child,
-              ),
+              child: Opacity(opacity: ring1Opacity.value, child: child),
             ),
             child: Container(
               width: 128,
               height: 128,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppColors.teal2,
-                  width: 1.5,
-                ),
+                border: Border.all(color: AppColors.teal2, width: 1.5),
               ),
             ),
           ),
@@ -399,7 +399,7 @@ class _LoadingBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: progress,
-      builder: (_, __) => Container(
+      builder: (_, _) => Container(
         height: 3,
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.10),
@@ -458,10 +458,7 @@ class _MeshPainter extends CustomPainter {
         ..shader = RadialGradient(
           center: const Alignment(-0.4, -0.6),
           radius: 0.7,
-          colors: [
-            AppColors.teal.withValues(alpha: 0.22),
-            Colors.transparent,
-          ],
+          colors: [AppColors.teal.withValues(alpha: 0.22), Colors.transparent],
         ).createShader(rect),
     );
 
@@ -471,10 +468,7 @@ class _MeshPainter extends CustomPainter {
         ..shader = RadialGradient(
           center: const Alignment(0.6, 0.4),
           radius: 0.55,
-          colors: [
-            AppColors.sky.withValues(alpha: 0.14),
-            Colors.transparent,
-          ],
+          colors: [AppColors.sky.withValues(alpha: 0.14), Colors.transparent],
         ).createShader(rect),
     );
   }
