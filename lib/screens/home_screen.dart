@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'training_screen.dart';
 import 'notifications_screen.dart';
 import 'patients_screen.dart';
@@ -26,11 +27,11 @@ class _HomeScreenState extends State<HomeScreen>
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
   late Timer _clockTimer;
-  late Timer _tipTimer;
   DateTime _now = DateTime.now();
   bool _isOffline = false;
   late StreamSubscription<List<ConnectivityResult>> _connectivitySub;
   String _locationLabel = 'Detecting location...';
+  bool _showClinicalTipDialog = false;
 
   final List<Map<String, dynamic>> _tips = [
     {'icon': Icons.wb_sunny_rounded, 'color': Color(0xFFF59E0B), 'text': 'Ensure adequate room lighting before starting a vision test.', 'image': 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&q=80'},
@@ -40,7 +41,6 @@ class _HomeScreenState extends State<HomeScreen>
     {'icon': Icons.child_care_rounded, 'color': Color(0xFF8B5CF6), 'text': 'Children may need encouragement — demonstrate the E direction yourself first.', 'image': 'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=400&q=80'},
     {'icon': Icons.visibility_off_rounded, 'color': Color(0xFFEF4444), 'text': 'Ask patients to remove glasses before the unaided vision test begins.', 'image': 'https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=400&q=80'},
   ];
-  int _tipIndex = 0;
 
   @override
   void initState() {
@@ -58,13 +58,7 @@ class _HomeScreenState extends State<HomeScreen>
         if (mounted) setState(() => _now = DateTime.now());
       },
     );
-    // Rotate tip every 8 seconds
-    _tipTimer = Timer.periodic(
-      const Duration(seconds: 4),
-      (_) {
-        if (mounted) setState(() => _tipIndex = (_tipIndex + 1) % _tips.length);
-      },
-    );
+    
     // Check initial connectivity
     Connectivity().checkConnectivity().then((results) {
       if (mounted) {
@@ -81,10 +75,10 @@ class _HomeScreenState extends State<HomeScreen>
             (r) => r == ConnectivityResult.none));
       }
     });
-    // Show clinical tip popup on first open
-     Future.delayed(const Duration(milliseconds: 800), () {
-      if (mounted) _showTipDialog();
-    });
+    
+    // Check if first time user and show clinical tip dialog
+    _checkFirstTimeUser();
+    
     // Fetch real location
     _fetchLocation();
   }
@@ -93,9 +87,25 @@ class _HomeScreenState extends State<HomeScreen>
   void dispose() {
     _pulseController.dispose();
     _clockTimer.cancel();
-    _tipTimer.cancel();
     _connectivitySub.cancel();
     super.dispose();
+  }
+
+  Future<void> _checkFirstTimeUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isFirstTime = prefs.getBool('is_first_time_home') ?? true;
+    
+    if (isFirstTime) {
+      // Mark as not first time
+      await prefs.setBool('is_first_time_home', false);
+      
+      // Show clinical tip dialog after a short delay
+      Future.delayed(const Duration(milliseconds: 800), () {
+        if (mounted) {
+          _showTipDialog();
+        }
+      });
+    }
   }
 
   Future<void> _onRefresh() async {
@@ -369,7 +379,8 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  void _showTipDialog() {    showDialog(
+  void _showTipDialog() {
+    showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.6),
       builder: (_) => _TipDialogContent(tips: _tips),
@@ -899,141 +910,6 @@ class _HomeScreenState extends State<HomeScreen>
                     color: const Color(0xFF92400E))),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildClinicalTip() {
-    final tip = _tips[_tipIndex];
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 600),
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeInCubic,
-      transitionBuilder: (child, anim) {
-        final inAnim = Tween<Offset>(
-          begin: const Offset(1.0, 0),
-          end: Offset.zero,
-        ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic));
-        final outAnim = Tween<Offset>(
-          begin: const Offset(-1.0, 0),
-          end: Offset.zero,
-        ).animate(CurvedAnimation(parent: anim, curve: Curves.easeInCubic));
-        return ClipRect(
-          child: SlideTransition(
-            position: child.key == ValueKey(_tipIndex) ? inAnim : outAnim,
-            child: FadeTransition(opacity: anim, child: child),
-          ),
-        );
-      },
-      child: Container(
-        key: ValueKey(_tipIndex),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              (tip['color'] as Color).withOpacity(0.12),
-              (tip['color'] as Color).withOpacity(0.04),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-              color: (tip['color'] as Color).withOpacity(0.25), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: (tip['color'] as Color).withOpacity(0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            )
-          ],
-        ),
-        child: Row(
-          children: [
-            // Left accent bar
-            Container(
-              width: 4,
-              height: 80,
-              decoration: BoxDecoration(
-                color: tip['color'] as Color,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
-                ),
-              ),
-            ),
-            const SizedBox(width: 14),
-            // Icon
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: (tip['color'] as Color).withOpacity(0.15),
-                shape: BoxShape.circle,
-                border: Border.all(
-                    color: (tip['color'] as Color).withOpacity(0.3), width: 1.5),
-              ),
-              child: Icon(tip['icon'] as IconData,
-                  size: 20, color: tip['color'] as Color),
-            ),
-            const SizedBox(width: 12),
-            // Text content
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 7, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: (tip['color'] as Color).withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(99),
-                          ),
-                          child: Text('CLINICAL TIP',
-                              style: GoogleFonts.ibmPlexSans(
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.w800,
-                                  color: tip['color'] as Color,
-                                  letterSpacing: 1.2)),
-                        ),
-                        const Spacer(),
-                        // Dot indicators
-                        Row(
-                          children: List.generate(
-                            _tips.length,
-                            (i) => AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              margin: const EdgeInsets.only(left: 3),
-                              width: i == _tipIndex ? 14 : 4,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: i == _tipIndex
-                                    ? tip['color'] as Color
-                                    : (tip['color'] as Color).withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(99),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(tip['text'] as String,
-                        style: GoogleFonts.ibmPlexSans(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF1A2A3D),
-                            height: 1.55)),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-          ],
-        ),
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:async';
 import 'splash_screen.dart' show AppColors;
 
 // ─────────────────────────────────────────────────────────────
@@ -69,6 +70,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     with TickerProviderStateMixin {
   final PageController _pageCtrl = PageController();
   int _currentPage = 0;
+  Timer? _autoAdvanceTimer;
 
   // Per-slide entry animation
   late final AnimationController _slideCtrl;
@@ -90,16 +92,34 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       begin: const Offset(0.08, 0),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _slideCtrl, curve: Curves.easeOut));
+    
+    // Start auto-advance timer
+    _startAutoAdvance();
   }
 
   @override
   void dispose() {
+    _autoAdvanceTimer?.cancel();
     _pageCtrl.dispose();
     _slideCtrl.dispose();
     super.dispose();
   }
+  
+  void _startAutoAdvance() {
+    _autoAdvanceTimer?.cancel();
+    _autoAdvanceTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (mounted) {
+        _nextSlide();
+      }
+    });
+  }
+  
+  void _stopAutoAdvance() {
+    _autoAdvanceTimer?.cancel();
+  }
 
   void _goToLogin() {
+    _stopAutoAdvance();
     Navigator.of(context).pushReplacementNamed('/login');
   }
 
@@ -113,10 +133,22 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       _goToLogin();
     }
   }
+  
+  void _manualNextSlide() {
+    _stopAutoAdvance(); // Stop auto-advance when user interacts
+    _nextSlide();
+  }
+  
+  void _manualSkip() {
+    _stopAutoAdvance(); // Stop auto-advance when user skips
+    _goToLogin();
+  }
 
   void _onPageChanged(int index) {
     setState(() => _currentPage = index);
     _slideCtrl.forward(from: 0);
+    // Restart auto-advance timer for the new slide
+    _startAutoAdvance();
   }
 
   @override
@@ -165,14 +197,14 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       // Next / Get Started button
                       _PrimaryButton(
                         label: isLast ? 'Get Started' : 'Next',
-                        onTap: _nextSlide,
+                        onTap: _manualNextSlide,
                       ),
                       const SizedBox(height: 10),
 
                       // Skip button
                       _SecondaryButton(
                         label: 'Skip',
-                        onTap: _goToLogin,
+                        onTap: _manualSkip,
                       ),
                     ],
                   ),

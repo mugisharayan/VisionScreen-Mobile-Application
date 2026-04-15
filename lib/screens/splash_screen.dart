@@ -13,6 +13,7 @@ class _SplashScreenState extends State<SplashScreen>
   late final AnimationController _entryCtrl;
   late final AnimationController _ring1Ctrl;
   late final AnimationController _ring2Ctrl;
+  late final AnimationController _blinkCtrl;
   late final AnimationController _loadCtrl;
 
   late final Animation<double> _entryScale;
@@ -21,6 +22,7 @@ class _SplashScreenState extends State<SplashScreen>
   late final Animation<double> _ring1Opacity;
   late final Animation<double> _ring2Scale;
   late final Animation<double> _ring2Opacity;
+  late final Animation<double> _blinkOpacity;
   late final Animation<double> _loadProgress;
 
   @override
@@ -42,6 +44,7 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
+    // Pulsing ring animations
     _ring1Ctrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2000),
@@ -68,6 +71,46 @@ class _SplashScreenState extends State<SplashScreen>
       end: 0.45,
     ).animate(CurvedAnimation(parent: _ring2Ctrl, curve: Curves.easeInOut));
 
+    // Blinking animation controller - blinks twice
+    _blinkCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _blinkOpacity = TweenSequence<double>([
+      // First blink
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 0.0)
+            .chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 12.5,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.0, end: 1.0)
+            .chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 12.5,
+      ),
+      // Pause between blinks
+      TweenSequenceItem(
+        tween: ConstantTween<double>(1.0),
+        weight: 25.0,
+      ),
+      // Second blink
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 0.0)
+            .chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 12.5,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.0, end: 1.0)
+            .chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 12.5,
+      ),
+      // Stay visible after blinking
+      TweenSequenceItem(
+        tween: ConstantTween<double>(1.0),
+        weight: 25.0,
+      ),
+    ]).animate(CurvedAnimation(parent: _blinkCtrl, curve: Curves.linear));
+
     _loadCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 3000),
@@ -77,11 +120,15 @@ class _SplashScreenState extends State<SplashScreen>
       end: 1.0,
     ).animate(CurvedAnimation(parent: _loadCtrl, curve: Curves.easeInOut));
 
+    // Animation sequence
     Future.delayed(const Duration(milliseconds: 300), () {
       if (mounted) _entryCtrl.forward();
     });
     Future.delayed(const Duration(milliseconds: 900), () {
       if (mounted) _ring2Ctrl.repeat(reverse: true);
+    });
+    Future.delayed(const Duration(milliseconds: 1200), () {
+      if (mounted) _blinkCtrl.forward();
     });
     Future.delayed(const Duration(milliseconds: 1000), () {
       if (mounted) _loadCtrl.forward();
@@ -97,6 +144,7 @@ class _SplashScreenState extends State<SplashScreen>
     _entryCtrl.dispose();
     _ring1Ctrl.dispose();
     _ring2Ctrl.dispose();
+    _blinkCtrl.dispose();
     _loadCtrl.dispose();
     super.dispose();
   }
@@ -134,6 +182,7 @@ class _SplashScreenState extends State<SplashScreen>
                         ring1Opacity: _ring1Opacity,
                         ring2Scale: _ring2Scale,
                         ring2Opacity: _ring2Opacity,
+                        blinkOpacity: _blinkOpacity,
                       ),
                       const SizedBox(height: 32),
                       _AppName(),
@@ -245,12 +294,14 @@ class _EyeLogo extends StatelessWidget {
     required this.ring1Opacity,
     required this.ring2Scale,
     required this.ring2Opacity,
+    required this.blinkOpacity,
   });
 
   final Animation<double> ring1Scale;
   final Animation<double> ring1Opacity;
   final Animation<double> ring2Scale;
   final Animation<double> ring2Opacity;
+  final Animation<double> blinkOpacity;
 
   @override
   Widget build(BuildContext context) {
@@ -260,7 +311,7 @@ class _EyeLogo extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Outer ring (ring 2)
+          // Outer ring (ring 2) - animated
           AnimatedBuilder(
             animation: ring2Scale,
             builder: (_, child) => Transform.scale(
@@ -277,7 +328,7 @@ class _EyeLogo extends StatelessWidget {
             ),
           ),
 
-          // Inner ring (ring 1)
+          // Inner ring (ring 1) - animated
           AnimatedBuilder(
             animation: ring1Scale,
             builder: (_, child) => Transform.scale(
@@ -294,33 +345,40 @@ class _EyeLogo extends StatelessWidget {
             ),
           ),
 
-          // Logo box
-          Container(
-            width: 96,
-            height: 96,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [AppColors.ink2, AppColors.ink3],
-              ),
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                color: AppColors.teal.withValues(alpha: 0.5),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.teal.withValues(alpha: 0.35),
-                  blurRadius: 48,
-                  spreadRadius: 4,
-                ),
-              ],
+          // Logo box with blinking animation
+          AnimatedBuilder(
+            animation: blinkOpacity,
+            builder: (_, child) => Opacity(
+              opacity: blinkOpacity.value,
+              child: child,
             ),
-            child: Center(
-              child: CustomPaint(
-                size: const Size(52, 52),
-                painter: _EyePainter(),
+            child: Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [AppColors.ink2, AppColors.ink3],
+                ),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: AppColors.teal.withValues(alpha: 0.5),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.teal.withValues(alpha: 0.35),
+                    blurRadius: 48,
+                    spreadRadius: 4,
+                  ),
+                ],
+              ),
+              child: Center(
+                child: CustomPaint(
+                  size: const Size(52, 52),
+                  painter: _EyePainter(),
+                ),
               ),
             ),
           ),
