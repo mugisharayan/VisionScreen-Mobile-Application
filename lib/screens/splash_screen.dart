@@ -10,13 +10,11 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
-  // ── Controllers ──
   late final AnimationController _entryCtrl;
   late final AnimationController _ring1Ctrl;
   late final AnimationController _ring2Ctrl;
   late final AnimationController _loadCtrl;
 
-  // ── Animations ──
   late final Animation<double> _entryScale;
   late final Animation<double> _entryOpacity;
   late final Animation<double> _ring1Scale;
@@ -29,7 +27,6 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
 
-    // Entry: scale 0.75→1.0 + fade, elasticOut matches CSS cubic-bezier(.34,1.56,.64,1)
     _entryCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 900),
@@ -44,31 +41,28 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
-    // Ring 1 pulse: 3 s loop, scale 1.0→1.06, opacity 0.5→1.0
     _ring1Ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3000),
+      duration: const Duration(milliseconds: 2000),
     )..repeat(reverse: true);
-    _ring1Scale = Tween<double>(begin: 1.0, end: 1.06).animate(
+    _ring1Scale = Tween<double>(begin: 1.0, end: 1.12).animate(
       CurvedAnimation(parent: _ring1Ctrl, curve: Curves.easeInOut),
     );
-    _ring1Opacity = Tween<double>(begin: 0.5, end: 1.0).animate(
+    _ring1Opacity = Tween<double>(begin: 0.3, end: 0.7).animate(
       CurvedAnimation(parent: _ring1Ctrl, curve: Curves.easeInOut),
     );
 
-    // Ring 2 pulse: same but starts 1 s later
     _ring2Ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3000),
+      duration: const Duration(milliseconds: 2600),
     );
-    _ring2Scale = Tween<double>(begin: 1.0, end: 1.06).animate(
+    _ring2Scale = Tween<double>(begin: 1.0, end: 1.18).animate(
       CurvedAnimation(parent: _ring2Ctrl, curve: Curves.easeInOut),
     );
-    _ring2Opacity = Tween<double>(begin: 0.5, end: 1.0).animate(
+    _ring2Opacity = Tween<double>(begin: 0.15, end: 0.45).animate(
       CurvedAnimation(parent: _ring2Ctrl, curve: Curves.easeInOut),
     );
 
-    // Loading bar: 0→1.0 over 3 s
     _loadCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 3000),
@@ -77,16 +71,12 @@ class _SplashScreenState extends State<SplashScreen>
       CurvedAnimation(parent: _loadCtrl, curve: Curves.easeInOut),
     );
 
-    // Skip button fade-in — removed, splash no longer has buttons
+    Future.delayed(const Duration(milliseconds: 300),  () { if (mounted) _entryCtrl.forward(); });
+    Future.delayed(const Duration(milliseconds: 900),  () { if (mounted) _ring2Ctrl.repeat(reverse: true); });
+    Future.delayed(const Duration(milliseconds: 1000), () { if (mounted) _loadCtrl.forward(); });
 
-    // ── Timed sequence ──
-    Future.delayed(const Duration(milliseconds: 500),  () { if (mounted) _entryCtrl.forward(); });
-    Future.delayed(const Duration(milliseconds: 1000), () { if (mounted) _ring2Ctrl.repeat(reverse: true); });
-    Future.delayed(const Duration(milliseconds: 1200), () { if (mounted) _loadCtrl.forward(); });
-
-    // Auto-navigate to onboarding after 3.8 s
-    Future.delayed(const Duration(milliseconds: 3800), () {
-      if (mounted) _goToOnboarding();
+    Future.delayed(const Duration(milliseconds: 4200), () {
+      if (mounted) Navigator.of(context).pushReplacementNamed('/onboarding');
     });
   }
 
@@ -99,18 +89,18 @@ class _SplashScreenState extends State<SplashScreen>
     super.dispose();
   }
 
-  void _goToOnboarding() {
-    Navigator.of(context).pushReplacementNamed('/onboarding');
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.ink,
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          const Positioned.fill(child: _GridPattern()),
-          const Positioned.fill(child: _MeshGradient()),
+          // Grid background
+          CustomPaint(painter: _GridPainter()),
+          // Mesh gradient overlay
+          CustomPaint(painter: _MeshPainter()),
+
           SafeArea(
             child: Column(
               children: [
@@ -133,18 +123,23 @@ class _SplashScreenState extends State<SplashScreen>
                         ring2Scale:   _ring2Scale,
                         ring2Opacity: _ring2Opacity,
                       ),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 32),
                       _AppName(),
-                      const SizedBox(height: 8),
-                      _Tagline(),
-                      const SizedBox(height: 60),
-                      _LoadingBar(progress: _loadProgress),
                       const SizedBox(height: 10),
-                      _LoadingLabel(),
+                      _Tagline(),
                     ],
                   ),
                 ),
                 const Spacer(flex: 2),
+                // Loading bar pinned near bottom
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(48, 0, 48, 12),
+                  child: _LoadingBar(progress: _loadProgress),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 36),
+                  child: _LoadingLabel(),
+                ),
               ],
             ),
           ),
@@ -155,7 +150,7 @@ class _SplashScreenState extends State<SplashScreen>
 }
 
 // ─────────────────────────────────────────────────────────────
-// Colour palette — exact match to prototype CSS variables
+// Colour palette
 // ─────────────────────────────────────────────────────────────
 class AppColors {
   AppColors._();
@@ -169,7 +164,7 @@ class AppColors {
 }
 
 // ─────────────────────────────────────────────────────────────
-// App name "VisionScreen" with teal accent
+// App name
 // ─────────────────────────────────────────────────────────────
 class _AppName extends StatelessWidget {
   @override
@@ -177,7 +172,7 @@ class _AppName extends StatelessWidget {
     return RichText(
       text: TextSpan(
         style: GoogleFonts.dmSerifDisplay(
-          fontSize: 44,
+          fontSize: 46,
           color: Colors.white,
           letterSpacing: -1.5,
         ),
@@ -202,9 +197,9 @@ class _Tagline extends StatelessWidget {
     return Text(
       'OFFLINE-FIRST · TUMBLING E · COMMUNITY HEALTH',
       style: GoogleFonts.sora(
-        fontSize: 9,
-        color: AppColors.teal3.withValues(alpha: 0.6),
-        letterSpacing: 3.5,
+        fontSize: 9.5,
+        color: AppColors.teal3.withValues(alpha: 0.65),
+        letterSpacing: 3.0,
         fontWeight: FontWeight.w400,
       ),
       textAlign: TextAlign.center,
@@ -213,7 +208,7 @@ class _Tagline extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-// LOADING label
+// Loading label
 // ─────────────────────────────────────────────────────────────
 class _LoadingLabel extends StatelessWidget {
   @override
@@ -222,15 +217,15 @@ class _LoadingLabel extends StatelessWidget {
       'LOADING',
       style: GoogleFonts.sora(
         fontSize: 9,
-        color: Colors.white.withValues(alpha: 0.2),
-        letterSpacing: 2.5,
+        color: Colors.white.withValues(alpha: 0.35),
+        letterSpacing: 3.0,
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────
-// Eye logo with two pulsing rings + rounded square icon box
+// Eye logo with two pulsing rings
 // ─────────────────────────────────────────────────────────────
 class _EyeLogo extends StatelessWidget {
   const _EyeLogo({
@@ -248,8 +243,8 @@ class _EyeLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 135,
-      height: 135,
+      width: 160,
+      height: 160,
       child: Stack(
         alignment: Alignment.center,
         children: [
@@ -259,16 +254,19 @@ class _EyeLogo extends StatelessWidget {
             builder: (_, child) => Transform.scale(
               scale: ring2Scale.value,
               child: Opacity(
-                opacity: ring2Opacity.value * 0.08,
+                opacity: ring2Opacity.value,
                 child: child,
               ),
             ),
             child: Container(
-              width: 135,
-              height: 135,
+              width: 160,
+              height: 160,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.teal, width: 1),
+                border: Border.all(
+                  color: AppColors.teal,
+                  width: 1.5,
+                ),
               ),
             ),
           ),
@@ -279,24 +277,27 @@ class _EyeLogo extends StatelessWidget {
             builder: (_, child) => Transform.scale(
               scale: ring1Scale.value,
               child: Opacity(
-                opacity: ring1Opacity.value * 0.15,
+                opacity: ring1Opacity.value,
                 child: child,
               ),
             ),
             child: Container(
-              width: 110,
-              height: 110,
+              width: 128,
+              height: 128,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.teal, width: 1),
+                border: Border.all(
+                  color: AppColors.teal2,
+                  width: 1.5,
+                ),
               ),
             ),
           ),
 
           // Logo box
           Container(
-            width: 90,
-            height: 90,
+            width: 96,
+            height: 96,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
@@ -305,19 +306,20 @@ class _EyeLogo extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(28),
               border: Border.all(
-                color: AppColors.teal.withValues(alpha: 0.3),
-                width: 1,
+                color: AppColors.teal.withValues(alpha: 0.5),
+                width: 1.5,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.teal.withValues(alpha: 0.25),
-                  blurRadius: 40,
+                  color: AppColors.teal.withValues(alpha: 0.35),
+                  blurRadius: 48,
+                  spreadRadius: 4,
                 ),
               ],
             ),
             child: Center(
               child: CustomPaint(
-                size: const Size(50, 50),
+                size: const Size(52, 52),
                 painter: _EyePainter(),
               ),
             ),
@@ -329,7 +331,7 @@ class _EyeLogo extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-// SVG eye icon replicated as CustomPainter
+// Eye painter
 // ─────────────────────────────────────────────────────────────
 class _EyePainter extends CustomPainter {
   @override
@@ -341,44 +343,44 @@ class _EyePainter extends CustomPainter {
     canvas.drawOval(
       Rect.fromCenter(
         center: Offset(cx, cy),
-        width: size.width * 0.8,
-        height: size.height * 0.48,
+        width: size.width * 0.85,
+        height: size.height * 0.50,
       ),
       Paint()
-        ..color = AppColors.teal3.withValues(alpha: 0.9)
+        ..color = AppColors.teal3
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.8,
+        ..strokeWidth = 2.0,
     );
 
     // Iris
     canvas.drawCircle(
       Offset(cx, cy),
-      size.width * 0.16,
+      size.width * 0.17,
       Paint()
         ..color = AppColors.teal2
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.8,
+        ..strokeWidth = 2.0,
     );
 
     // Pupil
     canvas.drawCircle(
       Offset(cx, cy),
-      size.width * 0.08,
+      size.width * 0.09,
       Paint()..color = AppColors.teal2,
     );
 
-    // White dot
+    // White centre dot
     canvas.drawCircle(
       Offset(cx, cy),
-      size.width * 0.036,
+      size.width * 0.038,
       Paint()..color = Colors.white,
     );
 
     // Highlight
     canvas.drawCircle(
-      Offset(cx + size.width * 0.04, cy - size.height * 0.04),
-      size.width * 0.02,
-      Paint()..color = Colors.white.withValues(alpha: 0.5),
+      Offset(cx + size.width * 0.045, cy - size.height * 0.045),
+      size.width * 0.022,
+      Paint()..color = Colors.white.withValues(alpha: 0.6),
     );
   }
 
@@ -397,44 +399,32 @@ class _LoadingBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: progress,
-      builder: (_, child) => Container(
-        width: 140,
-        height: 1.5,
+      builder: (_, __) => Container(
+        height: 3,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.08),
+          color: Colors.white.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(99),
         ),
         alignment: Alignment.centerLeft,
         child: FractionallySizedBox(
           widthFactor: progress.value,
-          child: child,
-        ),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppColors.teal, AppColors.teal3],
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [AppColors.teal, AppColors.teal3],
+              ),
+              borderRadius: BorderRadius.circular(99),
+            ),
           ),
-          borderRadius: BorderRadius.circular(99),
         ),
       ),
     );
   }
 }
 
-
-
 // ─────────────────────────────────────────────────────────────
-// Grid pattern background (32 px grid lines)
+// Grid pattern background
 // ─────────────────────────────────────────────────────────────
-class _GridPattern extends StatelessWidget {
-  const _GridPattern();
-
-  @override
-  Widget build(BuildContext context) =>
-      CustomPaint(painter: _GridPainter());
-}
-
 class _GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -455,22 +445,13 @@ class _GridPainter extends CustomPainter {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Radial mesh gradient overlay (two blobs)
+// Radial mesh gradient overlay
 // ─────────────────────────────────────────────────────────────
-class _MeshGradient extends StatelessWidget {
-  const _MeshGradient();
-
-  @override
-  Widget build(BuildContext context) =>
-      CustomPaint(painter: _MeshPainter());
-}
-
 class _MeshPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Rect.fromLTWH(0, 0, size.width, size.height);
 
-    // Top-left teal blob
     canvas.drawRect(
       rect,
       Paint()
@@ -478,13 +459,12 @@ class _MeshPainter extends CustomPainter {
           center: const Alignment(-0.4, -0.6),
           radius: 0.7,
           colors: [
-            AppColors.teal.withValues(alpha: 0.2),
+            AppColors.teal.withValues(alpha: 0.22),
             Colors.transparent,
           ],
         ).createShader(rect),
     );
 
-    // Bottom-right sky blob
     canvas.drawRect(
       rect,
       Paint()
@@ -492,7 +472,7 @@ class _MeshPainter extends CustomPainter {
           center: const Alignment(0.6, 0.4),
           radius: 0.55,
           colors: [
-            AppColors.sky.withValues(alpha: 0.12),
+            AppColors.sky.withValues(alpha: 0.14),
             Colors.transparent,
           ],
         ).createShader(rect),
