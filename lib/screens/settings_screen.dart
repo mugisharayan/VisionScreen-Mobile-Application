@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'home_screen.dart';
 import 'patients_screen.dart';
 import 'referrals_screen.dart';
+import 'analytics_screen.dart';
 
 // ── Colours ──────────────────────────────────────────────────
 class _C {
@@ -983,24 +984,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ── BOTTOM NAV ───────────────────────────────────────────
   Widget _buildBottomNav() {
     final items = [
-      {'icon': Icons.home_rounded,       'label': 'Home'},
+      {'icon': Icons.home_rounded, 'label': 'Home'},
       {'icon': Icons.people_alt_rounded, 'label': 'Patients'},
       {'icon': Icons.assignment_rounded, 'label': 'Referrals'},
-      {'icon': Icons.bar_chart_rounded,  'label': 'Analytics'},
-      {'icon': Icons.settings_rounded,   'label': 'Settings'},
+      {'icon': Icons.bar_chart_rounded, 'label': 'Analytics'},
+      {'icon': Icons.settings_rounded, 'label': 'Settings'},
     ];
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        border: const Border(top: BorderSide(color: _C.g100, width: 1)),
+        border: const Border(top: BorderSide(color: Color(0xFFEEF2F6), width: 1.5)),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 14,
-              offset: const Offset(0, -3))
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
+          )
         ],
       ),
-      padding: const EdgeInsets.fromLTRB(4, 8, 4, 18),
+      padding: const EdgeInsets.fromLTRB(8, 10, 8, 20),
       child: Row(
         children: items.asMap().entries.map((e) {
           final isActive = e.key == 4;
@@ -1010,53 +1012,136 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 if (isActive) return;
                 switch (e.key) {
                   case 0:
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (_) => const HomeScreen()),
-                      (_) => false,
+                    Navigator.push(
+                      context,
+                      PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) => const HomeScreen(),
+                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                          const begin = Offset(-1.0, 0.0);
+                          const end = Offset.zero;
+                          const curve = Curves.easeInOutCubic;
+                          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                          var offsetAnimation = animation.drive(tween);
+                          var fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+                            CurvedAnimation(parent: animation, curve: const Interval(0.0, 0.7, curve: Curves.easeOut)),
+                          );
+                          return FadeTransition(
+                            opacity: fadeAnimation,
+                            child: SlideTransition(position: offsetAnimation, child: child),
+                          );
+                        },
+                        transitionDuration: const Duration(milliseconds: 400),
+                        reverseTransitionDuration: const Duration(milliseconds: 350),
+                      ),
                     );
                     break;
                   case 1:
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const PatientsScreen()),
+                    Navigator.push(
+                      context,
+                      PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) => const PatientsScreen(),
+                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                          const begin = Offset(-1.0, 0.0);
+                          const end = Offset.zero;
+                          const curve = Curves.easeInOutCubic;
+                          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                          var offsetAnimation = animation.drive(tween);
+                          var fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+                            CurvedAnimation(parent: animation, curve: const Interval(0.0, 0.7, curve: Curves.easeOut)),
+                          );
+                          return FadeTransition(
+                            opacity: fadeAnimation,
+                            child: SlideTransition(position: offsetAnimation, child: child),
+                          );
+                        },
+                        transitionDuration: const Duration(milliseconds: 400),
+                        reverseTransitionDuration: const Duration(milliseconds: 350),
+                      ),
                     );
                     break;
                   case 2:
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const ReferralsScreen()),
+                    Navigator.push(
+                      context,
+                      PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) => const ReferralsScreen(),
+                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                          const begin = Offset(-1.0, 0.0);
+                          const end = Offset.zero;
+                          const curve = Curves.easeInOutCubic;
+                          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                          var offsetAnimation = animation.drive(tween);
+                          var fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+                            CurvedAnimation(parent: animation, curve: const Interval(0.0, 0.7, curve: Curves.easeOut)),
+                          );
+                          return FadeTransition(
+                            opacity: fadeAnimation,
+                            child: SlideTransition(position: offsetAnimation, child: child),
+                          );
+                        },
+                        transitionDuration: const Duration(milliseconds: 400),
+                        reverseTransitionDuration: const Duration(milliseconds: 350),
+                      ),
                     );
                     break;
                   case 3:
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (_) => const HomeScreen()),
-                      (_) => false,
+                    Navigator.push(
+                      context,
+                      PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) => const AnalyticsScreen(),
+                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                          const begin = Offset(-1.0, 0.0);
+                          const end = Offset.zero;
+                          const curve = Curves.easeInOutCubic;
+                          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                          var offsetAnimation = animation.drive(tween);
+                          var fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+                            CurvedAnimation(parent: animation, curve: const Interval(0.0, 0.7, curve: Curves.easeOut)),
+                          );
+                          return FadeTransition(
+                            opacity: fadeAnimation,
+                            child: SlideTransition(position: offsetAnimation, child: child),
+                          );
+                        },
+                        transitionDuration: const Duration(milliseconds: 400),
+                        reverseTransitionDuration: const Duration(milliseconds: 350),
+                      ),
                     );
                     break;
                 }
               },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 7),
                 decoration: BoxDecoration(
                   color: isActive
-                      ? _C.teal.withOpacity(0.08)
+                      ? const Color(0xFF0D9488).withOpacity(0.1)
                       : Colors.transparent,
-                  borderRadius: BorderRadius.circular(9),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       e.value['icon'] as IconData,
-                      size: isActive ? 22 : 20,
-                      color: isActive ? _C.teal : _C.g400,
+                      size: isActive ? 26 : 22,
+                      color: isActive ? const Color(0xFF0D9488) : const Color(0xFF8FA0B4),
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 4),
                     Text(
                       e.value['label'] as String,
-                      style: GoogleFonts.sora(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          color: isActive ? _C.teal : _C.g400),
+                      style: GoogleFonts.inter(
+                        fontSize: isActive ? 10 : 9,
+                        fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                        color: isActive ? const Color(0xFF0D9488) : const Color(0xFF8FA0B4),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Container(
+                      width: isActive ? 18 : 0,
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0D9488),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
                     ),
                   ],
                 ),

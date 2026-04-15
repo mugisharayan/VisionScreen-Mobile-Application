@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'home_screen.dart';
 import 'referrals_screen.dart';
+import 'analytics_screen.dart';
 import 'settings_screen.dart';
 
 // ── Colours (shared with the rest of the app) ──
@@ -961,33 +962,102 @@ class _PatientsScreenState extends State<PatientsScreen> {
                 if (e.key == 0) {
                   Navigator.pushAndRemoveUntil(
                     context,
-                    MaterialPageRoute(builder: (_) => const HomeScreen()),
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) => const HomeScreen(),
+                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                        const begin = Offset(-1.0, 0.0);
+                        const end = Offset.zero;
+                        const curve = Curves.easeInOutCubic;
+                        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                        var offsetAnimation = animation.drive(tween);
+                        var fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+                          CurvedAnimation(parent: animation, curve: const Interval(0.0, 0.7, curve: Curves.easeOut)),
+                        );
+                        return FadeTransition(
+                          opacity: fadeAnimation,
+                          child: SlideTransition(position: offsetAnimation, child: child),
+                        );
+                      },
+                      transitionDuration: const Duration(milliseconds: 400),
+                      reverseTransitionDuration: const Duration(milliseconds: 350),
+                    ),
                     (_) => false,
                   );
                 }
                 if (e.key == 2) {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const ReferralsScreen()),
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) => const ReferralsScreen(),
+                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                        const begin = Offset(1.0, 0.0);
+                        const end = Offset.zero;
+                        const curve = Curves.easeInOutCubic;
+                        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                        var offsetAnimation = animation.drive(tween);
+                        var fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+                          CurvedAnimation(parent: animation, curve: const Interval(0.0, 0.7, curve: Curves.easeOut)),
+                        );
+                        return FadeTransition(
+                          opacity: fadeAnimation,
+                          child: SlideTransition(position: offsetAnimation, child: child),
+                        );
+                      },
+                      transitionDuration: const Duration(milliseconds: 400),
+                      reverseTransitionDuration: const Duration(milliseconds: 350),
+                    ),
                   );
                 }
                 if (e.key == 3) {
-                  Navigator.pushAndRemoveUntil(
+                  Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const HomeScreen()),
-                    (_) => false,
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) => const AnalyticsScreen(),
+                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                        const begin = Offset(1.0, 0.0);
+                        const end = Offset.zero;
+                        const curve = Curves.easeInOutCubic;
+                        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                        var offsetAnimation = animation.drive(tween);
+                        var fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+                          CurvedAnimation(parent: animation, curve: const Interval(0.0, 0.7, curve: Curves.easeOut)),
+                        );
+                        return FadeTransition(
+                          opacity: fadeAnimation,
+                          child: SlideTransition(position: offsetAnimation, child: child),
+                        );
+                      },
+                      transitionDuration: const Duration(milliseconds: 400),
+                      reverseTransitionDuration: const Duration(milliseconds: 350),
+                    ),
                   );
                 }
                 if (e.key == 4) {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) => const SettingsScreen(),
+                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                        const begin = Offset(1.0, 0.0);
+                        const end = Offset.zero;
+                        const curve = Curves.easeInOutCubic;
+                        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                        var offsetAnimation = animation.drive(tween);
+                        var fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+                          CurvedAnimation(parent: animation, curve: const Interval(0.0, 0.7, curve: Curves.easeOut)),
+                        );
+                        return FadeTransition(
+                          opacity: fadeAnimation,
+                          child: SlideTransition(position: offsetAnimation, child: child),
+                        );
+                      },
+                      transitionDuration: const Duration(milliseconds: 400),
+                      reverseTransitionDuration: const Duration(milliseconds: 350),
+                    ),
                   );
                 }
               },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeInOut,
+              child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 7),
                 decoration: BoxDecoration(
                   color: isActive
@@ -1019,8 +1089,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 220),
+                    Container(
                       width: isActive ? 18 : 0,
                       height: 3,
                       decoration: BoxDecoration(

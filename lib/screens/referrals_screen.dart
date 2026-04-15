@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'home_screen.dart';
 import 'patients_screen.dart';
+import 'analytics_screen.dart';
 import 'settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -2145,27 +2147,22 @@ class _ReferralsScreenState extends State<ReferralsScreen> {
     final items = [
       {
         'icon': Icons.home_rounded,
-        'activeIcon': Icons.home_rounded,
         'label': 'Home',
       },
       {
         'icon': Icons.people_alt_rounded,
-        'activeIcon': Icons.people_alt_rounded,
         'label': 'Patients',
       },
       {
         'icon': Icons.assignment_rounded,
-        'activeIcon': Icons.assignment_rounded,
         'label': 'Referrals',
       },
       {
         'icon': Icons.bar_chart_rounded,
-        'activeIcon': Icons.bar_chart_rounded,
         'label': 'Analytics',
       },
       {
         'icon': Icons.settings_rounded,
-        'activeIcon': Icons.settings_rounded,
         'label': 'Settings',
       },
     ];
@@ -2192,32 +2189,108 @@ class _ReferralsScreenState extends State<ReferralsScreen> {
             child: GestureDetector(
               onTap: () {
                 if (e.key == 0) {
-                  Navigator.pushReplacementNamed(context, '/home');
+                  Navigator.push(
+                    context,
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) => const HomeScreen(),
+                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                        const begin = Offset(-1.0, 0.0);
+                        const end = Offset.zero;
+                        const curve = Curves.easeInOutCubic;
+                        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                        var offsetAnimation = animation.drive(tween);
+                        var fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+                          CurvedAnimation(parent: animation, curve: const Interval(0.0, 0.7, curve: Curves.easeOut)),
+                        );
+                        return FadeTransition(
+                          opacity: fadeAnimation,
+                          child: SlideTransition(position: offsetAnimation, child: child),
+                        );
+                      },
+                      transitionDuration: const Duration(milliseconds: 400),
+                      reverseTransitionDuration: const Duration(milliseconds: 350),
+                    ),
+                  );
                   return;
                 }
                 if (e.key == 1) {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const PatientsScreen()),
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) => const PatientsScreen(),
+                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                        const begin = Offset(-1.0, 0.0);
+                        const end = Offset.zero;
+                        const curve = Curves.easeInOutCubic;
+                        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                        var offsetAnimation = animation.drive(tween);
+                        var fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+                          CurvedAnimation(parent: animation, curve: const Interval(0.0, 0.7, curve: Curves.easeOut)),
+                        );
+                        return FadeTransition(
+                          opacity: fadeAnimation,
+                          child: SlideTransition(position: offsetAnimation, child: child),
+                        );
+                      },
+                      transitionDuration: const Duration(milliseconds: 400),
+                      reverseTransitionDuration: const Duration(milliseconds: 350),
+                    ),
                   );
                   return;
                 }
                 if (e.key == 3) {
-                  Navigator.pushReplacementNamed(context, '/home');
+                  Navigator.push(
+                    context,
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) => const AnalyticsScreen(),
+                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                        const begin = Offset(1.0, 0.0);
+                        const end = Offset.zero;
+                        const curve = Curves.easeInOutCubic;
+                        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                        var offsetAnimation = animation.drive(tween);
+                        var fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+                          CurvedAnimation(parent: animation, curve: const Interval(0.0, 0.7, curve: Curves.easeOut)),
+                        );
+                        return FadeTransition(
+                          opacity: fadeAnimation,
+                          child: SlideTransition(position: offsetAnimation, child: child),
+                        );
+                      },
+                      transitionDuration: const Duration(milliseconds: 400),
+                      reverseTransitionDuration: const Duration(milliseconds: 350),
+                    ),
+                  );
                   return;
                 }
                 if (e.key == 4) {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) => const SettingsScreen(),
+                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                        const begin = Offset(1.0, 0.0);
+                        const end = Offset.zero;
+                        const curve = Curves.easeInOutCubic;
+                        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                        var offsetAnimation = animation.drive(tween);
+                        var fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+                          CurvedAnimation(parent: animation, curve: const Interval(0.0, 0.7, curve: Curves.easeOut)),
+                        );
+                        return FadeTransition(
+                          opacity: fadeAnimation,
+                          child: SlideTransition(position: offsetAnimation, child: child),
+                        );
+                      },
+                      transitionDuration: const Duration(milliseconds: 400),
+                      reverseTransitionDuration: const Duration(milliseconds: 350),
+                    ),
                   );
                   return;
                 }
                 // Current tab (referrals) - do nothing
               },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeInOut,
+              child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 7),
                 decoration: BoxDecoration(
                   color: isActive
@@ -2228,20 +2301,16 @@ class _ReferralsScreenState extends State<ReferralsScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    AnimatedScale(
-                      scale: isActive ? 1.2 : 1.0,
-                      duration: const Duration(milliseconds: 220),
-                      child: Icon(
-                        e.value['icon'] as IconData,
-                        size: isActive ? 26 : 22,
-                        color: isActive
-                            ? const Color(0xFF0D9488)
-                            : const Color(0xFF8FA0B4),
-                      ),
+                    Icon(
+                      e.value['icon'] as IconData,
+                      size: isActive ? 26 : 22,
+                      color: isActive
+                          ? const Color(0xFF0D9488)
+                          : const Color(0xFF8FA0B4),
                     ),
                     const SizedBox(height: 4),
-                    AnimatedDefaultTextStyle(
-                      duration: const Duration(milliseconds: 220),
+                    Text(
+                      e.value['label'] as String,
                       style: GoogleFonts.inter(
                         fontSize: isActive ? 10 : 9,
                         fontWeight: isActive
@@ -2250,13 +2319,10 @@ class _ReferralsScreenState extends State<ReferralsScreen> {
                         color: isActive
                             ? const Color(0xFF0D9488)
                             : const Color(0xFF8FA0B4),
-                        letterSpacing: isActive ? 0.3 : 0,
                       ),
-                      child: Text(e.value['label'] as String),
                     ),
                     const SizedBox(height: 2),
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 220),
+                    Container(
                       width: isActive ? 18 : 0,
                       height: 3,
                       decoration: BoxDecoration(
