@@ -35,6 +35,7 @@ dependencies:
   connectivity_plus: ^6.0.3
   geolocator: ^13.0.2
   geocoding: ^3.0.0
+  shared_preferences: ^2.2.2
 
 
 dev_dependencies:
