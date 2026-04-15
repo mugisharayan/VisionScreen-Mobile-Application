@@ -277,37 +277,7 @@ class _ReferralsScreenState extends State<ReferralsScreen> {
     return 7;
   }
 
-  void _toggleSelectionMode() {
-    setState(() {
-      _isSelectionMode = !_isSelectionMode;
-      if (!_isSelectionMode) {
-        _selectedReferrals.clear();
-      }
-    });
-  }
 
-  void _toggleSelection(String referralId) {
-    setState(() {
-      if (_selectedReferrals.contains(referralId)) {
-        _selectedReferrals.remove(referralId);
-      } else {
-        _selectedReferrals.add(referralId);
-      }
-    });
-  }
-
-  void _selectAll() {
-    setState(() {
-      if (_selectedReferrals.length == _filtered.length) {
-        _selectedReferrals.clear();
-      } else {
-        _selectedReferrals.clear();
-        _selectedReferrals.addAll(
-          _filtered.map((r) => '${r.name}_${r.facility}'),
-        );
-      }
-    });
-  }
 
   Future<void> _onRefresh() async {
     setState(() => _isRefreshing = true);

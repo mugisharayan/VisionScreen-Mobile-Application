@@ -36,6 +36,7 @@ class VisionScreenApp extends StatelessWidget {
       ),
       home: const SplashScreen(),
       routes: {
+        '/splash':     (_) => const SplashScreen(),
         '/onboarding': (_) => const OnboardingScreen(),
         '/login':      (_) => const LoginScreen(),
         '/home':       (_) => const HomeScreen(),
