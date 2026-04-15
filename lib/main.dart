@@ -4,6 +4,7 @@ import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/settings_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,6 +40,7 @@ class VisionScreenApp extends StatelessWidget {
         '/onboarding': (_) => const OnboardingScreen(),
         '/login':      (_) => const LoginScreen(),
         '/home':       (_) => const HomeScreen(),
+        '/settings':   (_) => const SettingsScreen(),
       },
     );
   }

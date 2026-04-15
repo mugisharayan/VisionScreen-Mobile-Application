@@ -9,6 +9,7 @@ import 'training_screen.dart';
 import 'notifications_screen.dart';
 import 'patients_screen.dart';
 import 'referrals_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -1816,6 +1817,10 @@ class _HomeScreenState extends State<HomeScreen>
                 }
                 if (e.key == 2) {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const ReferralsScreen()));
+                  return;
+                }
+                if (e.key == 4) {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
                   return;
                 }
                 setState(() => _currentIndex = e.key);

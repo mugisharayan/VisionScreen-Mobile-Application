@@ -88,8 +88,12 @@ static gboolean my_application_local_command_line(GApplication* application,
 
   g_autoptr(GError) error = nullptr;
   if (!g_application_register(application, nullptr, &error)) {
-    g_warning("Failed to register: %s", error != nullptr ? error->message : "unknown error");
-    if (exit_status != nullptr) *exit_status = 1;
+    if (error != nullptr) {
+      g_warning("Failed to register: %s", error->message);
+    } else {
+      g_warning("Failed to register: unknown error");
+    }
+    if (exit_status != nullptr) { *exit_status = 1; }
     return TRUE;
   }
 
