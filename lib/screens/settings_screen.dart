@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'home_screen.dart';
+import 'patients_screen.dart';
+import 'referrals_screen.dart';
 
 // ── Colours ──────────────────────────────────────────────────
 class _C {
@@ -1004,7 +1007,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
           return Expanded(
             child: GestureDetector(
               onTap: () {
-                if (!isActive) Navigator.maybePop(context);
+                if (isActive) return;
+                switch (e.key) {
+                  case 0:
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const HomeScreen()),
+                      (_) => false,
+                    );
+                    break;
+                  case 1:
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const PatientsScreen()),
+                    );
+                    break;
+                  case 2:
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const ReferralsScreen()),
+                    );
+                    break;
+                  case 3:
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const HomeScreen()),
+                      (_) => false,
+                    );
+                    break;
+                }
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),

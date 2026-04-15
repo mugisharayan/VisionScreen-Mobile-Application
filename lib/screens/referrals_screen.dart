@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'patients_screen.dart';
+import 'settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _ink = Color(0xFF04091A);
@@ -2198,6 +2199,17 @@ class _ReferralsScreenState extends State<ReferralsScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const PatientsScreen()),
+                  );
+                  return;
+                }
+                if (e.key == 3) {
+                  Navigator.pushReplacementNamed(context, '/home');
+                  return;
+                }
+                if (e.key == 4) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
                   );
                   return;
                 }
