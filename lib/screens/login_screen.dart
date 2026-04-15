@@ -21,6 +21,8 @@ class _LoginScreenState extends State<LoginScreen>
   final _loginPasswordCtrl = TextEditingController();
   bool _loginPasswordVisible = false;
   String _selectedRole = 'chw'; // 'chw' | 'admin'
+  String? _loginEmailError;
+  String? _loginPasswordError;
 
   // Sign up form
   final _signUpNameCtrl     = TextEditingController();
@@ -29,6 +31,12 @@ class _LoginScreenState extends State<LoginScreen>
   final _signUpEmailCtrl    = TextEditingController();
   final _signUpPasswordCtrl = TextEditingController();
   bool _signUpPasswordVisible = false;
+  String? _signUpNameError;
+  String? _signUpCentreError;
+  String? _signUpDistrictError;
+  String? _signUpEmailError;
+  String? _signUpPasswordError;
+  String _signUpPasswordValue = '';
 
   @override
   void initState() {
@@ -51,13 +59,47 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _login() {
-    // Navigate to home (placeholder — replace with real auth)
+    setState(() {
+      _loginEmailError    = _validateEmail(_loginEmailCtrl.text);
+      _loginPasswordError = _validatePassword(_loginPasswordCtrl.text);
+    });
+    if (_loginEmailError != null || _loginPasswordError != null) return;
     Navigator.of(context).pushReplacementNamed('/home');
   }
 
   void _signUp() {
-    // Navigate to home (placeholder — replace with real auth)
+    setState(() {
+      _signUpNameError     = _validateRequired(_signUpNameCtrl.text,     'Full name');
+      _signUpCentreError   = _validateRequired(_signUpCentreCtrl.text,   'Health center');
+      _signUpDistrictError = _validateRequired(_signUpDistrictCtrl.text, 'District');
+      _signUpEmailError    = _validateEmail(_signUpEmailCtrl.text);
+      _signUpPasswordError = _validatePassword(_signUpPasswordCtrl.text);
+    });
+    if (_signUpNameError != null ||
+        _signUpCentreError != null ||
+        _signUpDistrictError != null ||
+        _signUpEmailError != null ||
+        _signUpPasswordError != null) return;
     Navigator.of(context).pushReplacementNamed('/home');
+  }
+
+  // ── Validators ───────────────────────────────────────────
+  String? _validateRequired(String value, String fieldName) {
+    if (value.trim().isEmpty) return '$fieldName is required';
+    return null;
+  }
+
+  String? _validateEmail(String value) {
+    if (value.trim().isEmpty) return 'Email address is required';
+    final emailRegex = RegExp(r'^[\w.+-]+@[\w-]+\.[\w.]+$');
+    if (!emailRegex.hasMatch(value.trim())) return 'Enter a valid email address';
+    return null;
+  }
+
+  String? _validatePassword(String value) {
+    if (value.isEmpty) return 'Password is required';
+    if (value.length < 8) return 'Password must be at least 8 characters';
+    return null;
   }
 
   @override
@@ -102,11 +144,15 @@ class _LoginScreenState extends State<LoginScreen>
                             passwordCtrl: _loginPasswordCtrl,
                             passwordVisible: _loginPasswordVisible,
                             selectedRole: _selectedRole,
+                            emailError: _loginEmailError,
+                            passwordError: _loginPasswordError,
                             onRoleChanged: (r) =>
                                 setState(() => _selectedRole = r),
                             onTogglePassword: () => setState(
                                 () => _loginPasswordVisible =
                                     !_loginPasswordVisible),
+                            onEmailChanged: (_) => setState(() => _loginEmailError = null),
+                            onPasswordChanged: (_) => setState(() => _loginPasswordError = null),
                             onLogin: _login,
                           )
                         : _SignUpForm(
@@ -117,9 +163,23 @@ class _LoginScreenState extends State<LoginScreen>
                             emailCtrl: _signUpEmailCtrl,
                             passwordCtrl: _signUpPasswordCtrl,
                             passwordVisible: _signUpPasswordVisible,
+                            passwordValue: _signUpPasswordValue,
+                            nameError: _signUpNameError,
+                            centreError: _signUpCentreError,
+                            districtError: _signUpDistrictError,
+                            emailError: _signUpEmailError,
+                            passwordError: _signUpPasswordError,
                             onTogglePassword: () => setState(
                                 () => _signUpPasswordVisible =
                                     !_signUpPasswordVisible),
+                            onNameChanged: (_) => setState(() => _signUpNameError = null),
+                            onCentreChanged: (_) => setState(() => _signUpCentreError = null),
+                            onDistrictChanged: (_) => setState(() => _signUpDistrictError = null),
+                            onEmailChanged: (_) => setState(() => _signUpEmailError = null),
+                            onPasswordChanged: (v) => setState(() {
+                              _signUpPasswordError = null;
+                              _signUpPasswordValue = v;
+                            }),
                             onSignUp: _signUp,
                           ),
                   ),
@@ -335,6 +395,10 @@ class _LoginForm extends StatelessWidget {
     required this.onRoleChanged,
     required this.onTogglePassword,
     required this.onLogin,
+    this.emailError,
+    this.passwordError,
+    this.onEmailChanged,
+    this.onPasswordChanged,
   });
 
   final TextEditingController emailCtrl;
@@ -344,13 +408,16 @@ class _LoginForm extends StatelessWidget {
   final ValueChanged<String> onRoleChanged;
   final VoidCallback onTogglePassword;
   final VoidCallback onLogin;
+  final String? emailError;
+  final String? passwordError;
+  final ValueChanged<String>? onEmailChanged;
+  final ValueChanged<String>? onPasswordChanged;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Role selector ──
         _FieldLabel(label: 'Login as'),
         const SizedBox(height: 8),
         Row(
@@ -375,8 +442,6 @@ class _LoginForm extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-
-        // ── Email ──
         _FieldLabel(label: 'Email Address'),
         const SizedBox(height: 5),
         _InputField(
@@ -384,10 +449,11 @@ class _LoginForm extends StatelessWidget {
           hint: 'health@worker.ug',
           keyboardType: TextInputType.emailAddress,
           inputAction: TextInputAction.next,
+          hasError: emailError != null,
+          onChanged: onEmailChanged,
         ),
+        _ErrorText(error: emailError),
         const SizedBox(height: 13),
-
-        // ── Password ──
         _FieldLabel(label: 'Password'),
         const SizedBox(height: 5),
         _InputField(
@@ -395,6 +461,8 @@ class _LoginForm extends StatelessWidget {
           hint: '••••••••',
           obscure: !passwordVisible,
           inputAction: TextInputAction.done,
+          hasError: passwordError != null,
+          onChanged: onPasswordChanged,
           suffix: GestureDetector(
             onTap: onTogglePassword,
             child: Icon(
@@ -406,9 +474,8 @@ class _LoginForm extends StatelessWidget {
             ),
           ),
         ),
+        _ErrorText(error: passwordError),
         const SizedBox(height: 6),
-
-        // ── Forgot password ──
         Align(
           alignment: Alignment.centerRight,
           child: GestureDetector(
@@ -424,20 +491,14 @@ class _LoginForm extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 22),
-
-        // ── Login button ──
         _PrimaryButton(
           label: 'Login',
           icon: Icons.login_rounded,
           onTap: onLogin,
         ),
         const SizedBox(height: 24),
-
-        // ── Divider ──
         _OrDivider(),
         const SizedBox(height: 20),
-
-        // ── Offline note ──
         _OfflineNote(),
       ],
     );
@@ -458,6 +519,17 @@ class _SignUpForm extends StatelessWidget {
     required this.passwordVisible,
     required this.onTogglePassword,
     required this.onSignUp,
+    required this.passwordValue,
+    this.nameError,
+    this.centreError,
+    this.districtError,
+    this.emailError,
+    this.passwordError,
+    this.onNameChanged,
+    this.onCentreChanged,
+    this.onDistrictChanged,
+    this.onEmailChanged,
+    this.onPasswordChanged,
   });
 
   final TextEditingController nameCtrl;
@@ -466,45 +538,58 @@ class _SignUpForm extends StatelessWidget {
   final TextEditingController emailCtrl;
   final TextEditingController passwordCtrl;
   final bool passwordVisible;
+  final String passwordValue;
   final VoidCallback onTogglePassword;
   final VoidCallback onSignUp;
+  final String? nameError;
+  final String? centreError;
+  final String? districtError;
+  final String? emailError;
+  final String? passwordError;
+  final ValueChanged<String>? onNameChanged;
+  final ValueChanged<String>? onCentreChanged;
+  final ValueChanged<String>? onDistrictChanged;
+  final ValueChanged<String>? onEmailChanged;
+  final ValueChanged<String>? onPasswordChanged;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Full name ──
         _FieldLabel(label: 'Full Name'),
         const SizedBox(height: 5),
         _InputField(
           controller: nameCtrl,
           hint: 'Your full name',
           inputAction: TextInputAction.next,
+          hasError: nameError != null,
+          onChanged: onNameChanged,
         ),
+        _ErrorText(error: nameError),
         const SizedBox(height: 13),
-
-        // ── Health centre ──
         _FieldLabel(label: 'Health Center'),
         const SizedBox(height: 5),
         _InputField(
           controller: centreCtrl,
           hint: 'e.g. Nakawa HC III, Wakiso District',
           inputAction: TextInputAction.next,
+          hasError: centreError != null,
+          onChanged: onCentreChanged,
         ),
+        _ErrorText(error: centreError),
         const SizedBox(height: 13),
-
-        // ── District ──
         _FieldLabel(label: 'District'),
         const SizedBox(height: 5),
         _InputField(
           controller: districtCtrl,
           hint: 'e.g. Kampala',
           inputAction: TextInputAction.next,
+          hasError: districtError != null,
+          onChanged: onDistrictChanged,
         ),
+        _ErrorText(error: districtError),
         const SizedBox(height: 13),
-
-        // ── Email ──
         _FieldLabel(label: 'Email Address'),
         const SizedBox(height: 5),
         _InputField(
@@ -512,10 +597,11 @@ class _SignUpForm extends StatelessWidget {
           hint: 'your@email.ug',
           keyboardType: TextInputType.emailAddress,
           inputAction: TextInputAction.next,
+          hasError: emailError != null,
+          onChanged: onEmailChanged,
         ),
+        _ErrorText(error: emailError),
         const SizedBox(height: 13),
-
-        // ── Password ──
         _FieldLabel(label: 'Password'),
         const SizedBox(height: 5),
         _InputField(
@@ -523,6 +609,8 @@ class _SignUpForm extends StatelessWidget {
           hint: 'Create a strong password',
           obscure: !passwordVisible,
           inputAction: TextInputAction.done,
+          hasError: passwordError != null,
+          onChanged: onPasswordChanged,
           suffix: GestureDetector(
             onTap: onTogglePassword,
             child: Icon(
@@ -534,17 +622,16 @@ class _SignUpForm extends StatelessWidget {
             ),
           ),
         ),
+        _ErrorText(error: passwordError),
+        if (passwordValue.isNotEmpty) ...
+          [const SizedBox(height: 8), _PasswordStrength(password: passwordValue)],
         const SizedBox(height: 22),
-
-        // ── Sign up button ──
         _PrimaryButton(
           label: 'Create Account',
           icon: Icons.person_add_outlined,
           onTap: onSignUp,
         ),
         const SizedBox(height: 20),
-
-        // ── Terms note ──
         _TermsNote(),
       ],
     );
@@ -639,6 +726,8 @@ class _InputField extends StatefulWidget {
     this.keyboardType,
     this.inputAction = TextInputAction.next,
     this.suffix,
+    this.hasError = false,
+    this.onChanged,
   });
 
   final TextEditingController controller;
@@ -647,6 +736,8 @@ class _InputField extends StatefulWidget {
   final TextInputType? keyboardType;
   final TextInputAction inputAction;
   final Widget? suffix;
+  final bool hasError;
+  final ValueChanged<String>? onChanged;
 
   @override
   State<_InputField> createState() => _InputFieldState();
@@ -670,19 +761,27 @@ class _InputFieldState extends State<_InputField> {
 
   @override
   Widget build(BuildContext context) {
+    final borderColor = widget.hasError
+        ? const Color(0xFFEF4444)
+        : _focused
+            ? AppColors.teal
+            : const Color(0xFFDDE4EC);
+    final glowColor = widget.hasError
+        ? const Color(0xFFEF4444).withValues(alpha: 0.15)
+        : AppColors.teal.withValues(alpha: 0.22);
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: widget.hasError
+            ? const Color(0xFFFEF2F2)
+            : Colors.white,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: _focused ? AppColors.teal : const Color(0xFFDDE4EC),
-          width: 1.5,
-        ),
-        boxShadow: _focused
+        border: Border.all(color: borderColor, width: 1.5),
+        boxShadow: (_focused || widget.hasError)
             ? [
                 BoxShadow(
-                  color: AppColors.teal.withValues(alpha: 0.22),
+                  color: glowColor,
                   blurRadius: 0,
                   spreadRadius: 3,
                 ),
@@ -695,6 +794,7 @@ class _InputFieldState extends State<_InputField> {
         obscureText: widget.obscure,
         keyboardType: widget.keyboardType,
         textInputAction: widget.inputAction,
+        onChanged: widget.onChanged,
         style: GoogleFonts.sora(
           fontSize: 13,
           color: const Color(0xFF1A2A3D),
@@ -720,6 +820,144 @@ class _InputFieldState extends State<_InputField> {
           focusedBorder: InputBorder.none,
         ),
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Password strength indicator
+// ─────────────────────────────────────────────────────────────
+class _PasswordStrength extends StatelessWidget {
+  const _PasswordStrength({required this.password});
+  final String password;
+
+  // Returns 0=empty 1=weak 2=fair 3=strong
+  int get _score {
+    if (password.isEmpty) return 0;
+    int score = 0;
+    if (password.length >= 8)  score++;
+    if (password.length >= 12) score++;
+    if (RegExp(r'[A-Z]').hasMatch(password) &&
+        RegExp(r'[0-9]').hasMatch(password)) score++;
+    if (RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(password)) score++;
+    if (score >= 4) return 3;
+    if (score >= 2) return 2;
+    return 1;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final score = _score;
+    final labels  = ['', 'Weak', 'Fair', 'Strong'];
+    final colors  = [
+      Colors.transparent,
+      const Color(0xFFEF4444),
+      const Color(0xFFF59E0B),
+      const Color(0xFF22C55E),
+    ];
+    final label = labels[score];
+    final color = colors[score];
+
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 3-segment bar
+          Row(
+            children: List.generate(3, (i) {
+              final filled = i < score;
+              return Expanded(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin: EdgeInsets.only(right: i < 2 ? 4 : 0),
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: filled ? color : const Color(0xFFDDE4EC),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 5),
+          // Label
+          Row(
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: 6, height: 6,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 5),
+              Text(
+                'Password strength: $label',
+                style: GoogleFonts.sora(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
+              if (score < 3) ...
+                [
+                  const SizedBox(width: 6),
+                  Text(
+                    score == 1
+                        ? '· Add uppercase, numbers & symbols'
+                        : '· Add symbols to strengthen',
+                    style: GoogleFonts.sora(
+                      fontSize: 10,
+                      color: const Color(0xFF8FA0B4),
+                    ),
+                  ),
+                ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Inline error text
+// ─────────────────────────────────────────────────────────────
+class _ErrorText extends StatelessWidget {
+  const _ErrorText({this.error});
+  final String? error;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      child: error != null
+          ? Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.error_outline_rounded,
+                    size: 13,
+                    color: Color(0xFFEF4444),
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    error!,
+                    style: GoogleFonts.sora(
+                      fontSize: 11,
+                      color: const Color(0xFFEF4444),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : const SizedBox.shrink(),
     );
   }
 }
