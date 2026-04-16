@@ -17,7 +17,7 @@ class _LoginScreenState extends State<LoginScreen>
   late final TabController _tabCtrl;
 
   // Login form
-  final _loginEmailCtrl    = TextEditingController();
+  final _loginEmailCtrl = TextEditingController();
   final _loginPasswordCtrl = TextEditingController();
   bool _loginPasswordVisible = false;
   String _selectedRole = 'chw'; // 'chw' | 'admin'
@@ -25,10 +25,10 @@ class _LoginScreenState extends State<LoginScreen>
   String? _loginPasswordError;
 
   // Sign up form
-  final _signUpNameCtrl     = TextEditingController();
-  final _signUpCentreCtrl   = TextEditingController();
+  final _signUpNameCtrl = TextEditingController();
+  final _signUpCentreCtrl = TextEditingController();
   final _signUpDistrictCtrl = TextEditingController();
-  final _signUpEmailCtrl    = TextEditingController();
+  final _signUpEmailCtrl = TextEditingController();
   final _signUpPasswordCtrl = TextEditingController();
   bool _signUpPasswordVisible = false;
   String? _signUpNameError;
@@ -60,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen>
 
   void _login() {
     setState(() {
-      _loginEmailError    = _validateEmail(_loginEmailCtrl.text);
+      _loginEmailError = _validateEmail(_loginEmailCtrl.text);
       _loginPasswordError = _validatePassword(_loginPasswordCtrl.text);
     });
     if (_loginEmailError != null || _loginPasswordError != null) return;
@@ -69,17 +69,25 @@ class _LoginScreenState extends State<LoginScreen>
 
   void _signUp() {
     setState(() {
-      _signUpNameError     = _validateRequired(_signUpNameCtrl.text,     'Full name');
-      _signUpCentreError   = _validateRequired(_signUpCentreCtrl.text,   'Health center');
-      _signUpDistrictError = _validateRequired(_signUpDistrictCtrl.text, 'District');
-      _signUpEmailError    = _validateEmail(_signUpEmailCtrl.text);
+      _signUpNameError = _validateRequired(_signUpNameCtrl.text, 'Full name');
+      _signUpCentreError = _validateRequired(
+        _signUpCentreCtrl.text,
+        'Health center',
+      );
+      _signUpDistrictError = _validateRequired(
+        _signUpDistrictCtrl.text,
+        'District',
+      );
+      _signUpEmailError = _validateEmail(_signUpEmailCtrl.text);
       _signUpPasswordError = _validatePassword(_signUpPasswordCtrl.text);
     });
     if (_signUpNameError != null ||
         _signUpCentreError != null ||
         _signUpDistrictError != null ||
         _signUpEmailError != null ||
-        _signUpPasswordError != null) return;
+        _signUpPasswordError != null) {
+      return;
+    }
     Navigator.of(context).pushReplacementNamed('/home');
   }
 
@@ -92,7 +100,8 @@ class _LoginScreenState extends State<LoginScreen>
   String? _validateEmail(String value) {
     if (value.trim().isEmpty) return 'Email address is required';
     final emailRegex = RegExp(r'^[\w.+-]+@[\w-]+\.[\w.]+$');
-    if (!emailRegex.hasMatch(value.trim())) return 'Enter a valid email address';
+    if (!emailRegex.hasMatch(value.trim()))
+      return 'Enter a valid email address';
     return null;
   }
 
@@ -149,10 +158,13 @@ class _LoginScreenState extends State<LoginScreen>
                             onRoleChanged: (r) =>
                                 setState(() => _selectedRole = r),
                             onTogglePassword: () => setState(
-                                () => _loginPasswordVisible =
-                                    !_loginPasswordVisible),
-                            onEmailChanged: (_) => setState(() => _loginEmailError = null),
-                            onPasswordChanged: (_) => setState(() => _loginPasswordError = null),
+                              () => _loginPasswordVisible =
+                                  !_loginPasswordVisible,
+                            ),
+                            onEmailChanged: (_) =>
+                                setState(() => _loginEmailError = null),
+                            onPasswordChanged: (_) =>
+                                setState(() => _loginPasswordError = null),
                             onLogin: _login,
                           )
                         : _SignUpForm(
@@ -170,12 +182,17 @@ class _LoginScreenState extends State<LoginScreen>
                             emailError: _signUpEmailError,
                             passwordError: _signUpPasswordError,
                             onTogglePassword: () => setState(
-                                () => _signUpPasswordVisible =
-                                    !_signUpPasswordVisible),
-                            onNameChanged: (_) => setState(() => _signUpNameError = null),
-                            onCentreChanged: (_) => setState(() => _signUpCentreError = null),
-                            onDistrictChanged: (_) => setState(() => _signUpDistrictError = null),
-                            onEmailChanged: (_) => setState(() => _signUpEmailError = null),
+                              () => _signUpPasswordVisible =
+                                  !_signUpPasswordVisible,
+                            ),
+                            onNameChanged: (_) =>
+                                setState(() => _signUpNameError = null),
+                            onCentreChanged: (_) =>
+                                setState(() => _signUpCentreError = null),
+                            onDistrictChanged: (_) =>
+                                setState(() => _signUpDistrictError = null),
+                            onEmailChanged: (_) =>
+                                setState(() => _signUpEmailError = null),
                             onPasswordChanged: (v) => setState(() {
                               _signUpPasswordError = null;
                               _signUpPasswordValue = v;
@@ -215,9 +232,7 @@ class _AuthHeader extends StatelessWidget {
       child: Stack(
         children: [
           // Dot pattern overlay
-          Positioned.fill(
-            child: CustomPaint(painter: _DotPatternPainter()),
-          ),
+          Positioned.fill(child: CustomPaint(painter: _DotPatternPainter())),
 
           // Content
           SafeArea(
@@ -623,8 +638,10 @@ class _SignUpForm extends StatelessWidget {
           ),
         ),
         _ErrorText(error: passwordError),
-        if (passwordValue.isNotEmpty) ...
-          [const SizedBox(height: 8), _PasswordStrength(password: passwordValue)],
+        if (passwordValue.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          _PasswordStrength(password: passwordValue),
+        ],
         const SizedBox(height: 22),
         _PrimaryButton(
           label: 'Create Account',
@@ -764,8 +781,8 @@ class _InputFieldState extends State<_InputField> {
     final borderColor = widget.hasError
         ? const Color(0xFFEF4444)
         : _focused
-            ? AppColors.teal
-            : const Color(0xFFDDE4EC);
+        ? AppColors.teal
+        : const Color(0xFFDDE4EC);
     final glowColor = widget.hasError
         ? const Color(0xFFEF4444).withValues(alpha: 0.15)
         : AppColors.teal.withValues(alpha: 0.22);
@@ -773,19 +790,11 @@ class _InputFieldState extends State<_InputField> {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
-        color: widget.hasError
-            ? const Color(0xFFFEF2F2)
-            : Colors.white,
+        color: widget.hasError ? const Color(0xFFFEF2F2) : Colors.white,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: borderColor, width: 1.5),
         boxShadow: (_focused || widget.hasError)
-            ? [
-                BoxShadow(
-                  color: glowColor,
-                  blurRadius: 0,
-                  spreadRadius: 3,
-                ),
-              ]
+            ? [BoxShadow(color: glowColor, blurRadius: 0, spreadRadius: 3)]
             : [],
       ),
       child: TextField(
@@ -795,10 +804,7 @@ class _InputFieldState extends State<_InputField> {
         keyboardType: widget.keyboardType,
         textInputAction: widget.inputAction,
         onChanged: widget.onChanged,
-        style: GoogleFonts.sora(
-          fontSize: 13,
-          color: const Color(0xFF1A2A3D),
-        ),
+        style: GoogleFonts.sora(fontSize: 13, color: const Color(0xFF1A2A3D)),
         decoration: InputDecoration(
           hintText: widget.hint,
           hintStyle: GoogleFonts.sora(
@@ -811,10 +817,14 @@ class _InputFieldState extends State<_InputField> {
                   child: widget.suffix,
                 )
               : null,
-          suffixIconConstraints:
-              const BoxConstraints(minWidth: 0, minHeight: 0),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          suffixIconConstraints: const BoxConstraints(
+            minWidth: 0,
+            minHeight: 0,
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 12,
+          ),
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
@@ -835,10 +845,12 @@ class _PasswordStrength extends StatelessWidget {
   int get _score {
     if (password.isEmpty) return 0;
     int score = 0;
-    if (password.length >= 8)  score++;
+    if (password.length >= 8) score++;
     if (password.length >= 12) score++;
     if (RegExp(r'[A-Z]').hasMatch(password) &&
-        RegExp(r'[0-9]').hasMatch(password)) score++;
+        RegExp(r'[0-9]').hasMatch(password)) {
+      score++;
+    }
     if (RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(password)) score++;
     if (score >= 4) return 3;
     if (score >= 2) return 2;
@@ -848,8 +860,8 @@ class _PasswordStrength extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final score = _score;
-    final labels  = ['', 'Weak', 'Fair', 'Strong'];
-    final colors  = [
+    final labels = ['', 'Weak', 'Fair', 'Strong'];
+    final colors = [
       Colors.transparent,
       const Color(0xFFEF4444),
       const Color(0xFFF59E0B),
@@ -887,11 +899,9 @@ class _PasswordStrength extends StatelessWidget {
             children: [
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
-                width: 6, height: 6,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
               ),
               const SizedBox(width: 5),
               Text(
@@ -902,19 +912,18 @@ class _PasswordStrength extends StatelessWidget {
                   color: color,
                 ),
               ),
-              if (score < 3) ...
-                [
-                  const SizedBox(width: 6),
-                  Text(
-                    score == 1
-                        ? '· Add uppercase, numbers & symbols'
-                        : '· Add symbols to strengthen',
-                    style: GoogleFonts.sora(
-                      fontSize: 10,
-                      color: const Color(0xFF8FA0B4),
-                    ),
+              if (score < 3) ...[
+                const SizedBox(width: 6),
+                Text(
+                  score == 1
+                      ? '· Add uppercase, numbers & symbols'
+                      : '· Add symbols to strengthen',
+                  style: GoogleFonts.sora(
+                    fontSize: 10,
+                    color: const Color(0xFF8FA0B4),
                   ),
-                ],
+                ),
+              ],
             ],
           ),
         ],
@@ -986,9 +995,12 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown:   (_) => setState(() => _pressed = true),
-      onTapUp:     (_) { setState(() => _pressed = false); widget.onTap(); },
-      onTapCancel: ()  => setState(() => _pressed = false),
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedScale(
         scale: _pressed ? 0.97 : 1.0,
         duration: const Duration(milliseconds: 100),
@@ -1039,9 +1051,7 @@ class _OrDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(
-          child: Container(height: 1, color: const Color(0xFFDDE4EC)),
-        ),
+        Expanded(child: Container(height: 1, color: const Color(0xFFDDE4EC))),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(
@@ -1054,9 +1064,7 @@ class _OrDivider extends StatelessWidget {
             ),
           ),
         ),
-        Expanded(
-          child: Container(height: 1, color: const Color(0xFFDDE4EC)),
-        ),
+        Expanded(child: Container(height: 1, color: const Color(0xFFDDE4EC))),
       ],
     );
   }
@@ -1081,11 +1089,7 @@ class _OfflineNote extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.wifi_off_rounded,
-            size: 16,
-            color: AppColors.teal,
-          ),
+          const Icon(Icons.wifi_off_rounded, size: 16, color: AppColors.teal),
           const SizedBox(width: 9),
           Expanded(
             child: Text(
@@ -1178,35 +1182,43 @@ void showTermsOfService(BuildContext context) {
       sections: [
         _LegalSection(
           heading: '1. Purpose of VisionScreen',
-          body: 'VisionScreen is a clinical-grade mobile application designed exclusively for use by trained Community Health Workers (CHWs) and authorised health administrators operating under the Uganda Ministry of Health (MOH) framework. The application facilitates vision screening using the Tumbling E optotype chart, aligned with WHO Visual Acuity Assessment Guidelines (WHO/PBL/01.71).',
+          body:
+              'VisionScreen is a clinical-grade mobile application designed exclusively for use by trained Community Health Workers (CHWs) and authorised health administrators operating under the Uganda Ministry of Health (MOH) framework. The application facilitates vision screening using the Tumbling E optotype chart, aligned with WHO Visual Acuity Assessment Guidelines (WHO/PBL/01.71).',
         ),
         _LegalSection(
           heading: '2. Clinical Standards & Compliance',
-          body: 'All vision assessments follow the WHO-recommended Tumbling E protocol. Pass/fail thresholds per age group:\n\n• Children (6–12 yrs): Pass ≥ 6/9 (LogMAR 0.18)\n• Adults (13–60 yrs): Pass ≥ 6/12 (LogMAR 0.30)\n• Elderly (60+ yrs): Pass ≥ 6/18 (LogMAR 0.48)\n• Pre-school (3–5 yrs): Pass ≥ 6/12 (LogMAR 0.30)\n\nResults are screening indicators only and do not constitute a clinical diagnosis. All referrals must be reviewed by a qualified ophthalmologist or optometrist.',
+          body:
+              'All vision assessments follow the WHO-recommended Tumbling E protocol. Pass/fail thresholds per age group:\n\n• Children (6–12 yrs): Pass ≥ 6/9 (LogMAR 0.18)\n• Adults (13–60 yrs): Pass ≥ 6/12 (LogMAR 0.30)\n• Elderly (60+ yrs): Pass ≥ 6/18 (LogMAR 0.48)\n• Pre-school (3–5 yrs): Pass ≥ 6/12 (LogMAR 0.30)\n\nResults are screening indicators only and do not constitute a clinical diagnosis. All referrals must be reviewed by a qualified ophthalmologist or optometrist.',
         ),
         _LegalSection(
           heading: '3. Authorised Use',
-          body: 'This application is authorised for use only by:\n\n• Registered Community Health Workers under a recognised Ugandan Health Centre (HC II–HC IV)\n• Health administrators with valid MOH credentials\n• Supervised trainees under direct CHW oversight\n\nUnauthorised use, sharing of login credentials or use outside a supervised health programme is strictly prohibited.',
+          body:
+              'This application is authorised for use only by:\n\n• Registered Community Health Workers under a recognised Ugandan Health Centre (HC II–HC IV)\n• Health administrators with valid MOH credentials\n• Supervised trainees under direct CHW oversight\n\nUnauthorised use, sharing of login credentials or use outside a supervised health programme is strictly prohibited.',
         ),
         _LegalSection(
           heading: '4. Patient Data & Confidentiality',
-          body: 'All patient data is subject to the Uganda Data Protection and Privacy Act 2019. CHWs are legally obligated to:\n\n• Obtain verbal informed consent before screening\n• Explain the purpose of data collection to each patient\n• Never share patient records with unauthorised persons\n• Report any data breach immediately to their supervising health officer',
+          body:
+              'All patient data is subject to the Uganda Data Protection and Privacy Act 2019. CHWs are legally obligated to:\n\n• Obtain verbal informed consent before screening\n• Explain the purpose of data collection to each patient\n• Never share patient records with unauthorised persons\n• Report any data breach immediately to their supervising health officer',
         ),
         _LegalSection(
           heading: '5. Clinical Limitations & Disclaimer',
-          body: 'VisionScreen is a screening tool, not a diagnostic instrument. A failed result indicates the need for further clinical evaluation and does not confirm any specific ocular pathology. CHWs must not:\n\n• Diagnose any eye condition based on screening results\n• Prescribe glasses or medication\n• Advise patients to discontinue existing treatment\n\nAll clinical decisions must be made by a licensed eye care professional.',
+          body:
+              'VisionScreen is a screening tool, not a diagnostic instrument. A failed result indicates the need for further clinical evaluation and does not confirm any specific ocular pathology. CHWs must not:\n\n• Diagnose any eye condition based on screening results\n• Prescribe glasses or medication\n• Advise patients to discontinue existing treatment\n\nAll clinical decisions must be made by a licensed eye care professional.',
         ),
         _LegalSection(
           heading: '6. Device & Screen Calibration',
-          body: 'Accurate vision screening requires proper device calibration. VisionScreen automatically detects screen PPI and physical dimensions to render optotypes at clinically correct sizes. Users must:\n\n• Ensure the device screen is clean and undamaged\n• Maintain the correct 3-metre testing distance\n• Conduct tests in adequate lighting (minimum 80 lux)\n• Recalibrate if the device or screen is changed',
+          body:
+              'Accurate vision screening requires proper device calibration. VisionScreen automatically detects screen PPI and physical dimensions to render optotypes at clinically correct sizes. Users must:\n\n• Ensure the device screen is clean and undamaged\n• Maintain the correct 3-metre testing distance\n• Conduct tests in adequate lighting (minimum 80 lux)\n• Recalibrate if the device or screen is changed',
         ),
         _LegalSection(
           heading: '7. Referral Obligations',
-          body: 'When a patient fails the screening threshold, the CHW is obligated to:\n\n• Generate a formal referral document within VisionScreen\n• Communicate the referral to the patient clearly\n• Follow up within 14 days to confirm attendance\n• Record the outcome in the patient screening history\n\nFailure to follow up may constitute a breach of duty of care under the Uganda Allied Health Professionals Act.',
+          body:
+              'When a patient fails the screening threshold, the CHW is obligated to:\n\n• Generate a formal referral document within VisionScreen\n• Communicate the referral to the patient clearly\n• Follow up within 14 days to confirm attendance\n• Record the outcome in the patient screening history\n\nFailure to follow up may constitute a breach of duty of care under the Uganda Allied Health Professionals Act.',
         ),
         _LegalSection(
           heading: '8. Amendments',
-          body: 'These Terms may be updated periodically to reflect changes in clinical guidelines, MOH policy or application functionality. Users will be notified of material changes upon next login. Continued use of VisionScreen constitutes acceptance of the updated terms.',
+          body:
+              'These Terms may be updated periodically to reflect changes in clinical guidelines, MOH policy or application functionality. Users will be notified of material changes upon next login. Continued use of VisionScreen constitutes acceptance of the updated terms.',
         ),
       ],
     ),
@@ -1228,35 +1240,43 @@ void showPrivacyPolicy(BuildContext context) {
       sections: [
         _LegalSection(
           heading: '1. Data Controller',
-          body: 'VisionScreen is operated under the supervision of the Uganda Ministry of Health Community Health Division. The data controller responsible for patient information is the registered health facility to which the CHW is assigned.',
+          body:
+              'VisionScreen is operated under the supervision of the Uganda Ministry of Health Community Health Division. The data controller responsible for patient information is the registered health facility to which the CHW is assigned.',
         ),
         _LegalSection(
           heading: '2. What Data We Collect',
-          body: 'VisionScreen collects the following data:\n\n• Patient demographics: name, age, gender, village, phone number\n• Clinical data: visual acuity scores (OD, OS, OU), LogMAR values, test date and time\n• Referral data: facility name, appointment date, referral status, follow-up outcomes\n• Device data: screen PPI, device model (for calibration only)\n• Account data: CHW name, health centre, district, email address',
+          body:
+              'VisionScreen collects the following data:\n\n• Patient demographics: name, age, gender, village, phone number\n• Clinical data: visual acuity scores (OD, OS, OU), LogMAR values, test date and time\n• Referral data: facility name, appointment date, referral status, follow-up outcomes\n• Device data: screen PPI, device model (for calibration only)\n• Account data: CHW name, health centre, district, email address',
         ),
         _LegalSection(
           heading: '3. How We Use Your Data',
-          body: 'Data collected is used exclusively for:\n\n• Conducting and recording vision screening assessments\n• Generating clinical referral documents\n• Tracking referral follow-up and patient outcomes\n• Programme monitoring and public health analytics (anonymised)\n• Improving screening accuracy and application performance\n\nData is never sold, rented or shared with commercial third parties.',
+          body:
+              'Data collected is used exclusively for:\n\n• Conducting and recording vision screening assessments\n• Generating clinical referral documents\n• Tracking referral follow-up and patient outcomes\n• Programme monitoring and public health analytics (anonymised)\n• Improving screening accuracy and application performance\n\nData is never sold, rented or shared with commercial third parties.',
         ),
         _LegalSection(
           heading: '4. Data Storage & Security',
-          body: 'Patient data is stored locally on your device using SQLite encryption. When internet is available, data syncs to a secure MongoDB Atlas cloud instance compliant with ISO/IEC 27001.\n\nSecurity measures include:\n\n• AES-256 encryption for data at rest\n• TLS 1.3 encryption for data in transit\n• Role-based access control (CHW vs Administrator)\n• Automatic session timeout after 30 minutes of inactivity',
+          body:
+              'Patient data is stored locally on your device using SQLite encryption. When internet is available, data syncs to a secure MongoDB Atlas cloud instance compliant with ISO/IEC 27001.\n\nSecurity measures include:\n\n• AES-256 encryption for data at rest\n• TLS 1.3 encryption for data in transit\n• Role-based access control (CHW vs Administrator)\n• Automatic session timeout after 30 minutes of inactivity',
         ),
         _LegalSection(
           heading: '5. Patient Consent',
-          body: 'Before screening, CHWs must obtain informed verbal consent from the patient or guardian (for minors). Patients have the right to:\n\n• Refuse screening without consequence\n• Request deletion of their records\n• Access their own screening history\n• Know how their data will be used',
+          body:
+              'Before screening, CHWs must obtain informed verbal consent from the patient or guardian (for minors). Patients have the right to:\n\n• Refuse screening without consequence\n• Request deletion of their records\n• Access their own screening history\n• Know how their data will be used',
         ),
         _LegalSection(
           heading: '6. Data Retention',
-          body: 'Patient screening records are retained for a minimum of 5 years in accordance with the Uganda National Health Records and Information Policy. After this period, records may be anonymised for research or permanently deleted upon request from the supervising health officer.',
+          body:
+              'Patient screening records are retained for a minimum of 5 years in accordance with the Uganda National Health Records and Information Policy. After this period, records may be anonymised for research or permanently deleted upon request from the supervising health officer.',
         ),
         _LegalSection(
           heading: '7. Your Rights',
-          body: 'Under the Uganda Data Protection and Privacy Act 2019, you have the right to:\n\n• Access personal data held about you\n• Correct inaccurate or incomplete data\n• Request erasure of your data\n• Object to processing of your data\n• Lodge a complaint with the Personal Data Protection Office of Uganda',
+          body:
+              'Under the Uganda Data Protection and Privacy Act 2019, you have the right to:\n\n• Access personal data held about you\n• Correct inaccurate or incomplete data\n• Request erasure of your data\n• Object to processing of your data\n• Lodge a complaint with the Personal Data Protection Office of Uganda',
         ),
         _LegalSection(
           heading: '8. Contact',
-          body: 'For any privacy-related concerns, data requests or breach reports, contact the VisionScreen Programme Coordinator through your district health office or the Uganda MOH Community Health Division.',
+          body:
+              'For any privacy-related concerns, data requests or breach reports, contact the VisionScreen Programme Coordinator through your district health office or the Uganda MOH Community Health Division.',
         ),
       ],
     ),
@@ -1366,8 +1386,10 @@ class _LegalSheet extends StatelessWidget {
                 controller: scrollCtrl,
                 padding: const EdgeInsets.fromLTRB(22, 12, 22, 40),
                 itemCount: sections.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 20),
-                itemBuilder: (context, i) => _LegalSectionWidget(section: sections[i]),
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 20),
+                itemBuilder: (context, i) =>
+                    _LegalSectionWidget(section: sections[i]),
               ),
             ),
           ],
@@ -1445,10 +1467,7 @@ class _ClinicalBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(99),
-        border: Border.all(
-          color: color.withValues(alpha: 0.30),
-          width: 1,
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.30), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
