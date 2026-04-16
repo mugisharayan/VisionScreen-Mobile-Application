@@ -952,8 +952,10 @@ class _PatientsScreenState extends State<PatientsScreen> {
           ),
         ],
       ),
-      padding: const EdgeInsets.fromLTRB(8, 10, 8, 20),
-      child: Row(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom),
+      child: SizedBox(
+        height: 60,
+        child: Row(
         children: items.asMap().entries.map((e) {
           final isActive = e.key == 1; // Patients is index 1
           return Expanded(
@@ -1103,6 +1105,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
             ),
           );
         }).toList(),
+        ),
       ),
     );
   }

@@ -2181,8 +2181,10 @@ class _ReferralsScreenState extends State<ReferralsScreen> {
           ),
         ],
       ),
-      padding: const EdgeInsets.fromLTRB(8, 10, 8, 20),
-      child: Row(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom),
+      child: SizedBox(
+        height: 60,
+        child: Row(
         children: items.asMap().entries.map((e) {
           final isActive = e.key == 2; // Referrals tab is active
           return Expanded(
@@ -2336,6 +2338,7 @@ class _ReferralsScreenState extends State<ReferralsScreen> {
             ),
           );
         }).toList(),
+        ),
       ),
     );
   }
