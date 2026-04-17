@@ -9,7 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'training_screen.dart';
 import 'notifications_screen.dart';
 import 'patients_screen.dart';
-import 'referrals_screen.dart';
+
 import 'analytics_screen.dart';
 import 'settings_screen.dart';
 
@@ -1447,7 +1447,7 @@ class _HomeScreenState extends State<HomeScreen>
               ],
             ),
             TextButton.icon(
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReferralsScreen())),
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PatientsScreen())),
               icon: const Icon(Icons.arrow_forward_rounded,
                   size: 13, color: Color(0xFF0D9488)),
               label: Text('View all',

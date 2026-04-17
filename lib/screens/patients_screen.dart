@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // ── Colours (shared with the rest of the app) ──
 const _ink = Color(0xFF04091A);
@@ -29,6 +30,10 @@ class _Patient {
     required this.outcome,
     required this.date,
     required this.id,
+    required this.phone,
+    this.facility,
+    this.dueDate,
+    this.referralStatus,
   });
 
   final String initials;
@@ -43,6 +48,11 @@ class _Patient {
   final String outcome; // pass | refer | pending
   final String date;
   final String id;
+  final String phone;
+  final String? facility;
+  final String? dueDate;
+  final String?
+  referralStatus; // overdue | notified | pending | attended | completed | cancelled
 }
 
 final _patients = <_Patient>[
@@ -62,6 +72,7 @@ final _patients = <_Patient>[
     outcome: 'pass',
     date: 'Today · 8m ago',
     id: 'PAT-00312',
+    phone: '+256701234567',
   ),
   _Patient(
     initials: 'OJ',
@@ -79,6 +90,10 @@ final _patients = <_Patient>[
     outcome: 'refer',
     date: 'Today · 22m ago',
     id: 'PAT-00298',
+    phone: '+256702345678',
+    facility: 'Mulago National Referral Hospital',
+    dueDate: '29 Mar 2026',
+    referralStatus: 'overdue',
   ),
   _Patient(
     initials: 'NA',
@@ -96,6 +111,7 @@ final _patients = <_Patient>[
     outcome: 'pass',
     date: 'Today · 1hr ago',
     id: 'PAT-00301',
+    phone: '+256703456789',
   ),
   _Patient(
     initials: 'MW',
@@ -107,12 +123,16 @@ final _patients = <_Patient>[
     gender: 'M',
     village: 'Kireka, Wakiso',
     ageGroup: 'adult',
-    od: '—',
-    os: '—',
-    ou: '—',
-    outcome: 'pending',
+    od: '6/12',
+    os: '6/18',
+    ou: '6/12',
+    outcome: 'refer',
     date: 'Today · Pending',
     id: 'PAT-00315',
+    phone: '+256704567890',
+    facility: 'Mengo Hospital',
+    dueDate: '12 Apr 2026',
+    referralStatus: 'cancelled',
   ),
   _Patient(
     initials: 'KR',
@@ -124,12 +144,16 @@ final _patients = <_Patient>[
     gender: 'F',
     village: 'Rubaga, Kampala',
     ageGroup: 'adult',
-    od: '6/6',
-    os: '6/6',
+    od: '6/9',
+    os: '6/9',
     ou: '6/6',
-    outcome: 'pass',
+    outcome: 'refer',
     date: '26 Mar',
     id: 'PAT-00289',
+    phone: '+256705678901',
+    facility: 'Makerere University Hospital',
+    dueDate: '10 Apr 2026',
+    referralStatus: 'completed',
   ),
   _Patient(
     initials: 'BS',
@@ -147,6 +171,10 @@ final _patients = <_Patient>[
     outcome: 'refer',
     date: '25 Mar',
     id: 'PAT-00276',
+    phone: '+256706789012',
+    facility: 'Kampala Eye Clinic',
+    dueDate: '2 Apr 2026',
+    referralStatus: 'notified',
   ),
   _Patient(
     initials: 'TK',
@@ -164,6 +192,7 @@ final _patients = <_Patient>[
     outcome: 'pass',
     date: '24 Mar',
     id: 'PAT-00261',
+    phone: '+256707890123',
   ),
   _Patient(
     initials: 'AN',
@@ -181,6 +210,10 @@ final _patients = <_Patient>[
     outcome: 'refer',
     date: '23 Mar',
     id: 'PAT-00254',
+    phone: '+256708901234',
+    facility: 'Mulago National Referral Hospital',
+    dueDate: '7 Apr 2026',
+    referralStatus: 'attended',
   ),
 ];
 
@@ -207,7 +240,8 @@ class _PatientsScreenState extends State<PatientsScreen> {
         _query.isEmpty ||
         p.name.toLowerCase().contains(_query) ||
         p.id.toLowerCase().contains(_query) ||
-        p.village.toLowerCase().contains(_query);
+        p.village.toLowerCase().contains(_query) ||
+        (p.facility?.toLowerCase().contains(_query) ?? false);
     final matchF =
         _filter == 'All' ||
         (_filter == 'Pass' && p.outcome == 'pass') ||
@@ -215,18 +249,27 @@ class _PatientsScreenState extends State<PatientsScreen> {
         (_filter == 'Pending' && p.outcome == 'pending') ||
         (_filter == 'Child' && p.ageGroup == 'child') ||
         (_filter == 'Adult' && p.ageGroup == 'adult') ||
-        (_filter == 'Elderly' && p.ageGroup == 'elderly');
+        (_filter == 'Elderly' && p.ageGroup == 'elderly') ||
+        (_filter == 'Overdue' && p.referralStatus == 'overdue') ||
+        (_filter == 'Notified' && p.referralStatus == 'notified') ||
+        (_filter == 'Attended' && p.referralStatus == 'attended') ||
+        (_filter == 'Completed' && p.referralStatus == 'completed') ||
+        (_filter == 'Cancelled' && p.referralStatus == 'cancelled');
     return matchQ && matchF;
   }).toList();
 
   @override
   Widget build(BuildContext context) {
     final list = _filtered;
+    final total = _patients.length;
+    final passed = _patients.where((p) => p.outcome == 'pass').length;
+    final referred = _patients.where((p) => p.outcome == 'refer').length;
+    final pending = _patients.where((p) => p.outcome == 'pending').length;
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFB),
       body: Column(
         children: [
-          _buildHeader(),
+          _buildHeader(total, passed, referred, pending),
           Expanded(
             child: list.isEmpty
                 ? _buildEmpty()
@@ -234,10 +277,11 @@ class _PatientsScreenState extends State<PatientsScreen> {
                     padding: const EdgeInsets.fromLTRB(14, 12, 14, 24),
                     itemCount: list.length + 1,
                     itemBuilder: (_, i) {
-                      if (i == 0)
+                      if (i == 0) {
                         return _sectionLabel(
                           'Today · ${DateTime.now().day} Mar ${DateTime.now().year}',
                         );
+                      }
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 9),
                         child: _buildCard(list[i - 1]),
@@ -247,12 +291,11 @@ class _PatientsScreenState extends State<PatientsScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: null,
     );
   }
 
   // ── Header ──
-  Widget _buildHeader() {
+  Widget _buildHeader(int total, int passed, int referred, int pending) {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -275,7 +318,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Patients',
+                        'Patients & Referrals',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 24,
                           fontWeight: FontWeight.w800,
@@ -283,7 +326,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                         ),
                       ),
                       Text(
-                        '247 registered · Wakiso & Kampala',
+                        '$total registered · Wakiso & Kampala',
                         style: GoogleFonts.inter(
                           fontSize: 11,
                           color: _teal3.withOpacity(0.55),
@@ -291,50 +334,6 @@ class _PatientsScreenState extends State<PatientsScreen> {
                         ),
                       ),
                     ],
-                  ),
-                  const Spacer(),
-                  // New Patient button
-                  GestureDetector(
-                    onTap: () {},
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 9,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [_teal, _teal2],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: [
-                          BoxShadow(
-                            color: _teal.withOpacity(0.35),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.add_rounded,
-                            color: Colors.white,
-                            size: 14,
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            'New Patient',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ),
                 ],
               ),
@@ -347,13 +346,13 @@ class _PatientsScreenState extends State<PatientsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  _statChip('247', 'Total', Colors.white),
+                  _statChip('$total', 'Total', Colors.white),
                   const SizedBox(width: 8),
-                  _statChip('183', 'Passed', _green),
+                  _statChip('$passed', 'Passed', _green),
                   const SizedBox(width: 8),
-                  _statChip('55', 'Referred', _red),
+                  _statChip('$referred', 'Referred', _red),
                   const SizedBox(width: 8),
-                  _statChip('9', 'Pending', _amber),
+                  _statChip('$pending', 'Pending', _amber),
                 ],
               ),
             ),
@@ -374,7 +373,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                   onChanged: (v) => setState(() => _query = v.toLowerCase()),
                   style: GoogleFonts.inter(fontSize: 13, color: Colors.white),
                   decoration: InputDecoration(
-                    hintText: 'Search by name, ID or village...',
+                    hintText: 'Search by name, ID, village, or facility...',
                     hintStyle: GoogleFonts.inter(
                       fontSize: 13,
                       color: _teal3.withOpacity(0.4),
@@ -410,6 +409,11 @@ class _PatientsScreenState extends State<PatientsScreen> {
                   'Child',
                   'Adult',
                   'Elderly',
+                  'Overdue',
+                  'Notified',
+                  'Attended',
+                  'Completed',
+                  'Cancelled',
                 ].map((f) => _filterChip(f)).toList(),
               ),
             ),
@@ -765,48 +769,227 @@ class _PatientsScreenState extends State<PatientsScreen> {
                   horizontal: 14,
                   vertical: 9,
                 ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.badge_outlined,
-                      size: 12,
-                      color: Color(0xFF8FA0B4),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      p.id,
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        color: const Color(0xFF8FA0B4),
-                        fontWeight: FontWeight.w500,
+                child: p.outcome != 'pending'
+                    ? Row(
+                        children: [
+                          Expanded(
+                            child: p.outcome == 'refer' && p.facility != null
+                                ? Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.local_hospital_rounded,
+                                        size: 12,
+                                        color: Color(0xFF8FA0B4),
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Expanded(
+                                        child: Text(
+                                          '${p.facility}',
+                                          overflow: TextOverflow.ellipsis,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 11,
+                                            color: const Color(0xFF5E7291),
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: _referralStatusColor(
+                                            p.referralStatus,
+                                          ).withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(
+                                            99,
+                                          ),
+                                          border: Border.all(
+                                            color: _referralStatusColor(
+                                              p.referralStatus,
+                                            ).withOpacity(0.3),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          p.referralStatus?.toUpperCase() ?? '',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w700,
+                                            color: _referralStatusColor(
+                                              p.referralStatus,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.badge_outlined,
+                                        size: 12,
+                                        color: Color(0xFF8FA0B4),
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        p.id,
+                                        style: GoogleFonts.inter(
+                                          fontSize: 11,
+                                          color: const Color(0xFF8FA0B4),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      const Icon(
+                                        Icons.access_time_rounded,
+                                        size: 11,
+                                        color: Color(0xFF8FA0B4),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        p.date,
+                                        style: GoogleFonts.inter(
+                                          fontSize: 11,
+                                          color: const Color(0xFF8FA0B4),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () => _exportPatientData(p),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.9),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: const Color(0xFFEEF2F6),
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.picture_as_pdf_outlined,
+                                size: 14,
+                                color: Color(0xFF0D9488),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          GestureDetector(
+                            onTap: () => _shareToWhatsApp(p),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF25D366).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: const Color(
+                                    0xFF25D366,
+                                  ).withOpacity(0.3),
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.send_rounded,
+                                size: 14,
+                                color: Color(0xFF25D366),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          GestureDetector(
+                            onTap: () => _callPatient(p),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF3B82F6).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: const Color(
+                                    0xFF3B82F6,
+                                  ).withOpacity(0.3),
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.phone_rounded,
+                                size: 14,
+                                color: Color(0xFF3B82F6),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          const Icon(
+                            Icons.badge_outlined,
+                            size: 12,
+                            color: Color(0xFF8FA0B4),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            p.id,
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: const Color(0xFF8FA0B4),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const Spacer(),
+                          const Icon(
+                            Icons.access_time_rounded,
+                            size: 11,
+                            color: Color(0xFF8FA0B4),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            p.date,
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: const Color(0xFF8FA0B4),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          GestureDetector(
+                            onTap: () => _callPatient(p),
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF3B82F6).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.phone_rounded,
+                                size: 14,
+                                color: Color(0xFF3B82F6),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            'View →',
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: accentColor,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const Spacer(),
-                    const Icon(
-                      Icons.access_time_rounded,
-                      size: 11,
-                      color: Color(0xFF8FA0B4),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      p.date,
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        color: const Color(0xFF8FA0B4),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      'View →',
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: accentColor,
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ],
           ),
@@ -925,4 +1108,536 @@ class _PatientsScreenState extends State<PatientsScreen> {
 
   String _capitalize(String s) =>
       s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+
+  Color _referralStatusColor(String? status) {
+    switch (status) {
+      case 'overdue':
+        return _red;
+      case 'pending':
+        return _amber;
+      case 'notified':
+        return _blue;
+      case 'attended':
+        return _teal;
+      case 'completed':
+        return _green;
+      case 'cancelled':
+        return Colors.grey;
+      default:
+        return _teal;
+    }
+  }
+
+  void _exportPatientData(_Patient p) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDDE4EC),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Export Patient Data',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF1A2A3D),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${p.name} · ${p.facility ?? p.id}',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: const Color(0xFF8FA0B4),
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Export options
+            _exportPatientOption(
+              Icons.picture_as_pdf_outlined,
+              'Export as PDF',
+              'Complete referral report',
+              () => _exportPatientToPDF(p),
+            ),
+            const SizedBox(height: 12),
+            _exportPatientOption(
+              Icons.table_chart_outlined,
+              'Export as CSV',
+              'Data for spreadsheet analysis',
+              () => _exportPatientToCSV(p),
+            ),
+            const SizedBox(height: 12),
+            _exportPatientOption(
+              Icons.email_outlined,
+              'Email Report',
+              'Send via email',
+              () => _emailPatientReport(p),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _exportPatientOption(
+    IconData icon,
+    String title,
+    String subtitle,
+    VoidCallback onTap,
+  ) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFFEEF2F6)),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: _teal.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: _teal, size: 18),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF1A2A3D),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: const Color(0xFF8FA0B4),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 14,
+                color: Color(0xFF8FA0B4),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _exportPatientToPDF(_Patient p) async {
+    Navigator.pop(context);
+
+    try {
+      // Show loading
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Generating PDF for ${p.name}...',
+                style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
+              ),
+            ],
+          ),
+          backgroundColor: _teal,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      // Simulate PDF generation
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Simulate random failure (20% chance)
+      if (DateTime.now().millisecond % 5 == 0) {
+        throw Exception('PDF generation failed');
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: Colors.white,
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'PDF exported successfully! Saved to Downloads.',
+                  style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
+                ),
+              ],
+            ),
+            backgroundColor: _green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      _showErrorSnackBar(
+        'Export failed',
+        'Unable to generate PDF for ${p.name}. Please try again.',
+        retryAction: () => _exportPatientToPDF(p),
+      );
+    }
+  }
+
+  void _exportPatientToCSV(_Patient p) async {
+    Navigator.pop(context);
+
+    try {
+      // Show loading
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Exporting ${p.name} data to CSV...',
+                style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
+              ),
+            ],
+          ),
+          backgroundColor: _teal,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: Colors.white,
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'CSV exported successfully!',
+                  style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
+                ),
+              ],
+            ),
+            backgroundColor: _green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      _showErrorSnackBar(
+        'Export failed',
+        'Unable to export CSV for ${p.name}.',
+        retryAction: () => _exportPatientToCSV(p),
+      );
+    }
+  }
+
+  void _emailPatientReport(_Patient p) {
+    Navigator.pop(context);
+
+    // In a real app, this would open the email client
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.email_rounded, color: Colors.white, size: 16),
+            const SizedBox(width: 8),
+            Text(
+              'Opening email client for ${p.name}...',
+              style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
+            ),
+          ],
+        ),
+        backgroundColor: _blue,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _shareToWhatsApp(_Patient p) {
+    final message =
+        '''
+🏥 *VisionScreen ${p.outcome == 'refer' ? 'Referral' : 'Patient'} Update*
+
+👤 *Patient:* ${p.name}
+📊 *Demographics:* ${p.age} yrs · ${p.gender} · ${p.village}
+🏥 *Facility:* ${p.facility ?? 'N/A'}
+📅 *Due Date:* ${p.dueDate ?? 'N/A'}
+🔄 *Status:* ${p.referralStatus?.toUpperCase() ?? p.outcome.toUpperCase()}
+
+👁️ *Visual Acuity:*
+• OD (Right Eye): ${p.od}
+• OS (Left Eye): ${p.os}
+• OU (Both Eyes): ${p.ou}
+
+📱 *Generated by VisionScreen Mobile App*
+⏰ ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year} at ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}
+''';
+
+    // In a real app, this would use url_launcher to open WhatsApp
+    // For now, we'll show a preview and copy to clipboard
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(
+                color: Color(0xFF25D366),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.share_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Share to WhatsApp',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF1A2A3D),
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Message Preview:',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF8FA0B4),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFB),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFEEF2F6)),
+              ),
+              child: Text(
+                message,
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  color: const Color(0xFF1A2A3D),
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF8FA0B4),
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // In a real app: launch('https://wa.me/?text=${Uri.encodeComponent(message)}');
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Message copied! Opening WhatsApp...',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: const Color(0xFF25D366),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF25D366),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              elevation: 0,
+            ),
+            child: Text(
+              'Share on WhatsApp',
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _callPatient(_Patient p) async {
+    final uri = Uri(scheme: 'tel', path: p.phone);
+    if (!await launchUrl(uri)) {
+      _showErrorSnackBar(
+        'Call failed',
+        'Unable to dial ${p.name}. Please check your device settings.',
+      );
+    }
+  }
+
+  void _showErrorSnackBar(
+    String title,
+    String message, {
+    VoidCallback? retryAction,
+  }) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error_rounded, color: Colors.white, size: 16),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    message,
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: _red,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        action: retryAction != null
+            ? SnackBarAction(
+                label: 'Retry',
+                textColor: Colors.white,
+                onPressed: retryAction,
+              )
+            : null,
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
 }
