@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'splash_screen.dart' show AppColors;
 
@@ -153,6 +154,7 @@ class _LoginScreenState extends State<LoginScreen>
     final heroVisible = _heroVisible && !keyboardOpen && !isSignUp;
     return Scaffold(
       backgroundColor: Colors.white,
+      resizeToAvoidBottomInset: true,
       body: Column(
         children: [
           // ── Dark header ──
@@ -463,6 +465,7 @@ class _LoginForm extends StatelessWidget {
         _InputField(
           controller: emailCtrl,
           hint: 'health@worker.ug',
+          prefix: Icons.mail_outline_rounded,
           keyboardType: TextInputType.emailAddress,
           inputAction: TextInputAction.next,
           hasError: emailError != null,
@@ -475,6 +478,7 @@ class _LoginForm extends StatelessWidget {
         _InputField(
           controller: passwordCtrl,
           hint: '••••••••',
+          prefix: Icons.lock_outline_rounded,
           obscure: !passwordVisible,
           inputAction: TextInputAction.done,
           hasError: passwordError != null,
@@ -628,6 +632,7 @@ class _SignUpForm extends StatelessWidget {
         _InputField(
           controller: nameCtrl,
           hint: 'Your full name',
+          prefix: Icons.person_outline_rounded,
           inputAction: TextInputAction.next,
           hasError: nameError != null,
           onChanged: onNameChanged,
@@ -639,6 +644,7 @@ class _SignUpForm extends StatelessWidget {
         _InputField(
           controller: centreCtrl,
           hint: 'e.g. Nakawa HC III, Wakiso District',
+          prefix: Icons.local_hospital_outlined,
           inputAction: TextInputAction.next,
           hasError: centreError != null,
           onChanged: onCentreChanged,
@@ -650,6 +656,7 @@ class _SignUpForm extends StatelessWidget {
         _InputField(
           controller: districtCtrl,
           hint: 'e.g. Kampala',
+          prefix: Icons.location_on_outlined,
           inputAction: TextInputAction.next,
           hasError: districtError != null,
           onChanged: onDistrictChanged,
@@ -661,6 +668,7 @@ class _SignUpForm extends StatelessWidget {
         _InputField(
           controller: emailCtrl,
           hint: 'your@email.ug',
+          prefix: Icons.mail_outline_rounded,
           keyboardType: TextInputType.emailAddress,
           inputAction: TextInputAction.next,
           hasError: emailError != null,
@@ -673,6 +681,7 @@ class _SignUpForm extends StatelessWidget {
         _InputField(
           controller: phoneCtrl,
           hint: '+256 7XX XXX XXX',
+          prefix: Icons.phone_outlined,
           keyboardType: TextInputType.phone,
           inputAction: TextInputAction.next,
           hasError: phoneError != null,
@@ -685,6 +694,7 @@ class _SignUpForm extends StatelessWidget {
         _InputField(
           controller: passwordCtrl,
           hint: 'Create a strong password',
+          prefix: Icons.lock_outline_rounded,
           obscure: !passwordVisible,
           inputAction: TextInputAction.next,
           hasError: passwordError != null,
@@ -709,6 +719,7 @@ class _SignUpForm extends StatelessWidget {
         _InputField(
           controller: confirmPasswordCtrl,
           hint: 'Re-enter your password',
+          prefix: Icons.lock_outline_rounded,
           obscure: !confirmPasswordVisible,
           inputAction: TextInputAction.done,
           hasError: confirmPasswordError != null,
@@ -758,7 +769,10 @@ class _RoleButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
@@ -826,6 +840,7 @@ class _InputField extends StatefulWidget {
     this.obscure = false,
     this.keyboardType,
     this.inputAction = TextInputAction.next,
+    this.prefix,
     this.suffix,
     this.hasError = false,
     this.onChanged,
@@ -836,6 +851,7 @@ class _InputField extends StatefulWidget {
   final bool obscure;
   final TextInputType? keyboardType;
   final TextInputAction inputAction;
+  final IconData? prefix;
   final Widget? suffix;
   final bool hasError;
   final ValueChanged<String>? onChanged;
@@ -895,18 +911,28 @@ class _InputFieldState extends State<_InputField> {
             fontSize: 13,
             color: const Color(0xFFC4CFDB),
           ),
+          prefixIcon: widget.prefix != null
+              ? Padding(
+                  padding: const EdgeInsets.only(left: 12, right: 8),
+                  child: Icon(
+                    widget.prefix,
+                    size: 16,
+                    color: _focused
+                        ? AppColors.teal
+                        : const Color(0xFFB0BEC5),
+                  ),
+                )
+              : null,
+          prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
           suffixIcon: widget.suffix != null
               ? Padding(
                   padding: const EdgeInsets.only(right: 12),
                   child: widget.suffix,
                 )
               : null,
-          suffixIconConstraints: const BoxConstraints(
-            minWidth: 0,
-            minHeight: 0,
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 14,
+          suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: widget.prefix != null ? 4 : 14,
             vertical: 12,
           ),
           border: InputBorder.none,
@@ -1085,6 +1111,7 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
       onTapUp: (_) {
         if (widget.loading) return;
         setState(() => _pressed = false);
+        HapticFeedback.mediumImpact();
         widget.onTap();
       },
       onTapCancel: () => setState(() => _pressed = false),
