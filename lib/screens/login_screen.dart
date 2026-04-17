@@ -26,18 +26,27 @@ class _LoginScreenState extends State<LoginScreen>
   String? _loginEmailError;
   String? _loginPasswordError;
 
+  // Login form extras
+  bool _rememberMe = false;
+  bool _loginLoading = false;
+
   // Sign up form
   final _signUpNameCtrl = TextEditingController();
   final _signUpCentreCtrl = TextEditingController();
   final _signUpDistrictCtrl = TextEditingController();
   final _signUpEmailCtrl = TextEditingController();
+  final _signUpPhoneCtrl = TextEditingController();
   final _signUpPasswordCtrl = TextEditingController();
+  final _signUpConfirmPasswordCtrl = TextEditingController();
   bool _signUpPasswordVisible = false;
+  bool _signUpConfirmPasswordVisible = false;
   String? _signUpNameError;
   String? _signUpCentreError;
   String? _signUpDistrictError;
   String? _signUpEmailError;
+  String? _signUpPhoneError;
   String? _signUpPasswordError;
+  String? _signUpConfirmPasswordError;
   String _signUpPasswordValue = '';
 
   @override
@@ -63,40 +72,44 @@ class _LoginScreenState extends State<LoginScreen>
     _signUpCentreCtrl.dispose();
     _signUpDistrictCtrl.dispose();
     _signUpEmailCtrl.dispose();
+    _signUpPhoneCtrl.dispose();
     _signUpPasswordCtrl.dispose();
+    _signUpConfirmPasswordCtrl.dispose();
     super.dispose();
   }
 
-  void _login() {
+  Future<void> _login() async {
     setState(() {
       _loginEmailError = _validateEmail(_loginEmailCtrl.text);
       _loginPasswordError = _validatePassword(_loginPasswordCtrl.text);
     });
     if (_loginEmailError != null || _loginPasswordError != null) return;
+    setState(() => _loginLoading = true);
+    await Future.delayed(const Duration(milliseconds: 1400));
+    if (!mounted) return;
     Navigator.of(context).pushReplacementNamed('/home');
   }
 
   void _signUp() {
     setState(() {
       _signUpNameError = _validateRequired(_signUpNameCtrl.text, 'Full name');
-      _signUpCentreError = _validateRequired(
-        _signUpCentreCtrl.text,
-        'Health center',
-      );
-      _signUpDistrictError = _validateRequired(
-        _signUpDistrictCtrl.text,
-        'District',
-      );
+      _signUpCentreError = _validateRequired(_signUpCentreCtrl.text, 'Health center');
+      _signUpDistrictError = _validateRequired(_signUpDistrictCtrl.text, 'District');
       _signUpEmailError = _validateEmail(_signUpEmailCtrl.text);
+      _signUpPhoneError = _validatePhone(_signUpPhoneCtrl.text);
       _signUpPasswordError = _validatePassword(_signUpPasswordCtrl.text);
+      _signUpConfirmPasswordError = _validateConfirmPassword(
+        _signUpPasswordCtrl.text,
+        _signUpConfirmPasswordCtrl.text,
+      );
     });
     if (_signUpNameError != null ||
         _signUpCentreError != null ||
         _signUpDistrictError != null ||
         _signUpEmailError != null ||
-        _signUpPasswordError != null) {
-      return;
-    }
+        _signUpPhoneError != null ||
+        _signUpPasswordError != null ||
+        _signUpConfirmPasswordError != null) return;
     Navigator.of(context).pushReplacementNamed('/home');
   }
 
@@ -117,6 +130,19 @@ class _LoginScreenState extends State<LoginScreen>
   String? _validatePassword(String value) {
     if (value.isEmpty) return 'Password is required';
     if (value.length < 8) return 'Password must be at least 8 characters';
+    return null;
+  }
+
+  String? _validatePhone(String value) {
+    if (value.trim().isEmpty) return 'Phone number is required';
+    final phoneRegex = RegExp(r'^(\+256|0)[0-9]{9}$');
+    if (!phoneRegex.hasMatch(value.trim())) return 'Enter a valid Uganda phone number';
+    return null;
+  }
+
+  String? _validateConfirmPassword(String password, String confirm) {
+    if (confirm.isEmpty) return 'Please confirm your password';
+    if (confirm != password) return 'Passwords do not match';
     return null;
   }
 
@@ -168,16 +194,13 @@ class _LoginScreenState extends State<LoginScreen>
                             selectedRole: _selectedRole,
                             emailError: _loginEmailError,
                             passwordError: _loginPasswordError,
-                            onRoleChanged: (r) =>
-                                setState(() => _selectedRole = r),
-                            onTogglePassword: () => setState(
-                              () => _loginPasswordVisible =
-                                  !_loginPasswordVisible,
-                            ),
-                            onEmailChanged: (_) =>
-                                setState(() => _loginEmailError = null),
-                            onPasswordChanged: (_) =>
-                                setState(() => _loginPasswordError = null),
+                            rememberMe: _rememberMe,
+                            loading: _loginLoading,
+                            onRoleChanged: (r) => setState(() => _selectedRole = r),
+                            onTogglePassword: () => setState(() => _loginPasswordVisible = !_loginPasswordVisible),
+                            onEmailChanged: (_) => setState(() => _loginEmailError = null),
+                            onPasswordChanged: (_) => setState(() => _loginPasswordError = null),
+                            onRememberMeChanged: (v) => setState(() => _rememberMe = v),
                             onLogin: _login,
                           )
                         : _SignUpForm(
@@ -186,30 +209,31 @@ class _LoginScreenState extends State<LoginScreen>
                             centreCtrl: _signUpCentreCtrl,
                             districtCtrl: _signUpDistrictCtrl,
                             emailCtrl: _signUpEmailCtrl,
+                            phoneCtrl: _signUpPhoneCtrl,
                             passwordCtrl: _signUpPasswordCtrl,
+                            confirmPasswordCtrl: _signUpConfirmPasswordCtrl,
                             passwordVisible: _signUpPasswordVisible,
+                            confirmPasswordVisible: _signUpConfirmPasswordVisible,
                             passwordValue: _signUpPasswordValue,
                             nameError: _signUpNameError,
                             centreError: _signUpCentreError,
                             districtError: _signUpDistrictError,
                             emailError: _signUpEmailError,
+                            phoneError: _signUpPhoneError,
                             passwordError: _signUpPasswordError,
-                            onTogglePassword: () => setState(
-                              () => _signUpPasswordVisible =
-                                  !_signUpPasswordVisible,
-                            ),
-                            onNameChanged: (_) =>
-                                setState(() => _signUpNameError = null),
-                            onCentreChanged: (_) =>
-                                setState(() => _signUpCentreError = null),
-                            onDistrictChanged: (_) =>
-                                setState(() => _signUpDistrictError = null),
-                            onEmailChanged: (_) =>
-                                setState(() => _signUpEmailError = null),
+                            confirmPasswordError: _signUpConfirmPasswordError,
+                            onTogglePassword: () => setState(() => _signUpPasswordVisible = !_signUpPasswordVisible),
+                            onToggleConfirmPassword: () => setState(() => _signUpConfirmPasswordVisible = !_signUpConfirmPasswordVisible),
+                            onNameChanged: (_) => setState(() => _signUpNameError = null),
+                            onCentreChanged: (_) => setState(() => _signUpCentreError = null),
+                            onDistrictChanged: (_) => setState(() => _signUpDistrictError = null),
+                            onEmailChanged: (_) => setState(() => _signUpEmailError = null),
+                            onPhoneChanged: (_) => setState(() => _signUpPhoneError = null),
                             onPasswordChanged: (v) => setState(() {
                               _signUpPasswordError = null;
                               _signUpPasswordValue = v;
                             }),
+                            onConfirmPasswordChanged: (_) => setState(() => _signUpConfirmPasswordError = null),
                             onSignUp: _signUp,
                           ),
                   ),
@@ -381,6 +405,9 @@ class _LoginForm extends StatelessWidget {
     required this.onRoleChanged,
     required this.onTogglePassword,
     required this.onLogin,
+    required this.rememberMe,
+    required this.loading,
+    required this.onRememberMeChanged,
     this.emailError,
     this.passwordError,
     this.onEmailChanged,
@@ -394,6 +421,9 @@ class _LoginForm extends StatelessWidget {
   final ValueChanged<String> onRoleChanged;
   final VoidCallback onTogglePassword;
   final VoidCallback onLogin;
+  final bool rememberMe;
+  final bool loading;
+  final ValueChanged<bool> onRememberMeChanged;
   final String? emailError;
   final String? passwordError;
   final ValueChanged<String>? onEmailChanged;
@@ -452,40 +482,74 @@ class _LoginForm extends StatelessWidget {
           suffix: GestureDetector(
             onTap: onTogglePassword,
             child: Icon(
-              passwordVisible
-                  ? Icons.visibility_off_outlined
-                  : Icons.visibility_outlined,
+              passwordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
               size: 18,
               color: const Color(0xFF8FA0B4),
             ),
           ),
         ),
         _ErrorText(error: passwordError),
-        const SizedBox(height: 6),
-        Align(
-          alignment: Alignment.centerRight,
-          child: GestureDetector(
-            onTap: () {},
-            child: Text(
-              'Forgot password?',
-              style: GoogleFonts.sora(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: AppColors.teal,
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            // Remember me toggle
+            GestureDetector(
+              onTap: () => onRememberMeChanged(!rememberMe),
+              child: Row(
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    width: 18,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      color: rememberMe ? AppColors.teal : Colors.white,
+                      borderRadius: BorderRadius.circular(5),
+                      border: Border.all(
+                        color: rememberMe ? AppColors.teal : const Color(0xFFDDE4EC),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: rememberMe
+                        ? const Icon(Icons.check_rounded, size: 12, color: Colors.white)
+                        : null,
+                  ),
+                  const SizedBox(width: 7),
+                  Text(
+                    'Remember me',
+                    style: GoogleFonts.sora(
+                      fontSize: 12,
+                      color: const Color(0xFF5E7291),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
+            const Spacer(),
+            GestureDetector(
+              onTap: () {},
+              child: Text(
+                'Forgot password?',
+                style: GoogleFonts.sora(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.teal,
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 22),
         _PrimaryButton(
           label: 'Login',
           icon: Icons.login_rounded,
+          loading: loading,
           onTap: onLogin,
         ),
         const SizedBox(height: 24),
-        _OrDivider(),
-        const SizedBox(height: 20),
         _OfflineNote(),
+        const SizedBox(height: 20),
+        _VersionFooter(),
       ],
     );
   }
@@ -501,42 +565,58 @@ class _SignUpForm extends StatelessWidget {
     required this.centreCtrl,
     required this.districtCtrl,
     required this.emailCtrl,
+    required this.phoneCtrl,
     required this.passwordCtrl,
+    required this.confirmPasswordCtrl,
     required this.passwordVisible,
+    required this.confirmPasswordVisible,
     required this.onTogglePassword,
+    required this.onToggleConfirmPassword,
     required this.onSignUp,
     required this.passwordValue,
     this.nameError,
     this.centreError,
     this.districtError,
     this.emailError,
+    this.phoneError,
     this.passwordError,
+    this.confirmPasswordError,
     this.onNameChanged,
     this.onCentreChanged,
     this.onDistrictChanged,
     this.onEmailChanged,
+    this.onPhoneChanged,
     this.onPasswordChanged,
+    this.onConfirmPasswordChanged,
   });
 
   final TextEditingController nameCtrl;
   final TextEditingController centreCtrl;
   final TextEditingController districtCtrl;
   final TextEditingController emailCtrl;
+  final TextEditingController phoneCtrl;
   final TextEditingController passwordCtrl;
+  final TextEditingController confirmPasswordCtrl;
   final bool passwordVisible;
+  final bool confirmPasswordVisible;
   final String passwordValue;
   final VoidCallback onTogglePassword;
+  final VoidCallback onToggleConfirmPassword;
   final VoidCallback onSignUp;
   final String? nameError;
   final String? centreError;
   final String? districtError;
   final String? emailError;
+  final String? phoneError;
   final String? passwordError;
+  final String? confirmPasswordError;
   final ValueChanged<String>? onNameChanged;
   final ValueChanged<String>? onCentreChanged;
   final ValueChanged<String>? onDistrictChanged;
   final ValueChanged<String>? onEmailChanged;
+  final ValueChanged<String>? onPhoneChanged;
   final ValueChanged<String>? onPasswordChanged;
+  final ValueChanged<String>? onConfirmPasswordChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -588,21 +668,31 @@ class _SignUpForm extends StatelessWidget {
         ),
         _ErrorText(error: emailError),
         const SizedBox(height: 13),
+        _FieldLabel(label: 'Phone Number'),
+        const SizedBox(height: 5),
+        _InputField(
+          controller: phoneCtrl,
+          hint: '+256 7XX XXX XXX',
+          keyboardType: TextInputType.phone,
+          inputAction: TextInputAction.next,
+          hasError: phoneError != null,
+          onChanged: onPhoneChanged,
+        ),
+        _ErrorText(error: phoneError),
+        const SizedBox(height: 13),
         _FieldLabel(label: 'Password'),
         const SizedBox(height: 5),
         _InputField(
           controller: passwordCtrl,
           hint: 'Create a strong password',
           obscure: !passwordVisible,
-          inputAction: TextInputAction.done,
+          inputAction: TextInputAction.next,
           hasError: passwordError != null,
           onChanged: onPasswordChanged,
           suffix: GestureDetector(
             onTap: onTogglePassword,
             child: Icon(
-              passwordVisible
-                  ? Icons.visibility_off_outlined
-                  : Icons.visibility_outlined,
+              passwordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
               size: 18,
               color: const Color(0xFF8FA0B4),
             ),
@@ -613,14 +703,37 @@ class _SignUpForm extends StatelessWidget {
           const SizedBox(height: 8),
           _PasswordStrength(password: passwordValue),
         ],
+        const SizedBox(height: 13),
+        _FieldLabel(label: 'Confirm Password'),
+        const SizedBox(height: 5),
+        _InputField(
+          controller: confirmPasswordCtrl,
+          hint: 'Re-enter your password',
+          obscure: !confirmPasswordVisible,
+          inputAction: TextInputAction.done,
+          hasError: confirmPasswordError != null,
+          onChanged: onConfirmPasswordChanged,
+          suffix: GestureDetector(
+            onTap: onToggleConfirmPassword,
+            child: Icon(
+              confirmPasswordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+              size: 18,
+              color: const Color(0xFF8FA0B4),
+            ),
+          ),
+        ),
+        _ErrorText(error: confirmPasswordError),
         const SizedBox(height: 22),
         _PrimaryButton(
           label: 'Create Account',
           icon: Icons.person_add_outlined,
+          loading: false,
           onTap: onSignUp,
         ),
         const SizedBox(height: 20),
         _TermsNote(),
+        const SizedBox(height: 16),
+        _VersionFooter(),
       ],
     );
   }
@@ -950,11 +1063,13 @@ class _PrimaryButton extends StatefulWidget {
     required this.label,
     required this.icon,
     required this.onTap,
+    required this.loading,
   });
 
   final String label;
   final IconData icon;
   final VoidCallback onTap;
+  final bool loading;
 
   @override
   State<_PrimaryButton> createState() => _PrimaryButtonState();
@@ -966,8 +1081,9 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
+      onTapDown: (_) { if (!widget.loading) setState(() => _pressed = true); },
       onTapUp: (_) {
+        if (widget.loading) return;
         setState(() => _pressed = false);
         widget.onTap();
       },
@@ -979,10 +1095,12 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppColors.teal, AppColors.teal2],
+              colors: widget.loading
+                  ? [AppColors.teal.withValues(alpha: 0.6), AppColors.teal2.withValues(alpha: 0.6)]
+                  : [AppColors.teal, AppColors.teal2],
             ),
             borderRadius: BorderRadius.circular(10),
             boxShadow: [
@@ -993,21 +1111,32 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
               ),
             ],
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(widget.icon, color: Colors.white, size: 16),
-              const SizedBox(width: 8),
-              Text(
-                widget.label,
-                style: GoogleFonts.sora(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
+          child: widget.loading
+              ? const Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(widget.icon, color: Colors.white, size: 16),
+                    const SizedBox(width: 8),
+                    Text(
+                      widget.label,
+                      style: GoogleFonts.sora(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -1015,28 +1144,20 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
 }
 
 // ─────────────────────────────────────────────────────────────
-// OR divider
+// Version footer
 // ─────────────────────────────────────────────────────────────
-class _OrDivider extends StatelessWidget {
+class _VersionFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(child: Container(height: 1, color: const Color(0xFFDDE4EC))),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text(
-            'Offline Mode',
-            style: GoogleFonts.sora(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF8FA0B4),
-              letterSpacing: 0.5,
-            ),
-          ),
+    return Center(
+      child: Text(
+        'VisionScreen v1.0.0 · Uganda MOH · WHO Compliant',
+        style: GoogleFonts.sora(
+          fontSize: 10,
+          color: const Color(0xFFB0BEC5),
+          letterSpacing: 0.3,
         ),
-        Expanded(child: Container(height: 1, color: const Color(0xFFDDE4EC))),
-      ],
+      ),
     );
   }
 }
