@@ -15,6 +15,8 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabCtrl;
+  final _scrollCtrl = ScrollController();
+  bool _heroVisible = true;
 
   // Login form
   final _loginEmailCtrl = TextEditingController();
@@ -43,11 +45,18 @@ class _LoginScreenState extends State<LoginScreen>
     super.initState();
     _tabCtrl = TabController(length: 2, vsync: this);
     _tabCtrl.addListener(() => setState(() {}));
+    _scrollCtrl.addListener(() {
+      final shouldHide = _scrollCtrl.offset > 10;
+      if (shouldHide != !_heroVisible) {
+        setState(() => _heroVisible = !shouldHide);
+      }
+    });
   }
 
   @override
   void dispose() {
     _tabCtrl.dispose();
+    _scrollCtrl.dispose();
     _loginEmailCtrl.dispose();
     _loginPasswordCtrl.dispose();
     _signUpNameCtrl.dispose();
@@ -113,16 +122,20 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
+    final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 100;
+    final isSignUp = _tabCtrl.index == 1;
+    final heroVisible = _heroVisible && !keyboardOpen && !isSignUp;
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
         children: [
           // ── Dark header ──
-          _AuthHeader(selectedRole: _selectedRole),
+          _AuthHeader(visible: heroVisible),
 
           // ── Scrollable body ──
           Expanded(
             child: SingleChildScrollView(
+              controller: _scrollCtrl,
               padding: const EdgeInsets.fromLTRB(22, 22, 22, 32),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -211,129 +224,87 @@ class _LoginScreenState extends State<LoginScreen>
 }
 
 // ─────────────────────────────────────────────────────────────
-// Dark header — gradient background, dot pattern, logo + title
+// Dark hero header — logo + app name only, top-left aligned
+// Smoothly disappears when Sign Up tab is active or keyboard opens
 // ─────────────────────────────────────────────────────────────
 class _AuthHeader extends StatelessWidget {
-  const _AuthHeader({required this.selectedRole});
-  final String selectedRole;
+  const _AuthHeader({required this.visible});
+  final bool visible;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final topPad = MediaQuery.of(context).padding.top;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOutCubic,
+      height: visible ? topPad + 100 : 0,
       width: double.infinity,
+      clipBehavior: Clip.hardEdge,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [AppColors.ink, AppColors.ink2],
-          stops: [0.0, 1.0],
         ),
       ),
       child: Stack(
         children: [
-          // Dot pattern overlay
           Positioned.fill(child: CustomPaint(painter: _DotPatternPainter())),
-
-          // Content
           SafeArea(
             bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Logo row
-                  Row(
-                    children: [
-                      Container(
-                        width: 34,
-                        height: 34,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [AppColors.teal, AppColors.teal2],
-                          ),
-                          borderRadius: BorderRadius.circular(10),
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 200),
+              opacity: visible ? 1.0 : 0.0,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [AppColors.teal, AppColors.teal2],
                         ),
-                        child: Center(
-                          child: CustomPaint(
-                            size: const Size(18, 18),
-                            painter: _HeaderEyePainter(),
+                        borderRadius: BorderRadius.circular(13),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.teal.withValues(alpha: 0.4),
+                            blurRadius: 16,
+                            spreadRadius: 1,
+                            offset: const Offset(0, 4),
                           ),
-                        ),
+                        ],
                       ),
-                      const SizedBox(width: 9),
-                      RichText(
-                        text: TextSpan(
-                          style: GoogleFonts.dmSerifDisplay(
-                            fontSize: 19,
-                            color: Colors.white,
-                          ),
-                          children: const [
-                            TextSpan(text: 'Vision'),
-                            TextSpan(
-                              text: 'Screen',
-                              style: TextStyle(color: AppColors.teal3),
-                            ),
-                          ],
+                      child: Center(
+                        child: CustomPaint(
+                          size: const Size(22, 22),
+                          painter: _HeaderEyePainter(),
                         ),
                       ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Title
-                  RichText(
-                    text: TextSpan(
-                      style: GoogleFonts.dmSerifDisplay(
-                        fontSize: 28,
-                        color: Colors.white,
-                        height: 1.25,
-                      ),
-                      children: const [
-                        TextSpan(text: 'Welcome\n'),
-                        TextSpan(text: 'Back 👋'),
-                      ],
                     ),
-                  ),
-
-                  const SizedBox(height: 7),
-
-                  Text(
-                    'Sign in to begin community screening',
-                    style: GoogleFonts.sora(
-                      fontSize: 12,
-                      color: AppColors.teal3.withValues(alpha: 0.6),
+                    const SizedBox(width: 12),
+                    RichText(
+                      text: TextSpan(
+                        style: GoogleFonts.dmSerifDisplay(
+                          fontSize: 22,
+                          color: Colors.white,
+                          letterSpacing: -0.5,
+                        ),
+                        children: const [
+                          TextSpan(text: 'Vision'),
+                          TextSpan(
+                            text: 'Screen',
+                            style: TextStyle(color: AppColors.teal3),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // ── Clinical compliance badges ──
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _ClinicalBadge(
-                        icon: Icons.verified_outlined,
-                        label: 'WHO Vision Standards',
-                        color: AppColors.teal3,
-                      ),
-                      _ClinicalBadge(
-                        icon: Icons.local_hospital_outlined,
-                        label: 'MOH Uganda Approved',
-                        color: const Color(0xFF38BDF8),
-                      ),
-                      _ClinicalBadge(
-                        icon: Icons.visibility_outlined,
-                        label: 'Tumbling E · LogMAR',
-                        color: AppColors.teal2,
-                      ),
-                    ],
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -1446,51 +1417,7 @@ class _LegalSectionWidget extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// Clinical compliance badge
-// ─────────────────────────────────────────────────────────────
-class _ClinicalBadge extends StatelessWidget {
-  const _ClinicalBadge({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
 
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(99),
-        border: Border.all(color: color.withValues(alpha: 0.30), width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 11, color: color),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: GoogleFonts.sora(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: color,
-              letterSpacing: 0.3,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// Dot pattern painter for the header background
 // ─────────────────────────────────────────────────────────────
 class _DotPatternPainter extends CustomPainter {
   @override
