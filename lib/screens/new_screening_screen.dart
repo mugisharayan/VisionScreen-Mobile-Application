@@ -38,9 +38,6 @@ const _rows = [
   {'logmar': '0.0', 'size': 18.0},
 ];
 
-// ── Low vision levels (shown after stopping rule) ────────────────────────────
-const _lvLevels = ['Count Fingers', 'Hand Movement', 'Light Perception'];
-
 class NewScreeningScreen extends StatefulWidget {
   const NewScreeningScreen({super.key});
   @override
@@ -101,13 +98,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   int _currentRow = 0;
   int _currentRotation = 0; // 0=right,1=down,2=left,3=up
   bool _rowRetryUsed = false;
-  int _consecutiveFails = 0;
-  List<bool> _rowResponses = [];
-  // per-eye results: {logmar, duration, cantTellCount}
   final List<Map<String, dynamic>> _eyeResults = [];
-  // low vision fallback
-  bool _showLvOptions = false;
-  String? _lvResult;
   int _cantTellCount = 0;
 
   // ── Feature: Timer ────────────────────────────────────────────────────────
@@ -251,18 +242,9 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
-  // 60% pass threshold
-  bool _rowPassed() {
-    if (_rowResponses.isEmpty) return false;
-    final correct = _rowResponses.where((r) => r).length;
-    return correct / _rowResponses.length >= 0.6;
-  }
-
   void _recordResponse(bool correct) {
     setState(() {
-      _rowResponses.add(correct);
       _rowRetryUsed = false;
-      _rowResponses = [];
       if (_currentRow < _rows.length - 1) {
         _currentRow++;
         _generateRotation();
@@ -285,14 +267,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     });
   }
 
-  void _selectLvResult(String level) {
-    setState(() {
-      _lvResult = level;
-      _showLvOptions = false;
-    });
-    _finishEye(level);
-  }
-
   void _finishEye(String result) {
     _stopTestTimer();
     _restoreBrightness();
@@ -311,11 +285,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     setState(() {
       _currentEyeIndex++;
       _currentRow = 0;
-      _consecutiveFails = 0;
       _rowRetryUsed = false;
-      _rowResponses = [];
-      _showLvOptions = false;
-      _lvResult = null;
       _cantTellCount = 0;
       _generateRotation();
       _step = 2; // cover eye reminder
@@ -338,6 +308,14 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   }
 
   // ── VA helpers ────────────────────────────────────────────────────────────
+  String _toSnellen(String logmar) {
+    final v = double.tryParse(logmar);
+    if (v == null) return logmar;
+    const snaps = [6, 9, 12, 18, 24, 36, 48, 60, 120];
+    final second = (6 * pow(10, v)).round();
+    return '6/${snaps.reduce((a, b) => (a - second).abs() < (b - second).abs() ? a : b)}';
+  }
+
   String _vaClass(String logmar) {
     final v = double.tryParse(logmar);
     if (v == null) return logmar; // LV level string
@@ -1287,7 +1265,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               // Retry button
               GestureDetector(
                 onTap: _rowRetryUsed ? null : () => setState(() {
-                  _rowResponses = [];
                   _rowRetryUsed = true;
                   _generateRotation();
                 }),
@@ -1509,10 +1486,15 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   style: GoogleFonts.inter(
                       fontSize: 12, color: const Color(0xFF8FA0B4))),
                 const SizedBox(height: 6),
-                Text(double.tryParse(logmar) != null ? 'LogMAR $logmar' : logmar,
-                    style: GoogleFonts.spaceGrotesk(
-                        fontSize: 36, fontWeight: FontWeight.w900, color: col)),
-                const SizedBox(height: 4),
+                Text(
+                  double.tryParse(logmar) != null ? _toSnellen(logmar) : logmar,
+                  style: GoogleFonts.spaceGrotesk(
+                      fontSize: 48, fontWeight: FontWeight.w900, color: col)),
+                if (double.tryParse(logmar) != null)
+                  Text('LogMAR $logmar',
+                      style: GoogleFonts.inter(
+                          fontSize: 13, color: col.withValues(alpha: 0.7))),
+                const SizedBox(height: 6),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
                   decoration: BoxDecoration(
@@ -1794,9 +1776,13 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                     children: [
                       Text(
                         double.tryParse(logmar) != null
-                            ? 'LogMAR $logmar' : logmar,
+                            ? _toSnellen(logmar) : logmar,
                         style: GoogleFonts.spaceGrotesk(
                             fontSize: 16, fontWeight: FontWeight.w800, color: col)),
+                      if (double.tryParse(logmar) != null)
+                        Text('LogMAR $logmar',
+                            style: GoogleFonts.inter(
+                                fontSize: 10, color: col.withValues(alpha: 0.7))),
                       Text(dur,
                           style: GoogleFonts.inter(
                               fontSize: 10, color: const Color(0xFF8FA0B4))),
@@ -1830,7 +1816,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                                 color: _red)),
                         const SizedBox(height: 2),
                         Text(
-                          'Visual acuity below normal threshold. '
+                          'Vision below 6/12 in one or more eyes. '
                           'Refer to nearest eye clinic.',
                           style: GoogleFonts.inter(
                               fontSize: 11, color: const Color(0xFF5E7291),
