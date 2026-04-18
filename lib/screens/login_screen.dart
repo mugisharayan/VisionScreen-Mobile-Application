@@ -858,10 +858,10 @@ class _FieldLabel extends StatelessWidget {
     return Text(
       label.toUpperCase(),
       style: GoogleFonts.sora(
-        fontSize: 10,
-        fontWeight: FontWeight.w700,
-        color: AppColors.teal3.withValues(alpha: 0.7),
-        letterSpacing: 1.4,
+        fontSize: 11,
+        fontWeight: FontWeight.w800,
+        color: AppColors.teal3.withValues(alpha: 0.85),
+        letterSpacing: 1.6,
       ),
     );
   }
@@ -943,12 +943,13 @@ class _InputFieldState extends State<_InputField> {
         keyboardType: widget.keyboardType,
         textInputAction: widget.inputAction,
         onChanged: widget.onChanged,
-        style: GoogleFonts.sora(fontSize: 13, color: Colors.white),
+        style: GoogleFonts.sora(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.white),
+        cursorColor: AppColors.teal2,
         decoration: InputDecoration(
           hintText: widget.hint,
           hintStyle: GoogleFonts.sora(
-            fontSize: 13,
-            color: AppColors.teal3.withValues(alpha: 0.25),
+            fontSize: 14,
+            color: AppColors.teal3.withValues(alpha: 0.3),
           ),
           prefixIcon: widget.prefix != null
               ? Padding(
@@ -1109,9 +1110,9 @@ class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
                     Text(
                       '+256',
                       style: GoogleFonts.sora(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: _focused ? AppColors.teal2 : AppColors.teal3.withValues(alpha: 0.6),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: _focused ? AppColors.teal2 : AppColors.teal3.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -1138,15 +1139,17 @@ class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
                     _UgandaPhoneFormatter(),
                   ],
                   style: GoogleFonts.sora(
-                    fontSize: 13,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
                     color: Colors.white,
-                    letterSpacing: 1.2,
+                    letterSpacing: 1.4,
                   ),
+                  cursorColor: AppColors.teal2,
                   decoration: InputDecoration(
                     hintText: '7XX XXX XXX',
                     hintStyle: GoogleFonts.sora(
-                      fontSize: 13,
-                      color: AppColors.teal3.withValues(alpha: 0.25),
+                      fontSize: 14,
+                      color: AppColors.teal3.withValues(alpha: 0.3),
                       letterSpacing: 0.5,
                     ),
                     border: InputBorder.none,
@@ -1177,8 +1180,8 @@ class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
                     child: Text(
                       _network,
                       style: GoogleFonts.sora(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
                         color: _network == 'MTN'
                             ? const Color(0xFF92700A)
                             : const Color(0xFFB0001F),
@@ -1195,8 +1198,9 @@ class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
           child: Text(
             'Format: 7XX XXX XXX  ·  MTN or Airtel Uganda',
             style: GoogleFonts.sora(
-              fontSize: 10,
-              color: AppColors.teal3.withValues(alpha: 0.35),
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: AppColors.teal3.withValues(alpha: 0.5),
             ),
           ),
         ),
@@ -1299,8 +1303,8 @@ class _PasswordStrength extends StatelessWidget {
               Text(
                 'Password strength: $label',
                 style: GoogleFonts.sora(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
                   color: color,
                 ),
               ),
@@ -1311,8 +1315,8 @@ class _PasswordStrength extends StatelessWidget {
                       ? '· Add uppercase, numbers & symbols'
                       : '· Add symbols to strengthen',
                   style: GoogleFonts.sora(
-                    fontSize: 10,
-                    color: AppColors.teal3.withValues(alpha: 0.4),
+                    fontSize: 11,
+                    color: AppColors.teal3.withValues(alpha: 0.5),
                   ),
                 ),
               ],
@@ -1350,9 +1354,9 @@ class _ErrorText extends StatelessWidget {
                   Text(
                     error!,
                     style: GoogleFonts.sora(
-                      fontSize: 11,
+                      fontSize: 12,
                       color: const Color(0xFFEF4444),
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
@@ -1443,10 +1447,10 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
                     Text(
                       widget.label,
                       style: GoogleFonts.sora(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
                         color: Colors.white,
-                        letterSpacing: 0.3,
+                        letterSpacing: 0.5,
                       ),
                     ),
                   ],
@@ -1467,8 +1471,9 @@ class _VersionFooter extends StatelessWidget {
       child: Text(
         'VisionScreen v1.0.0 · Uganda MOH · WHO Compliant',
         style: GoogleFonts.sora(
-          fontSize: 10,
-          color: AppColors.teal3.withValues(alpha: 0.35),
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+          color: AppColors.teal3.withValues(alpha: 0.45),
           letterSpacing: 0.3,
         ),
       ),
@@ -1501,9 +1506,10 @@ class _OfflineNote extends StatelessWidget {
             child: Text(
               'VisionScreen works fully offline. All patient data is stored securely on your device using SQLite.',
               style: GoogleFonts.sora(
-                fontSize: 11,
-                color: AppColors.teal3.withValues(alpha: 0.75),
-                height: 1.6,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: AppColors.teal3.withValues(alpha: 0.85),
+                height: 1.7,
               ),
             ),
           ),
@@ -1526,9 +1532,10 @@ class _TermsNote extends StatelessWidget {
           Text(
             'By creating an account you agree to our ',
             style: GoogleFonts.sora(
-              fontSize: 11,
-              color: AppColors.teal3.withValues(alpha: 0.45),
-              height: 1.6,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppColors.teal3.withValues(alpha: 0.6),
+              height: 1.7,
             ),
           ),
           GestureDetector(
@@ -1536,10 +1543,10 @@ class _TermsNote extends StatelessWidget {
             child: Text(
               'Terms of Service',
               style: GoogleFonts.sora(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
                 color: AppColors.teal2,
-                height: 1.6,
+                height: 1.7,
                 decoration: TextDecoration.underline,
                 decorationColor: AppColors.teal2,
               ),
@@ -1548,9 +1555,10 @@ class _TermsNote extends StatelessWidget {
           Text(
             ' and ',
             style: GoogleFonts.sora(
-              fontSize: 11,
-              color: AppColors.teal3.withValues(alpha: 0.45),
-              height: 1.6,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppColors.teal3.withValues(alpha: 0.6),
+              height: 1.7,
             ),
           ),
           GestureDetector(
@@ -1558,10 +1566,10 @@ class _TermsNote extends StatelessWidget {
             child: Text(
               'Privacy Policy',
               style: GoogleFonts.sora(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
                 color: AppColors.teal2,
-                height: 1.6,
+                height: 1.7,
                 decoration: TextDecoration.underline,
                 decorationColor: AppColors.teal2,
               ),
@@ -1752,14 +1760,15 @@ class _LegalSheet extends StatelessWidget {
                         Text(
                           title,
                           style: GoogleFonts.dmSerifDisplay(
-                            fontSize: 20,
+                            fontSize: 22,
                             color: const Color(0xFF1A2A3D),
                           ),
                         ),
                         Text(
                           'VisionScreen · Uganda MOH',
                           style: GoogleFonts.sora(
-                            fontSize: 11,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
                             color: const Color(0xFF8FA0B4),
                           ),
                         ),
@@ -1832,8 +1841,8 @@ class _LegalSectionWidget extends StatelessWidget {
           child: Text(
             section.heading,
             style: GoogleFonts.sora(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
               color: AppColors.teal,
             ),
           ),
@@ -1842,9 +1851,10 @@ class _LegalSectionWidget extends StatelessWidget {
         Text(
           section.body,
           style: GoogleFonts.sora(
-            fontSize: 12,
+            fontSize: 13,
+            fontWeight: FontWeight.w400,
             color: const Color(0xFF3D5470),
-            height: 1.75,
+            height: 1.85,
           ),
         ),
       ],
