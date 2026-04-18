@@ -42,6 +42,7 @@ class _LoginScreenState extends State<LoginScreen>
   final _signUpConfirmPasswordCtrl = TextEditingController();
   bool _signUpPasswordVisible = false;
   bool _signUpConfirmPasswordVisible = false;
+  bool _termsAgreed = false;
   String? _signUpNameError;
   String? _signUpCentreError;
   String? _signUpDistrictError;
@@ -93,6 +94,20 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _signUp() {
+    if (!_termsAgreed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.ink2,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          content: Text(
+            'Please read and agree to the Terms of Service & Privacy Policy.',
+            style: GoogleFonts.sora(fontSize: 12, color: const Color(0xFFEF4444), fontWeight: FontWeight.w600),
+          ),
+        ),
+      );
+      return;
+    }
     setState(() {
       _signUpNameError = _validateRequired(_signUpNameCtrl.text, 'Full name');
       _signUpCentreError = _validateRequired(_signUpCentreCtrl.text, 'Health center');
@@ -265,6 +280,8 @@ class _LoginScreenState extends State<LoginScreen>
                                   confirmPasswordError: _signUpConfirmPasswordError,
                                   onTogglePassword: () => setState(() => _signUpPasswordVisible = !_signUpPasswordVisible),
                                   onToggleConfirmPassword: () => setState(() => _signUpConfirmPasswordVisible = !_signUpConfirmPasswordVisible),
+                                  termsAgreed: _termsAgreed,
+                                  onTermsAgreedChanged: (v) => setState(() => _termsAgreed = v),
                                   onNameChanged: (_) => setState(() => _signUpNameError = null),
                                   onCentreChanged: (_) => setState(() => _signUpCentreError = null),
                                   onDistrictChanged: (_) => setState(() => _signUpDistrictError = null),
@@ -524,6 +541,7 @@ class _LoginForm extends StatelessWidget {
           keyboardType: TextInputType.emailAddress,
           inputAction: TextInputAction.next,
           hasError: emailError != null,
+          isValid: emailError == null && emailCtrl.text.isNotEmpty,
           onChanged: onEmailChanged,
         ),
         _ErrorText(error: emailError),
@@ -632,6 +650,8 @@ class _SignUpForm extends StatelessWidget {
     required this.onToggleConfirmPassword,
     required this.onSignUp,
     required this.passwordValue,
+    required this.termsAgreed,
+    required this.onTermsAgreedChanged,
     this.nameError,
     this.centreError,
     this.districtError,
@@ -661,6 +681,8 @@ class _SignUpForm extends StatelessWidget {
   final VoidCallback onTogglePassword;
   final VoidCallback onToggleConfirmPassword;
   final VoidCallback onSignUp;
+  final bool termsAgreed;
+  final ValueChanged<bool> onTermsAgreedChanged;
   final String? nameError;
   final String? centreError;
   final String? districtError;
@@ -726,6 +748,7 @@ class _SignUpForm extends StatelessWidget {
           keyboardType: TextInputType.emailAddress,
           inputAction: TextInputAction.next,
           hasError: emailError != null,
+          isValid: emailError == null && emailCtrl.text.isNotEmpty,
           onChanged: onEmailChanged,
         ),
         _ErrorText(error: emailError),
@@ -748,6 +771,7 @@ class _SignUpForm extends StatelessWidget {
           obscure: !passwordVisible,
           inputAction: TextInputAction.next,
           hasError: passwordError != null,
+          isValid: passwordError == null && passwordCtrl.text.length >= 8,
           onChanged: onPasswordChanged,
           suffix: GestureDetector(
             onTap: onTogglePassword,
@@ -773,6 +797,9 @@ class _SignUpForm extends StatelessWidget {
           obscure: !confirmPasswordVisible,
           inputAction: TextInputAction.done,
           hasError: confirmPasswordError != null,
+          isValid: confirmPasswordError == null &&
+              confirmPasswordCtrl.text.isNotEmpty &&
+              confirmPasswordCtrl.text == passwordCtrl.text,
           onChanged: onConfirmPasswordChanged,
           suffix: GestureDetector(
             onTap: onToggleConfirmPassword,
@@ -785,14 +812,17 @@ class _SignUpForm extends StatelessWidget {
         ),
         _ErrorText(error: confirmPasswordError),
         const SizedBox(height: 16),
+        _TermsAgreementRow(
+          agreed: termsAgreed,
+          onChanged: onTermsAgreedChanged,
+        ),
+        const SizedBox(height: 14),
         _PrimaryButton(
           label: 'Create Account',
           icon: Icons.person_add_outlined,
           loading: false,
           onTap: onSignUp,
         ),
-        const SizedBox(height: 14),
-        _TermsNote(),
         const SizedBox(height: 12),
         _VersionFooter(),
       ],
@@ -904,6 +934,7 @@ class _InputField extends StatefulWidget {
     this.prefix,
     this.suffix,
     this.hasError = false,
+    this.isValid = false,
     this.onChanged,
   });
 
@@ -915,6 +946,7 @@ class _InputField extends StatefulWidget {
   final IconData? prefix;
   final Widget? suffix;
   final bool hasError;
+  final bool isValid;
   final ValueChanged<String>? onChanged;
 
   @override
@@ -941,11 +973,15 @@ class _InputFieldState extends State<_InputField> {
   Widget build(BuildContext context) {
     final borderColor = widget.hasError
         ? const Color(0xFFEF4444)
+        : widget.isValid
+        ? const Color(0xFF22C55E)
         : _focused
         ? AppColors.teal
         : AppColors.teal.withValues(alpha: 0.2);
     final glowColor = widget.hasError
         ? const Color(0xFFEF4444).withValues(alpha: 0.15)
+        : widget.isValid
+        ? const Color(0xFF22C55E).withValues(alpha: 0.15)
         : AppColors.teal.withValues(alpha: 0.18);
 
     return AnimatedContainer(
@@ -996,6 +1032,15 @@ class _InputFieldState extends State<_InputField> {
               ? Padding(
                   padding: const EdgeInsets.only(right: 12),
                   child: widget.suffix,
+                )
+              : widget.isValid
+              ? const Padding(
+                  padding: EdgeInsets.only(right: 12),
+                  child: Icon(
+                    Icons.check_circle_rounded,
+                    size: 18,
+                    color: Color(0xFF22C55E),
+                  ),
                 )
               : null,
           suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
@@ -1505,18 +1550,104 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
 class _VersionFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'VisionScreen v1.0.0 · Uganda MOH · WHO Compliant',
-        style: GoogleFonts.sora(
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
-          color: AppColors.teal3.withValues(alpha: 0.45),
-          letterSpacing: 0.3,
+    return Column(
+      children: [
+        // ── Teal divider line ──
+        Container(
+          height: 1,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppColors.teal.withValues(alpha: 0.0),
+                AppColors.teal.withValues(alpha: 0.35),
+                AppColors.teal.withValues(alpha: 0.0),
+              ],
+            ),
+          ),
         ),
-      ),
+        const SizedBox(height: 10),
+        // ── App name row ──
+        RichText(
+          textAlign: TextAlign.center,
+          text: TextSpan(
+            style: GoogleFonts.dmSerifDisplay(
+              fontSize: 15,
+              letterSpacing: -0.3,
+            ),
+            children: const [
+              TextSpan(text: 'Vision', style: TextStyle(color: Colors.white)),
+              TextSpan(text: 'Screen', style: TextStyle(color: AppColors.teal3)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 5),
+        // ── Version chip ──
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+          decoration: BoxDecoration(
+            color: AppColors.teal.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: AppColors.teal.withValues(alpha: 0.2),
+              width: 1,
+            ),
+          ),
+          child: Text(
+            'v1.0.0',
+            style: GoogleFonts.sora(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: AppColors.teal2,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        // ── Badges row ──
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.local_hospital_outlined, size: 11, color: AppColors.teal2.withValues(alpha: 0.7)),
+            const SizedBox(width: 4),
+            Text('Uganda MOH', style: GoogleFonts.sora(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.teal3.withValues(alpha: 0.55))),
+            _dot(),
+            Icon(Icons.verified_outlined, size: 11, color: AppColors.teal2.withValues(alpha: 0.7)),
+            const SizedBox(width: 4),
+            Text('WHO Compliant', style: GoogleFonts.sora(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.teal3.withValues(alpha: 0.55))),
+            _dot(),
+            Icon(Icons.lock_outline_rounded, size: 11, color: AppColors.teal2.withValues(alpha: 0.7)),
+            const SizedBox(width: 4),
+            Text('AES-256', style: GoogleFonts.sora(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.teal3.withValues(alpha: 0.55))),
+          ],
+        ),
+        const SizedBox(height: 6),
+        // ── Copyright ──
+        Text(
+          '© 2025 VisionScreen · All rights reserved',
+          style: GoogleFonts.sora(
+            fontSize: 10,
+            fontWeight: FontWeight.w400,
+            color: AppColors.teal3.withValues(alpha: 0.3),
+            letterSpacing: 0.2,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 4),
+      ],
     );
   }
+
+  Widget _dot() => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        child: Container(
+          width: 3,
+          height: 3,
+          decoration: BoxDecoration(
+            color: AppColors.teal.withValues(alpha: 0.3),
+            shape: BoxShape.circle,
+          ),
+        ),
+      );
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1557,6 +1688,115 @@ class _OfflineNote extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Terms agreement checkbox row
+// ─────────────────────────────────────────────────────────────
+class _TermsAgreementRow extends StatelessWidget {
+  const _TermsAgreementRow({
+    required this.agreed,
+    required this.onChanged,
+  });
+  final bool agreed;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onChanged(!agreed);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: agreed
+              ? AppColors.teal.withValues(alpha: 0.08)
+              : Colors.white.withValues(alpha: 0.03),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: agreed
+                ? AppColors.teal.withValues(alpha: 0.5)
+                : AppColors.teal.withValues(alpha: 0.15),
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                color: agreed ? AppColors.teal : Colors.transparent,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: agreed ? AppColors.teal : AppColors.teal.withValues(alpha: 0.35),
+                  width: 1.5,
+                ),
+                boxShadow: agreed
+                    ? [BoxShadow(color: AppColors.teal.withValues(alpha: 0.35), blurRadius: 8)]
+                    : [],
+              ),
+              child: agreed
+                  ? const Icon(Icons.check_rounded, size: 13, color: Colors.white)
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: RichText(
+                text: TextSpan(
+                  style: GoogleFonts.sora(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.teal3.withValues(alpha: 0.7),
+                    height: 1.6,
+                  ),
+                  children: [
+                    const TextSpan(text: 'I have read and agree to the '),
+                    WidgetSpan(
+                      child: GestureDetector(
+                        onTap: () => showTermsOfService(context),
+                        child: Text(
+                          'Terms of Service',
+                          style: GoogleFonts.sora(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.teal2,
+                            decoration: TextDecoration.underline,
+                            decorationColor: AppColors.teal2,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const TextSpan(text: ' and '),
+                    WidgetSpan(
+                      child: GestureDetector(
+                        onTap: () => showPrivacyPolicy(context),
+                        child: Text(
+                          'Privacy Policy',
+                          style: GoogleFonts.sora(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.teal2,
+                            decoration: TextDecoration.underline,
+                            decorationColor: AppColors.teal2,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const TextSpan(text: ' of VisionScreen.'),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
