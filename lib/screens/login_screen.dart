@@ -123,8 +123,15 @@ class _LoginScreenState extends State<LoginScreen>
   String? _validateEmail(String value) {
     if (value.trim().isEmpty) return 'Email address is required';
     final emailRegex = RegExp(r'^[\w.+-]+@[\w-]+\.[\w.]+$');
-    if (!emailRegex.hasMatch(value.trim()))
-      return 'Enter a valid email address';
+    if (!emailRegex.hasMatch(value.trim())) return 'Enter a valid email address';
+    const allowedDomains = [
+      'gmail.com', 'yahoo.com', 'yahoo.co.uk', 'outlook.com', 'hotmail.com',
+      'live.com', 'icloud.com', 'me.com', 'protonmail.com', 'proton.me',
+      'aol.com', 'zoho.com', 'yandex.com', 'gmx.com', 'mail.com',
+    ];
+    final domain = value.trim().split('@').last.toLowerCase();
+    if (!allowedDomains.contains(domain))
+      return 'Use a standard email (e.g. Gmail, Yahoo, Outlook)';
     return null;
   }
 
@@ -136,8 +143,24 @@ class _LoginScreenState extends State<LoginScreen>
 
   String? _validatePhone(String value) {
     if (value.trim().isEmpty) return 'Phone number is required';
-    final phoneRegex = RegExp(r'^(\+256|0)[0-9]{9}$');
-    if (!phoneRegex.hasMatch(value.trim())) return 'Enter a valid Uganda phone number';
+    final digits = value.replaceAll(RegExp(r'\s'), '');
+    if (digits.length != 9) return 'Enter a valid 9-digit Uganda number';
+    final prefix = digits.substring(0, 3);
+    const mtn = [
+      '770','771','772','773','774','775','776','777','778','779',
+      '780','781','782','783','784','785','786','787','788','789',
+      '760','761','762','763','764','790',
+      '310','311','312','313','314','315','316','317','318','319',
+      '390','391','392','393','394','395','396','397','398','399',
+    ];
+    const airtel = [
+      '700','701','702','703','704','705','706','707','708','709',
+      '750','751','752','753','754','755','756','757','758','759',
+      '740',
+      '200','201','202','203','204','205','206','207','208','209',
+    ];
+    if (!mtn.contains(prefix) && !airtel.contains(prefix))
+      return 'Invalid Uganda network prefix (MTN or Airtel)';
     return null;
   }
 
@@ -164,7 +187,15 @@ class _LoginScreenState extends State<LoginScreen>
           Expanded(
             child: SingleChildScrollView(
               controller: _scrollCtrl,
-              padding: const EdgeInsets.fromLTRB(22, 22, 22, 32),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: MediaQuery.of(context).size.height -
+                      (heroVisible
+                          ? MediaQuery.of(context).padding.top + 100
+                          : 0),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(22, 18, 22, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -240,6 +271,8 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                   ),
                 ],
+              ),
+                ),
               ),
             ),
           ),
@@ -459,12 +492,12 @@ class _LoginForm extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
         _FieldLabel(label: 'Email Address'),
-        const SizedBox(height: 5),
+        const SizedBox(height: 4),
         _InputField(
           controller: emailCtrl,
-          hint: 'health@worker.ug',
+          hint: 'yourname@gmail.com',
           prefix: Icons.mail_outline_rounded,
           keyboardType: TextInputType.emailAddress,
           inputAction: TextInputAction.next,
@@ -472,9 +505,9 @@ class _LoginForm extends StatelessWidget {
           onChanged: onEmailChanged,
         ),
         _ErrorText(error: emailError),
-        const SizedBox(height: 13),
+        const SizedBox(height: 10),
         _FieldLabel(label: 'Password'),
-        const SizedBox(height: 5),
+        const SizedBox(height: 4),
         _InputField(
           controller: passwordCtrl,
           hint: '••••••••',
@@ -493,10 +526,9 @@ class _LoginForm extends StatelessWidget {
           ),
         ),
         _ErrorText(error: passwordError),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         Row(
           children: [
-            // Remember me toggle
             GestureDetector(
               onTap: () => onRememberMeChanged(!rememberMe),
               child: Row(
@@ -543,16 +575,16 @@ class _LoginForm extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 22),
+        const SizedBox(height: 16),
         _PrimaryButton(
           label: 'Login',
           icon: Icons.login_rounded,
           loading: loading,
           onTap: onLogin,
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
         _OfflineNote(),
-        const SizedBox(height: 20),
+        const SizedBox(height: 14),
         _VersionFooter(),
       ],
     );
@@ -628,7 +660,7 @@ class _SignUpForm extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _FieldLabel(label: 'Full Name'),
-        const SizedBox(height: 5),
+        const SizedBox(height: 4),
         _InputField(
           controller: nameCtrl,
           hint: 'Your full name',
@@ -638,9 +670,9 @@ class _SignUpForm extends StatelessWidget {
           onChanged: onNameChanged,
         ),
         _ErrorText(error: nameError),
-        const SizedBox(height: 13),
+        const SizedBox(height: 10),
         _FieldLabel(label: 'Health Center'),
-        const SizedBox(height: 5),
+        const SizedBox(height: 4),
         _InputField(
           controller: centreCtrl,
           hint: 'e.g. Nakawa HC III, Wakiso District',
@@ -650,9 +682,9 @@ class _SignUpForm extends StatelessWidget {
           onChanged: onCentreChanged,
         ),
         _ErrorText(error: centreError),
-        const SizedBox(height: 13),
+        const SizedBox(height: 10),
         _FieldLabel(label: 'District'),
-        const SizedBox(height: 5),
+        const SizedBox(height: 4),
         _InputField(
           controller: districtCtrl,
           hint: 'e.g. Kampala',
@@ -662,12 +694,12 @@ class _SignUpForm extends StatelessWidget {
           onChanged: onDistrictChanged,
         ),
         _ErrorText(error: districtError),
-        const SizedBox(height: 13),
+        const SizedBox(height: 10),
         _FieldLabel(label: 'Email Address'),
-        const SizedBox(height: 5),
+        const SizedBox(height: 4),
         _InputField(
           controller: emailCtrl,
-          hint: 'your@email.ug',
+          hint: 'yourname@gmail.com',
           prefix: Icons.mail_outline_rounded,
           keyboardType: TextInputType.emailAddress,
           inputAction: TextInputAction.next,
@@ -675,22 +707,18 @@ class _SignUpForm extends StatelessWidget {
           onChanged: onEmailChanged,
         ),
         _ErrorText(error: emailError),
-        const SizedBox(height: 13),
+        const SizedBox(height: 10),
         _FieldLabel(label: 'Phone Number'),
-        const SizedBox(height: 5),
-        _InputField(
+        const SizedBox(height: 4),
+        _UgandaPhoneField(
           controller: phoneCtrl,
-          hint: '+256 7XX XXX XXX',
-          prefix: Icons.phone_outlined,
-          keyboardType: TextInputType.phone,
-          inputAction: TextInputAction.next,
           hasError: phoneError != null,
           onChanged: onPhoneChanged,
         ),
         _ErrorText(error: phoneError),
-        const SizedBox(height: 13),
+        const SizedBox(height: 10),
         _FieldLabel(label: 'Password'),
-        const SizedBox(height: 5),
+        const SizedBox(height: 4),
         _InputField(
           controller: passwordCtrl,
           hint: 'Create a strong password',
@@ -710,12 +738,12 @@ class _SignUpForm extends StatelessWidget {
         ),
         _ErrorText(error: passwordError),
         if (passwordValue.isNotEmpty) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           _PasswordStrength(password: passwordValue),
         ],
-        const SizedBox(height: 13),
+        const SizedBox(height: 10),
         _FieldLabel(label: 'Confirm Password'),
-        const SizedBox(height: 5),
+        const SizedBox(height: 4),
         _InputField(
           controller: confirmPasswordCtrl,
           hint: 'Re-enter your password',
@@ -734,16 +762,16 @@ class _SignUpForm extends StatelessWidget {
           ),
         ),
         _ErrorText(error: confirmPasswordError),
-        const SizedBox(height: 22),
+        const SizedBox(height: 16),
         _PrimaryButton(
           label: 'Create Account',
           icon: Icons.person_add_outlined,
           loading: false,
           onTap: onSignUp,
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 14),
         _TermsNote(),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         _VersionFooter(),
       ],
     );
@@ -933,13 +961,256 @@ class _InputFieldState extends State<_InputField> {
           suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
           contentPadding: EdgeInsets.symmetric(
             horizontal: widget.prefix != null ? 4 : 14,
-            vertical: 12,
+            vertical: 10,
           ),
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
         ),
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Uganda Phone Field — +256 prefix badge + network hint
+// ─────────────────────────────────────────────────────────────
+class _UgandaPhoneField extends StatefulWidget {
+  const _UgandaPhoneField({
+    required this.controller,
+    this.hasError = false,
+    this.onChanged,
+  });
+  final TextEditingController controller;
+  final bool hasError;
+  final ValueChanged<String>? onChanged;
+
+  @override
+  State<_UgandaPhoneField> createState() => _UgandaPhoneFieldState();
+}
+
+class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
+  final _focus = FocusNode();
+  bool _focused = false;
+  String _network = '';
+  Color _networkColor = Colors.transparent;
+
+  // MTN: 077X, 078X, 076X(0-4), 079X(0), 031X, 039X
+  static const _mtn = [
+    '770','771','772','773','774','775','776','777','778','779',
+    '780','781','782','783','784','785','786','787','788','789',
+    '760','761','762','763','764',
+    '790',
+    '310','311','312','313','314','315','316','317','318','319',
+    '390','391','392','393','394','395','396','397','398','399',
+  ];
+  // Airtel: 070X, 075X, 074X(0), 020X
+  static const _airtel = [
+    '700','701','702','703','704','705','706','707','708','709',
+    '750','751','752','753','754','755','756','757','758','759',
+    '740',
+    '200','201','202','203','204','205','206','207','208','209',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(() => setState(() => _focused = _focus.hasFocus));
+  }
+
+  @override
+  void dispose() {
+    _focus.dispose();
+    super.dispose();
+  }
+
+  void _onChanged(String value) {
+    final digits = value.replaceAll(RegExp(r'\s'), '');
+    String network = '';
+    Color color = Colors.transparent;
+    if (digits.length >= 3) {
+      final prefix = digits.substring(0, 3);
+      if (_mtn.contains(prefix)) {
+        network = 'MTN';
+        color = const Color(0xFFFFCC00);
+      } else if (_airtel.contains(prefix)) {
+        network = 'Airtel';
+        color = const Color(0xFFE4002B);
+      }
+    }
+    setState(() {
+      _network = network;
+      _networkColor = color;
+    });
+    widget.onChanged?.call(value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor = widget.hasError
+        ? const Color(0xFFEF4444)
+        : _focused
+            ? AppColors.teal
+            : const Color(0xFFDDE4EC);
+    final glowColor = widget.hasError
+        ? const Color(0xFFEF4444).withValues(alpha: 0.15)
+        : AppColors.teal.withValues(alpha: 0.22);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            color: widget.hasError ? const Color(0xFFFEF2F2) : Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: borderColor, width: 1.5),
+            boxShadow: (_focused || widget.hasError)
+                ? [BoxShadow(color: glowColor, blurRadius: 0, spreadRadius: 3)]
+                : [],
+          ),
+          child: Row(
+            children: [
+              // ── +256 badge ──
+              Container(
+                margin: const EdgeInsets.only(left: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                decoration: BoxDecoration(
+                  color: _focused
+                      ? AppColors.teal.withValues(alpha: 0.10)
+                      : const Color(0xFFF0F4F7),
+                  borderRadius: BorderRadius.circular(7),
+                  border: Border.all(
+                    color: _focused
+                        ? AppColors.teal.withValues(alpha: 0.35)
+                        : const Color(0xFFDDE4EC),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '🇺🇬',
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      '+256',
+                      style: GoogleFonts.sora(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: _focused ? AppColors.teal : const Color(0xFF3D5470),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              // ── Divider ──
+              Container(
+                width: 1,
+                height: 22,
+                color: const Color(0xFFDDE4EC),
+              ),
+              // ── Input ──
+              Expanded(
+                child: TextField(
+                  controller: widget.controller,
+                  focusNode: _focus,
+                  keyboardType: TextInputType.phone,
+                  textInputAction: TextInputAction.next,
+                  onChanged: _onChanged,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(9),
+                    _UgandaPhoneFormatter(),
+                  ],
+                  style: GoogleFonts.sora(
+                    fontSize: 13,
+                    color: const Color(0xFF1A2A3D),
+                    letterSpacing: 1.2,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: '7XX XXX XXX',
+                    hintStyle: GoogleFonts.sora(
+                      fontSize: 13,
+                      color: const Color(0xFFC4CFDB),
+                      letterSpacing: 0.5,
+                    ),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 10,
+                    ),
+                  ),
+                ),
+              ),
+              // ── Network badge ──
+              if (_network.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: _networkColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: _networkColor.withValues(alpha: 0.5),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      _network,
+                      style: GoogleFonts.sora(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: _network == 'MTN'
+                            ? const Color(0xFF92700A)
+                            : const Color(0xFFB0001F),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        // ── Format hint ──
+        Padding(
+          padding: const EdgeInsets.only(top: 5, left: 2),
+          child: Text(
+            'Format: 7XX XXX XXX  ·  MTN or Airtel Uganda',
+            style: GoogleFonts.sora(
+              fontSize: 10,
+              color: const Color(0xFFB0BEC5),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// Auto-formats digits as: 7XX XXX XXX
+class _UgandaPhoneFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
+    final buffer = StringBuffer();
+    for (int i = 0; i < digits.length; i++) {
+      if (i == 3 || i == 6) buffer.write(' ');
+      buffer.write(digits[i]);
+    }
+    final formatted = buffer.toString();
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }
