@@ -172,108 +172,102 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
-    final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 100;
-    final isSignUp = _tabCtrl.index == 1;
-    final heroVisible = _heroVisible && !keyboardOpen && !isSignUp;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.ink,
       resizeToAvoidBottomInset: true,
-      body: Column(
+      body: Stack(
+        fit: StackFit.expand,
         children: [
-          // ── Dark header ──
-          _AuthHeader(visible: heroVisible),
+          // ── Grid + mesh background ──
+          CustomPaint(painter: _LoginGridPainter()),
+          CustomPaint(painter: _LoginMeshPainter()),
 
-          // ── Scrollable body ──
-          Expanded(
-            child: SingleChildScrollView(
-              controller: _scrollCtrl,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: MediaQuery.of(context).size.height -
-                      (heroVisible
-                          ? MediaQuery.of(context).padding.top + 100
-                          : 0),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(22, 18, 22, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ── Tab switcher ──
-                  _TabSwitcher(controller: _tabCtrl),
-                  const SizedBox(height: 22),
-
-                  // ── Tab content ──
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 260),
-                    switchInCurve: Curves.easeOut,
-                    switchOutCurve: Curves.easeIn,
-                    transitionBuilder: (child, anim) => FadeTransition(
-                      opacity: anim,
-                      child: SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0.04, 0),
-                          end: Offset.zero,
-                        ).animate(anim),
-                        child: child,
-                      ),
-                    ),
-                    child: _tabCtrl.index == 0
-                        ? _LoginForm(
-                            key: const ValueKey('login'),
-                            emailCtrl: _loginEmailCtrl,
-                            passwordCtrl: _loginPasswordCtrl,
-                            passwordVisible: _loginPasswordVisible,
-                            selectedRole: _selectedRole,
-                            emailError: _loginEmailError,
-                            passwordError: _loginPasswordError,
-                            rememberMe: _rememberMe,
-                            loading: _loginLoading,
-                            onRoleChanged: (r) => setState(() => _selectedRole = r),
-                            onTogglePassword: () => setState(() => _loginPasswordVisible = !_loginPasswordVisible),
-                            onEmailChanged: (_) => setState(() => _loginEmailError = null),
-                            onPasswordChanged: (_) => setState(() => _loginPasswordError = null),
-                            onRememberMeChanged: (v) => setState(() => _rememberMe = v),
-                            onLogin: _login,
-                          )
-                        : _SignUpForm(
-                            key: const ValueKey('signup'),
-                            nameCtrl: _signUpNameCtrl,
-                            centreCtrl: _signUpCentreCtrl,
-                            districtCtrl: _signUpDistrictCtrl,
-                            emailCtrl: _signUpEmailCtrl,
-                            phoneCtrl: _signUpPhoneCtrl,
-                            passwordCtrl: _signUpPasswordCtrl,
-                            confirmPasswordCtrl: _signUpConfirmPasswordCtrl,
-                            passwordVisible: _signUpPasswordVisible,
-                            confirmPasswordVisible: _signUpConfirmPasswordVisible,
-                            passwordValue: _signUpPasswordValue,
-                            nameError: _signUpNameError,
-                            centreError: _signUpCentreError,
-                            districtError: _signUpDistrictError,
-                            emailError: _signUpEmailError,
-                            phoneError: _signUpPhoneError,
-                            passwordError: _signUpPasswordError,
-                            confirmPasswordError: _signUpConfirmPasswordError,
-                            onTogglePassword: () => setState(() => _signUpPasswordVisible = !_signUpPasswordVisible),
-                            onToggleConfirmPassword: () => setState(() => _signUpConfirmPasswordVisible = !_signUpConfirmPasswordVisible),
-                            onNameChanged: (_) => setState(() => _signUpNameError = null),
-                            onCentreChanged: (_) => setState(() => _signUpCentreError = null),
-                            onDistrictChanged: (_) => setState(() => _signUpDistrictError = null),
-                            onEmailChanged: (_) => setState(() => _signUpEmailError = null),
-                            onPhoneChanged: (_) => setState(() => _signUpPhoneError = null),
-                            onPasswordChanged: (v) => setState(() {
-                              _signUpPasswordError = null;
-                              _signUpPasswordValue = v;
-                            }),
-                            onConfirmPasswordChanged: (_) => setState(() => _signUpConfirmPasswordError = null),
-                            onSignUp: _signUp,
+          SafeArea(
+            child: Column(
+              children: [
+                // ── Header ──
+                _AuthHeader(),
+                // ── Scrollable body ──
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: _scrollCtrl,
+                    padding: const EdgeInsets.fromLTRB(22, 8, 22, 32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _TabSwitcher(controller: _tabCtrl),
+                        const SizedBox(height: 22),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 260),
+                          switchInCurve: Curves.easeOut,
+                          switchOutCurve: Curves.easeIn,
+                          transitionBuilder: (child, anim) => FadeTransition(
+                            opacity: anim,
+                            child: SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(0.04, 0),
+                                end: Offset.zero,
+                              ).animate(anim),
+                              child: child,
+                            ),
                           ),
+                          child: _tabCtrl.index == 0
+                              ? _LoginForm(
+                                  key: const ValueKey('login'),
+                                  emailCtrl: _loginEmailCtrl,
+                                  passwordCtrl: _loginPasswordCtrl,
+                                  passwordVisible: _loginPasswordVisible,
+                                  selectedRole: _selectedRole,
+                                  emailError: _loginEmailError,
+                                  passwordError: _loginPasswordError,
+                                  rememberMe: _rememberMe,
+                                  loading: _loginLoading,
+                                  onRoleChanged: (r) => setState(() => _selectedRole = r),
+                                  onTogglePassword: () => setState(() => _loginPasswordVisible = !_loginPasswordVisible),
+                                  onEmailChanged: (_) => setState(() => _loginEmailError = null),
+                                  onPasswordChanged: (_) => setState(() => _loginPasswordError = null),
+                                  onRememberMeChanged: (v) => setState(() => _rememberMe = v),
+                                  onLogin: _login,
+                                )
+                              : _SignUpForm(
+                                  key: const ValueKey('signup'),
+                                  nameCtrl: _signUpNameCtrl,
+                                  centreCtrl: _signUpCentreCtrl,
+                                  districtCtrl: _signUpDistrictCtrl,
+                                  emailCtrl: _signUpEmailCtrl,
+                                  phoneCtrl: _signUpPhoneCtrl,
+                                  passwordCtrl: _signUpPasswordCtrl,
+                                  confirmPasswordCtrl: _signUpConfirmPasswordCtrl,
+                                  passwordVisible: _signUpPasswordVisible,
+                                  confirmPasswordVisible: _signUpConfirmPasswordVisible,
+                                  passwordValue: _signUpPasswordValue,
+                                  nameError: _signUpNameError,
+                                  centreError: _signUpCentreError,
+                                  districtError: _signUpDistrictError,
+                                  emailError: _signUpEmailError,
+                                  phoneError: _signUpPhoneError,
+                                  passwordError: _signUpPasswordError,
+                                  confirmPasswordError: _signUpConfirmPasswordError,
+                                  onTogglePassword: () => setState(() => _signUpPasswordVisible = !_signUpPasswordVisible),
+                                  onToggleConfirmPassword: () => setState(() => _signUpConfirmPasswordVisible = !_signUpConfirmPasswordVisible),
+                                  onNameChanged: (_) => setState(() => _signUpNameError = null),
+                                  onCentreChanged: (_) => setState(() => _signUpCentreError = null),
+                                  onDistrictChanged: (_) => setState(() => _signUpDistrictError = null),
+                                  onEmailChanged: (_) => setState(() => _signUpEmailError = null),
+                                  onPhoneChanged: (_) => setState(() => _signUpPhoneError = null),
+                                  onPasswordChanged: (v) => setState(() {
+                                    _signUpPasswordError = null;
+                                    _signUpPasswordValue = v;
+                                  }),
+                                  onConfirmPasswordChanged: (_) => setState(() => _signUpConfirmPasswordError = null),
+                                  onSignUp: _signUp,
+                                ),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
                 ),
-              ),
+              ],
             ),
           ),
         ],
@@ -287,86 +281,86 @@ class _LoginScreenState extends State<LoginScreen>
 // Smoothly disappears when Sign Up tab is active or keyboard opens
 // ─────────────────────────────────────────────────────────────
 class _AuthHeader extends StatelessWidget {
-  const _AuthHeader({required this.visible});
-  final bool visible;
+  const _AuthHeader();
 
   @override
   Widget build(BuildContext context) {
-    final topPad = MediaQuery.of(context).padding.top;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.easeInOutCubic,
-      height: visible ? topPad + 100 : 0,
-      width: double.infinity,
-      clipBehavior: Clip.hardEdge,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.ink, AppColors.ink2],
-        ),
-      ),
-      child: Stack(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(22, 18, 22, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Positioned.fill(child: CustomPaint(painter: _DotPatternPainter())),
-          SafeArea(
-            bottom: false,
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 200),
-              opacity: visible ? 1.0 : 0.0,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [AppColors.teal, AppColors.teal2],
-                        ),
-                        borderRadius: BorderRadius.circular(13),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.teal.withValues(alpha: 0.4),
-                            blurRadius: 16,
-                            spreadRadius: 1,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: CustomPaint(
-                          size: const Size(22, 22),
-                          painter: _HeaderEyePainter(),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    RichText(
-                      text: TextSpan(
-                        style: GoogleFonts.dmSerifDisplay(
-                          fontSize: 22,
-                          color: Colors.white,
-                          letterSpacing: -0.5,
-                        ),
-                        children: const [
-                          TextSpan(text: 'Vision'),
-                          TextSpan(
-                            text: 'Screen',
-                            style: TextStyle(color: AppColors.teal3),
-                          ),
-                        ],
-                      ),
+          // ── Logo row ──
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.ink2, AppColors.ink3],
+                  ),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(
+                    color: AppColors.teal.withValues(alpha: 0.5),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.teal.withValues(alpha: 0.35),
+                      blurRadius: 20,
+                      spreadRadius: 2,
                     ),
                   ],
                 ),
+                child: Center(
+                  child: CustomPaint(
+                    size: const Size(26, 26),
+                    painter: _HeaderEyePainter(),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 13),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  RichText(
+                    text: TextSpan(
+                      style: GoogleFonts.dmSerifDisplay(
+                        fontSize: 26,
+                        color: Colors.white,
+                        letterSpacing: -0.8,
+                      ),
+                      children: const [
+                        TextSpan(text: 'Vision'),
+                        TextSpan(
+                          text: 'Screen',
+                          style: TextStyle(color: AppColors.teal3),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          // ── Teal divider ──
+          Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.teal.withValues(alpha: 0.6),
+                  AppColors.teal.withValues(alpha: 0.0),
+                ],
               ),
             ),
           ),
+          const SizedBox(height: 6),
         ],
       ),
     );
@@ -383,22 +377,28 @@ class _TabSwitcher extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 42,
+      height: 44,
       decoration: BoxDecoration(
-        color: const Color(0xFFF0F4F7),
-        borderRadius: BorderRadius.circular(9),
+        color: AppColors.ink2,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: AppColors.teal.withValues(alpha: 0.2),
+          width: 1,
+        ),
       ),
       padding: const EdgeInsets.all(3),
       child: TabBar(
         controller: controller,
         indicator: BoxDecoration(
-          color: Colors.white,
+          gradient: const LinearGradient(
+            colors: [AppColors.teal, AppColors.teal2],
+          ),
           borderRadius: BorderRadius.circular(7),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.07),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: AppColors.teal.withValues(alpha: 0.4),
+              blurRadius: 10,
+              spreadRadius: 0,
             ),
           ],
         ),
@@ -420,7 +420,7 @@ class _TabSwitcher extends StatelessWidget {
         style: GoogleFonts.sora(
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          color: active ? AppColors.teal : const Color(0xFF8FA0B4),
+          color: active ? Colors.white : AppColors.teal3.withValues(alpha: 0.45),
         ),
       ),
     );
@@ -538,10 +538,10 @@ class _LoginForm extends StatelessWidget {
                     width: 18,
                     height: 18,
                     decoration: BoxDecoration(
-                      color: rememberMe ? AppColors.teal : Colors.white,
+                      color: rememberMe ? AppColors.teal : AppColors.ink2,
                       borderRadius: BorderRadius.circular(5),
                       border: Border.all(
-                        color: rememberMe ? AppColors.teal : const Color(0xFFDDE4EC),
+                        color: rememberMe ? AppColors.teal : AppColors.teal.withValues(alpha: 0.25),
                         width: 1.5,
                       ),
                     ),
@@ -554,7 +554,7 @@ class _LoginForm extends StatelessWidget {
                     'Remember me',
                     style: GoogleFonts.sora(
                       fontSize: 12,
-                      color: const Color(0xFF5E7291),
+                      color: AppColors.teal3.withValues(alpha: 0.6),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -569,7 +569,7 @@ class _LoginForm extends StatelessWidget {
                 style: GoogleFonts.sora(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.teal,
+                  color: AppColors.teal2,
                 ),
               ),
             ),
@@ -805,19 +805,28 @@ class _RoleButton extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
         decoration: BoxDecoration(
-          color: active ? const Color(0xFFE0F2FE) : Colors.white,
+          color: active ? AppColors.teal.withValues(alpha: 0.12) : AppColors.ink2,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: active ? AppColors.teal : const Color(0xFFDDE4EC),
+            color: active ? AppColors.teal : AppColors.teal.withValues(alpha: 0.2),
             width: 1.5,
           ),
+          boxShadow: active
+              ? [
+                  BoxShadow(
+                    color: AppColors.teal.withValues(alpha: 0.25),
+                    blurRadius: 12,
+                    spreadRadius: 0,
+                  )
+                ]
+              : [],
         ),
         child: Column(
           children: [
             Icon(
               icon,
               size: 20,
-              color: active ? AppColors.teal : const Color(0xFF8FA0B4),
+              color: active ? AppColors.teal2 : AppColors.teal3.withValues(alpha: 0.4),
             ),
             const SizedBox(height: 4),
             Text(
@@ -826,7 +835,7 @@ class _RoleButton extends StatelessWidget {
               style: GoogleFonts.sora(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: active ? AppColors.teal : const Color(0xFF5E7291),
+                color: active ? AppColors.teal2 : AppColors.teal3.withValues(alpha: 0.45),
                 height: 1.3,
               ),
             ),
@@ -849,10 +858,10 @@ class _FieldLabel extends StatelessWidget {
     return Text(
       label.toUpperCase(),
       style: GoogleFonts.sora(
-        fontSize: 11,
+        fontSize: 10,
         fontWeight: FontWeight.w700,
-        color: const Color(0xFF5E7291),
-        letterSpacing: 0.8,
+        color: AppColors.teal3.withValues(alpha: 0.7),
+        letterSpacing: 1.4,
       ),
     );
   }
@@ -910,15 +919,17 @@ class _InputFieldState extends State<_InputField> {
         ? const Color(0xFFEF4444)
         : _focused
         ? AppColors.teal
-        : const Color(0xFFDDE4EC);
+        : AppColors.teal.withValues(alpha: 0.2);
     final glowColor = widget.hasError
         ? const Color(0xFFEF4444).withValues(alpha: 0.15)
-        : AppColors.teal.withValues(alpha: 0.22);
+        : AppColors.teal.withValues(alpha: 0.18);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
-        color: widget.hasError ? const Color(0xFFFEF2F2) : Colors.white,
+        color: widget.hasError
+            ? const Color(0xFF2A0A0A)
+            : AppColors.ink2,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: borderColor, width: 1.5),
         boxShadow: (_focused || widget.hasError)
@@ -932,12 +943,12 @@ class _InputFieldState extends State<_InputField> {
         keyboardType: widget.keyboardType,
         textInputAction: widget.inputAction,
         onChanged: widget.onChanged,
-        style: GoogleFonts.sora(fontSize: 13, color: const Color(0xFF1A2A3D)),
+        style: GoogleFonts.sora(fontSize: 13, color: Colors.white),
         decoration: InputDecoration(
           hintText: widget.hint,
           hintStyle: GoogleFonts.sora(
             fontSize: 13,
-            color: const Color(0xFFC4CFDB),
+            color: AppColors.teal3.withValues(alpha: 0.25),
           ),
           prefixIcon: widget.prefix != null
               ? Padding(
@@ -946,8 +957,8 @@ class _InputFieldState extends State<_InputField> {
                     widget.prefix,
                     size: 16,
                     color: _focused
-                        ? AppColors.teal
-                        : const Color(0xFFB0BEC5),
+                        ? AppColors.teal2
+                        : AppColors.teal3.withValues(alpha: 0.4),
                   ),
                 )
               : null,
@@ -1051,10 +1062,10 @@ class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
         ? const Color(0xFFEF4444)
         : _focused
             ? AppColors.teal
-            : const Color(0xFFDDE4EC);
+            : AppColors.teal.withValues(alpha: 0.2);
     final glowColor = widget.hasError
         ? const Color(0xFFEF4444).withValues(alpha: 0.15)
-        : AppColors.teal.withValues(alpha: 0.22);
+        : AppColors.teal.withValues(alpha: 0.18);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1062,7 +1073,7 @@ class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
         AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            color: widget.hasError ? const Color(0xFFFEF2F2) : Colors.white,
+            color: widget.hasError ? const Color(0xFF2A0A0A) : AppColors.ink2,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: borderColor, width: 1.5),
             boxShadow: (_focused || widget.hasError)
@@ -1077,13 +1088,13 @@ class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
                 decoration: BoxDecoration(
                   color: _focused
-                      ? AppColors.teal.withValues(alpha: 0.10)
-                      : const Color(0xFFF0F4F7),
+                      ? AppColors.teal.withValues(alpha: 0.15)
+                      : AppColors.ink3,
                   borderRadius: BorderRadius.circular(7),
                   border: Border.all(
                     color: _focused
-                        ? AppColors.teal.withValues(alpha: 0.35)
-                        : const Color(0xFFDDE4EC),
+                        ? AppColors.teal.withValues(alpha: 0.5)
+                        : AppColors.teal.withValues(alpha: 0.2),
                     width: 1,
                   ),
                 ),
@@ -1100,7 +1111,7 @@ class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
                       style: GoogleFonts.sora(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: _focused ? AppColors.teal : const Color(0xFF3D5470),
+                        color: _focused ? AppColors.teal2 : AppColors.teal3.withValues(alpha: 0.6),
                       ),
                     ),
                   ],
@@ -1111,7 +1122,7 @@ class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
               Container(
                 width: 1,
                 height: 22,
-                color: const Color(0xFFDDE4EC),
+                color: AppColors.teal.withValues(alpha: 0.2),
               ),
               // ── Input ──
               Expanded(
@@ -1128,14 +1139,14 @@ class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
                   ],
                   style: GoogleFonts.sora(
                     fontSize: 13,
-                    color: const Color(0xFF1A2A3D),
+                    color: Colors.white,
                     letterSpacing: 1.2,
                   ),
                   decoration: InputDecoration(
                     hintText: '7XX XXX XXX',
                     hintStyle: GoogleFonts.sora(
                       fontSize: 13,
-                      color: const Color(0xFFC4CFDB),
+                      color: AppColors.teal3.withValues(alpha: 0.25),
                       letterSpacing: 0.5,
                     ),
                     border: InputBorder.none,
@@ -1185,7 +1196,7 @@ class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
             'Format: 7XX XXX XXX  ·  MTN or Airtel Uganda',
             style: GoogleFonts.sora(
               fontSize: 10,
-              color: const Color(0xFFB0BEC5),
+              color: AppColors.teal3.withValues(alpha: 0.35),
             ),
           ),
         ),
@@ -1267,7 +1278,7 @@ class _PasswordStrength extends StatelessWidget {
                   margin: EdgeInsets.only(right: i < 2 ? 4 : 0),
                   height: 4,
                   decoration: BoxDecoration(
-                    color: filled ? color : const Color(0xFFDDE4EC),
+                    color: filled ? color : AppColors.ink3,
                     borderRadius: BorderRadius.circular(99),
                   ),
                 ),
@@ -1301,7 +1312,7 @@ class _PasswordStrength extends StatelessWidget {
                       : '· Add symbols to strengthen',
                   style: GoogleFonts.sora(
                     fontSize: 10,
-                    color: const Color(0xFF8FA0B4),
+                    color: AppColors.teal3.withValues(alpha: 0.4),
                   ),
                 ),
               ],
@@ -1391,21 +1402,25 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
         duration: const Duration(milliseconds: 100),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(vertical: 15),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: widget.loading
-                  ? [AppColors.teal.withValues(alpha: 0.6), AppColors.teal2.withValues(alpha: 0.6)]
+                  ? [
+                      AppColors.teal.withValues(alpha: 0.4),
+                      AppColors.teal2.withValues(alpha: 0.4),
+                    ]
                   : [AppColors.teal, AppColors.teal2],
             ),
             borderRadius: BorderRadius.circular(10),
             boxShadow: [
               BoxShadow(
-                color: AppColors.teal.withValues(alpha: 0.22),
-                blurRadius: 18,
-                offset: const Offset(0, 4),
+                color: AppColors.teal.withValues(alpha: 0.45),
+                blurRadius: 24,
+                spreadRadius: 0,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
@@ -1431,6 +1446,7 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
+                        letterSpacing: 0.3,
                       ),
                     ),
                   ],
@@ -1452,7 +1468,7 @@ class _VersionFooter extends StatelessWidget {
         'VisionScreen v1.0.0 · Uganda MOH · WHO Compliant',
         style: GoogleFonts.sora(
           fontSize: 10,
-          color: const Color(0xFFB0BEC5),
+          color: AppColors.teal3.withValues(alpha: 0.35),
           letterSpacing: 0.3,
         ),
       ),
@@ -1469,24 +1485,24 @@ class _OfflineNote extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
-        color: const Color(0xFFE0F2FE),
+        color: AppColors.teal.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: AppColors.teal.withValues(alpha: 0.15),
+          color: AppColors.teal.withValues(alpha: 0.25),
           width: 1,
         ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.wifi_off_rounded, size: 16, color: AppColors.teal),
+          Icon(Icons.wifi_off_rounded, size: 16, color: AppColors.teal2),
           const SizedBox(width: 9),
           Expanded(
             child: Text(
               'VisionScreen works fully offline. All patient data is stored securely on your device using SQLite.',
               style: GoogleFonts.sora(
                 fontSize: 11,
-                color: const Color(0xFF0369A1),
+                color: AppColors.teal3.withValues(alpha: 0.75),
                 height: 1.6,
               ),
             ),
@@ -1511,7 +1527,7 @@ class _TermsNote extends StatelessWidget {
             'By creating an account you agree to our ',
             style: GoogleFonts.sora(
               fontSize: 11,
-              color: const Color(0xFF8FA0B4),
+              color: AppColors.teal3.withValues(alpha: 0.45),
               height: 1.6,
             ),
           ),
@@ -1522,10 +1538,10 @@ class _TermsNote extends StatelessWidget {
               style: GoogleFonts.sora(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: AppColors.teal,
+                color: AppColors.teal2,
                 height: 1.6,
                 decoration: TextDecoration.underline,
-                decorationColor: AppColors.teal,
+                decorationColor: AppColors.teal2,
               ),
             ),
           ),
@@ -1533,7 +1549,7 @@ class _TermsNote extends StatelessWidget {
             ' and ',
             style: GoogleFonts.sora(
               fontSize: 11,
-              color: const Color(0xFF8FA0B4),
+              color: AppColors.teal3.withValues(alpha: 0.45),
               height: 1.6,
             ),
           ),
@@ -1544,10 +1560,10 @@ class _TermsNote extends StatelessWidget {
               style: GoogleFonts.sora(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: AppColors.teal,
+                color: AppColors.teal2,
                 height: 1.6,
                 decoration: TextDecoration.underline,
-                decorationColor: AppColors.teal,
+                decorationColor: AppColors.teal2,
               ),
             ),
           ),
@@ -1838,19 +1854,52 @@ class _LegalSectionWidget extends StatelessWidget {
 
 
 // ─────────────────────────────────────────────────────────────
-class _DotPatternPainter extends CustomPainter {
+// Grid pattern background — matches splash screen
+// ─────────────────────────────────────────────────────────────
+class _LoginGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.teal.withValues(alpha: 0.06)
-      ..style = PaintingStyle.fill;
-    const step = 22.0;
-    const radius = 1.0;
+      ..color = AppColors.teal.withValues(alpha: 0.07)
+      ..strokeWidth = 1;
+    const step = 32.0;
     for (double y = 0; y < size.height; y += step) {
-      for (double x = 0; x < size.width; x += step) {
-        canvas.drawCircle(Offset(x, y), radius, paint);
-      }
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
     }
+    for (double x = 0; x < size.width; x += step) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Radial mesh gradient overlay — matches splash screen
+// ─────────────────────────────────────────────────────────────
+class _LoginMeshPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = RadialGradient(
+          center: const Alignment(-0.4, -0.6),
+          radius: 0.7,
+          colors: [AppColors.teal.withValues(alpha: 0.18), Colors.transparent],
+        ).createShader(rect),
+    );
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = RadialGradient(
+          center: const Alignment(0.6, 0.5),
+          radius: 0.55,
+          colors: [AppColors.sky.withValues(alpha: 0.10), Colors.transparent],
+        ).createShader(rect),
+    );
   }
 
   @override
@@ -1868,25 +1917,30 @@ class _HeaderEyePainter extends CustomPainter {
     canvas.drawOval(
       Rect.fromCenter(
         center: Offset(cx, cy),
-        width: size.width * 0.9,
-        height: size.height * 0.5,
+        width: size.width * 0.88,
+        height: size.height * 0.50,
       ),
       Paint()
-        ..color = Colors.white
+        ..color = AppColors.teal3
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.6,
+        ..strokeWidth = 1.8,
     );
     canvas.drawCircle(
       Offset(cx, cy),
       size.width * 0.18,
       Paint()
-        ..color = Colors.white
+        ..color = AppColors.teal2
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.6,
+        ..strokeWidth = 1.8,
     );
     canvas.drawCircle(
       Offset(cx, cy),
       size.width * 0.09,
+      Paint()..color = AppColors.teal2,
+    );
+    canvas.drawCircle(
+      Offset(cx, cy),
+      size.width * 0.038,
       Paint()..color = Colors.white,
     );
   }
