@@ -55,6 +55,53 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => _MainShellState();
 }
 
+class BottomNavClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    const radius = 40.0;
+    const notchHeight = 50.0;
+
+    // Start from bottom left
+    path.lineTo(0, 0);
+
+    // Top left arc
+    path.arcToPoint(
+      Offset(size.width / 2 - radius, 0),
+      radius: const Radius.circular(0),
+      largeArc: false,
+      clockwise: true,
+    );
+
+    // Left curve of notch - goes up
+    path.arcToPoint(
+      Offset(size.width / 2, notchHeight),
+      radius: Radius.circular(radius),
+      largeArc: false,
+      clockwise: false,
+    );
+
+    // Right curve of notch - comes back down
+    path.arcToPoint(
+      Offset(size.width / 2 + radius, 0),
+      radius: Radius.circular(radius),
+      largeArc: false,
+      clockwise: false,
+    );
+
+    // Top right line
+    path.lineTo(size.width, 0);
+    path.lineTo(size.width, size.height);
+    path.lineTo(0, size.height);
+    path.close();
+
+    return path;
+  }
+
+  @override
+  bool shouldReclip(BottomNavClipper oldClipper) => false;
+}
+
 class _MainShellState extends State<MainShell> {
   late int _index;
 
@@ -91,187 +138,210 @@ class _MainShellState extends State<MainShell> {
     final firstItems = _items.sublist(0, 2);
     final lastItems = _items.sublist(2);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: const Border(
-          top: BorderSide(color: Color(0xFFEEF2F6), width: 1.5),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 16,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+    return SizedBox(
+      height: 100,
+      child: Stack(
+        alignment: Alignment.bottomCenter,
         children: [
-          ...firstItems.asMap().entries.map((e) {
-            final active = e.key == _index;
-            return Expanded(
-              child: GestureDetector(
-                onTap: () => setState(() => _index = e.key),
-                behavior: HitTestBehavior.opaque,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  decoration: BoxDecoration(
-                    color: active
-                        ? const Color(0xFF0D9488).withOpacity(0.1)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        e.value['icon'] as IconData,
-                        size: active ? 22 : 20,
-                        color: active
-                            ? const Color(0xFF0D9488)
-                            : const Color(0xFF8FA0B4),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        e.value['label'] as String,
-                        style: GoogleFonts.inter(
-                          fontSize: 9,
-                          fontWeight: active
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                          color: active
-                              ? const Color(0xFF0D9488)
-                              : const Color(0xFF8FA0B4),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Container(
-                        width: active ? 16 : 0,
-                        height: 2,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0D9488),
-                          borderRadius: BorderRadius.circular(99),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: GestureDetector(
-              onTap: _startNewScreening,
+          // Bottom nav bar background with curved cutout
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 76,
+            child: ClipPath(
+              clipper: BottomNavClipper(),
               child: Container(
-                width: 60,
-                height: 60,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0D9488),
-                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  border: const Border(
+                    top: BorderSide(color: Color(0xFFEEF2F6), width: 1.5),
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.16),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 24,
+                      offset: const Offset(0, -6),
                     ),
                   ],
                 ),
-                child: const Icon(
-                  Icons.remove_red_eye_rounded,
-                  size: 28,
-                  color: Colors.white,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    ...firstItems.asMap().entries.map((e) {
+                      final active = e.key == _index;
+                      return Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _index = e.key),
+                          behavior: HitTestBehavior.opaque,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            decoration: BoxDecoration(
+                              color: active
+                                  ? const Color(0xFF0D9488).withOpacity(0.08)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            margin: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  e.value['icon'] as IconData,
+                                  size: active ? 24 : 22,
+                                  color: active
+                                      ? const Color(0xFF0D9488)
+                                      : const Color(0xFF8FA0B4),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  e.value['label'] as String,
+                                  style: GoogleFonts.inter(
+                                    fontSize: active ? 9.5 : 9,
+                                    fontWeight: active
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                    color: active
+                                        ? const Color(0xFF0D9488)
+                                        : const Color(0xFF8FA0B4),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                if (active)
+                                  Container(
+                                    width: 18,
+                                    height: 2.5,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF0D9488),
+                                      borderRadius: BorderRadius.circular(99),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                    const SizedBox(width: 70),
+                    ...lastItems.asMap().entries.map((e) {
+                      final index = e.key + 2;
+                      final active = index == _index;
+                      return Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _index = index),
+                          behavior: HitTestBehavior.opaque,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            decoration: BoxDecoration(
+                              color: active
+                                  ? const Color(0xFF0D9488).withOpacity(0.08)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            margin: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  e.value['icon'] as IconData,
+                                  size: active ? 24 : 22,
+                                  color: active
+                                      ? const Color(0xFF0D9488)
+                                      : const Color(0xFF8FA0B4),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  e.value['label'] as String,
+                                  style: GoogleFonts.inter(
+                                    fontSize: active ? 9.5 : 9,
+                                    fontWeight: active
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                    color: active
+                                        ? const Color(0xFF0D9488)
+                                        : const Color(0xFF8FA0B4),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                if (active)
+                                  Container(
+                                    width: 18,
+                                    height: 2.5,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF0D9488),
+                                      borderRadius: BorderRadius.circular(99),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ],
                 ),
               ),
             ),
           ),
-          ...lastItems.asMap().entries.map((e) {
-            final index = e.key + 2;
-            final active = index == _index;
-            return Expanded(
-              child: GestureDetector(
-                onTap: () => setState(() => _index = index),
-                behavior: HitTestBehavior.opaque,
+          // Large eye icon button with glow ring
+          Positioned(
+            top: 0,
+            child: GestureDetector(
+              onTap: _startNewScreening,
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF0D9488).withOpacity(0.2),
+                      blurRadius: 24,
+                      spreadRadius: 4,
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
                   decoration: BoxDecoration(
-                    color: active
-                        ? const Color(0xFF0D9488).withOpacity(0.1)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        e.value['icon'] as IconData,
-                        size: active ? 22 : 20,
-                        color: active
-                            ? const Color(0xFF0D9488)
-                            : const Color(0xFF8FA0B4),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        e.value['label'] as String,
-                        style: GoogleFonts.inter(
-                          fontSize: 9,
-                          fontWeight: active
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                          color: active
-                              ? const Color(0xFF0D9488)
-                              : const Color(0xFF8FA0B4),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Container(
-                        width: active ? 16 : 0,
-                        height: 2,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0D9488),
-                          borderRadius: BorderRadius.circular(99),
-                        ),
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF14B8A6), Color(0xFF0D9488)],
+                    ),
+                    border: Border.all(color: Colors.white, width: 3),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF0D9488).withOpacity(0.4),
+                        blurRadius: 16,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.remove_red_eye_rounded,
+                      size: 40,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
-            );
-          }).toList(),
+            ),
+          ),
         ],
       ),
     );
   }
 
   void _startNewScreening() {
-    Navigator.push(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const PatientsScreen(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          const begin = Offset(0.0, 1.0);
-          const end = Offset.zero;
-          const curve = Curves.easeInOutCubic;
-          var tween = Tween(
-            begin: begin,
-            end: end,
-          ).chain(CurveTween(curve: curve));
-          var offsetAnimation = animation.drive(tween);
-          var fadeAnimation = Tween<double>(
-            begin: 0.0,
-            end: 1.0,
-          ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut));
-          return FadeTransition(
-            opacity: fadeAnimation,
-            child: SlideTransition(position: offsetAnimation, child: child),
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 400),
-        reverseTransitionDuration: const Duration(milliseconds: 350),
-      ),
-    );
+    setState(() => _index = 1); // Navigate to Patients tab
   }
 }
