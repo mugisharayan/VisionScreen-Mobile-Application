@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -27,6 +27,10 @@ const double _kMinLux = 80.0;
 const _eyeOrder = ['OD', 'OS', 'OU'];
 
 // ── LogMAR rows (single E per row) ───────────────────────────────────────────
+// ── Staircase levels (logmar index into _rows) ────────────────────────────────
+// Initial jump sequence: 1.0 → 0.8 → 0.5 → 0.2 → 0.0 (indices 0,2,5,8,10)
+const _staircaseJumps = [0, 2, 5, 8, 10];
+
 const _rows = [
   {'logmar': '1.0', 'size': 96.0},
   {'logmar': '0.9', 'size': 82.0},
@@ -84,6 +88,8 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   double _currentLux = 0.0;
   bool _luxChecked = false;
   bool _luxOk = false;
+  // distance (2m = V@home validated, 3m = CHW field, 6m = clinical)
+  int _selectedDistance = 2;
   // brightness
   bool _brightnessSet = false;
   double? _originalBrightness;
@@ -100,16 +106,36 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 
   // ── Feature: Eye test ─────────────────────────────────────────────────────
   int _currentEyeIndex = 0;
-  int _currentRow = 0;
+  int _currentRow = 0;       // index into _rows
   int _currentRotation = 0;
   bool _rowRetryUsed = false;
   int _lastPassedRow = 0;
+  // Staircase state
+  int _letterIndex = 0;       // 0-4, which of the 5 letters in current row
+  int _correctCount = 0;      // correct answers in current row
+  int _staircaseJumpIndex = 0; // where we are in _staircaseJumps
+  bool _staircasePhase = true; // true=initial jumps, false=fine search
+  int _fineSearchDir = 0;      // +1 going harder, -1 going easier
   final List<Map<String, dynamic>> _eyeResults = [];
   int _cantTellCount = 0;
+
+  // Near vision (binocular, 40cm)
+  int _nearRow = 0;
+  int _nearLetterIndex = 0;
+  int _nearCorrectCount = 0;
+  int _nearLastPassedRow = 0;
+  int _nearRotation = 0;
+  bool _nearStaircasePhase = true;
+  int _nearStaircaseJumpIndex = 0;
+  int _nearCantTellCount = 0;
+  Map<String, dynamic>? _nearResult;
 
   // ── Feature: Timer ────────────────────────────────────────────────────────
   Timer? _testTimer;
   int _testSeconds = 0;
+
+  // Examiner masking mode
+  bool _examinerMasking = false;
 
   // ── Feature: Offline / unsynced ───────────────────────────────────────────
   bool _isOffline = false;
@@ -260,13 +286,26 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 
   void _recordResponse(bool correct) {
     setState(() {
-      if (correct) _lastPassedRow = _currentRow;
-      _rowRetryUsed = false;
-      if (_currentRow < _rows.length - 1) {
-        _currentRow++;
+      if (correct) _correctCount++;
+      _letterIndex++;
+
+      if (_letterIndex < 5) {
+        // still letters left in this row
         _generateRotation();
+        return;
+      }
+
+      // Row of 5 complete — evaluate
+      final passed = _correctCount >= 4;
+      _letterIndex = 0;
+      _correctCount = 0;
+      _rowRetryUsed = false;
+
+      if (passed) {
+        _lastPassedRow = _currentRow;
+        _advanceStaircase(passed: true);
       } else {
-        _finishEye(_rows[_lastPassedRow]['logmar'] as String);
+        _advanceStaircase(passed: false);
       }
     });
   }
@@ -274,19 +313,70 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   void _recordCantTell() {
     setState(() {
       _cantTellCount++;
-      _rowRetryUsed = false;
-      if (_currentRow < _rows.length - 1) {
-        _currentRow++;
+      _letterIndex++;
+      if (_letterIndex < 5) {
         _generateRotation();
+        return;
+      }
+      // row complete — cant tell counts as fail
+      final passed = _correctCount >= 4;
+      _letterIndex = 0;
+      _correctCount = 0;
+      _rowRetryUsed = false;
+      if (passed) {
+        _lastPassedRow = _currentRow;
+        _advanceStaircase(passed: true);
       } else {
-        _finishEye(_rows[_lastPassedRow]['logmar'] as String);
+        _advanceStaircase(passed: false);
       }
     });
+  }
+
+  void _advanceStaircase({required bool passed}) {
+    if (_staircasePhase) {
+      // ── Initial jump phase ──
+      if (passed) {
+        _staircaseJumpIndex++;
+        if (_staircaseJumpIndex >= _staircaseJumps.length) {
+          // reached finest level — done
+          _finishEye(_rows[_lastPassedRow]['logmar'] as String);
+          return;
+        }
+        _currentRow = _staircaseJumps[_staircaseJumpIndex];
+      } else {
+        // failed a jump level — switch to fine search going easier
+        _staircasePhase = false;
+        _fineSearchDir = -1;
+        _currentRow = (_currentRow + 1).clamp(0, _rows.length - 1);
+        if (_currentRow >= _rows.length - 1) {
+          _finishEye(_rows[_lastPassedRow]['logmar'] as String);
+          return;
+        }
+      }
+    } else {
+      // ── Fine search phase ──
+      if (passed) {
+        _lastPassedRow = _currentRow;
+        // try one harder
+        final next = _currentRow - 1;
+        if (next < 0) {
+          _finishEye(_rows[_lastPassedRow]['logmar'] as String);
+          return;
+        }
+        _currentRow = next;
+      } else {
+        // failed — stop, last passed is the result
+        _finishEye(_rows[_lastPassedRow]['logmar'] as String);
+        return;
+      }
+    }
+    _generateRotation();
   }
 
   void _finishEye(String result) {
     _stopTestTimer();
     _restoreBrightness();
+    final isLastEye = _currentEyeIndex >= _eyeOrder.length - 1;
     setState(() {
       _eyeResults.add({
         'eye': _eyeOrder[_currentEyeIndex],
@@ -294,23 +384,153 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
         'duration': _testDuration,
         'cantTell': _cantTellCount,
       });
-      _step = 4; // per-eye result
+      if (isLastEye) {
+        // all distance eyes done — go to near vision
+        _nearRow = 0;
+        _nearLetterIndex = 0;
+        _nearCorrectCount = 0;
+        _nearLastPassedRow = 0;
+        _nearStaircasePhase = true;
+        _nearStaircaseJumpIndex = 0;
+        _nearCantTellCount = 0;
+        _nearResult = null;
+        _step = 6; // near vision intro
+      } else {
+        // more eyes to test — go straight to cover eye reminder
+        _currentEyeIndex++;
+        _currentRow = 0;
+        _lastPassedRow = 0;
+        _letterIndex = 0;
+        _correctCount = 0;
+        _staircaseJumpIndex = 0;
+        _staircasePhase = true;
+        _fineSearchDir = 0;
+        _rowRetryUsed = false;
+        _cantTellCount = 0;
+        _generateRotation();
+        _step = 2; // cover eye reminder
+      }
     });
   }
 
-  void _nextEye() {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  void _goToSummary() {
+    // after all distance eyes done, go to near vision
     setState(() {
-      _currentEyeIndex++;
-      _currentRow = 0;
-      _lastPassedRow = 0;
-      _rowRetryUsed = false;
-      _cantTellCount = 0;
-      _generateRotation();
-      _step = 2; // cover eye reminder
+      _nearRow = 0;
+      _nearLetterIndex = 0;
+      _nearCorrectCount = 0;
+      _nearLastPassedRow = 0;
+      _nearStaircasePhase = true;
+      _nearStaircaseJumpIndex = 0;
+      _nearCantTellCount = 0;
+      _nearResult = null;
+      _step = 6;
+    });
+    _generateNearRotation();
+  }
+
+  void _goToFinalSummary() => setState(() => _step = 5);
+
+  void _generateNearRotation() =>
+      setState(() => _nearRotation = Random().nextInt(4));
+
+  void _recordNearResponse(bool correct) {
+    setState(() {
+      if (correct) _nearCorrectCount++;
+      _nearLetterIndex++;
+      if (_nearLetterIndex < 5) {
+        _generateNearRotation();
+        return;
+      }
+      final passed = _nearCorrectCount >= 4;
+      _nearLetterIndex = 0;
+      _nearCorrectCount = 0;
+      if (passed) {
+        _nearLastPassedRow = _nearRow;
+        _advanceNearStaircase(passed: true);
+      } else {
+        _advanceNearStaircase(passed: false);
+      }
     });
   }
 
-  void _goToSummary() => setState(() => _step = 5);
+  void _recordNearCantTell() {
+    setState(() {
+      _nearCantTellCount++;
+      _nearLetterIndex++;
+      if (_nearLetterIndex < 5) {
+        _generateNearRotation();
+        return;
+      }
+      final passed = _nearCorrectCount >= 4;
+      _nearLetterIndex = 0;
+      _nearCorrectCount = 0;
+      _advanceNearStaircase(passed: passed);
+    });
+  }
+
+  void _advanceNearStaircase({required bool passed}) {
+    if (_nearStaircasePhase) {
+      if (passed) {
+        _nearStaircaseJumpIndex++;
+        if (_nearStaircaseJumpIndex >= _staircaseJumps.length) {
+          _finishNear(_rows[_nearLastPassedRow]['logmar'] as String);
+          return;
+        }
+        _nearRow = _staircaseJumps[_nearStaircaseJumpIndex];
+      } else {
+        _nearStaircasePhase = false;
+        _nearRow = (_nearRow + 1).clamp(0, _rows.length - 1);
+        if (_nearRow >= _rows.length - 1) {
+          _finishNear(_rows[_nearLastPassedRow]['logmar'] as String);
+          return;
+        }
+      }
+    } else {
+      if (passed) {
+        _nearLastPassedRow = _nearRow;
+        final next = _nearRow - 1;
+        if (next < 0) {
+          _finishNear(_rows[_nearLastPassedRow]['logmar'] as String);
+          return;
+        }
+        _nearRow = next;
+      } else {
+        _finishNear(_rows[_nearLastPassedRow]['logmar'] as String);
+        return;
+      }
+    }
+    _generateNearRotation();
+  }
+
+  void _finishNear(String logmar) {
+    _stopTestTimer();
+    setState(() {
+      _nearResult = {
+        'logmar': logmar,
+        'duration': _testDuration,
+        'cantTell': _nearCantTellCount,
+      };
+      _step = 5; // go straight to final summary
+    });
+  }
 
   // ── Unsynced ──────────────────────────────────────────────────────────────
   Future<void> _loadUnsyncedCount() async {
@@ -390,6 +610,9 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       case 3: return _buildEChart();
       case 4: return _buildEyeResult();
       case 5: return _buildSummary();
+      case 6: return _buildNearVisionIntro();
+      case 7: return _buildNearChart();
+      case 8: return _buildNearResult();
       default: return const SizedBox();
     }
   }
@@ -1138,9 +1361,46 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   fontSize: 22, fontWeight: FontWeight.w800,
                   color: const Color(0xFF1A2A3D))),
           const SizedBox(height: 6),
-          Text('Three checks run automatically. All must pass before testing.',
+          Text('Select testing distance, then all checks run automatically.',
               style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF5E7291))),
-          const SizedBox(height: 28),
+          const SizedBox(height: 20),
+          // ── Distance selector ──
+          Text('Testing Distance',
+              style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13, fontWeight: FontWeight.w800,
+                  color: const Color(0xFF1A2A3D))),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              _distanceChip(2, '2 m', 'Smartphone validated', recommended: true),
+              const SizedBox(width: 8),
+              _distanceChip(3, '3 m', 'CHW field standard'),
+              const SizedBox(width: 8),
+              _distanceChip(6, '6 m', 'Clinical standard'),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: _teal.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: _teal.withValues(alpha: 0.15)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline_rounded, size: 14, color: _teal),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Mark the floor at exactly $_selectedDistance metres from the screen before starting.',
+                    style: GoogleFonts.inter(
+                        fontSize: 11, color: const Color(0xFF5E7291))),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
           // ── Check 1: Ambient light ──────────────────────────────────────
           _checkTile(
             icon: Icons.wb_sunny_rounded,
@@ -1226,7 +1486,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           // ── Check 3: Face detection ─────────────────────────────────────
           _checkTile(
             icon: Icons.face_rounded,
-            title: 'Face Detection at 3 Metres',
+            title: 'Face Detection at $_selectedDistance Metres',
             subtitle: _faceAtDistance
                 ? 'Patient detected — photo captured'
                 : _faceDetected
@@ -1322,6 +1582,56 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _distanceChip(int metres, String label, String desc,
+      {bool recommended = false}) {
+    final selected = _selectedDistance == metres;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedDistance = metres),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+          decoration: BoxDecoration(
+            color: selected ? _teal.withValues(alpha: 0.08) : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selected ? _teal : const Color(0xFFEEF2F6),
+              width: selected ? 2 : 1.5,
+            ),
+          ),
+          child: Column(
+            children: [
+              Text(label,
+                  style: GoogleFonts.spaceGrotesk(
+                      fontSize: 16, fontWeight: FontWeight.w800,
+                      color: selected ? _teal : const Color(0xFF1A2A3D))),
+              const SizedBox(height: 2),
+              Text(desc,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                      fontSize: 9,
+                      color: selected ? _teal : const Color(0xFF8FA0B4))),
+              if (recommended) ...[  
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: _green.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Text('Recommended',
+                      style: GoogleFonts.inter(
+                          fontSize: 8, fontWeight: FontWeight.w700,
+                          color: _green)),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1543,6 +1853,19 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   style: GoogleFonts.spaceGrotesk(
                       fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
               const SizedBox(width: 8),
+              // Letter progress x/5
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+                child: Text('$_letterIndex/5',
+                    style: GoogleFonts.spaceGrotesk(
+                        fontSize: 11, fontWeight: FontWeight.w700,
+                        color: Colors.white.withValues(alpha: 0.8))),
+              ),
+              const SizedBox(width: 8),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -1556,9 +1879,52 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                 ],
               ),
               const SizedBox(width: 10),
+              // Masking toggle
+              GestureDetector(
+                onTap: () => setState(() => _examinerMasking = !_examinerMasking),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: _examinerMasking
+                        ? _teal.withValues(alpha: 0.3)
+                        : Colors.white.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(
+                      color: _examinerMasking
+                          ? _teal3
+                          : Colors.white.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _examinerMasking
+                            ? Icons.visibility_off_rounded
+                            : Icons.visibility_rounded,
+                        size: 12,
+                        color: _examinerMasking ? _teal3 : Colors.white.withValues(alpha: 0.5),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _examinerMasking ? 'Masked' : 'Mask',
+                        style: GoogleFonts.inter(
+                            fontSize: 10, fontWeight: FontWeight.w700,
+                            color: _examinerMasking
+                                ? _teal3
+                                : Colors.white.withValues(alpha: 0.5)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
               // Retry button
               GestureDetector(
                 onTap: _rowRetryUsed ? null : () => setState(() {
+                  _letterIndex = 0;
+                  _correctCount = 0;
                   _rowRetryUsed = true;
                   _generateRotation();
                 }),
@@ -1601,22 +1967,76 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           backgroundColor: const Color(0xFFEEF2F6),
           color: _teal, minHeight: 3,
         ),
-        // Single E display
+        // Single E display with bounding box + 5-dot progress
         Expanded(
           child: Container(
             color: Colors.white,
-            child: Center(
-              child: RotatedBox(
-                quarterTurns: _currentRotation,
-                child: Text('E',
-                    style: TextStyle(
-                      fontSize: size,
-                      fontWeight: FontWeight.w900,
-                      color: _ink,
-                      height: 1.0,
-                      fontFamily: 'Courier',
-                    )),
-              ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // 5-dot progress indicator
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(5, (i) {
+                    Color dotColor;
+                    if (i < _letterIndex) {
+                      dotColor = _green; // answered
+                    } else if (i == _letterIndex) {
+                      dotColor = _teal;  // current
+                    } else {
+                      dotColor = const Color(0xFFEEF2F6); // upcoming
+                    }
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: i == _letterIndex ? 20 : 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: dotColor,
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 32),
+                // E with ETDRS bounding box (hidden when examiner masking on)
+                CustomPaint(
+                  painter: _BoundingBoxPainter(size: size),
+                  child: Padding(
+                    padding: EdgeInsets.all(size * 0.6),
+                    child: _examinerMasking
+                        ? Container(
+                            width: size * 0.8,
+                            height: size,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEEF2F6),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Center(
+                              child: Icon(Icons.visibility_off_rounded,
+                                  size: size * 0.3,
+                                  color: const Color(0xFF8FA0B4)),
+                            ),
+                          )
+                        : RotatedBox(
+                            quarterTurns: _currentRotation,
+                            child: CustomPaint(
+                              size: Size(size * 0.8, size),
+                              painter: _ETumbleEPainter(color: _ink),
+                            ),
+                          ),
+                  ),
+                ),
+                if (_examinerMasking)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text('Direction hidden from examiner',
+                        style: GoogleFonts.inter(
+                            fontSize: 11, color: _teal,
+                            fontWeight: FontWeight.w600)),
+                  ),
+                const SizedBox(height: 32),
+              ],
             ),
           ),
         ),
@@ -1819,10 +2239,10 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           if (!isLastEye)
             _continueBtn(
               'Test Next Eye (${_eyeOrder[_currentEyeIndex + 1]})',
-              _nextEye,
+              () => setState(() => _step = 2),
             )
           else
-            _continueBtn('View Full Summary', _goToSummary),
+            _continueBtn('View Near Vision Test', _goToSummary),
         ],
       ),
     );
@@ -1932,6 +2352,397 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       0, 0, 0, 1 - f * 0.5, 0,
     ]);
   }
+
+  // ── Step 6: Near Vision Intro ─────────────────────────────────────────────────────
+  Widget _buildNearVisionIntro() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          _stepBar(5),
+          const SizedBox(height: 32),
+          AnimatedBuilder(
+            animation: _pulseAnim,
+            builder: (_, __) => Transform.scale(
+              scale: _pulseAnim.value,
+              child: Container(
+                width: 140, height: 140,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _teal.withValues(alpha: 0.08),
+                  border: Border.all(color: _teal.withValues(alpha: 0.25), width: 2),
+                ),
+                child: Icon(Icons.menu_book_rounded,
+                    size: 64, color: _teal.withValues(alpha: 0.5)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 28),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: _teal.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(99),
+            ),
+            child: Text('Near Vision — Both Eyes Open',
+                style: GoogleFonts.spaceGrotesk(
+                    fontSize: 13, fontWeight: FontWeight.w700, color: _teal)),
+          ),
+          const SizedBox(height: 16),
+          Text('Near Vision Test',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                  fontSize: 22, fontWeight: FontWeight.w800,
+                  color: const Color(0xFF1A2A3D))),
+          const SizedBox(height: 10),
+          Text(
+            'Distance tests are complete. Now test near vision.\n'
+            'Ask the patient to hold the device at 40 cm (arm\'s length) '
+            'with BOTH eyes open.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+                fontSize: 13, color: const Color(0xFF5E7291), height: 1.6)),
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: _amber.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: _amber.withValues(alpha: 0.2)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  const Icon(Icons.tips_and_updates_rounded, size: 15, color: _amber),
+                  const SizedBox(width: 8),
+                  Text('Setup instructions',
+                      style: GoogleFonts.inter(
+                          fontSize: 12, fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1A2A3D))),
+                ]),
+                const SizedBox(height: 10),
+                ...[
+                  'Patient keeps BOTH eyes open — no covering needed',
+                  'Hold device at exactly 40 cm from the eyes',
+                  'Device should be at eye level',
+                  'Patient wears reading glasses if they use them',
+                  'Ensure screen brightness is at maximum',
+                ].map((t) => Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(top: 5),
+                        width: 5, height: 5,
+                        decoration: const BoxDecoration(
+                            color: _amber, shape: BoxShape.circle),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text(t,
+                          style: GoogleFonts.inter(
+                              fontSize: 11, color: const Color(0xFF5E7291),
+                              height: 1.5))),
+                    ],
+                  ),
+                )),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+          _continueBtn('Begin Near Vision Test', () {
+            _startTestTimer();
+            setState(() => _step = 7);
+          }),
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: _goToFinalSummary,
+            child: Text('Skip near vision test',
+                style: GoogleFonts.inter(
+                    fontSize: 13, color: const Color(0xFF8FA0B4))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Step 7: Near Vision Chart ───────────────────────────────────────────────────
+  Widget _buildNearChart() {
+    final row    = _rows[_nearRow];
+    final logmar = row['logmar'] as String;
+    final size   = row['size'] as double;
+
+    return Column(
+      children: [
+        Container(
+          color: _ink,
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                decoration: BoxDecoration(
+                  color: _teal.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(99),
+                  border: Border.all(color: _teal3.withValues(alpha: 0.3)),
+                ),
+                child: Text('OU — 40cm',
+                    style: GoogleFonts.spaceGrotesk(
+                        fontSize: 13, fontWeight: FontWeight.w800, color: _teal3)),
+              ),
+              const Spacer(),
+              Text('LogMAR $logmar',
+                  style: GoogleFonts.spaceGrotesk(
+                      fontSize: 13, fontWeight: FontWeight.w700,
+                      color: Colors.white)),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+                child: Text('$_nearLetterIndex/5',
+                    style: GoogleFonts.spaceGrotesk(
+                        fontSize: 11, fontWeight: FontWeight.w700,
+                        color: Colors.white.withValues(alpha: 0.8))),
+              ),
+              const SizedBox(width: 8),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.timer_rounded,
+                      size: 12, color: Colors.white.withValues(alpha: 0.5)),
+                  const SizedBox(width: 3),
+                  Text(_testDuration,
+                      style: GoogleFonts.spaceGrotesk(
+                          fontSize: 11, fontWeight: FontWeight.w600,
+                          color: Colors.white.withValues(alpha: 0.5))),
+                ],
+              ),
+            ],
+          ),
+        ),
+        LinearProgressIndicator(
+          value: (_nearRow + 1) / _rows.length,
+          backgroundColor: const Color(0xFFEEF2F6),
+          color: _teal, minHeight: 3,
+        ),
+        Expanded(
+          child: Container(
+            color: Colors.white,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(5, (i) {
+                    Color dotColor;
+                    if (i < _nearLetterIndex) dotColor = _green;
+                    else if (i == _nearLetterIndex) dotColor = _teal;
+                    else dotColor = const Color(0xFFEEF2F6);
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: i == _nearLetterIndex ? 20 : 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: dotColor,
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 32),
+                CustomPaint(
+                  painter: _BoundingBoxPainter(size: size),
+                  child: Padding(
+                    padding: EdgeInsets.all(size * 0.6),
+                    child: RotatedBox(
+                      quarterTurns: _nearRotation,
+                      child: CustomPaint(
+                        size: Size(size * 0.8, size),
+                        painter: _ETumbleEPainter(color: _ink),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
+              ],
+            ),
+          ),
+        ),
+        Container(
+          color: const Color(0xFFF8FAFB),
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          child: Column(
+            children: [
+              Text('Which way is the E facing?',
+                  style: GoogleFonts.inter(
+                      fontSize: 12, color: const Color(0xFF8FA0B4))),
+              const SizedBox(height: 14),
+              _nearDirBtn(Icons.arrow_upward_rounded, 3),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _nearDirBtn(Icons.arrow_back_rounded, 2),
+                  const SizedBox(width: 10),
+                  Container(
+                    width: 56, height: 56,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEEF2F6),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(Icons.remove_red_eye_rounded,
+                        size: 22, color: Color(0xFF8FA0B4)),
+                  ),
+                  const SizedBox(width: 10),
+                  _nearDirBtn(Icons.arrow_forward_rounded, 0),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _nearDirBtn(Icons.arrow_downward_rounded, 1),
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _recordNearCantTell,
+                  icon: const Icon(Icons.help_outline_rounded,
+                      size: 18, color: Color(0xFF8FA0B4)),
+                  label: Text("Can't Tell",
+                      style: GoogleFonts.inter(
+                          fontSize: 14, fontWeight: FontWeight.w700,
+                          color: const Color(0xFF5E7291))),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    side: const BorderSide(color: Color(0xFFDDE4EC), width: 1.5),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _nearDirBtn(IconData icon, int quarterTurns) =>
+    GestureDetector(
+      onTap: () => _recordNearResponse(quarterTurns == _nearRotation),
+      child: Container(
+        width: 68, height: 68,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFDDE4EC), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 6, offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Icon(icon, size: 28, color: _ink),
+      ),
+    );
+
+  // ── Step 8: Near Vision Result ──────────────────────────────────────────────────
+  Widget _buildNearResult() {
+    if (_nearResult == null) return const SizedBox();
+    final logmar = _nearResult!['logmar'] as String;
+    final dur    = _nearResult!['duration'] as String;
+    final ct     = _nearResult!['cantTell'] as int;
+    final cls    = _vaClass(logmar);
+    final col    = _vaColor(logmar);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _stepBar(6),
+          const SizedBox(height: 24),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: col.withValues(alpha: 0.3), width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: col.withValues(alpha: 0.1),
+                  blurRadius: 20, offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Container(
+                  width: 64, height: 64,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: col.withValues(alpha: 0.1),
+                    border: Border.all(color: col.withValues(alpha: 0.3), width: 2),
+                  ),
+                  child: const Center(
+                    child: Text('OU',
+                        style: TextStyle(fontSize: 16,
+                            fontWeight: FontWeight.w800)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text('Near Vision — Both Eyes',
+                    style: GoogleFonts.inter(
+                        fontSize: 12, color: const Color(0xFF8FA0B4))),
+                const SizedBox(height: 6),
+                Text(double.tryParse(logmar) != null
+                    ? _toSnellen(logmar) : logmar,
+                    style: GoogleFonts.spaceGrotesk(
+                        fontSize: 48, fontWeight: FontWeight.w900, color: col)),
+                if (double.tryParse(logmar) != null)
+                  Text('LogMAR $logmar',
+                      style: GoogleFonts.inter(
+                          fontSize: 13, color: col.withValues(alpha: 0.7))),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: col.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Text(cls,
+                      style: GoogleFonts.inter(
+                          fontSize: 12, fontWeight: FontWeight.w700,
+                          color: col)),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _statChip(Icons.timer_rounded, dur, 'Duration'),
+                    const SizedBox(width: 12),
+                    _statChip(Icons.help_outline_rounded,
+                        '$ct', "Can't Tell"),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          _blurPreview(logmar),
+          const SizedBox(height: 28),
+          _continueBtn('View Full Summary', _goToFinalSummary),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSummary() {
     final patient = _patientListRuntime
         .where((p) => p['id'] == _selectedPatientId)
@@ -2006,7 +2817,12 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               style: GoogleFonts.plusJakartaSans(
                   fontSize: 18, fontWeight: FontWeight.w800,
                   color: const Color(0xFF1A2A3D))),
-          const SizedBox(height: 16),
+          const SizedBox(height: 6),
+          Text('Distance Vision (Monocular)',
+              style: GoogleFonts.inter(
+                  fontSize: 11, fontWeight: FontWeight.w600,
+                  color: const Color(0xFF8FA0B4))),
+          const SizedBox(height: 12),
           // Per-eye result cards
           ..._eyeResults.map((r) {
             final eye    = r['eye'] as String;
@@ -2086,6 +2902,93 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               ),
             );
           }),
+          // Near vision result card
+          if (_nearResult != null) ...[
+            const SizedBox(height: 16),
+            Text('Near Vision (Binocular — 40cm)',
+                style: GoogleFonts.inter(
+                    fontSize: 11, fontWeight: FontWeight.w600,
+                    color: const Color(0xFF8FA0B4))),
+            const SizedBox(height: 10),
+            Builder(builder: (_) {
+              final logmar = _nearResult!['logmar'] as String;
+              final dur    = _nearResult!['duration'] as String;
+              final ct     = _nearResult!['cantTell'] as int;
+              final cls    = _vaClass(logmar);
+              final col    = _vaColor(logmar);
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 8, offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44, height: 44,
+                      decoration: BoxDecoration(
+                        color: col.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Text('OU',
+                            style: GoogleFonts.spaceGrotesk(
+                                fontSize: 12, fontWeight: FontWeight.w800,
+                                color: col)),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Both Eyes — Near',
+                              style: GoogleFonts.inter(
+                                  fontSize: 11, color: const Color(0xFF8FA0B4))),
+                          const SizedBox(height: 2),
+                          Text(cls,
+                              style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 14, fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF1A2A3D))),
+                          if (ct > 0)
+                            Text("$ct can't tell",
+                                style: GoogleFonts.inter(
+                                    fontSize: 10, color: _amber)),
+                        ],
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          double.tryParse(logmar) != null
+                              ? _toSnellen(logmar) : logmar,
+                          style: GoogleFonts.spaceGrotesk(
+                              fontSize: 16, fontWeight: FontWeight.w800,
+                              color: col)),
+                        if (double.tryParse(logmar) != null)
+                          Text('LogMAR $logmar',
+                              style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  color: col.withValues(alpha: 0.7))),
+                        Text(dur,
+                            style: GoogleFonts.inter(
+                                fontSize: 10,
+                                color: const Color(0xFF8FA0B4))),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
           // Referral banner
           if (_needsReferral) ...[
             const SizedBox(height: 4),
@@ -2234,4 +3137,59 @@ class _FaceOverlayPainter extends CustomPainter {
   @override
   bool shouldRepaint(_FaceOverlayPainter old) =>
       old.faceDetected != faceDetected || old.correctDistance != correctDistance;
+}
+
+// ETDRS bounding box — stroke = 1/5 of E size, gap = 1/2 of E size
+class _BoundingBoxPainter extends CustomPainter {
+  final double size;
+  const _BoundingBoxPainter({required this.size});
+
+  @override
+  void paint(Canvas canvas, Size canvasSize) {
+    final strokeW = size / 5;          // arm thickness = 1 unit
+    final gap     = size / 2;          // gap between E and box
+    final cx = canvasSize.width  / 2;
+    final cy = canvasSize.height / 2;
+    final half = size / 2 + gap + strokeW / 2;
+    final rect = Rect.fromCenter(
+        center: Offset(cx, cy), width: half * 2, height: half * 2);
+    final paint = Paint()
+      ..color = const Color(0xFF04091A)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeW;
+    canvas.drawRect(rect, paint);
+  }
+
+  @override
+  bool shouldRepaint(_BoundingBoxPainter old) => old.size != size;
+}
+
+// ETDRS Tumbling E — drawn on a 5×5 grid
+// Unit (u) = size/5
+// Letter: width=4u, height=5u
+// 3 arms: top, middle, bottom — each 1u thick
+// 2 gaps between arms: each 1u
+// Spine on left: 1u wide, full 5u height
+class _ETumbleEPainter extends CustomPainter {
+  final Color color;
+  const _ETumbleEPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final u = size.height / 5;
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+    // Spine
+    canvas.drawRect(Rect.fromLTWH(0, 0, u, size.height), paint);
+    // Top arm
+    canvas.drawRect(Rect.fromLTWH(0, 0, u * 4, u), paint);
+    // Middle arm (3u wide per ETDRS)
+    canvas.drawRect(Rect.fromLTWH(0, u * 2, u * 3, u), paint);
+    // Bottom arm
+    canvas.drawRect(Rect.fromLTWH(0, u * 4, u * 4, u), paint);
+  }
+
+  @override
+  bool shouldRepaint(_ETumbleEPainter old) => old.color != color;
 }
