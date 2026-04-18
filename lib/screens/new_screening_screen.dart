@@ -7,6 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'referral_letter_screen.dart';
 
 // ── Colours ──────────────────────────────────────────────────────────────────
 const _ink  = Color(0xFF04091A);
@@ -1863,6 +1864,45 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             ),
           ],
           const SizedBox(height: 28),
+          if (_needsReferral)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    final patient = _patientListRuntime
+                        .where((p) => p['id'] == _selectedPatientId)
+                        .firstOrNull;
+                    if (patient == null) return;
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ReferralLetterScreen(
+                          patient: patient,
+                          eyeResults: _eyeResults,
+                          screeningDate: DateTime.now()
+                              .toString().substring(0, 10),
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.description_rounded,
+                      size: 18, color: Colors.white),
+                  label: Text('Generate Referral Letter',
+                      style: GoogleFonts.inter(
+                          fontSize: 14, fontWeight: FontWeight.w700,
+                          color: Colors.white)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _red,
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+            ),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(

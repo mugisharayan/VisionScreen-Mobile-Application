@@ -13,9 +13,25 @@ const _amber = Color(0xFFF59E0B);
 const _red = Color(0xFFEF4444);
 const _blue = Color(0xFF3B82F6);
 
+// ── Screening history entry ──
+class _ScreeningEntry {
+  const _ScreeningEntry({
+    required this.date,
+    required this.od,
+    required this.os,
+    required this.ou,
+    required this.outcome,
+    this.chw = 'CHW Field Worker',
+  });
+  final String date;
+  final String od, os, ou;
+  final String outcome;
+  final String chw;
+}
+
 // ── Patient model ──
 class _Patient {
-  const _Patient({
+  _Patient({
     required this.initials,
     required this.avatarGradient,
     required this.photoUrl,
@@ -34,7 +50,8 @@ class _Patient {
     this.facility,
     this.dueDate,
     this.referralStatus,
-  });
+    List<_ScreeningEntry>? history,
+  }) : history = history ?? const [];
 
   final String initials;
   final List<Color> avatarGradient;
@@ -43,16 +60,16 @@ class _Patient {
   final int age;
   final String gender;
   final String village;
-  final String ageGroup; // adult | child | elderly
+  final String ageGroup;
   final String od, os, ou;
-  final String outcome; // pass | refer | pending
+  final String outcome;
   final String date;
   final String id;
   final String phone;
   final String? facility;
   final String? dueDate;
-  final String?
-  referralStatus; // overdue | notified | pending | attended | completed | cancelled
+  final String? referralStatus;
+  final List<_ScreeningEntry> history;
 }
 
 final _patients = <_Patient>[
@@ -73,6 +90,11 @@ final _patients = <_Patient>[
     date: 'Today · 8m ago',
     id: 'PAT-00312',
     phone: '+256701234567',
+    history: [
+      _ScreeningEntry(date: '28 Mar 2026', od: '6/6',  os: '6/9',  ou: '6/6',  outcome: 'pass'),
+      _ScreeningEntry(date: '10 Jan 2026', od: '6/6',  os: '6/6',  ou: '6/6',  outcome: 'pass'),
+      _ScreeningEntry(date: '5 Aug 2025',  od: '6/9',  os: '6/9',  ou: '6/6',  outcome: 'pass'),
+    ],
   ),
   _Patient(
     initials: 'OJ',
@@ -94,6 +116,11 @@ final _patients = <_Patient>[
     facility: 'Mulago National Referral Hospital',
     dueDate: '29 Mar 2026',
     referralStatus: 'overdue',
+    history: [
+      _ScreeningEntry(date: '28 Mar 2026', od: '6/12', os: '6/18', ou: '6/12', outcome: 'refer'),
+      _ScreeningEntry(date: '15 Nov 2025', od: '6/9',  os: '6/12', ou: '6/9',  outcome: 'refer'),
+      _ScreeningEntry(date: '2 Jun 2025',  od: '6/6',  os: '6/9',  ou: '6/6',  outcome: 'pass'),
+    ],
   ),
   _Patient(
     initials: 'NA',
@@ -112,6 +139,10 @@ final _patients = <_Patient>[
     date: 'Today · 1hr ago',
     id: 'PAT-00301',
     phone: '+256703456789',
+    history: [
+      _ScreeningEntry(date: '28 Mar 2026', od: '6/9',  os: '6/9',  ou: '6/6',  outcome: 'pass'),
+      _ScreeningEntry(date: '20 Dec 2025', od: '6/12', os: '6/9',  ou: '6/9',  outcome: 'refer'),
+    ],
   ),
   _Patient(
     initials: 'MW',
@@ -516,7 +547,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        onTap: () {},
+        onTap: () => _showHistory(p),
         borderRadius: BorderRadius.circular(16),
         highlightColor: const Color(0xFFF0F4F7),
         splashColor: const Color(0xFFDDE4EC),
@@ -1031,6 +1062,254 @@ class _PatientsScreenState extends State<PatientsScreen> {
                 fontWeight: FontWeight.w700,
                 color: fg,
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showHistory(_Patient p) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.92,
+        expand: false,
+        builder: (_, ctrl) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              // Handle
+              Padding(
+                padding: const EdgeInsets.only(top: 12, bottom: 4),
+                child: Center(
+                  child: Container(
+                    width: 40, height: 4,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDDE4EC),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  ),
+                ),
+              ),
+              // Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44, height: 44,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(colors: p.avatarGradient),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Text(p.initials,
+                            style: GoogleFonts.plusJakartaSans(
+                                fontSize: 14, fontWeight: FontWeight.w800,
+                                color: Colors.white)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(p.name,
+                              style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 15, fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF1A2A3D))),
+                          Text('${p.id} · ${p.age} yrs · ${p.village}',
+                              style: GoogleFonts.inter(
+                                  fontSize: 11, color: const Color(0xFF8FA0B4))),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0F4F7),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                      child: Text('${p.history.length + 1} screenings',
+                          style: GoogleFonts.inter(
+                              fontSize: 10, fontWeight: FontWeight.w700,
+                              color: const Color(0xFF5E7291))),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Divider(height: 1, color: const Color(0xFFEEF2F6)),
+              // History list
+              Expanded(
+                child: p.history.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.history_rounded,
+                                size: 40, color: Color(0xFFDDE4EC)),
+                            const SizedBox(height: 12),
+                            Text('No previous screenings',
+                                style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 14, fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF1A2A3D))),
+                            const SizedBox(height: 4),
+                            Text('This is the patient\'s first screening',
+                                style: GoogleFonts.inter(
+                                    fontSize: 12, color: const Color(0xFF8FA0B4))),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: ctrl,
+                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                        itemCount: p.history.length,
+                        itemBuilder: (_, i) => _historyEntry(p.history[i], i, p.history.length),
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _historyEntry(_ScreeningEntry e, int index, int total) {
+    final isLatest = index == 0;
+    final col = e.outcome == 'pass' ? _green : _red;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Timeline
+        Column(
+          children: [
+            Container(
+              width: 28, height: 28,
+              decoration: BoxDecoration(
+                color: col.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+                border: Border.all(color: col.withValues(alpha: 0.3), width: 1.5),
+              ),
+              child: Icon(
+                e.outcome == 'pass' ? Icons.check_rounded : Icons.warning_rounded,
+                size: 14, color: col,
+              ),
+            ),
+            if (index < total - 1)
+              Container(
+                width: 2, height: 60,
+                color: const Color(0xFFEEF2F6),
+              ),
+          ],
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: isLatest ? col.withValues(alpha: 0.04) : Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isLatest ? col.withValues(alpha: 0.2) : const Color(0xFFEEF2F6),
+                  width: 1.5,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(e.date,
+                          style: GoogleFonts.inter(
+                              fontSize: 12, fontWeight: FontWeight.w700,
+                              color: const Color(0xFF1A2A3D))),
+                      const Spacer(),
+                      if (isLatest)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: _teal.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          child: Text('Latest',
+                              style: GoogleFonts.inter(
+                                  fontSize: 9, fontWeight: FontWeight.w700,
+                                  color: _teal)),
+                        ),
+                      Container(
+                        margin: const EdgeInsets.only(left: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: col.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                        child: Text(e.outcome == 'pass' ? 'Pass' : 'Refer',
+                            style: GoogleFonts.inter(
+                                fontSize: 9, fontWeight: FontWeight.w700,
+                                color: col)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      _histVaPill('OD', e.od),
+                      const SizedBox(width: 6),
+                      _histVaPill('OS', e.os),
+                      const SizedBox(width: 6),
+                      _histVaPill('OU', e.ou),
+                      const Spacer(),
+                      Icon(Icons.person_outline_rounded,
+                          size: 11, color: const Color(0xFF8FA0B4)),
+                      const SizedBox(width: 4),
+                      Text(e.chw,
+                          style: GoogleFonts.inter(
+                              fontSize: 10, color: const Color(0xFF8FA0B4))),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _histVaPill(String eye, String value) {
+    final isBad = value != '6/6' && value != '6/9';
+    final col = isBad ? _amber : _green;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: col.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(7),
+        border: Border.all(color: col.withValues(alpha: 0.2)),
+      ),
+      child: RichText(
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: '$eye ',
+              style: GoogleFonts.inter(
+                  fontSize: 9, color: const Color(0xFF8FA0B4),
+                  fontWeight: FontWeight.w500),
+            ),
+            TextSpan(
+              text: value,
+              style: GoogleFonts.spaceGrotesk(
+                  fontSize: 11, fontWeight: FontWeight.w700, color: col),
             ),
           ],
         ),
