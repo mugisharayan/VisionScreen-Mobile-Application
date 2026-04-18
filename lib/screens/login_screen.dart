@@ -1393,13 +1393,16 @@ class _PasswordStrength extends StatelessWidget {
               ),
               if (score < 3) ...[
                 const SizedBox(width: 6),
-                Text(
-                  score == 1
-                      ? '· Add uppercase, numbers & symbols'
-                      : '· Add symbols to strengthen',
-                  style: GoogleFonts.sora(
-                    fontSize: 11,
-                    color: AppColors.teal3.withValues(alpha: 0.5),
+                Flexible(
+                  child: Text(
+                    score == 1
+                        ? '· Add uppercase, numbers & symbols'
+                        : '· Add symbols to strengthen',
+                    style: GoogleFonts.sora(
+                      fontSize: 11,
+                      color: AppColors.teal3.withValues(alpha: 0.5),
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
