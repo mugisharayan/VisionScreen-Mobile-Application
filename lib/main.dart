@@ -7,6 +7,7 @@ import 'screens/home_screen.dart';
 import 'screens/analytics_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/patients_screen.dart';
+import 'screens/new_screening_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -342,6 +343,24 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _startNewScreening() {
-    setState(() => _index = 1); // Navigate to Patients tab
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => const NewScreeningScreen(),
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(
+            opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOut),
+            ),
+            child: SlideTransition(
+              position: Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero)
+                  .animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+              child: child,
+            ),
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 350),
+      ),
+    );
   }
 }

@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:async' show TimeoutException;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -37,9 +37,9 @@ class _HomeScreenState extends State<HomeScreen>
   final List<Map<String, dynamic>> _tips = [
     {'icon': Icons.wb_sunny_rounded, 'color': Color(0xFFF59E0B), 'text': 'Ensure adequate room lighting before starting a vision test.', 'image': 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&q=80'},
     {'icon': Icons.straighten_rounded, 'color': Color(0xFF0D9488), 'text': 'Always confirm the patient is exactly 3 metres from the screen.', 'image': 'https://images.unsplash.com/photo-1581595220892-b0739db3ba8c?w=400&q=80'},
-    {'icon': Icons.remove_red_eye_rounded, 'color': Color(0xFF3B82F6), 'text': 'Test each eye separately — cover one eye completely before testing the other.', 'image': 'https://images.unsplash.com/photo-1559757175-5700dde675bc?w=400&q=80'},
-    {'icon': Icons.elderly_rounded, 'color': Color(0xFF10B981), 'text': 'For elderly patients, apply the 6/18 threshold — not the adult 6/12 standard.', 'image': 'https://images.unsplash.com/photo-1516307365426-bea591f05011?w=400&q=80'},
-    {'icon': Icons.child_care_rounded, 'color': Color(0xFF8B5CF6), 'text': 'Children may need encouragement — demonstrate the E direction yourself first.', 'image': 'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=400&q=80'},
+    {'icon': Icons.remove_red_eye_rounded, 'color': Color(0xFF3B82F6), 'text': 'Test each eye separately â€” cover one eye completely before testing the other.', 'image': 'https://images.unsplash.com/photo-1559757175-5700dde675bc?w=400&q=80'},
+    {'icon': Icons.elderly_rounded, 'color': Color(0xFF10B981), 'text': 'For elderly patients, apply the 6/18 threshold â€” not the adult 6/12 standard.', 'image': 'https://images.unsplash.com/photo-1516307365426-bea591f05011?w=400&q=80'},
+    {'icon': Icons.child_care_rounded, 'color': Color(0xFF8B5CF6), 'text': 'Children may need encouragement â€” demonstrate the E direction yourself first.', 'image': 'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=400&q=80'},
     {'icon': Icons.visibility_off_rounded, 'color': Color(0xFFEF4444), 'text': 'Ask patients to remove glasses before the unaided vision test begins.', 'image': 'https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=400&q=80'},
   ];
 
@@ -221,7 +221,7 @@ class _HomeScreenState extends State<HomeScreen>
           '${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)}';
       if (mounted) setState(() => _locationLabel = coordLabel);
 
-      // Try reverse geocoding — may fail if offline
+      // Try reverse geocoding â€” may fail if offline
       try {
         final placemarks =
             await placemarkFromCoordinates(pos.latitude, pos.longitude)
@@ -238,10 +238,10 @@ class _HomeScreenState extends State<HomeScreen>
           }
         }
       } catch (_) {
-        // Geocoding failed (offline) — keep showing coordinates
+        // Geocoding failed (offline) â€” keep showing coordinates
       }
     } on TimeoutException {
-      if (mounted) setState(() => _locationLabel = 'GPS timeout — tap to retry');
+      if (mounted) setState(() => _locationLabel = 'GPS timeout â€” tap to retry');
     } catch (e) {
       if (mounted) setState(() => _locationLabel = 'Tap to retry location');
     }
@@ -422,7 +422,7 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
           const SizedBox(height: 6),
-          // Location row — tappable to retry
+          // Location row â€” tappable to retry
           GestureDetector(
             onTap: _fetchLocation,
             child: Row(
@@ -542,7 +542,7 @@ class _HomeScreenState extends State<HomeScreen>
                     color: Colors.white,
                     fontSize: 14,
                     fontWeight: FontWeight.w700)),
-            Text('CHW · Nakawa HC III',
+            Text('CHW Â· Nakawa HC III',
                 style: GoogleFonts.inter(
                     color: const Color(0x995EEAD4),
                     fontSize: 11,
@@ -798,11 +798,11 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildStatsRow() {
     return Row(
       children: [
-        _buildStatCard('47', 'Screened', '↑ 8 today', const Color(0xFF5EEAD4)),
+        _buildStatCard('47', 'Screened', 'â†‘ 8 today', const Color(0xFF5EEAD4)),
         const SizedBox(width: 8),
-        _buildStatCard('6', 'Referrals', '↑ 2 today', const Color(0xFFF59E0B)),
+        _buildStatCard('6', 'Referrals', 'â†‘ 2 today', const Color(0xFFF59E0B)),
         const SizedBox(width: 8),
-        _buildStatCard('3', 'High Risk', '↑ 1 today', const Color(0xFFEF4444)),
+        _buildStatCard('3', 'High Risk', 'â†‘ 1 today', const Color(0xFFEF4444)),
       ],
     );
   }
@@ -988,7 +988,7 @@ class _HomeScreenState extends State<HomeScreen>
                         fontWeight: FontWeight.w700,
                         color: Colors.white)),
                 const SizedBox(height: 3),
-                Text('35 passed · 12 referred · 6 high risk',
+                Text('35 passed Â· 12 referred Â· 6 high risk',
                     style: GoogleFonts.inter(
                         fontSize: 10,
                         fontWeight: FontWeight.w400,
@@ -1003,7 +1003,7 @@ class _HomeScreenState extends State<HomeScreen>
               color: Colors.white.withOpacity(0.15),
               borderRadius: BorderRadius.circular(99),
             ),
-            child: Text('↑ 3%',
+            child: Text('â†‘ 3%',
                 style: GoogleFonts.spaceGrotesk(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -1224,7 +1224,7 @@ class _HomeScreenState extends State<HomeScreen>
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFF1A2A3D),
                         letterSpacing: 0.1)),
-                Text('4 patients · 27 Mar 2026',
+                Text('4 patients Â· 27 Mar 2026',
                     style: GoogleFonts.inter(
                         fontSize: 11,
                         color: const Color(0xFF8FA0B4),
@@ -1257,168 +1257,225 @@ class _HomeScreenState extends State<HomeScreen>
         // Patient cards
         _buildPatientCard(
             'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=150&q=80',
-            const Color(0xFF0D9488), 'Akello Mercy',
-            'F · 34 yrs', 'OD 6/6  ·  OS 6/9  ·  OU 6/6', '8m ago',
-            'Pass', const Color(0xFF15803D), const Color(0xFFDCFCE7),
-            Icons.check_circle_rounded, const Color(0xFF22C55E)),
+            ['#0D9488', '#14B8A6'], 'AK', 'Akello Mercy', 'F · 34 yrs',
+            'OD 6/6', 'OS 6/9', 'OU 6/6', '8m ago', 'pass', 'PAT-00312', 'adult'),
         const SizedBox(height: 8),
         _buildPatientCard(
             'https://images.unsplash.com/photo-1506277886164-e25aa3f4ef7f?w=150&q=80',
-            const Color(0xFFEF4444), 'Okello James',
-            'M · 58 yrs', 'OD 6/12  ·  OS 6/18  ·  OU 6/12', '22m ago',
-            'Refer', const Color(0xFF991B1B), const Color(0xFFFEE2E2),
-            Icons.warning_rounded, const Color(0xFFEF4444)),
+            ['#7F1D1D', '#EF4444'], 'OJ', 'Okello James', 'M · 58 yrs',
+            'OD 6/12', 'OS 6/18', 'OU 6/12', '22m ago', 'refer', 'PAT-00298', 'adult'),
         const SizedBox(height: 8),
         _buildPatientCard(
             'https://images.unsplash.com/photo-1589156280159-27698a70f29e?w=150&q=80',
-            const Color(0xFF22C55E), 'Nakato Aisha',
-            'F · 27 yrs', 'OD 6/9  ·  OS 6/9  ·  OU 6/6', '1hr ago',
-            'Pass', const Color(0xFF15803D), const Color(0xFFDCFCE7),
-            Icons.check_circle_rounded, const Color(0xFF22C55E)),
+            ['#065F46', '#22C55E'], 'NA', 'Nakato Aisha', 'F · 27 yrs',
+            'OD 6/9', 'OS 6/9', 'OU 6/6', '1hr ago', 'pass', 'PAT-00301', 'adult'),
         const SizedBox(height: 8),
         _buildPatientCard(
             'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&q=80',
-            const Color(0xFFF59E0B), 'Mugisha Wilson',
-            'M · 45 yrs', 'Awaiting screening', 'Pending',
-            'Waiting', const Color(0xFF0369A1), const Color(0xFFE0F2FE),
-            Icons.schedule_rounded, const Color(0xFFF59E0B)),
+            ['#78350F', '#F59E0B'], 'MW', 'Mugisha Wilson', 'M · 45 yrs',
+            'â€”', 'â€”', 'â€”', 'Pending', 'pending', 'PAT-00315', 'adult'),
       ],
     );
   }
 
   Widget _buildPatientCard(
     String photoUrl,
-    Color avatarColor,
+    List<String> gradientHex,
+    String initials,
     String name,
     String demographic,
-    String vaResult,
+    String od, String os, String ou,
     String time,
-    String badge,
-    Color badgeText,
-    Color badgeBg,
-    IconData statusIcon,
-    Color statusIconColor,
+    String outcome,
+    String id,
+    String ageGroup,
   ) {
+    final Color c1 = Color(int.parse('0xFF${gradientHex[0].replaceAll('#', '')}'));
+    final Color c2 = Color(int.parse('0xFF${gradientHex[1].replaceAll('#', '')}'));
+    final accentColor = outcome == 'pass'
+        ? const Color(0xFF22C55E)
+        : outcome == 'refer'
+            ? const Color(0xFFEF4444)
+            : const Color(0xFFF59E0B);
+    final badgeLabel = outcome == 'pass' ? 'Pass' : outcome == 'refer' ? 'Refer' : 'Pending';
+    final badgeBg = outcome == 'pass'
+        ? const Color(0xFFDCFCE7)
+        : outcome == 'refer'
+            ? const Color(0xFFFEE2E2)
+            : const Color(0xFFE0F2FE);
+    final badgeText = outcome == 'pass'
+        ? const Color(0xFF15803D)
+        : outcome == 'refer'
+            ? const Color(0xFF991B1B)
+            : const Color(0xFF0369A1);
+    final badgeIcon = outcome == 'pass'
+        ? Icons.check_circle_rounded
+        : outcome == 'refer'
+            ? Icons.warning_rounded
+            : Icons.schedule_rounded;
+    final ageColor = ageGroup == 'child'
+        ? const Color(0xFF3B82F6)
+        : ageGroup == 'elderly'
+            ? const Color(0xFFEF4444)
+            : const Color(0xFF0D9488);
+
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: () {},
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         highlightColor: const Color(0xFFF0F4F7),
         splashColor: const Color(0xFFDDE4EC),
         child: Container(
-          padding: const EdgeInsets.all(13),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              )
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
             ],
           ),
-          child: Row(
+          child: Column(
             children: [
-              // Profile photo
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                      color: avatarColor.withOpacity(0.4), width: 2),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    photoUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stack) => Container(
-                      color: avatarColor.withOpacity(0.15),
-                      child: Icon(Icons.person_rounded,
-                          color: avatarColor, size: 26),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Info
-              Expanded(
-                child: Column(
+              Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Text(name,
-                            style: GoogleFonts.plusJakartaSans(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFF1A2A3D))),
-                        const SizedBox(width: 6),
-                        Text(demographic,
-                            style: GoogleFonts.inter(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w400,
-                                color: const Color(0xFF8FA0B4))),
-                      ],
+                    // Accent bar
+                    Container(
+                      width: 4, height: 72,
+                      decoration: BoxDecoration(
+                        color: accentColor,
+                        borderRadius: BorderRadius.circular(99),
+                      ),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(Icons.remove_red_eye_outlined,
-                            size: 11, color: const Color(0xFF8FA0B4)),
+                    const SizedBox(width: 12),
+                    // Avatar
+                    Container(
+                      width: 50, height: 50,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [BoxShadow(color: c2.withOpacity(0.35), blurRadius: 10, offset: const Offset(0, 4))],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: Image.network(
+                          photoUrl, fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(colors: [c1, c2], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Center(child: Text(initials, style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white))),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Info
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(child: Text(name, overflow: TextOverflow.ellipsis, style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: const Color(0xFF1A2A3D)))),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(color: ageColor.withOpacity(0.1), borderRadius: BorderRadius.circular(99), border: Border.all(color: ageColor.withOpacity(0.25))),
+                                child: Text(ageGroup[0].toUpperCase() + ageGroup.substring(1), style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: ageColor)),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              const Icon(Icons.person_outline_rounded, size: 11, color: Color(0xFF8FA0B4)),
+                              const SizedBox(width: 4),
+                              Text(demographic, style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8FA0B4))),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          if (outcome != 'pending')
+                            Row(children: [
+                              _homeVaPill(od, outcome),
+                              const SizedBox(width: 5),
+                              _homeVaPill(os, outcome),
+                              const SizedBox(width: 5),
+                              _homeVaPill(ou, outcome),
+                            ])
+                          else
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                              decoration: BoxDecoration(color: const Color(0xFFF59E0B).withOpacity(0.08), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.2))),
+                              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                const Icon(Icons.hourglass_top_rounded, size: 11, color: Color(0xFFF59E0B)),
+                                const SizedBox(width: 5),
+                                Text('Awaiting screening', style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFFF59E0B), fontWeight: FontWeight.w600)),
+                              ]),
+                            ),
+                        ],
+                      ),
+                    ),
+                    // Badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(color: badgeBg, borderRadius: BorderRadius.circular(99), border: Border.all(color: accentColor.withOpacity(0.25))),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(badgeIcon, size: 11, color: accentColor),
                         const SizedBox(width: 4),
-                        Text(vaResult,
-                            style: GoogleFonts.inter(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: const Color(0xFF5E7291))),
-                      ],
+                        Text(badgeLabel, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: badgeText)),
+                      ]),
                     ),
                   ],
                 ),
               ),
-              // Right side
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 9, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: badgeBg,
-                      borderRadius: BorderRadius.circular(99),
-                      border: Border.all(
-                          color: badgeText.withOpacity(0.2), width: 1),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(statusIcon, size: 10, color: statusIconColor),
-                        const SizedBox(width: 3),
-                        Text(badge,
-                            style: GoogleFonts.inter(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: badgeText)),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(time,
-                      style: GoogleFonts.inter(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w400,
-                          color: const Color(0xFFB0BEC5))),
-                ],
+              // Bottom strip
+              Container(
+                decoration: BoxDecoration(
+                  color: accentColor.withOpacity(0.05),
+                  borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(15), bottomRight: Radius.circular(15)),
+                  border: Border(top: BorderSide(color: accentColor.withOpacity(0.12))),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                child: Row(
+                  children: [
+                    const Icon(Icons.badge_outlined, size: 12, color: Color(0xFF8FA0B4)),
+                    const SizedBox(width: 5),
+                    Text(id, style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8FA0B4), fontWeight: FontWeight.w500)),
+                    const Spacer(),
+                    const Icon(Icons.access_time_rounded, size: 11, color: Color(0xFF8FA0B4)),
+                    const SizedBox(width: 4),
+                    Text(time, style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8FA0B4), fontWeight: FontWeight.w500)),
+                    const SizedBox(width: 10),
+                    Text('View â†’', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: accentColor)),
+                  ],
+                ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _homeVaPill(String value, String outcome) {
+    final isBad = outcome == 'refer' && value != '6/6' && value != '6/9' && value != '6/12';
+    final fg = isBad ? const Color(0xFFEF4444) : const Color(0xFF0D9488);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: fg.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(7),
+        border: Border.all(color: fg.withOpacity(0.2)),
+      ),
+      child: Text(value, style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.w700, color: fg)),
     );
   }
 
@@ -1439,7 +1496,7 @@ class _HomeScreenState extends State<HomeScreen>
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFF1A2A3D),
                         letterSpacing: 0.1)),
-                Text('2 due · Action required',
+                Text('2 due Â· Action required',
                     style: GoogleFonts.inter(
                         fontSize: 11,
                         color: const Color(0xFFEF4444),
@@ -1469,29 +1526,23 @@ class _HomeScreenState extends State<HomeScreen>
         _buildReferralCard(
           'https://images.unsplash.com/photo-1506277886164-e25aa3f4ef7f?w=150&q=80',
           const Color(0xFFEF4444),
-          'Okello James',
-          'M · 58 yrs',
+          'Okello James', 'M · 58 yrs',
           'Mulago National Referral Hospital',
-          'Due 29 Mar 2026',
-          'Overdue',
-          const Color(0xFF92400E),
-          const Color(0xFFFEF3C7),
-          const Color(0xFFF59E0B),
-          Icons.error_rounded,
+          'Due 29 Mar 2026', 'Overdue',
+          const Color(0xFF92400E), const Color(0xFFFEF3C7),
+          const Color(0xFFF59E0B), Icons.error_rounded,
+          '6/12', '6/18', '6/12',
         ),
         const SizedBox(height: 8),
         _buildReferralCard(
           'https://images.unsplash.com/photo-1552058544-f2b08422138a?w=150&q=80',
           const Color(0xFF3B82F6),
-          'Byaruhanga Sam',
-          'M · 62 yrs',
+          'Byaruhanga Sam', 'M · 62 yrs',
           'Kampala Eye Clinic',
-          'Due 2 Apr 2026',
-          'Notified',
-          const Color(0xFF0369A1),
-          const Color(0xFFE0F2FE),
-          const Color(0xFF38BDF8),
-          Icons.notifications_active_rounded,
+          'Due 2 Apr 2026', 'Notified',
+          const Color(0xFF0369A1), const Color(0xFFE0F2FE),
+          const Color(0xFF38BDF8), Icons.notifications_active_rounded,
+          '6/24', '6/36', '6/24',
         ),
       ],
     );
@@ -1509,6 +1560,9 @@ class _HomeScreenState extends State<HomeScreen>
     Color badgeBg,
     Color accentColor,
     IconData statusIcon,
+    String od,
+    String os,
+    String ou,
   ) {
     return Material(
       color: Colors.white,
@@ -1594,6 +1648,14 @@ class _HomeScreenState extends State<HomeScreen>
                               ),
                             ],
                           ),
+                          const SizedBox(height: 6),
+                          Row(children: [
+                            _homeVaPill(od, 'refer'),
+                            const SizedBox(width: 5),
+                            _homeVaPill(os, 'refer'),
+                            const SizedBox(width: 5),
+                            _homeVaPill(ou, 'refer'),
+                          ]),
                         ],
                       ),
                     ),
@@ -1647,7 +1709,7 @@ class _HomeScreenState extends State<HomeScreen>
                             fontWeight: FontWeight.w600,
                             color: badgeText)),
                     const Spacer(),
-                    Text('Update Status →',
+                    Text('Update Status â†’',
                         style: GoogleFonts.inter(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
@@ -1676,8 +1738,8 @@ class _NotificationsSheetState extends State<_NotificationsSheet> {
     {'icon': Icons.person_add_rounded, 'color': Color(0xFF0D9488), 'title': 'New Patient Registered', 'body': 'Mugisha Wilson is awaiting screening.', 'time': '15 min ago', 'read': false, 'tag': 'PATIENT'},
     {'icon': Icons.sync_rounded, 'color': Color(0xFF38BDF8), 'title': 'Sync Pending', 'body': '3 records waiting to sync to MongoDB Atlas.', 'time': '1 hr ago', 'read': false, 'tag': 'SYNC'},
     {'icon': Icons.check_circle_rounded, 'color': Color(0xFF22C55E), 'title': 'Screening Completed', 'body': 'Akello Mercy passed. OD 6/6, OS 6/9.', 'time': '2 hr ago', 'read': true, 'tag': 'RESULT'},
-    {'icon': Icons.notifications_active_rounded, 'color': Color(0xFF8B5CF6), 'title': 'Appointment Reminder', 'body': 'Byaruhanga Sam — Kampala Eye Clinic, 2 Apr.', 'time': '3 hr ago', 'read': true, 'tag': 'REMINDER'},
-    {'icon': Icons.assignment_rounded, 'color': Color(0xFFF59E0B), 'title': 'Referral Generated', 'body': 'Referral created for Okello James — Mulago.', 'time': 'Yesterday', 'read': true, 'tag': 'REFERRAL'},
+    {'icon': Icons.notifications_active_rounded, 'color': Color(0xFF8B5CF6), 'title': 'Appointment Reminder', 'body': 'Byaruhanga Sam â€” Kampala Eye Clinic, 2 Apr.', 'time': '3 hr ago', 'read': true, 'tag': 'REMINDER'},
+    {'icon': Icons.assignment_rounded, 'color': Color(0xFFF59E0B), 'title': 'Referral Generated', 'body': 'Referral created for Okello James â€” Mulago.', 'time': 'Yesterday', 'read': true, 'tag': 'REFERRAL'},
   ];
 
   @override
@@ -1716,7 +1778,7 @@ class _NotificationsSheetState extends State<_NotificationsSheet> {
                           style: GoogleFonts.plusJakartaSans(
                               fontSize: 22, fontWeight: FontWeight.w800,
                               color: const Color(0xFF1A2A3D))),
-                      Text(unread > 0 ? '$unread unread' : 'All caught up ✓',
+                      Text(unread > 0 ? '$unread unread' : 'All caught up âœ“',
                           style: GoogleFonts.inter(
                               fontSize: 11, color: const Color(0xFF8FA0B4),
                               fontWeight: FontWeight.w400)),
