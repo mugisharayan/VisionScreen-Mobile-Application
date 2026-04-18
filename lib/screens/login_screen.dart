@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -181,6 +182,19 @@ class _LoginScreenState extends State<LoginScreen>
           // ── Grid + mesh background ──
           CustomPaint(painter: _LoginGridPainter()),
           CustomPaint(painter: _LoginMeshPainter()),
+          // ── Floating glowing orbs ──
+          Positioned(
+            top: -80, left: -60,
+            child: _GlowOrb(color: AppColors.teal, size: 260),
+          ),
+          Positioned(
+            bottom: 80, right: -80,
+            child: _GlowOrb(color: AppColors.sky, size: 200),
+          ),
+          Positioned(
+            top: 300, right: -40,
+            child: _GlowOrb(color: AppColors.teal2, size: 140),
+          ),
 
           SafeArea(
             child: Column(
@@ -189,10 +203,11 @@ class _LoginScreenState extends State<LoginScreen>
                 _AuthHeader(),
                 // ── Scrollable body ──
                 Expanded(
-                  child: SingleChildScrollView(
-                    controller: _scrollCtrl,
-                    padding: const EdgeInsets.fromLTRB(22, 8, 22, 32),
-                    child: Column(
+                  child: _GlassCard(
+                    child: SingleChildScrollView(
+                      controller: _scrollCtrl,
+                      padding: const EdgeInsets.fromLTRB(22, 8, 22, 32),
+                      child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _TabSwitcher(controller: _tabCtrl),
@@ -264,6 +279,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                         ),
                       ],
+                    ),
                     ),
                   ),
                 ),
@@ -379,15 +395,19 @@ class _TabSwitcher extends StatelessWidget {
     return Container(
       height: 44,
       decoration: BoxDecoration(
-        color: AppColors.ink2,
-        borderRadius: BorderRadius.circular(10),
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: AppColors.teal.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
       padding: const EdgeInsets.all(3),
-      child: TabBar(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: TabBar(
         controller: controller,
         indicator: BoxDecoration(
           gradient: const LinearGradient(
@@ -409,6 +429,8 @@ class _TabSwitcher extends StatelessWidget {
           _buildTab('Login', controller.index == 0),
           _buildTab('Sign Up', controller.index == 1),
         ],
+      ),
+        ),
       ),
     );
   }
@@ -805,41 +827,43 @@ class _RoleButton extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
         decoration: BoxDecoration(
-          color: active ? AppColors.teal.withValues(alpha: 0.12) : AppColors.ink2,
-          borderRadius: BorderRadius.circular(10),
+          color: active
+              ? AppColors.teal.withValues(alpha: 0.18)
+              : Colors.white.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: active ? AppColors.teal : AppColors.teal.withValues(alpha: 0.2),
+            color: active ? AppColors.teal : AppColors.teal.withValues(alpha: 0.15),
             width: 1.5,
           ),
           boxShadow: active
-              ? [
-                  BoxShadow(
-                    color: AppColors.teal.withValues(alpha: 0.25),
-                    blurRadius: 12,
-                    spreadRadius: 0,
-                  )
-                ]
+              ? [BoxShadow(color: AppColors.teal.withValues(alpha: 0.3), blurRadius: 16)]
               : [],
         ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              size: 20,
-              color: active ? AppColors.teal2 : AppColors.teal3.withValues(alpha: 0.4),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Column(
+              children: [
+                Icon(
+                  icon,
+                  size: 20,
+                  color: active ? AppColors.teal2 : AppColors.teal3.withValues(alpha: 0.4),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.sora(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: active ? AppColors.teal2 : AppColors.teal3.withValues(alpha: 0.45),
+                    height: 1.3,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.sora(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: active ? AppColors.teal2 : AppColors.teal3.withValues(alpha: 0.45),
-                height: 1.3,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -858,10 +882,10 @@ class _FieldLabel extends StatelessWidget {
     return Text(
       label.toUpperCase(),
       style: GoogleFonts.sora(
-        fontSize: 10,
-        fontWeight: FontWeight.w700,
-        color: AppColors.teal3.withValues(alpha: 0.7),
-        letterSpacing: 1.4,
+        fontSize: 11,
+        fontWeight: FontWeight.w800,
+        color: AppColors.teal3.withValues(alpha: 0.85),
+        letterSpacing: 1.6,
       ),
     );
   }
@@ -928,27 +952,32 @@ class _InputFieldState extends State<_InputField> {
       duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
         color: widget.hasError
-            ? const Color(0xFF2A0A0A)
-            : AppColors.ink2,
-        borderRadius: BorderRadius.circular(10),
+            ? const Color(0xFF2A0A0A).withValues(alpha: 0.6)
+            : Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: borderColor, width: 1.5),
         boxShadow: (_focused || widget.hasError)
-            ? [BoxShadow(color: glowColor, blurRadius: 0, spreadRadius: 3)]
+            ? [BoxShadow(color: glowColor, blurRadius: 8, spreadRadius: 2)]
             : [],
       ),
-      child: TextField(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: TextField(
         controller: widget.controller,
         focusNode: _focus,
         obscureText: widget.obscure,
         keyboardType: widget.keyboardType,
         textInputAction: widget.inputAction,
         onChanged: widget.onChanged,
-        style: GoogleFonts.sora(fontSize: 13, color: Colors.white),
+        style: GoogleFonts.sora(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.white),
+        cursorColor: AppColors.teal2,
         decoration: InputDecoration(
           hintText: widget.hint,
           hintStyle: GoogleFonts.sora(
-            fontSize: 13,
-            color: AppColors.teal3.withValues(alpha: 0.25),
+            fontSize: 14,
+            color: AppColors.teal3.withValues(alpha: 0.3),
           ),
           prefixIcon: widget.prefix != null
               ? Padding(
@@ -977,6 +1006,8 @@ class _InputFieldState extends State<_InputField> {
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
+        ),
+      ),
         ),
       ),
     );
@@ -1073,14 +1104,20 @@ class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
         AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            color: widget.hasError ? const Color(0xFF2A0A0A) : AppColors.ink2,
-            borderRadius: BorderRadius.circular(10),
+            color: widget.hasError
+                ? const Color(0xFF2A0A0A).withValues(alpha: 0.6)
+                : Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: borderColor, width: 1.5),
             boxShadow: (_focused || widget.hasError)
-                ? [BoxShadow(color: glowColor, blurRadius: 0, spreadRadius: 3)]
+                ? [BoxShadow(color: glowColor, blurRadius: 8, spreadRadius: 2)]
                 : [],
           ),
-          child: Row(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              child: Row(
             children: [
               // ── +256 badge ──
               Container(
@@ -1109,9 +1146,9 @@ class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
                     Text(
                       '+256',
                       style: GoogleFonts.sora(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: _focused ? AppColors.teal2 : AppColors.teal3.withValues(alpha: 0.6),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: _focused ? AppColors.teal2 : AppColors.teal3.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -1138,15 +1175,17 @@ class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
                     _UgandaPhoneFormatter(),
                   ],
                   style: GoogleFonts.sora(
-                    fontSize: 13,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
                     color: Colors.white,
-                    letterSpacing: 1.2,
+                    letterSpacing: 1.4,
                   ),
+                  cursorColor: AppColors.teal2,
                   decoration: InputDecoration(
                     hintText: '7XX XXX XXX',
                     hintStyle: GoogleFonts.sora(
-                      fontSize: 13,
-                      color: AppColors.teal3.withValues(alpha: 0.25),
+                      fontSize: 14,
+                      color: AppColors.teal3.withValues(alpha: 0.3),
                       letterSpacing: 0.5,
                     ),
                     border: InputBorder.none,
@@ -1177,8 +1216,8 @@ class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
                     child: Text(
                       _network,
                       style: GoogleFonts.sora(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
                         color: _network == 'MTN'
                             ? const Color(0xFF92700A)
                             : const Color(0xFFB0001F),
@@ -1188,6 +1227,8 @@ class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
                 ),
             ],
           ),
+            ),
+          ),
         ),
         // ── Format hint ──
         Padding(
@@ -1195,8 +1236,9 @@ class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
           child: Text(
             'Format: 7XX XXX XXX  ·  MTN or Airtel Uganda',
             style: GoogleFonts.sora(
-              fontSize: 10,
-              color: AppColors.teal3.withValues(alpha: 0.35),
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: AppColors.teal3.withValues(alpha: 0.5),
             ),
           ),
         ),
@@ -1299,8 +1341,8 @@ class _PasswordStrength extends StatelessWidget {
               Text(
                 'Password strength: $label',
                 style: GoogleFonts.sora(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
                   color: color,
                 ),
               ),
@@ -1311,8 +1353,8 @@ class _PasswordStrength extends StatelessWidget {
                       ? '· Add uppercase, numbers & symbols'
                       : '· Add symbols to strengthen',
                   style: GoogleFonts.sora(
-                    fontSize: 10,
-                    color: AppColors.teal3.withValues(alpha: 0.4),
+                    fontSize: 11,
+                    color: AppColors.teal3.withValues(alpha: 0.5),
                   ),
                 ),
               ],
@@ -1350,9 +1392,9 @@ class _ErrorText extends StatelessWidget {
                   Text(
                     error!,
                     style: GoogleFonts.sora(
-                      fontSize: 11,
+                      fontSize: 12,
                       color: const Color(0xFFEF4444),
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
@@ -1443,10 +1485,10 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
                     Text(
                       widget.label,
                       style: GoogleFonts.sora(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
                         color: Colors.white,
-                        letterSpacing: 0.3,
+                        letterSpacing: 0.5,
                       ),
                     ),
                   ],
@@ -1467,8 +1509,9 @@ class _VersionFooter extends StatelessWidget {
       child: Text(
         'VisionScreen v1.0.0 · Uganda MOH · WHO Compliant',
         style: GoogleFonts.sora(
-          fontSize: 10,
-          color: AppColors.teal3.withValues(alpha: 0.35),
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+          color: AppColors.teal3.withValues(alpha: 0.45),
           letterSpacing: 0.3,
         ),
       ),
@@ -1485,29 +1528,36 @@ class _OfflineNote extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
-        color: AppColors.teal.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10),
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: AppColors.teal.withValues(alpha: 0.25),
           width: 1,
         ),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.wifi_off_rounded, size: 16, color: AppColors.teal2),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Text(
-              'VisionScreen works fully offline. All patient data is stored securely on your device using SQLite.',
-              style: GoogleFonts.sora(
-                fontSize: 11,
-                color: AppColors.teal3.withValues(alpha: 0.75),
-                height: 1.6,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.wifi_off_rounded, size: 16, color: AppColors.teal2),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  'VisionScreen works fully offline. All patient data is stored securely on your device using SQLite.',
+                  style: GoogleFonts.sora(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.teal3.withValues(alpha: 0.85),
+                    height: 1.7,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -1526,9 +1576,10 @@ class _TermsNote extends StatelessWidget {
           Text(
             'By creating an account you agree to our ',
             style: GoogleFonts.sora(
-              fontSize: 11,
-              color: AppColors.teal3.withValues(alpha: 0.45),
-              height: 1.6,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppColors.teal3.withValues(alpha: 0.6),
+              height: 1.7,
             ),
           ),
           GestureDetector(
@@ -1536,10 +1587,10 @@ class _TermsNote extends StatelessWidget {
             child: Text(
               'Terms of Service',
               style: GoogleFonts.sora(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
                 color: AppColors.teal2,
-                height: 1.6,
+                height: 1.7,
                 decoration: TextDecoration.underline,
                 decorationColor: AppColors.teal2,
               ),
@@ -1548,9 +1599,10 @@ class _TermsNote extends StatelessWidget {
           Text(
             ' and ',
             style: GoogleFonts.sora(
-              fontSize: 11,
-              color: AppColors.teal3.withValues(alpha: 0.45),
-              height: 1.6,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppColors.teal3.withValues(alpha: 0.6),
+              height: 1.7,
             ),
           ),
           GestureDetector(
@@ -1558,10 +1610,10 @@ class _TermsNote extends StatelessWidget {
             child: Text(
               'Privacy Policy',
               style: GoogleFonts.sora(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
                 color: AppColors.teal2,
-                height: 1.6,
+                height: 1.7,
                 decoration: TextDecoration.underline,
                 decorationColor: AppColors.teal2,
               ),
@@ -1752,14 +1804,15 @@ class _LegalSheet extends StatelessWidget {
                         Text(
                           title,
                           style: GoogleFonts.dmSerifDisplay(
-                            fontSize: 20,
+                            fontSize: 22,
                             color: const Color(0xFF1A2A3D),
                           ),
                         ),
                         Text(
                           'VisionScreen · Uganda MOH',
                           style: GoogleFonts.sora(
-                            fontSize: 11,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
                             color: const Color(0xFF8FA0B4),
                           ),
                         ),
@@ -1832,8 +1885,8 @@ class _LegalSectionWidget extends StatelessWidget {
           child: Text(
             section.heading,
             style: GoogleFonts.sora(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
               color: AppColors.teal,
             ),
           ),
@@ -1842,9 +1895,10 @@ class _LegalSectionWidget extends StatelessWidget {
         Text(
           section.body,
           style: GoogleFonts.sora(
-            fontSize: 12,
+            fontSize: 13,
+            fontWeight: FontWeight.w400,
             color: const Color(0xFF3D5470),
-            height: 1.75,
+            height: 1.85,
           ),
         ),
       ],
@@ -1852,6 +1906,72 @@ class _LegalSectionWidget extends StatelessWidget {
   }
 }
 
+
+// ─────────────────────────────────────────────────────────────
+// Glass card — frosted panel wrapping the form
+// ─────────────────────────────────────────────────────────────
+class _GlassCard extends StatelessWidget {
+  const _GlassCard({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: AppColors.teal.withValues(alpha: 0.18),
+                width: 1.2,
+              ),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(alpha: 0.07),
+                  Colors.white.withValues(alpha: 0.02),
+                ],
+              ),
+            ),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Floating glow orb — soft radial blur behind the glass
+// ─────────────────────────────────────────────────────────────
+class _GlowOrb extends StatelessWidget {
+  const _GlowOrb({required this.color, required this.size});
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [
+            color.withValues(alpha: 0.28),
+            color.withValues(alpha: 0.0),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 // ─────────────────────────────────────────────────────────────
 // Grid pattern background — matches splash screen
