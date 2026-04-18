@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 const _ink  = Color(0xFF04091A);
 const _ink2 = Color(0xFF0B1530);
@@ -41,11 +42,34 @@ class ReferralLetterScreen extends StatefulWidget {
 }
 
 class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
-  final _chwNameCtrl    = TextEditingController();
-  final _chwTitleCtrl   = TextEditingController(text: 'Community Health Worker');
+  final _chwNameCtrl       = TextEditingController();
+  final _chwTitleCtrl      = TextEditingController(text: 'Community Health Worker');
   final _facilityOtherCtrl = TextEditingController();
   String _selectedFacility = _facilities[0];
   bool _showLetter = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadChwProfile();
+  }
+
+  Future<void> _loadChwProfile() async {
+    final p = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    final name   = p.getString('chw_name')   ?? '';
+    final center = p.getString('chw_center') ?? '';
+    setState(() {
+      if (name.isNotEmpty)   _chwNameCtrl.text  = name;
+      if (center.isNotEmpty) _chwTitleCtrl.text = 'Community Health Worker · $center';
+      final match = _facilities.where((f) =>
+        center.isNotEmpty &&
+        (f.toLowerCase().contains(center.toLowerCase()) ||
+         center.toLowerCase().contains(f.toLowerCase().split(' ').first))
+      ).firstOrNull;
+      if (match != null) _selectedFacility = match;
+    });
+  }
 
   @override
   void dispose() {
@@ -325,9 +349,11 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                   fontSize: 14, fontWeight: FontWeight.w800,
                   color: const Color(0xFF1A2A3D))),
           const SizedBox(height: 10),
-          _formField(_chwNameCtrl, 'CHW Full Name', Icons.person_rounded),
+          _infoRow(Icons.person_rounded, 'CHW Name',
+              _chwNameCtrl.text.isEmpty ? '[Not set in Settings]' : _chwNameCtrl.text),
           const SizedBox(height: 8),
-          _formField(_chwTitleCtrl, 'Title / Role', Icons.badge_rounded),
+          _infoRow(Icons.badge_rounded, 'Title / Role',
+              _chwTitleCtrl.text.isEmpty ? '[Not set in Settings]' : _chwTitleCtrl.text),
           const SizedBox(height: 24),
           // Facility selector
           Text('Refer To',
@@ -635,6 +661,51 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
 
   Widget _divider() => Container(
     height: 1, color: const Color(0xFFEEF2F6));
+
+  Widget _infoRow(IconData icon, String label, String value) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    decoration: BoxDecoration(
+      color: const Color(0xFFF8FAFB),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
+    ),
+    child: Row(
+      children: [
+        Icon(icon, size: 16, color: const Color(0xFF8FA0B4)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label,
+                  style: GoogleFonts.inter(
+                      fontSize: 10, color: const Color(0xFF8FA0B4),
+                      fontWeight: FontWeight.w500)),
+              const SizedBox(height: 2),
+              Text(value,
+                  style: GoogleFonts.inter(
+                      fontSize: 13, color: const Color(0xFF1A2A3D),
+                      fontWeight: FontWeight.w600)),
+            ],
+          ),
+        ),
+        GestureDetector(
+          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Edit your name in Settings',
+                  style: GoogleFonts.inter(fontSize: 12, color: Colors.white)),
+              backgroundColor: _teal,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              duration: const Duration(seconds: 2),
+            ),
+          ),
+          child: const Icon(Icons.lock_outline_rounded,
+              size: 14, color: Color(0xFF8FA0B4)),
+        ),
+      ],
+    ),
+  );
 
   Widget _formField(TextEditingController ctrl, String hint, IconData icon) =>
     Container(

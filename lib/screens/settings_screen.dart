@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // ── Colours ──────────────────────────────────────────────────
 class _C {
@@ -39,6 +40,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _nameCtrl   = TextEditingController(text: 'Nakato Mary');
   final _centerCtrl = TextEditingController(text: 'Nakawa Health Centre III');
   final _chwIdCtrl  = TextEditingController(text: 'CHW-UG-00412');
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+    _nameCtrl.addListener(_saveProfile);
+    _centerCtrl.addListener(_saveProfile);
+    _chwIdCtrl.addListener(_saveProfile);
+  }
+
+  Future<void> _loadProfile() async {
+    final p = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _nameCtrl.text   = p.getString('chw_name')   ?? 'Nakato Mary';
+      _centerCtrl.text = p.getString('chw_center')  ?? 'Nakawa Health Centre III';
+      _chwIdCtrl.text  = p.getString('chw_id')      ?? 'CHW-UG-00412';
+    });
+  }
+
+  Future<void> _saveProfile() async {
+    final p = await SharedPreferences.getInstance();
+    await p.setString('chw_name',   _nameCtrl.text.trim());
+    await p.setString('chw_center', _centerCtrl.text.trim());
+    await p.setString('chw_id',     _chwIdCtrl.text.trim());
+  }
 
   // ── Toggles ──────────────────────────────────────────────
   bool _offlineMode  = true;

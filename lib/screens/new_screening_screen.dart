@@ -97,8 +97,9 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   // ── Feature: Eye test ─────────────────────────────────────────────────────
   int _currentEyeIndex = 0;
   int _currentRow = 0;
-  int _currentRotation = 0; // 0=right,1=down,2=left,3=up
+  int _currentRotation = 0;
   bool _rowRetryUsed = false;
+  int _lastPassedRow = 0;
   final List<Map<String, dynamic>> _eyeResults = [];
   int _cantTellCount = 0;
 
@@ -256,12 +257,13 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 
   void _recordResponse(bool correct) {
     setState(() {
+      if (correct) _lastPassedRow = _currentRow;
       _rowRetryUsed = false;
       if (_currentRow < _rows.length - 1) {
         _currentRow++;
         _generateRotation();
       } else {
-        _finishEye(_rows[_currentRow]['logmar'] as String);
+        _finishEye(_rows[_lastPassedRow]['logmar'] as String);
       }
     });
   }
@@ -274,7 +276,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
         _currentRow++;
         _generateRotation();
       } else {
-        _finishEye(_rows[_currentRow]['logmar'] as String);
+        _finishEye(_rows[_lastPassedRow]['logmar'] as String);
       }
     });
   }
@@ -297,6 +299,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     setState(() {
       _currentEyeIndex++;
       _currentRow = 0;
+      _lastPassedRow = 0;
       _rowRetryUsed = false;
       _cantTellCount = 0;
       _generateRotation();
