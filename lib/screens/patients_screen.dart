@@ -914,6 +914,29 @@ class _PatientsScreenState extends State<PatientsScreen> {
                             ),
                           ),
                           const SizedBox(width: 6),
+                          if (p.outcome == 'refer')
+                          GestureDetector(
+                            onTap: () => _sendNotification(p),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _amber.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: _amber.withOpacity(0.3),
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.notifications_rounded,
+                                size: 14,
+                                color: _amber,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
                           GestureDetector(
                             onTap: () => _shareToWhatsApp(p),
                             child: Container(
@@ -1707,6 +1730,202 @@ class _PatientsScreenState extends State<PatientsScreen> {
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _sendNotification(_Patient p) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDDE4EC),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Container(
+                  width: 44, height: 44,
+                  decoration: BoxDecoration(
+                    color: _amber.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.notifications_rounded,
+                      color: _amber, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Send Referral Reminder',
+                          style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16, fontWeight: FontWeight.w800,
+                              color: const Color(0xFF1A2A3D))),
+                      Text(p.name,
+                          style: GoogleFonts.inter(
+                              fontSize: 12, color: const Color(0xFF8FA0B4))),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (p.facility != null) ...[  
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFB),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFEEF2F6)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.local_hospital_rounded,
+                        size: 14, color: Color(0xFF8FA0B4)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(p.facility!,
+                          style: GoogleFonts.inter(
+                              fontSize: 12, color: const Color(0xFF5E7291))),
+                    ),
+                    if (p.dueDate != null)
+                      Text('Due: ${p.dueDate}',
+                          style: GoogleFonts.inter(
+                              fontSize: 11, fontWeight: FontWeight.w700,
+                              color: _red)),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 20),
+            // Notification options
+            _notifOption(
+              icon: Icons.sms_rounded,
+              color: _teal,
+              title: 'Send SMS Reminder',
+              subtitle: 'Text message to ${p.phone}',
+              onTap: () {
+                Navigator.pop(context);
+                _showNotifConfirm(p, 'SMS',
+                    'Reminder sent via SMS to ${p.phone}');
+              },
+            ),
+            const SizedBox(height: 10),
+            _notifOption(
+              icon: Icons.send_rounded,
+              color: const Color(0xFF25D366),
+              title: 'Send WhatsApp Reminder',
+              subtitle: 'WhatsApp message to ${p.phone}',
+              onTap: () {
+                Navigator.pop(context);
+                _showNotifConfirm(p, 'WhatsApp',
+                    'Reminder sent via WhatsApp to ${p.phone}');
+              },
+            ),
+            const SizedBox(height: 10),
+            _notifOption(
+              icon: Icons.phone_rounded,
+              color: _blue,
+              title: 'Call Patient',
+              subtitle: 'Voice call to ${p.phone}',
+              onTap: () {
+                Navigator.pop(context);
+                _callPatient(p);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _notifOption({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13, fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1A2A3D))),
+                  Text(subtitle,
+                      style: GoogleFonts.inter(
+                          fontSize: 11, color: const Color(0xFF8FA0B4))),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded,
+                size: 14, color: Color(0xFF8FA0B4)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showNotifConfirm(_Patient p, String channel, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_rounded,
+                color: Colors.white, size: 16),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(message,
+                  style: GoogleFonts.inter(
+                      fontSize: 12, color: Colors.white)),
+            ),
+          ],
+        ),
+        backgroundColor: _teal,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 3),
       ),
     );
   }
