@@ -7,6 +7,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import 'referral_letter_screen.dart';
 
 // ── Colours ──────────────────────────────────────────────────────────────────
@@ -57,9 +59,11 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   String _patientQuery = '';
   bool _showNewPatientForm = false;
   final _newNameCtrl    = TextEditingController();
-  final _newAgeCtrl     = TextEditingController();
   final _newVillageCtrl = TextEditingController();
   String _newGender = 'M';
+  DateTime? _newDob;
+  bool _detectingLocation = false;
+  final List<String> _newConditions = [];
   List<Map<String, String>> _patientListRuntime = _staticPatients
       .map((p) => Map<String, String>.from(p))
       .toList();
@@ -142,7 +146,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     _connectivitySub?.cancel();
     _patientSearchCtrl.dispose();
     _newNameCtrl.dispose();
-    _newAgeCtrl.dispose();
     _newVillageCtrl.dispose();
     super.dispose();
   }
@@ -519,6 +522,46 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     );
   }
 
+  // ── Location detection ────────────────────────────────────────────────────────────
+  Future<void> _detectLocation() async {
+    setState(() => _detectingLocation = true);
+    try {
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        setState(() => _detectingLocation = false);
+        return;
+      }
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.medium));
+      final placemarks = await placemarkFromCoordinates(
+          pos.latitude, pos.longitude);
+      if (!mounted) return;
+      if (placemarks.isNotEmpty) {
+        final p = placemarks.first;
+        final parts = [
+          p.subLocality,
+          p.locality,
+          p.administrativeArea,
+        ].where((s) => s != null && s.isNotEmpty).toList();
+        _newVillageCtrl.text = parts.take(2).join(', ');
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _detectingLocation = false);
+  }
+
+  int _calcAge(DateTime dob) {
+    final now = DateTime.now();
+    int age = now.year - dob.year;
+    if (now.month < dob.month ||
+        (now.month == dob.month && now.day < dob.day)) age--;
+    return age;
+  }
+
   // ── Step 0: Patient Selector ─────────────────────────────────────────────
   Widget _buildPatientSelector() {
     final filtered = _patientListRuntime.where((p) {
@@ -660,94 +703,307 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     ),
   );
 
-  Widget _newPatientForm() => Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: _teal.withValues(alpha: 0.04),
-      borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: _teal.withValues(alpha: 0.15)),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('New Patient Details',
-            style: GoogleFonts.plusJakartaSans(
-                fontSize: 13, fontWeight: FontWeight.w800,
-                color: const Color(0xFF1A2A3D))),
-        const SizedBox(height: 12),
-        _newField(_newNameCtrl, 'Full Name', Icons.person_rounded),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(child: _newField(_newAgeCtrl, 'Age', Icons.cake_rounded,
-                inputType: TextInputType.number)),
-            const SizedBox(width: 8),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
-              ),
-              child: Row(
-                children: ['M', 'F'].map((g) {
-                  final active = _newGender == g;
-                  return GestureDetector(
-                    onTap: () => setState(() => _newGender = g),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: active ? _teal : Colors.transparent,
-                        borderRadius: BorderRadius.circular(9),
+  Widget _newPatientForm() {
+    const conditions = [
+      {'label': 'Red Eyes',          'icon': Icons.remove_red_eye_rounded},
+      {'label': 'Swollen Eyes',      'icon': Icons.visibility_off_rounded},
+      {'label': 'Eye Discharge',     'icon': Icons.water_drop_rounded},
+      {'label': 'Blurred Vision',    'icon': Icons.blur_on_rounded},
+      {'label': 'Eye Pain',          'icon': Icons.warning_amber_rounded},
+      {'label': 'Previous Surgery',  'icon': Icons.medical_services_rounded},
+      {'label': 'Wears Glasses',     'icon': Icons.remove_red_eye_outlined},
+      {'label': 'Diabetes',          'icon': Icons.monitor_heart_rounded},
+      {'label': 'Hypertension',      'icon': Icons.favorite_rounded},
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _teal.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _teal.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('New Patient Details',
+              style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13, fontWeight: FontWeight.w800,
+                  color: const Color(0xFF1A2A3D))),
+          const SizedBox(height: 12),
+          // Full name
+          _newField(_newNameCtrl, 'Full Name', Icons.person_rounded),
+          const SizedBox(height: 8),
+          // DOB + Gender
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now().subtract(
+                          const Duration(days: 365 * 25)),
+                      firstDate: DateTime(1920),
+                      lastDate: DateTime.now(),
+                      helpText: 'Select Date of Birth',
+                      builder: (ctx, child) => Theme(
+                        data: Theme.of(ctx).copyWith(
+                          colorScheme: const ColorScheme.light(
+                            primary: _teal,
+                            onPrimary: Colors.white,
+                          ),
+                        ),
+                        child: child!,
                       ),
-                      child: Text(g,
+                    );
+                    if (picked != null) setState(() => _newDob = picked);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: _newDob != null
+                            ? _teal.withValues(alpha: 0.4)
+                            : const Color(0xFFEEF2F6),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.cake_rounded,
+                            size: 16,
+                            color: _newDob != null
+                                ? _teal : const Color(0xFF8FA0B4)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _newDob == null
+                              ? Text('Date of Birth',
+                                  style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      color: const Color(0xFF8FA0B4)))
+                              : Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${_newDob!.day}/${_newDob!.month}/${_newDob!.year}',
+                                      style: GoogleFonts.inter(
+                                          fontSize: 13,
+                                          color: const Color(0xFF1A2A3D),
+                                          fontWeight: FontWeight.w600)),
+                                    Text(
+                                      '${_calcAge(_newDob!)} years old',
+                                      style: GoogleFonts.inter(
+                                          fontSize: 10,
+                                          color: _teal)),
+                                  ],
+                                ),
+                        ),
+                        const Icon(Icons.calendar_today_rounded,
+                            size: 14, color: Color(0xFF8FA0B4)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                      color: const Color(0xFFEEF2F6), width: 1.5),
+                ),
+                child: Row(
+                  children: ['M', 'F'].map((g) {
+                    final active = _newGender == g;
+                    return GestureDetector(
+                      onTap: () => setState(() => _newGender = g),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: active ? _teal : Colors.transparent,
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        child: Text(g,
+                            style: GoogleFonts.inter(
+                                fontSize: 13, fontWeight: FontWeight.w700,
+                                color: active
+                                    ? Colors.white
+                                    : const Color(0xFF8FA0B4))),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Village / Area with auto-detect
+          Row(
+            children: [
+              Expanded(
+                child: _newField(
+                    _newVillageCtrl, 'Village / Area',
+                    Icons.location_on_rounded),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: _detectingLocation ? null : _detectLocation,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 46, height: 46,
+                  decoration: BoxDecoration(
+                    color: _detectingLocation
+                        ? const Color(0xFFEEF2F6)
+                        : _teal.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: _detectingLocation
+                          ? const Color(0xFFEEF2F6)
+                          : _teal.withValues(alpha: 0.3),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: _detectingLocation
+                      ? const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: _teal))
+                      : const Icon(Icons.my_location_rounded,
+                          size: 20, color: _teal),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Current conditions
+          Text('Current Eye Conditions',
+              style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12, fontWeight: FontWeight.w800,
+                  color: const Color(0xFF1A2A3D))),
+          const SizedBox(height: 4),
+          Text('Select all that apply',
+              style: GoogleFonts.inter(
+                  fontSize: 11, color: const Color(0xFF8FA0B4))),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8, runSpacing: 8,
+            children: conditions.map((c) {
+              final label = c['label'] as String;
+              final icon  = c['icon'] as IconData;
+              final selected = _newConditions.contains(label);
+              return GestureDetector(
+                onTap: () => setState(() => selected
+                    ? _newConditions.remove(label)
+                    : _newConditions.add(label)),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? _teal.withValues(alpha: 0.1)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(
+                      color: selected
+                          ? _teal
+                          : const Color(0xFFDDE4EC),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icon,
+                          size: 13,
+                          color: selected
+                              ? _teal : const Color(0xFF8FA0B4)),
+                      const SizedBox(width: 5),
+                      Text(label,
                           style: GoogleFonts.inter(
-                              fontSize: 13, fontWeight: FontWeight.w700,
-                              color: active ? Colors.white : const Color(0xFF8FA0B4))),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: selected
+                                  ? _teal
+                                  : const Color(0xFF5E7291))),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 16),
+          // Register button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                final name = _newNameCtrl.text.trim();
+                final vil  = _newVillageCtrl.text.trim();
+                if (name.isEmpty || _newDob == null || vil.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        _newDob == null
+                            ? 'Please select a date of birth'
+                            : 'Please fill in all required fields',
+                        style: GoogleFonts.inter(
+                            fontSize: 12, color: Colors.white)),
+                      backgroundColor: _red,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      duration: const Duration(seconds: 2),
                     ),
                   );
-                }).toList(),
+                  return;
+                }
+                final age = _calcAge(_newDob!);
+                final id  = 'PAT-NEW-${DateTime.now().millisecondsSinceEpoch % 100000}';
+                setState(() {
+                  _patientListRuntime.insert(0, {
+                    'id': id,
+                    'name': name,
+                    'age': '$age',
+                    'dob': '${_newDob!.day}/${_newDob!.month}/${_newDob!.year}',
+                    'gender': _newGender,
+                    'village': vil,
+                    'conditions': _newConditions.join(', '),
+                  });
+                  _selectedPatientId = id;
+                  _showNewPatientForm = false;
+                  _newNameCtrl.clear();
+                  _newVillageCtrl.clear();
+                  _newDob = null;
+                  _newConditions.clear();
+                });
+              },
+              icon: const Icon(Icons.check_rounded,
+                  size: 16, color: Colors.white),
+              label: Text('Register & Select',
+                  style: GoogleFonts.inter(
+                      fontSize: 13, fontWeight: FontWeight.w700,
+                      color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _teal,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+                elevation: 0,
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        _newField(_newVillageCtrl, 'Village / Area', Icons.location_on_rounded),
-        const SizedBox(height: 14),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () {
-              final name = _newNameCtrl.text.trim();
-              final age  = _newAgeCtrl.text.trim();
-              final vil  = _newVillageCtrl.text.trim();
-              if (name.isEmpty || age.isEmpty || vil.isEmpty) return;
-              final id = 'PAT-NEW-${DateTime.now().millisecondsSinceEpoch % 100000}';
-              setState(() {
-                _patientListRuntime.insert(0, {
-                  'id': id, 'name': name, 'age': age,
-                  'gender': _newGender, 'village': vil,
-                });
-                _selectedPatientId = id;
-                _showNewPatientForm = false;
-                _newNameCtrl.clear(); _newAgeCtrl.clear(); _newVillageCtrl.clear();
-              });
-            },
-            icon: const Icon(Icons.check_rounded, size: 16, color: Colors.white),
-            label: Text('Register & Select',
-                style: GoogleFonts.inter(
-                    fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _teal,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              elevation: 0,
-            ),
           ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 
   Widget _patientCard(Map<String, String> p) {
     final isSelected = _selectedPatientId == p['id'];
