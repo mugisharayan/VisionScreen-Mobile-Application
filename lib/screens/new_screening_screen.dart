@@ -211,10 +211,21 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
         if (tick >= 2) _faceDetected = true;
         if (tick >= 4) {
           _faceAtDistance = true;
-          _capturedPhotoPath = 'captured'; // simulated
+          _capturedPhotoPath = 'captured';
         }
       });
-      if (_faceAtDistance) _faceSimTimer?.cancel();
+      if (_faceAtDistance) {
+        _faceSimTimer?.cancel();
+        // auto-advance once all 3 checks pass
+        Future.delayed(const Duration(milliseconds: 800), () {
+          if (!mounted) return;
+          if (_checklistDone) {
+            _cameraCtrl?.dispose();
+            _cameraCtrl = null;
+            setState(() => _step = 2);
+          }
+        });
+      }
     });
   }
 
@@ -972,7 +983,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: SizedBox(
-                height: 200, width: double.infinity,
+                height: 320, width: double.infinity,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -1014,17 +1025,40 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           ],
           const SizedBox(height: 32),
           AnimatedOpacity(
-            opacity: _checklistDone ? 1.0 : 0.4,
-            duration: const Duration(milliseconds: 300),
-            child: _continueBtn(
-              _checklistDone ? 'All Checks Passed — Continue' : 'Waiting for checks...',
-              _checklistDone
-                  ? () {
-                      _cameraCtrl?.dispose();
-                      _cameraCtrl = null;
-                      setState(() => _step = 2);
-                    }
-                  : () {},
+            opacity: _checklistDone ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 400),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _green.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: _green.withValues(alpha: 0.25)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle_rounded, color: _green, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('All checks passed',
+                            style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13, fontWeight: FontWeight.w800,
+                                color: _green)),
+                        Text('Proceeding to eye test automatically...',
+                            style: GoogleFonts.inter(
+                                fontSize: 11, color: const Color(0xFF5E7291))),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(
+                    width: 18, height: 18,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: _green),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
