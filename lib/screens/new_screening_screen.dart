@@ -10,6 +10,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'dart:io';
 import 'referral_letter_screen.dart';
 
 // ── Colours ──────────────────────────────────────────────────────────────────
@@ -94,6 +95,9 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   DateTime? _newDob;
   bool _detectingLocation = false;
   final List<String> _newConditions = [];
+  String? _newPhotoPath;
+  CameraController? _photoCtrl;
+  bool _showPhotoCamera = false;
   List<Map<String, String>> _patientListRuntime = _staticPatients
       .map((p) => Map<String, String>.from(p))
       .toList();
@@ -178,6 +182,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
     );
     _loadUnsyncedCount();
+    _recoverLostPhoto();
     _connectivitySub = Connectivity().onConnectivityChanged.listen((r) {
       if (!mounted) return;
       setState(() => _isOffline = r.every((x) => x == ConnectivityResult.none));
@@ -188,6 +193,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   void dispose() {
     _pulseCtrl.dispose();
     _cameraCtrl?.dispose();
+    _photoCtrl?.dispose();
     _faceSimTimer?.cancel();
     _nearFaceSimTimer?.cancel();
     _testTimer?.cancel();
@@ -197,6 +203,52 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     _newVillageCtrl.dispose();
     super.dispose();
   }
+
+  Future<void> _openPhotoCamera() async {
+    final status = await Permission.camera.request();
+    if (!status.isGranted || !mounted) return;
+    final cameras = await availableCameras();
+    if (cameras.isEmpty) return;
+    final front = cameras.firstWhere(
+      (c) => c.lensDirection == CameraLensDirection.front,
+      orElse: () => cameras.first,
+    );
+    _photoCtrl = CameraController(front, ResolutionPreset.medium, enableAudio: false);
+    await _photoCtrl!.initialize();
+    if (!mounted) return;
+    setState(() => _showPhotoCamera = true);
+  }
+
+  Future<void> _takePhoto() async {
+    if (_photoCtrl == null || !_photoCtrl!.value.isInitialized) return;
+    try {
+      final file = await _photoCtrl!.takePicture();
+      final path = file.path;
+      final ctrl = _photoCtrl;
+      _photoCtrl = null;
+      setState(() {
+        _newPhotoPath = path;
+        _showPhotoCamera = false;
+      });
+      await ctrl?.dispose();
+    } catch (e) {
+      final ctrl = _photoCtrl;
+      _photoCtrl = null;
+      if (mounted) setState(() => _showPhotoCamera = false);
+      await ctrl?.dispose();
+    }
+  }
+
+  void _closePhotoCamera() {
+    final ctrl = _photoCtrl;
+    _photoCtrl = null;
+    if (mounted) setState(() => _showPhotoCamera = false);
+    ctrl?.dispose();
+  }
+
+  Future<void> _recoverLostPhoto() async {}
+
+  void _showPhotoOptions() => _openPhotoCamera();
 
   // ── Checklist logic ───────────────────────────────────────────────────────
   void _runChecklist() {
@@ -311,17 +363,21 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       });
       if (_faceAtDistance) {
         _faceSimTimer?.cancel();
-        // auto-advance once all 3 checks pass
-        Future.delayed(const Duration(milliseconds: 800), () {
-          if (!mounted) return;
-          if (_checklistDone) {
-            _cameraCtrl?.dispose();
-            _cameraCtrl = null;
-            setState(() => _step = 2);
-          }
-        });
+        // Poll every 200ms until lux and brightness are also confirmed
+        _waitForAllChecks();
       }
     });
+  }
+
+  void _waitForAllChecks() {
+    if (!mounted) return;
+    if (_checklistDone) {
+      _cameraCtrl?.dispose();
+      _cameraCtrl = null;
+      setState(() => _step = 2);
+    } else {
+      Future.delayed(const Duration(milliseconds: 200), _waitForAllChecks);
+    }
   }
 
   // ── Near vision face detection ─────────────────────────────────────────
@@ -704,6 +760,53 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   // ── Build ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    if (_showPhotoCamera && _photoCtrl != null && _photoCtrl!.value.isInitialized) {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            CameraPreview(_photoCtrl!),
+            SafeArea(
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: GestureDetector(
+                  onTap: _closePhotoCamera,
+                  child: Container(
+                    margin: const EdgeInsets.all(16),
+                    width: 40, height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.close_rounded,
+                        color: Colors.white, size: 20),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 40, left: 0, right: 0,
+              child: Center(
+                child: GestureDetector(
+                  onTap: _takePhoto,
+                  child: Container(
+                    width: 72, height: 72,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 4),
+                      color: Colors.white.withValues(alpha: 0.2),
+                    ),
+                    child: const Icon(Icons.camera_alt_rounded,
+                        color: Colors.white, size: 32),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFB),
       body: Column(
@@ -750,6 +853,35 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   Widget _buildHeader() {
     final isDistanceChart = _step == 3;
     final isNearChart = _step == 7;
+    final isChecklist = _step == 1;
+
+    // On checklist step: show only back button, no dark bar
+    if (isChecklist) {
+      return SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: GestureDetector(
+              onTap: () {
+                _restoreBrightness();
+                Navigator.pop(context);
+              },
+              child: Container(
+                width: 38, height: 38,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEEF2F6),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFDDE4EC)),
+                ),
+                child: const Icon(Icons.arrow_back_rounded, color: _ink, size: 18),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return Container(
       decoration: const BoxDecoration(
@@ -763,122 +895,116 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
         bottom: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          child: Row(
             children: [
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      _restoreBrightness();
-                      Navigator.pop(context);
-                    },
-                    child: Container(
-                      width: 38, height: 38,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-                      ),
-                      child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 18),
+              GestureDetector(
+                onTap: () {
+                  _restoreBrightness();
+                  Navigator.pop(context);
+                },
+                child: Container(
+                  width: 38, height: 38,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                  ),
+                  child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 18),
+                ),
+              ),
+              const SizedBox(width: 12),
+              if (isDistanceChart) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _teal.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(color: _teal3.withValues(alpha: 0.3)),
+                  ),
+                  child: Text(_eyeOrder[_currentEyeIndex],
+                      style: GoogleFonts.spaceGrotesk(
+                          fontSize: 12, fontWeight: FontWeight.w800, color: _teal3)),
+                ),
+                const SizedBox(width: 8),
+                Text('LogMAR ${_rows[_currentRow]['logmar']}',
+                    style: GoogleFonts.spaceGrotesk(
+                        fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white)),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Text('$_letterIndex/5',
+                      style: GoogleFonts.spaceGrotesk(
+                          fontSize: 11, fontWeight: FontWeight.w700,
+                          color: Colors.white.withValues(alpha: 0.8))),
+                ),
+                const SizedBox(width: 8),
+                Icon(Icons.timer_rounded, size: 11, color: Colors.white.withValues(alpha: 0.5)),
+                const SizedBox(width: 3),
+                Text(_testDuration,
+                    style: GoogleFonts.spaceGrotesk(
+                        fontSize: 11, fontWeight: FontWeight.w600,
+                        color: Colors.white.withValues(alpha: 0.5))),
+              ] else if (isNearChart) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _teal.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(color: _teal3.withValues(alpha: 0.3)),
+                  ),
+                  child: Text('OU — 40cm',
+                      style: GoogleFonts.spaceGrotesk(
+                          fontSize: 12, fontWeight: FontWeight.w800, color: _teal3)),
+                ),
+                const SizedBox(width: 8),
+                Text('LogMAR ${_rows[_nearRow]['logmar']}',
+                    style: GoogleFonts.spaceGrotesk(
+                        fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white)),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Text('$_nearLetterIndex/5',
+                      style: GoogleFonts.spaceGrotesk(
+                          fontSize: 11, fontWeight: FontWeight.w700,
+                          color: Colors.white.withValues(alpha: 0.8))),
+                ),
+                const SizedBox(width: 8),
+                Icon(Icons.timer_rounded, size: 11, color: Colors.white.withValues(alpha: 0.5)),
+                const SizedBox(width: 3),
+                Text(_testDuration,
+                    style: GoogleFonts.spaceGrotesk(
+                        fontSize: 11, fontWeight: FontWeight.w600,
+                        color: Colors.white.withValues(alpha: 0.5))),
+              ] else ...[
+                const Spacer(),
+                if (_unsyncedCount > 0)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: _amber.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(99),
+                      border: Border.all(color: _amber.withValues(alpha: 0.4)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.cloud_off_rounded, size: 11, color: _amber),
+                        const SizedBox(width: 4),
+                        Text('$_unsyncedCount unsynced',
+                            style: GoogleFonts.inter(
+                                fontSize: 10, fontWeight: FontWeight.w700, color: _amber)),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  if (isDistanceChart) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _teal.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(99),
-                        border: Border.all(color: _teal3.withValues(alpha: 0.3)),
-                      ),
-                      child: Text(_eyeOrder[_currentEyeIndex],
-                          style: GoogleFonts.spaceGrotesk(
-                              fontSize: 12, fontWeight: FontWeight.w800, color: _teal3)),
-                    ),
-                    const SizedBox(width: 8),
-                    Text('LogMAR ${_rows[_currentRow]['logmar']}',
-                        style: GoogleFonts.spaceGrotesk(
-                            fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white)),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(99),
-                      ),
-                      child: Text('$_letterIndex/5',
-                          style: GoogleFonts.spaceGrotesk(
-                              fontSize: 11, fontWeight: FontWeight.w700,
-                              color: Colors.white.withValues(alpha: 0.8))),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(Icons.timer_rounded, size: 11, color: Colors.white.withValues(alpha: 0.5)),
-                    const SizedBox(width: 3),
-                    Text(_testDuration,
-                        style: GoogleFonts.spaceGrotesk(
-                            fontSize: 11, fontWeight: FontWeight.w600,
-                            color: Colors.white.withValues(alpha: 0.5))),
-                  ] else if (isNearChart) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _teal.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(99),
-                        border: Border.all(color: _teal3.withValues(alpha: 0.3)),
-                      ),
-                      child: Text('OU — 40cm',
-                          style: GoogleFonts.spaceGrotesk(
-                              fontSize: 12, fontWeight: FontWeight.w800, color: _teal3)),
-                    ),
-                    const SizedBox(width: 8),
-                    Text('LogMAR ${_rows[_nearRow]['logmar']}',
-                        style: GoogleFonts.spaceGrotesk(
-                            fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white)),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(99),
-                      ),
-                      child: Text('$_nearLetterIndex/5',
-                          style: GoogleFonts.spaceGrotesk(
-                              fontSize: 11, fontWeight: FontWeight.w700,
-                              color: Colors.white.withValues(alpha: 0.8))),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(Icons.timer_rounded, size: 11, color: Colors.white.withValues(alpha: 0.5)),
-                    const SizedBox(width: 3),
-                    Text(_testDuration,
-                        style: GoogleFonts.spaceGrotesk(
-                            fontSize: 11, fontWeight: FontWeight.w600,
-                            color: Colors.white.withValues(alpha: 0.5))),
-                  ] else ...[
-                    const Spacer(),
-                    if (_unsyncedCount > 0)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: _amber.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(99),
-                          border: Border.all(color: _amber.withValues(alpha: 0.4)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.cloud_off_rounded, size: 11, color: _amber),
-                            const SizedBox(width: 4),
-                            Text('$_unsyncedCount unsynced',
-                                style: GoogleFonts.inter(
-                                    fontSize: 10, fontWeight: FontWeight.w700, color: _amber)),
-                          ],
-                        ),
-                      ),
-                  ],
-                ],
-              ),
-
+              ],
             ],
           ),
         ),
@@ -1119,6 +1245,76 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   fontSize: 13, fontWeight: FontWeight.w800,
                   color: const Color(0xFF1A2A3D))),
           const SizedBox(height: 12),
+          // Photo capture
+          GestureDetector(
+            onTap: _showPhotoOptions,
+            child: Center(
+              child: Stack(
+                children: [
+                  Container(
+                    width: 90, height: 90,
+                    decoration: BoxDecoration(
+                      color: _newPhotoPath != null
+                          ? Colors.transparent
+                          : _teal.withValues(alpha: 0.06),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: _newPhotoPath != null
+                            ? _teal : const Color(0xFFDDE4EC),
+                        width: 2,
+                      ),
+                    ),
+                    child: _newPhotoPath != null && File(_newPhotoPath!).existsSync()
+                        ? ClipOval(
+                            child: Image.file(
+                              File(_newPhotoPath!),
+                              fit: BoxFit.cover,
+                              width: 90, height: 90,
+                              errorBuilder: (_, __, ___) => Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.camera_alt_rounded,
+                                      size: 24, color: _teal),
+                                  const SizedBox(height: 4),
+                                  Text('Photo',
+                                      style: GoogleFonts.inter(
+                                          fontSize: 10, fontWeight: FontWeight.w600,
+                                          color: _teal)),
+                                ],
+                              ),
+                            ),
+                          )
+                        : Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.camera_alt_rounded,
+                                  size: 24, color: _teal),
+                              const SizedBox(height: 4),
+                              Text('Photo',
+                                  style: GoogleFonts.inter(
+                                      fontSize: 10, fontWeight: FontWeight.w600,
+                                      color: _teal)),
+                            ],
+                          ),
+                  ),
+                  Positioned(
+                    bottom: 0, right: 0,
+                    child: Container(
+                      width: 26, height: 26,
+                      decoration: BoxDecoration(
+                        color: _teal,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: const Icon(Icons.edit_rounded,
+                          size: 12, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           // Full name
           _newField(_newNameCtrl, 'Full Name', Icons.person_rounded),
           const SizedBox(height: 8),
@@ -1371,6 +1567,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   _newVillageCtrl.clear();
                   _newDob = null;
                   _newConditions.clear();
+                  _newPhotoPath = null;
                 });
               },
               icon: const Icon(Icons.check_rounded,
@@ -1515,20 +1712,12 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   // PLACEHOLDERS
   Widget _buildChecklist() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _stepBar(2),
-          const SizedBox(height: 28),
-          Text('Environment & Setup',
-              style: GoogleFonts.plusJakartaSans(
-                  fontSize: 22, fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1A2A3D))),
-          const SizedBox(height: 6),
-          Text('All checks run automatically.',
-              style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF5E7291))),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -1549,7 +1738,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           // ── Check 1: Ambient light ──────────────────────────────────────
           _checkTile(
             icon: Icons.wb_sunny_rounded,
@@ -1621,7 +1810,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               ),
             ),
           ],
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           // ── Check 2: Screen brightness ──────────────────────────────────
           _checkTile(
             icon: Icons.brightness_high_rounded,
@@ -1631,7 +1820,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                 : 'Setting screen brightness...',
             state: _brightnessSet ? _CheckState.pass : _CheckState.loading,
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           // ── Check 3: Face detection ─────────────────────────────────────
           _checkTile(
             icon: Icons.face_rounded,
