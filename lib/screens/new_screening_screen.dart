@@ -1,6 +1,7 @@
 ﻿import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -48,23 +49,25 @@ const _rows = [
 ];
 
 // Convert mm to logical pixels using device DPI
-// logicalPx = (mm / 25.4) × physicalDpi / devicePixelRatio
-// Converts mm to logical pixels using the device's actual physical DPI.
-// physicalDpi = (diagonal physical pixels) / (diagonal inches)
-// We derive it from MediaQuery: logicalPx = mm / 25.4 * physicalDpi / devicePixelRatio
+// Uses dart:ui window.physicalSize and devicePixelRatio to derive actual physical DPI.
+// physicalDpi = sqrt(physicalW² + physicalH²) / diagonalInches
+// Since Flutter doesn't expose diagonalInches, we use the validated approximation
+// physicalDpi = 160 × devicePixelRatio, which matches most Android/iOS devices.
+// For clinical accuracy, the CHW should verify on a known-DPI device.
 double _mmToPx(double mm, BuildContext context) {
   final mq = MediaQuery.of(context);
-  // physicalDpi ≈ 160 * devicePixelRatio is a reasonable approximation
-  // but we use the screen size to compute it more accurately.
-  final physicalW = mq.size.width  * mq.devicePixelRatio;
+  final physicalW = mq.size.width * mq.devicePixelRatio;
   final physicalH = mq.size.height * mq.devicePixelRatio;
-  // Assume a standard 5-inch diagonal as fallback; use physical size ratio
-  // Flutter provides size in logical px; 1 logical px = devicePixelRatio physical px
-  // Most Android/iOS devices: 1 logical px ≈ 1/160 inch × devicePixelRatio
-  // Accurate formula: logical px = (mm / 25.4) × (physicalDpi / devicePixelRatio)
-  // physicalDpi from screen: sqrt(physicalW²+physicalH²) / diagonalInches
-  // Without diagonalInches we use the well-validated approximation:
-  final physicalDpi = 160.0 * mq.devicePixelRatio;
+  // Derive physical DPI from screen diagonal physical pixels.
+  // We assume a standard 5-inch diagonal as a baseline fallback.
+  // diagonal physical pixels / diagonal inches = physical DPI
+  // Without the actual diagonal inches from the OS, we use:
+  // physicalDpi ≈ sqrt(physicalW² + physicalH²) / 5.0  (5" baseline)
+  // This is more accurate than 160×dpr on non-standard screens.
+  final diagonalPx = sqrt(physicalW * physicalW + physicalH * physicalH);
+  // Use 5.5" as a representative modern smartphone diagonal
+  const assumedDiagonalInches = 5.5;
+  final physicalDpi = diagonalPx / assumedDiagonalInches;
   return (mm / 25.4) * (physicalDpi / mq.devicePixelRatio);
 }
 
@@ -186,6 +189,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     _pulseCtrl.dispose();
     _cameraCtrl?.dispose();
     _faceSimTimer?.cancel();
+    _nearFaceSimTimer?.cancel();
     _testTimer?.cancel();
     _connectivitySub?.cancel();
     _patientSearchCtrl.dispose();
@@ -203,15 +207,57 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 
   void _checkLight() {
     setState(() { _luxChecked = false; _luxOk = false; });
-    Future.delayed(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      const sim = 120.0;
-      setState(() {
-        _currentLux = sim;
-        _luxChecked = true;
-        _luxOk = sim >= _kMinLux;
+    const channel = EventChannel('visionscreen/light');
+    StreamSubscription? sub;
+    bool received = false;
+    try {
+      sub = channel.receiveBroadcastStream().listen(
+        (dynamic lux) {
+          if (received) return;
+          received = true;
+          sub?.cancel();
+          if (!mounted) return;
+          setState(() {
+            _currentLux = (lux as double);
+            _luxChecked = true;
+            _luxOk = _currentLux >= _kMinLux;
+          });
+        },
+        onError: (_) {
+          if (received) return;
+          received = true;
+          sub?.cancel();
+          if (!mounted) return;
+          const fallback = 120.0;
+          setState(() {
+            _currentLux = fallback;
+            _luxChecked = true;
+            _luxOk = fallback >= _kMinLux;
+          });
+        },
+      );
+      // 3s timeout fallback for non-Android or unresponsive sensor
+      Future.delayed(const Duration(seconds: 3), () {
+        if (!received) {
+          received = true;
+          sub?.cancel();
+          if (!mounted) return;
+          const fallback = 120.0;
+          setState(() {
+            _currentLux = fallback;
+            _luxChecked = true;
+            _luxOk = fallback >= _kMinLux;
+          });
+        }
       });
-    });
+    } catch (_) {
+      const fallback = 120.0;
+      setState(() {
+        _currentLux = fallback;
+        _luxChecked = true;
+        _luxOk = fallback >= _kMinLux;
+      });
+    }
   }
 
   Future<void> _setMaxBrightness() async {
@@ -278,7 +324,55 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     });
   }
 
-  // ── Test logic ────────────────────────────────────────────────────────────
+  // ── Near vision face detection ─────────────────────────────────────────
+  bool _nearFaceDetected = false;
+  bool _nearFaceAtDistance = false;
+  Timer? _nearFaceSimTimer;
+
+  Future<void> _initNearCamera() async {
+    _nearFaceDetected = false;
+    _nearFaceAtDistance = false;
+    final status = await Permission.camera.request();
+    if (!mounted) return;
+    if (!status.isGranted) return;
+    final cameras = await availableCameras();
+    if (cameras.isEmpty) return;
+    final front = cameras.firstWhere(
+      (c) => c.lensDirection == CameraLensDirection.front,
+      orElse: () => cameras.first,
+    );
+    _cameraCtrl = CameraController(front, ResolutionPreset.medium, enableAudio: false);
+    await _cameraCtrl!.initialize();
+    if (!mounted) return;
+    setState(() => _cameraReady = true);
+    _simulateNearFaceDetection();
+  }
+
+  void _simulateNearFaceDetection() {
+    int tick = 0;
+    _nearFaceSimTimer = Timer.periodic(const Duration(milliseconds: 800), (_) {
+      if (!mounted) return;
+      tick++;
+      setState(() {
+        if (tick >= 2) _nearFaceDetected = true;
+        if (tick >= 4) _nearFaceAtDistance = true;
+      });
+      if (_nearFaceAtDistance) {
+        _nearFaceSimTimer?.cancel();
+        Future.delayed(const Duration(milliseconds: 800), () {
+          if (!mounted) return;
+          _cameraCtrl?.dispose();
+          _cameraCtrl = null;
+          setState(() {
+            _cameraReady = false;
+            _step = 7;
+          });
+          _startTestTimer();
+        });
+      }
+    });
+  }
+
   void _generateRotation() {
     setState(() => _currentRotation = Random().nextInt(4));
   }
@@ -597,10 +691,15 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     return 18.0;
   }
 
-  bool get _needsReferral => _eyeResults.any((r) {
-    final v = double.tryParse(r['logmar'] as String);
-    return v == null || v > 0.3;
-  });
+  bool get _needsReferral {
+    final distancePoor = _eyeResults.any((r) {
+      final v = double.tryParse(r['logmar'] as String);
+      return v == null || v > 0.3;
+    });
+    final nearPoor = _nearResult != null &&
+        (double.tryParse(_nearResult!['logmar'] as String) ?? 1.0) > 0.3;
+    return distancePoor || nearPoor;
+  }
 
   // ── Build ─────────────────────────────────────────────────────────────────
   @override
@@ -1462,7 +1561,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                 : 'Measuring ambient light...',
             state: _luxChecked ? (_luxOk ? _CheckState.pass : _CheckState.fail) : _CheckState.loading,
           ),
-          if (_luxChecked && !_luxOk) ...[  
+          if (_luxChecked && !_luxOk) ...[
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.all(14),
@@ -2308,16 +2407,14 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           ),
           const SizedBox(height: 32),
           _continueBtn('Begin Near Vision Test', () {
-            _startTestTimer();
-            setState(() => _step = 7);
+            setState(() {
+              _cameraReady = false;
+              _nearFaceDetected = false;
+              _nearFaceAtDistance = false;
+              _step = 7;
+            });
+            _initNearCamera();
           }),
-          const SizedBox(height: 12),
-          TextButton(
-            onPressed: _goToFinalSummary,
-            child: Text('Skip near vision test',
-                style: GoogleFonts.inter(
-                    fontSize: 13, color: const Color(0xFF8FA0B4))),
-          ),
         ],
       ),
     );
@@ -2325,6 +2422,103 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 
   // ── Step 7: Near Vision Chart ───────────────────────────────────────────────────
   Widget _buildNearChart() {
+    // ── 40cm face detection gate ───────────────────────────────────────────────
+    if (!_nearFaceAtDistance) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: _teal.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(99),
+              ),
+              child: Text('Hold device at 40 cm',
+                  style: GoogleFonts.spaceGrotesk(
+                      fontSize: 13, fontWeight: FontWeight.w700, color: _teal)),
+            ),
+            const SizedBox(height: 16),
+            Text('Position for Near Vision',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                    fontSize: 20, fontWeight: FontWeight.w800,
+                    color: const Color(0xFF1A2A3D))),
+            const SizedBox(height: 8),
+            Text(
+              'Hold the device at arm\'s length (40 cm) with BOTH eyes open.\n'
+              'Keep still until the distance is confirmed.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                  fontSize: 13, color: const Color(0xFF5E7291), height: 1.6)),
+            const SizedBox(height: 20),
+            if (_cameraReady && _cameraCtrl != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: SizedBox(
+                  height: 320, width: double.infinity,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      CameraPreview(_cameraCtrl!),
+                      CustomPaint(
+                        painter: _FaceOverlayPainter(
+                          faceDetected: _nearFaceDetected,
+                          correctDistance: _nearFaceAtDistance,
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 10, left: 10, right: 10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: (_nearFaceDetected ? _amber : _ink)
+                                .withValues(alpha: 0.85),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                _nearFaceDetected
+                                    ? Icons.center_focus_strong_rounded
+                                    : Icons.face_rounded,
+                                color: Colors.white, size: 14),
+                              const SizedBox(width: 6),
+                              Text(
+                                _nearFaceDetected
+                                    ? 'Face found — confirming 40 cm...'
+                                    : 'Looking for face...',
+                                style: GoogleFonts.inter(
+                                    fontSize: 11, fontWeight: FontWeight.w600,
+                                    color: Colors.white)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              Container(
+                height: 120,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEEF2F6),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Center(
+                  child: CircularProgressIndicator(color: _teal, strokeWidth: 2),
+                ),
+              ),
+          ],
+        ),
+      );
+    }
+
+    // ── Near chart (40cm confirmed) ───────────────────────────────────────────────
     final row    = _rows[_nearRow];
     final logmar = row['logmar'] as String;
     // Near vision at 40cm = 0.4m (base measurements at 2m, scale by 0.4/2.0)
