@@ -130,7 +130,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   int _currentEyeIndex = 0;
   int _currentRow = 0;       // index into _rows
   int _currentRotation = 0;
-  bool _rowRetryUsed = false;
   int _lastPassedRow = 0;
   // Staircase state
   int _letterIndex = 0;       // 0-4, which of the 5 letters in current row
@@ -156,10 +155,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   Timer? _testTimer;
   int _testSeconds = 0;
 
-  // Examiner masking mode
-  bool _examinerMasking = false;
-
-  // ── Feature: Offline / unsynced ───────────────────────────────────────────
+// ── Feature: Offline / unsynced ───────────────────────────────────────────
   bool _isOffline = false;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   int _unsyncedCount = 0;
@@ -321,7 +317,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       final passed = _correctCount >= 4;
       _letterIndex = 0;
       _correctCount = 0;
-      _rowRetryUsed = false;
 
       if (passed) {
         _lastPassedRow = _currentRow;
@@ -344,7 +339,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       final passed = _correctCount >= 4;
       _letterIndex = 0;
       _correctCount = 0;
-      _rowRetryUsed = false;
       if (passed) {
         _lastPassedRow = _currentRow;
         _advanceStaircase(passed: true);
@@ -427,7 +421,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
         _staircaseJumpIndex = 0;
         _staircasePhase = true;
         _fineSearchDir = 0;
-        _rowRetryUsed = false;
         _cantTellCount = 0;
         _generateRotation();
         _step = 2; // cover eye reminder
@@ -656,6 +649,9 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 
   // ── Header ────────────────────────────────────────────────────────────────
   Widget _buildHeader() {
+    final isDistanceChart = _step == 3;
+    final isNearChart = _step == 7;
+
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -667,75 +663,123 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-          child: Row(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              GestureDetector(
-                onTap: () {
-                  _restoreBrightness();
-                  Navigator.pop(context);
-                },
-                child: Container(
-                  width: 38, height: 38,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-                  ),
-                  child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 18),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
                 children: [
-                  Text('New Screening',
-                      style: GoogleFonts.plusJakartaSans(
-                          fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white)),
-                  Text('Tumbling E · LogMAR Scale',
-                      style: GoogleFonts.inter(
-                          fontSize: 11, color: _teal3.withValues(alpha: 0.6))),
+                  GestureDetector(
+                    onTap: () {
+                      _restoreBrightness();
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                      width: 38, height: 38,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                      ),
+                      child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 18),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  if (isDistanceChart) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _teal.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(99),
+                        border: Border.all(color: _teal3.withValues(alpha: 0.3)),
+                      ),
+                      child: Text(_eyeOrder[_currentEyeIndex],
+                          style: GoogleFonts.spaceGrotesk(
+                              fontSize: 12, fontWeight: FontWeight.w800, color: _teal3)),
+                    ),
+                    const SizedBox(width: 8),
+                    Text('LogMAR ${_rows[_currentRow]['logmar']}',
+                        style: GoogleFonts.spaceGrotesk(
+                            fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white)),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                      child: Text('$_letterIndex/5',
+                          style: GoogleFonts.spaceGrotesk(
+                              fontSize: 11, fontWeight: FontWeight.w700,
+                              color: Colors.white.withValues(alpha: 0.8))),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(Icons.timer_rounded, size: 11, color: Colors.white.withValues(alpha: 0.5)),
+                    const SizedBox(width: 3),
+                    Text(_testDuration,
+                        style: GoogleFonts.spaceGrotesk(
+                            fontSize: 11, fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.5))),
+                  ] else if (isNearChart) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _teal.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(99),
+                        border: Border.all(color: _teal3.withValues(alpha: 0.3)),
+                      ),
+                      child: Text('OU — 40cm',
+                          style: GoogleFonts.spaceGrotesk(
+                              fontSize: 12, fontWeight: FontWeight.w800, color: _teal3)),
+                    ),
+                    const SizedBox(width: 8),
+                    Text('LogMAR ${_rows[_nearRow]['logmar']}',
+                        style: GoogleFonts.spaceGrotesk(
+                            fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white)),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                      child: Text('$_nearLetterIndex/5',
+                          style: GoogleFonts.spaceGrotesk(
+                              fontSize: 11, fontWeight: FontWeight.w700,
+                              color: Colors.white.withValues(alpha: 0.8))),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(Icons.timer_rounded, size: 11, color: Colors.white.withValues(alpha: 0.5)),
+                    const SizedBox(width: 3),
+                    Text(_testDuration,
+                        style: GoogleFonts.spaceGrotesk(
+                            fontSize: 11, fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.5))),
+                  ] else ...[
+                    const Spacer(),
+                    if (_unsyncedCount > 0)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: _amber.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(color: _amber.withValues(alpha: 0.4)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.cloud_off_rounded, size: 11, color: _amber),
+                            const SizedBox(width: 4),
+                            Text('$_unsyncedCount unsynced',
+                                style: GoogleFonts.inter(
+                                    fontSize: 10, fontWeight: FontWeight.w700, color: _amber)),
+                          ],
+                        ),
+                      ),
+                  ],
                 ],
               ),
-              const Spacer(),
-              if (_unsyncedCount > 0)
-                Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: _amber.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(99),
-                    border: Border.all(color: _amber.withValues(alpha: 0.4)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.cloud_off_rounded, size: 11, color: _amber),
-                      const SizedBox(width: 4),
-                      Text('$_unsyncedCount unsynced',
-                          style: GoogleFonts.inter(
-                              fontSize: 10, fontWeight: FontWeight.w700, color: _amber)),
-                    ],
-                  ),
-                ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: _teal.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(99),
-                  border: Border.all(color: _teal3.withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.remove_red_eye_rounded, size: 12, color: _teal3),
-                    const SizedBox(width: 5),
-                    Text('WHO Standard',
-                        style: GoogleFonts.inter(
-                            fontSize: 10, fontWeight: FontWeight.w700, color: _teal3)),
-                  ],
-                ),
-              ),
+
             ],
           ),
         ),
@@ -1789,139 +1833,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     // ── Normal chart ─────────────────────────────────────────────────────
     return Column(
       children: [
-        // Top bar — two rows to avoid horizontal overflow on narrow screens
-        Container(
-          color: _ink,
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Row 1: eye chip · LogMAR · letter progress · timer
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _teal.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(99),
-                      border: Border.all(color: _teal3.withValues(alpha: 0.3)),
-                    ),
-                    child: Text(eye,
-                        style: GoogleFonts.spaceGrotesk(
-                            fontSize: 12, fontWeight: FontWeight.w800, color: _teal3)),
-                  ),
-                  const SizedBox(width: 8),
-                  Text('LogMAR $logmar',
-                      style: GoogleFonts.spaceGrotesk(
-                          fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white)),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                    child: Text('$_letterIndex/5',
-                        style: GoogleFonts.spaceGrotesk(
-                            fontSize: 11, fontWeight: FontWeight.w700,
-                            color: Colors.white.withValues(alpha: 0.8))),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(Icons.timer_rounded,
-                      size: 11, color: Colors.white.withValues(alpha: 0.5)),
-                  const SizedBox(width: 3),
-                  Text(_testDuration,
-                      style: GoogleFonts.spaceGrotesk(
-                          fontSize: 11, fontWeight: FontWeight.w600,
-                          color: Colors.white.withValues(alpha: 0.5))),
-                ],
-              ),
-              const SizedBox(height: 6),
-              // Row 2: Mask toggle · Retry
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => setState(() => _examinerMasking = !_examinerMasking),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: _examinerMasking
-                            ? _teal.withValues(alpha: 0.3)
-                            : Colors.white.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(99),
-                        border: Border.all(
-                          color: _examinerMasking
-                              ? _teal3
-                              : Colors.white.withValues(alpha: 0.2),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _examinerMasking
-                                ? Icons.visibility_off_rounded
-                                : Icons.visibility_rounded,
-                            size: 12,
-                            color: _examinerMasking ? _teal3 : Colors.white.withValues(alpha: 0.5),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            _examinerMasking ? 'Masked' : 'Mask',
-                            style: GoogleFonts.inter(
-                                fontSize: 10, fontWeight: FontWeight.w700,
-                                color: _examinerMasking
-                                    ? _teal3
-                                    : Colors.white.withValues(alpha: 0.5)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: _rowRetryUsed ? null : () => setState(() {
-                      _letterIndex = 0;
-                      _correctCount = 0;
-                      _rowRetryUsed = true;
-                      _generateRotation();
-                    }),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: _rowRetryUsed
-                            ? Colors.white.withValues(alpha: 0.05)
-                            : _amber.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(99),
-                        border: Border.all(
-                          color: _rowRetryUsed
-                              ? Colors.white.withValues(alpha: 0.1)
-                              : _amber.withValues(alpha: 0.5),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.refresh_rounded, size: 12,
-                              color: _rowRetryUsed
-                                  ? Colors.white.withValues(alpha: 0.2) : _amber),
-                          const SizedBox(width: 4),
-                          Text('Retry',
-                              style: GoogleFonts.inter(
-                                  fontSize: 10, fontWeight: FontWeight.w700,
-                                  color: _rowRetryUsed
-                                      ? Colors.white.withValues(alpha: 0.2) : _amber)),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
         // Row progress
         LinearProgressIndicator(
           value: (_currentRow + 1) / _rows.length,
@@ -1970,21 +1881,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                     painter: _BoundingBoxPainter(size: s),
                     child: Padding(
                       padding: EdgeInsets.all(s * 0.6),
-                      child: _examinerMasking
-                          ? Container(
-                              width: s * 0.8,
-                              height: s,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEEF2F6),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Center(
-                                child: Icon(Icons.visibility_off_rounded,
-                                    size: s * 0.3,
-                                    color: const Color(0xFF8FA0B4)),
-                              ),
-                            )
-                          : RotatedBox(
+                      child: RotatedBox(
                               quarterTurns: _currentRotation,
                               child: CustomPaint(
                                 size: Size(s * 0.8, s),
@@ -1994,14 +1891,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                     ),
                   );
                 }),
-                if (_examinerMasking)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text('Direction hidden from examiner',
-                        style: GoogleFonts.inter(
-                            fontSize: 11, color: _teal,
-                            fontWeight: FontWeight.w600)),
-                  ),
+
                 const Spacer(),
               ],
             ),
@@ -2444,55 +2334,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 
     return Column(
       children: [
-        Container(
-          color: _ink,
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                decoration: BoxDecoration(
-                  color: _teal.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(99),
-                  border: Border.all(color: _teal3.withValues(alpha: 0.3)),
-                ),
-                child: Text('OU — 40cm',
-                    style: GoogleFonts.spaceGrotesk(
-                        fontSize: 13, fontWeight: FontWeight.w800, color: _teal3)),
-              ),
-              const Spacer(),
-              Text('LogMAR $logmar',
-                  style: GoogleFonts.spaceGrotesk(
-                      fontSize: 13, fontWeight: FontWeight.w700,
-                      color: Colors.white)),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(99),
-                ),
-                child: Text('$_nearLetterIndex/5',
-                    style: GoogleFonts.spaceGrotesk(
-                        fontSize: 11, fontWeight: FontWeight.w700,
-                        color: Colors.white.withValues(alpha: 0.8))),
-              ),
-              const SizedBox(width: 8),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.timer_rounded,
-                      size: 12, color: Colors.white.withValues(alpha: 0.5)),
-                  const SizedBox(width: 3),
-                  Text(_testDuration,
-                      style: GoogleFonts.spaceGrotesk(
-                          fontSize: 11, fontWeight: FontWeight.w600,
-                          color: Colors.white.withValues(alpha: 0.5))),
-                ],
-              ),
-            ],
-          ),
-        ),
         LinearProgressIndicator(
           value: (_nearRow + 1) / _rows.length,
           backgroundColor: const Color(0xFFEEF2F6),

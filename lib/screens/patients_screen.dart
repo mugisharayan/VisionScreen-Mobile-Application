@@ -21,6 +21,7 @@ class _ScreeningEntry {
     required this.os,
     required this.ou,
     required this.outcome,
+    this.chw = '',
   });
   final String date;
   final String od, os, ou;
