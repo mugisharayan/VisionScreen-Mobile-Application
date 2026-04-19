@@ -223,7 +223,7 @@ class _MainShellState extends State<MainShell> {
                           ),
                         ),
                       );
-                    }).toList(),
+                    }),
                     const SizedBox(width: 70),
                     ...lastItems.asMap().entries.map((e) {
                       final index = e.key + 2;
@@ -280,7 +280,7 @@ class _MainShellState extends State<MainShell> {
                           ),
                         ),
                       );
-                    }).toList(),
+                    }),
                   ],
                 ),
               ),
@@ -346,15 +346,23 @@ class _MainShellState extends State<MainShell> {
     Navigator.push(
       context,
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) => const NewScreeningScreen(),
-        transitionsBuilder: (_, animation, __, child) {
+        pageBuilder: (_, _, _) => const NewScreeningScreen(),
+        transitionsBuilder: (_, animation, _, child) {
           return FadeTransition(
             opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
               CurvedAnimation(parent: animation, curve: Curves.easeOut),
             ),
             child: SlideTransition(
-              position: Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero)
-                  .animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+              position:
+                  Tween<Offset>(
+                    begin: const Offset(0, 0.08),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    ),
+                  ),
               child: child,
             ),
           );

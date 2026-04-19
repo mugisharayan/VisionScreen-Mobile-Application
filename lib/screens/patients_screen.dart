@@ -21,7 +21,6 @@ class _ScreeningEntry {
     required this.os,
     required this.ou,
     required this.outcome,
-    this.chw = 'CHW Field Worker',
   });
   final String date;
   final String od, os, ou;
@@ -91,9 +90,27 @@ final _patients = <_Patient>[
     id: 'PAT-00312',
     phone: '+256701234567',
     history: [
-      _ScreeningEntry(date: '28 Mar 2026', od: '6/6',  os: '6/9',  ou: '6/6',  outcome: 'pass'),
-      _ScreeningEntry(date: '10 Jan 2026', od: '6/6',  os: '6/6',  ou: '6/6',  outcome: 'pass'),
-      _ScreeningEntry(date: '5 Aug 2025',  od: '6/9',  os: '6/9',  ou: '6/6',  outcome: 'pass'),
+      _ScreeningEntry(
+        date: '28 Mar 2026',
+        od: '6/6',
+        os: '6/9',
+        ou: '6/6',
+        outcome: 'pass',
+      ),
+      _ScreeningEntry(
+        date: '10 Jan 2026',
+        od: '6/6',
+        os: '6/6',
+        ou: '6/6',
+        outcome: 'pass',
+      ),
+      _ScreeningEntry(
+        date: '5 Aug 2025',
+        od: '6/9',
+        os: '6/9',
+        ou: '6/6',
+        outcome: 'pass',
+      ),
     ],
   ),
   _Patient(
@@ -117,9 +134,27 @@ final _patients = <_Patient>[
     dueDate: '29 Mar 2026',
     referralStatus: 'overdue',
     history: [
-      _ScreeningEntry(date: '28 Mar 2026', od: '6/12', os: '6/18', ou: '6/12', outcome: 'refer'),
-      _ScreeningEntry(date: '15 Nov 2025', od: '6/9',  os: '6/12', ou: '6/9',  outcome: 'refer'),
-      _ScreeningEntry(date: '2 Jun 2025',  od: '6/6',  os: '6/9',  ou: '6/6',  outcome: 'pass'),
+      _ScreeningEntry(
+        date: '28 Mar 2026',
+        od: '6/12',
+        os: '6/18',
+        ou: '6/12',
+        outcome: 'refer',
+      ),
+      _ScreeningEntry(
+        date: '15 Nov 2025',
+        od: '6/9',
+        os: '6/12',
+        ou: '6/9',
+        outcome: 'refer',
+      ),
+      _ScreeningEntry(
+        date: '2 Jun 2025',
+        od: '6/6',
+        os: '6/9',
+        ou: '6/6',
+        outcome: 'pass',
+      ),
     ],
   ),
   _Patient(
@@ -140,8 +175,20 @@ final _patients = <_Patient>[
     id: 'PAT-00301',
     phone: '+256703456789',
     history: [
-      _ScreeningEntry(date: '28 Mar 2026', od: '6/9',  os: '6/9',  ou: '6/6',  outcome: 'pass'),
-      _ScreeningEntry(date: '20 Dec 2025', od: '6/12', os: '6/9',  ou: '6/9',  outcome: 'refer'),
+      _ScreeningEntry(
+        date: '28 Mar 2026',
+        od: '6/9',
+        os: '6/9',
+        ou: '6/6',
+        outcome: 'pass',
+      ),
+      _ScreeningEntry(
+        date: '20 Dec 2025',
+        od: '6/12',
+        os: '6/9',
+        ou: '6/9',
+        outcome: 'refer',
+      ),
     ],
   ),
   _Patient(
@@ -915,27 +962,27 @@ class _PatientsScreenState extends State<PatientsScreen> {
                           ),
                           const SizedBox(width: 6),
                           if (p.outcome == 'refer')
-                          GestureDetector(
-                            onTap: () => _sendNotification(p),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _amber.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: _amber.withOpacity(0.3),
+                            GestureDetector(
+                              onTap: () => _sendNotification(p),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _amber.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: _amber.withOpacity(0.3),
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.notifications_rounded,
+                                  size: 14,
+                                  color: _amber,
                                 ),
                               ),
-                              child: const Icon(
-                                Icons.notifications_rounded,
-                                size: 14,
-                                color: _amber,
-                              ),
                             ),
-                          ),
                           const SizedBox(width: 6),
                           GestureDetector(
                             onTap: () => _shareToWhatsApp(p),
@@ -1114,7 +1161,8 @@ class _PatientsScreenState extends State<PatientsScreen> {
                 padding: const EdgeInsets.only(top: 12, bottom: 4),
                 child: Center(
                   child: Container(
-                    width: 40, height: 4,
+                    width: 40,
+                    height: 4,
                     decoration: BoxDecoration(
                       color: const Color(0xFFDDE4EC),
                       borderRadius: BorderRadius.circular(99),
@@ -1128,16 +1176,21 @@ class _PatientsScreenState extends State<PatientsScreen> {
                 child: Row(
                   children: [
                     Container(
-                      width: 44, height: 44,
+                      width: 44,
+                      height: 44,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(colors: p.avatarGradient),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Center(
-                        child: Text(p.initials,
-                            style: GoogleFonts.plusJakartaSans(
-                                fontSize: 14, fontWeight: FontWeight.w800,
-                                color: Colors.white)),
+                        child: Text(
+                          p.initials,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1145,26 +1198,41 @@ class _PatientsScreenState extends State<PatientsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(p.name,
-                              style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 15, fontWeight: FontWeight.w800,
-                                  color: const Color(0xFF1A2A3D))),
-                          Text('${p.id} · ${p.age} yrs · ${p.village}',
-                              style: GoogleFonts.inter(
-                                  fontSize: 11, color: const Color(0xFF8FA0B4))),
+                          Text(
+                            p.name,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF1A2A3D),
+                            ),
+                          ),
+                          Text(
+                            '${p.id} · ${p.age} yrs · ${p.village}',
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: const Color(0xFF8FA0B4),
+                            ),
+                          ),
                         ],
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF0F4F7),
                         borderRadius: BorderRadius.circular(99),
                       ),
-                      child: Text('${p.history.length + 1} screenings',
-                          style: GoogleFonts.inter(
-                              fontSize: 10, fontWeight: FontWeight.w700,
-                              color: const Color(0xFF5E7291))),
+                      child: Text(
+                        '${p.history.length + 1} screenings',
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF5E7291),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -1178,17 +1246,28 @@ class _PatientsScreenState extends State<PatientsScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.history_rounded,
-                                size: 40, color: Color(0xFFDDE4EC)),
+                            const Icon(
+                              Icons.history_rounded,
+                              size: 40,
+                              color: Color(0xFFDDE4EC),
+                            ),
                             const SizedBox(height: 12),
-                            Text('No previous screenings',
-                                style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 14, fontWeight: FontWeight.w700,
-                                    color: const Color(0xFF1A2A3D))),
+                            Text(
+                              'No previous screenings',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF1A2A3D),
+                              ),
+                            ),
                             const SizedBox(height: 4),
-                            Text('This is the patient\'s first screening',
-                                style: GoogleFonts.inter(
-                                    fontSize: 12, color: const Color(0xFF8FA0B4))),
+                            Text(
+                              'This is the patient\'s first screening',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: const Color(0xFF8FA0B4),
+                              ),
+                            ),
                           ],
                         ),
                       )
@@ -1196,7 +1275,8 @@ class _PatientsScreenState extends State<PatientsScreen> {
                         controller: ctrl,
                         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
                         itemCount: p.history.length,
-                        itemBuilder: (_, i) => _historyEntry(p.history[i], i, p.history.length),
+                        itemBuilder: (_, i) =>
+                            _historyEntry(p.history[i], i, p.history.length),
                       ),
               ),
             ],
@@ -1216,22 +1296,26 @@ class _PatientsScreenState extends State<PatientsScreen> {
         Column(
           children: [
             Container(
-              width: 28, height: 28,
+              width: 28,
+              height: 28,
               decoration: BoxDecoration(
                 color: col.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
-                border: Border.all(color: col.withValues(alpha: 0.3), width: 1.5),
+                border: Border.all(
+                  color: col.withValues(alpha: 0.3),
+                  width: 1.5,
+                ),
               ),
               child: Icon(
-                e.outcome == 'pass' ? Icons.check_rounded : Icons.warning_rounded,
-                size: 14, color: col,
+                e.outcome == 'pass'
+                    ? Icons.check_rounded
+                    : Icons.warning_rounded,
+                size: 14,
+                color: col,
               ),
             ),
             if (index < total - 1)
-              Container(
-                width: 2, height: 60,
-                color: const Color(0xFFEEF2F6),
-              ),
+              Container(width: 2, height: 60, color: const Color(0xFFEEF2F6)),
           ],
         ),
         const SizedBox(width: 14),
@@ -1244,7 +1328,9 @@ class _PatientsScreenState extends State<PatientsScreen> {
                 color: isLatest ? col.withValues(alpha: 0.04) : Colors.white,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: isLatest ? col.withValues(alpha: 0.2) : const Color(0xFFEEF2F6),
+                  color: isLatest
+                      ? col.withValues(alpha: 0.2)
+                      : const Color(0xFFEEF2F6),
                   width: 1.5,
                 ),
               ),
@@ -1253,34 +1339,52 @@ class _PatientsScreenState extends State<PatientsScreen> {
                 children: [
                   Row(
                     children: [
-                      Text(e.date,
-                          style: GoogleFonts.inter(
-                              fontSize: 12, fontWeight: FontWeight.w700,
-                              color: const Color(0xFF1A2A3D))),
+                      Text(
+                        e.date,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1A2A3D),
+                        ),
+                      ),
                       const Spacer(),
                       if (isLatest)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: _teal.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(99),
                           ),
-                          child: Text('Latest',
-                              style: GoogleFonts.inter(
-                                  fontSize: 9, fontWeight: FontWeight.w700,
-                                  color: _teal)),
+                          child: Text(
+                            'Latest',
+                            style: GoogleFonts.inter(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: _teal,
+                            ),
+                          ),
                         ),
                       Container(
                         margin: const EdgeInsets.only(left: 6),
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: col.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(99),
                         ),
-                        child: Text(e.outcome == 'pass' ? 'Pass' : 'Refer',
-                            style: GoogleFonts.inter(
-                                fontSize: 9, fontWeight: FontWeight.w700,
-                                color: col)),
+                        child: Text(
+                          e.outcome == 'pass' ? 'Pass' : 'Refer',
+                          style: GoogleFonts.inter(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: col,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -1293,12 +1397,19 @@ class _PatientsScreenState extends State<PatientsScreen> {
                       const SizedBox(width: 6),
                       _histVaPill('OU', e.ou),
                       const Spacer(),
-                      Icon(Icons.person_outline_rounded,
-                          size: 11, color: const Color(0xFF8FA0B4)),
+                      Icon(
+                        Icons.person_outline_rounded,
+                        size: 11,
+                        color: const Color(0xFF8FA0B4),
+                      ),
                       const SizedBox(width: 4),
-                      Text(e.chw,
-                          style: GoogleFonts.inter(
-                              fontSize: 10, color: const Color(0xFF8FA0B4))),
+                      Text(
+                        e.chw,
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          color: const Color(0xFF8FA0B4),
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -1326,13 +1437,18 @@ class _PatientsScreenState extends State<PatientsScreen> {
             TextSpan(
               text: '$eye ',
               style: GoogleFonts.inter(
-                  fontSize: 9, color: const Color(0xFF8FA0B4),
-                  fontWeight: FontWeight.w500),
+                fontSize: 9,
+                color: const Color(0xFF8FA0B4),
+                fontWeight: FontWeight.w500,
+              ),
             ),
             TextSpan(
               text: value,
               style: GoogleFonts.spaceGrotesk(
-                  fontSize: 11, fontWeight: FontWeight.w700, color: col),
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: col,
+              ),
             ),
           ],
         ),
@@ -1750,7 +1866,8 @@ class _PatientsScreenState extends State<PatientsScreen> {
           children: [
             Center(
               child: Container(
-                width: 40, height: 4,
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
                   color: const Color(0xFFDDE4EC),
                   borderRadius: BorderRadius.circular(99),
@@ -1761,33 +1878,45 @@ class _PatientsScreenState extends State<PatientsScreen> {
             Row(
               children: [
                 Container(
-                  width: 44, height: 44,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
                     color: _amber.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.notifications_rounded,
-                      color: _amber, size: 22),
+                  child: const Icon(
+                    Icons.notifications_rounded,
+                    color: _amber,
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Send Referral Reminder',
-                          style: GoogleFonts.plusJakartaSans(
-                              fontSize: 16, fontWeight: FontWeight.w800,
-                              color: const Color(0xFF1A2A3D))),
-                      Text(p.name,
-                          style: GoogleFonts.inter(
-                              fontSize: 12, color: const Color(0xFF8FA0B4))),
+                      Text(
+                        'Send Referral Reminder',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF1A2A3D),
+                        ),
+                      ),
+                      Text(
+                        p.name,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: const Color(0xFF8FA0B4),
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            if (p.facility != null) ...[  
+            if (p.facility != null) ...[
               const SizedBox(height: 4),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -1798,19 +1927,30 @@ class _PatientsScreenState extends State<PatientsScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.local_hospital_rounded,
-                        size: 14, color: Color(0xFF8FA0B4)),
+                    const Icon(
+                      Icons.local_hospital_rounded,
+                      size: 14,
+                      color: Color(0xFF8FA0B4),
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(p.facility!,
-                          style: GoogleFonts.inter(
-                              fontSize: 12, color: const Color(0xFF5E7291))),
+                      child: Text(
+                        p.facility!,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: const Color(0xFF5E7291),
+                        ),
+                      ),
                     ),
                     if (p.dueDate != null)
-                      Text('Due: ${p.dueDate}',
-                          style: GoogleFonts.inter(
-                              fontSize: 11, fontWeight: FontWeight.w700,
-                              color: _red)),
+                      Text(
+                        'Due: ${p.dueDate}',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: _red,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -1824,8 +1964,11 @@ class _PatientsScreenState extends State<PatientsScreen> {
               subtitle: 'Text message to ${p.phone}',
               onTap: () {
                 Navigator.pop(context);
-                _showNotifConfirm(p, 'SMS',
-                    'Reminder sent via SMS to ${p.phone}');
+                _showNotifConfirm(
+                  p,
+                  'SMS',
+                  'Reminder sent via SMS to ${p.phone}',
+                );
               },
             ),
             const SizedBox(height: 10),
@@ -1836,8 +1979,11 @@ class _PatientsScreenState extends State<PatientsScreen> {
               subtitle: 'WhatsApp message to ${p.phone}',
               onTap: () {
                 Navigator.pop(context);
-                _showNotifConfirm(p, 'WhatsApp',
-                    'Reminder sent via WhatsApp to ${p.phone}');
+                _showNotifConfirm(
+                  p,
+                  'WhatsApp',
+                  'Reminder sent via WhatsApp to ${p.phone}',
+                );
               },
             ),
             const SizedBox(height: 10),
@@ -1876,7 +2022,8 @@ class _PatientsScreenState extends State<PatientsScreen> {
         child: Row(
           children: [
             Container(
-              width: 40, height: 40,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
@@ -1888,18 +2035,29 @@ class _PatientsScreenState extends State<PatientsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title,
-                      style: GoogleFonts.plusJakartaSans(
-                          fontSize: 13, fontWeight: FontWeight.w700,
-                          color: const Color(0xFF1A2A3D))),
-                  Text(subtitle,
-                      style: GoogleFonts.inter(
-                          fontSize: 11, color: const Color(0xFF8FA0B4))),
+                  Text(
+                    title,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1A2A3D),
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: const Color(0xFF8FA0B4),
+                    ),
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded,
-                size: 14, color: Color(0xFF8FA0B4)),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 14,
+              color: Color(0xFF8FA0B4),
+            ),
           ],
         ),
       ),
@@ -1911,20 +2069,23 @@ class _PatientsScreenState extends State<PatientsScreen> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.check_circle_rounded,
-                color: Colors.white, size: 16),
+            const Icon(
+              Icons.check_circle_rounded,
+              color: Colors.white,
+              size: 16,
+            ),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(message,
-                  style: GoogleFonts.inter(
-                      fontSize: 12, color: Colors.white)),
+              child: Text(
+                message,
+                style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
+              ),
             ),
           ],
         ),
         backgroundColor: _teal,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         duration: const Duration(seconds: 3),
       ),
     );

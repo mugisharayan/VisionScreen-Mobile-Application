@@ -1619,11 +1619,14 @@ class _HomeScreenState extends State<HomeScreen>
                         children: [
                           Row(
                             children: [
-                              Text(name,
-                                  style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                      color: const Color(0xFF1A2A3D))),
+                              Flexible(
+                                child: Text(name,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF1A2A3D))),
+                              ),
                               const SizedBox(width: 6),
                               Text(demographic,
                                   style: GoogleFonts.inter(

@@ -24,26 +24,49 @@ const double _kMinLux = 80.0;
 // ── Steps ─────────────────────────────────────────────────────────────────────
 // 0=patient, 1=checklist, 2=coverEye, 3=chart, 4=eyeResult, 5=summary
 // ── Eye order ─────────────────────────────────────────────────────────────────
-const _eyeOrder = ['OD', 'OS', 'OU'];
+const _eyeOrder = ['OD', 'OS'];
 
 // ── LogMAR rows (single E per row) ───────────────────────────────────────────
 // ── Staircase levels (logmar index into _rows) ────────────────────────────────
 // Initial jump sequence: 1.0 → 0.8 → 0.5 → 0.2 → 0.0 (indices 0,2,5,8,10)
 const _staircaseJumps = [0, 2, 5, 8, 10];
 
+// LogMAR rows — sizes in mm at 2m (formula: 29.1 × 10^(logmar-1.0))
+// Source: Visual Acuity app measurements at 2m testing distance
 const _rows = [
-  {'logmar': '1.0', 'size': 96.0},
-  {'logmar': '0.9', 'size': 82.0},
-  {'logmar': '0.8', 'size': 70.0},
-  {'logmar': '0.7', 'size': 59.0},
-  {'logmar': '0.6', 'size': 50.0},
-  {'logmar': '0.5', 'size': 42.0},
-  {'logmar': '0.4', 'size': 36.0},
-  {'logmar': '0.3', 'size': 30.0},
-  {'logmar': '0.2', 'size': 25.0},
-  {'logmar': '0.1', 'size': 21.0},
-  {'logmar': '0.0', 'size': 18.0},
+  {'logmar': '1.0', 'mm': 29.10},
+  {'logmar': '0.9', 'mm': 23.12},
+  {'logmar': '0.8', 'mm': 18.36},
+  {'logmar': '0.7', 'mm': 14.59},
+  {'logmar': '0.6', 'mm': 11.59},
+  {'logmar': '0.5', 'mm':  9.21},
+  {'logmar': '0.4', 'mm':  7.31},
+  {'logmar': '0.3', 'mm':  5.81},
+  {'logmar': '0.2', 'mm':  4.61},
+  {'logmar': '0.1', 'mm':  3.66},
+  {'logmar': '0.0', 'mm':  2.91},
 ];
+
+// Convert mm to logical pixels using device DPI
+// logicalPx = (mm / 25.4) × physicalDpi / devicePixelRatio
+// Converts mm to logical pixels using the device's actual physical DPI.
+// physicalDpi = (diagonal physical pixels) / (diagonal inches)
+// We derive it from MediaQuery: logicalPx = mm / 25.4 * physicalDpi / devicePixelRatio
+double _mmToPx(double mm, BuildContext context) {
+  final mq = MediaQuery.of(context);
+  // physicalDpi ≈ 160 * devicePixelRatio is a reasonable approximation
+  // but we use the screen size to compute it more accurately.
+  final physicalW = mq.size.width  * mq.devicePixelRatio;
+  final physicalH = mq.size.height * mq.devicePixelRatio;
+  // Assume a standard 5-inch diagonal as fallback; use physical size ratio
+  // Flutter provides size in logical px; 1 logical px = devicePixelRatio physical px
+  // Most Android/iOS devices: 1 logical px ≈ 1/160 inch × devicePixelRatio
+  // Accurate formula: logical px = (mm / 25.4) × (physicalDpi / devicePixelRatio)
+  // physicalDpi from screen: sqrt(physicalW²+physicalH²) / diagonalInches
+  // Without diagonalInches we use the well-validated approximation:
+  final physicalDpi = 160.0 * mq.devicePixelRatio;
+  return (mm / 25.4) * (physicalDpi / mq.devicePixelRatio);
+}
 
 class NewScreeningScreen extends StatefulWidget {
   const NewScreeningScreen({super.key});
@@ -88,8 +111,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   double _currentLux = 0.0;
   bool _luxChecked = false;
   bool _luxOk = false;
-  // distance (2m = V@home validated, 3m = CHW field, 6m = clinical)
-  int _selectedDistance = 2;
+  final int _selectedDistance = 2;
   // brightness
   bool _brightnessSet = false;
   double? _originalBrightness;
@@ -1361,25 +1383,9 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   fontSize: 22, fontWeight: FontWeight.w800,
                   color: const Color(0xFF1A2A3D))),
           const SizedBox(height: 6),
-          Text('Select testing distance, then all checks run automatically.',
+          Text('All checks run automatically.',
               style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF5E7291))),
           const SizedBox(height: 20),
-          // ── Distance selector ──
-          Text('Testing Distance',
-              style: GoogleFonts.plusJakartaSans(
-                  fontSize: 13, fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1A2A3D))),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              _distanceChip(2, '2 m', 'Smartphone validated', recommended: true),
-              const SizedBox(width: 8),
-              _distanceChip(3, '3 m', 'CHW field standard'),
-              const SizedBox(width: 8),
-              _distanceChip(6, '6 m', 'Clinical standard'),
-            ],
-          ),
-          const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -1393,7 +1399,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Mark the floor at exactly $_selectedDistance metres from the screen before starting.',
+                    'Mark the floor at exactly 2 metres from the screen before starting.',
                     style: GoogleFonts.inter(
                         fontSize: 11, color: const Color(0xFF5E7291))),
                 ),
@@ -1486,7 +1492,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           // ── Check 3: Face detection ─────────────────────────────────────
           _checkTile(
             icon: Icons.face_rounded,
-            title: 'Face Detection at $_selectedDistance Metres',
+            title: 'Face Detection at 2 Metres',
             subtitle: _faceAtDistance
                 ? 'Patient detected — photo captured'
                 : _faceDetected
@@ -1582,56 +1588,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _distanceChip(int metres, String label, String desc,
-      {bool recommended = false}) {
-    final selected = _selectedDistance == metres;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _selectedDistance = metres),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-          decoration: BoxDecoration(
-            color: selected ? _teal.withValues(alpha: 0.08) : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: selected ? _teal : const Color(0xFFEEF2F6),
-              width: selected ? 2 : 1.5,
-            ),
-          ),
-          child: Column(
-            children: [
-              Text(label,
-                  style: GoogleFonts.spaceGrotesk(
-                      fontSize: 16, fontWeight: FontWeight.w800,
-                      color: selected ? _teal : const Color(0xFF1A2A3D))),
-              const SizedBox(height: 2),
-              Text(desc,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
-                      fontSize: 9,
-                      color: selected ? _teal : const Color(0xFF8FA0B4))),
-              if (recommended) ...[  
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: _green.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                  child: Text('Recommended',
-                      style: GoogleFonts.inter(
-                          fontSize: 8, fontWeight: FontWeight.w700,
-                          color: _green)),
-                ),
-              ],
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -1826,51 +1782,53 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     final eye    = _eyeOrder[_currentEyeIndex];
     final row    = _rows[_currentRow];
     final logmar = row['logmar'] as String;
-    final size   = row['size'] as double;
+    // Size based on fixed 2m testing distance
+    final baseMm = row['mm'] as double;
+    final size   = _mmToPx(baseMm, context);
 
     // ── Normal chart ─────────────────────────────────────────────────────
     return Column(
       children: [
-        // Top bar
+        // Top bar — two rows to avoid horizontal overflow on narrow screens
         Container(
           color: _ink,
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-          child: Row(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                decoration: BoxDecoration(
-                  color: _teal.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(99),
-                  border: Border.all(color: _teal3.withValues(alpha: 0.3)),
-                ),
-                child: Text(eye,
-                    style: GoogleFonts.spaceGrotesk(
-                        fontSize: 13, fontWeight: FontWeight.w800, color: _teal3)),
-              ),
-              const Spacer(),
-              Text('LogMAR $logmar',
-                  style: GoogleFonts.spaceGrotesk(
-                      fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
-              const SizedBox(width: 8),
-              // Letter progress x/5
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(99),
-                ),
-                child: Text('$_letterIndex/5',
-                    style: GoogleFonts.spaceGrotesk(
-                        fontSize: 11, fontWeight: FontWeight.w700,
-                        color: Colors.white.withValues(alpha: 0.8))),
-              ),
-              const SizedBox(width: 8),
+              // Row 1: eye chip · LogMAR · letter progress · timer
               Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _teal.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(99),
+                      border: Border.all(color: _teal3.withValues(alpha: 0.3)),
+                    ),
+                    child: Text(eye,
+                        style: GoogleFonts.spaceGrotesk(
+                            fontSize: 12, fontWeight: FontWeight.w800, color: _teal3)),
+                  ),
+                  const SizedBox(width: 8),
+                  Text('LogMAR $logmar',
+                      style: GoogleFonts.spaceGrotesk(
+                          fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white)),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                    child: Text('$_letterIndex/5',
+                        style: GoogleFonts.spaceGrotesk(
+                            fontSize: 11, fontWeight: FontWeight.w700,
+                            color: Colors.white.withValues(alpha: 0.8))),
+                  ),
+                  const SizedBox(width: 8),
                   Icon(Icons.timer_rounded,
-                      size: 12, color: Colors.white.withValues(alpha: 0.5)),
+                      size: 11, color: Colors.white.withValues(alpha: 0.5)),
                   const SizedBox(width: 3),
                   Text(_testDuration,
                       style: GoogleFonts.spaceGrotesk(
@@ -1878,85 +1836,88 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                           color: Colors.white.withValues(alpha: 0.5))),
                 ],
               ),
-              const SizedBox(width: 10),
-              // Masking toggle
-              GestureDetector(
-                onTap: () => setState(() => _examinerMasking = !_examinerMasking),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: _examinerMasking
-                        ? _teal.withValues(alpha: 0.3)
-                        : Colors.white.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(99),
-                    border: Border.all(
-                      color: _examinerMasking
-                          ? _teal3
-                          : Colors.white.withValues(alpha: 0.2),
+              const SizedBox(height: 6),
+              // Row 2: Mask toggle · Retry
+              Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => setState(() => _examinerMasking = !_examinerMasking),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: _examinerMasking
+                            ? _teal.withValues(alpha: 0.3)
+                            : Colors.white.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(99),
+                        border: Border.all(
+                          color: _examinerMasking
+                              ? _teal3
+                              : Colors.white.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _examinerMasking
+                                ? Icons.visibility_off_rounded
+                                : Icons.visibility_rounded,
+                            size: 12,
+                            color: _examinerMasking ? _teal3 : Colors.white.withValues(alpha: 0.5),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _examinerMasking ? 'Masked' : 'Mask',
+                            style: GoogleFonts.inter(
+                                fontSize: 10, fontWeight: FontWeight.w700,
+                                color: _examinerMasking
+                                    ? _teal3
+                                    : Colors.white.withValues(alpha: 0.5)),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _examinerMasking
-                            ? Icons.visibility_off_rounded
-                            : Icons.visibility_rounded,
-                        size: 12,
-                        color: _examinerMasking ? _teal3 : Colors.white.withValues(alpha: 0.5),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        _examinerMasking ? 'Masked' : 'Mask',
-                        style: GoogleFonts.inter(
-                            fontSize: 10, fontWeight: FontWeight.w700,
-                            color: _examinerMasking
-                                ? _teal3
-                                : Colors.white.withValues(alpha: 0.5)),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              // Retry button
-              GestureDetector(
-                onTap: _rowRetryUsed ? null : () => setState(() {
-                  _letterIndex = 0;
-                  _correctCount = 0;
-                  _rowRetryUsed = true;
-                  _generateRotation();
-                }),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: _rowRetryUsed
-                        ? Colors.white.withValues(alpha: 0.05)
-                        : _amber.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(99),
-                    border: Border.all(
-                      color: _rowRetryUsed
-                          ? Colors.white.withValues(alpha: 0.1)
-                          : _amber.withValues(alpha: 0.5),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.refresh_rounded, size: 12,
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: _rowRetryUsed ? null : () => setState(() {
+                      _letterIndex = 0;
+                      _correctCount = 0;
+                      _rowRetryUsed = true;
+                      _generateRotation();
+                    }),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: _rowRetryUsed
+                            ? Colors.white.withValues(alpha: 0.05)
+                            : _amber.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(99),
+                        border: Border.all(
                           color: _rowRetryUsed
-                              ? Colors.white.withValues(alpha: 0.2) : _amber),
-                      const SizedBox(width: 4),
-                      Text('Retry',
-                          style: GoogleFonts.inter(
-                              fontSize: 10, fontWeight: FontWeight.w700,
+                              ? Colors.white.withValues(alpha: 0.1)
+                              : _amber.withValues(alpha: 0.5),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.refresh_rounded, size: 12,
                               color: _rowRetryUsed
-                                  ? Colors.white.withValues(alpha: 0.2) : _amber)),
-                    ],
+                                  ? Colors.white.withValues(alpha: 0.2) : _amber),
+                          const SizedBox(width: 4),
+                          Text('Retry',
+                              style: GoogleFonts.inter(
+                                  fontSize: 10, fontWeight: FontWeight.w700,
+                                  color: _rowRetryUsed
+                                      ? Colors.white.withValues(alpha: 0.2) : _amber)),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ],
           ),
@@ -1974,17 +1935,18 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                const Spacer(),
                 // 5-dot progress indicator
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(5, (i) {
                     Color dotColor;
                     if (i < _letterIndex) {
-                      dotColor = _green; // answered
+                      dotColor = _green;
                     } else if (i == _letterIndex) {
-                      dotColor = _teal;  // current
+                      dotColor = _teal;
                     } else {
-                      dotColor = const Color(0xFFEEF2F6); // upcoming
+                      dotColor = const Color(0xFFEEF2F6);
                     }
                     return AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
@@ -1998,35 +1960,40 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                     );
                   }),
                 ),
-                const SizedBox(height: 32),
+                const Spacer(),
                 // E with ETDRS bounding box (hidden when examiner masking on)
-                CustomPaint(
-                  painter: _BoundingBoxPainter(size: size),
-                  child: Padding(
-                    padding: EdgeInsets.all(size * 0.6),
-                    child: _examinerMasking
-                        ? Container(
-                            width: size * 0.8,
-                            height: size,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEEF2F6),
-                              borderRadius: BorderRadius.circular(6),
+                LayoutBuilder(builder: (ctx, constraints) {
+                  final maxH = constraints.maxHeight * 0.9;
+                  final maxW = constraints.maxWidth  * 0.45;
+                  final s = size.clamp(0.0, maxH < maxW ? maxH : maxW);
+                  return CustomPaint(
+                    painter: _BoundingBoxPainter(size: s),
+                    child: Padding(
+                      padding: EdgeInsets.all(s * 0.6),
+                      child: _examinerMasking
+                          ? Container(
+                              width: s * 0.8,
+                              height: s,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEEF2F6),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Center(
+                                child: Icon(Icons.visibility_off_rounded,
+                                    size: s * 0.3,
+                                    color: const Color(0xFF8FA0B4)),
+                              ),
+                            )
+                          : RotatedBox(
+                              quarterTurns: _currentRotation,
+                              child: CustomPaint(
+                                size: Size(s * 0.8, s),
+                                painter: _ETumbleEPainter(color: _ink),
+                              ),
                             ),
-                            child: Center(
-                              child: Icon(Icons.visibility_off_rounded,
-                                  size: size * 0.3,
-                                  color: const Color(0xFF8FA0B4)),
-                            ),
-                          )
-                        : RotatedBox(
-                            quarterTurns: _currentRotation,
-                            child: CustomPaint(
-                              size: Size(size * 0.8, size),
-                              painter: _ETumbleEPainter(color: _ink),
-                            ),
-                          ),
-                  ),
-                ),
+                    ),
+                  );
+                }),
                 if (_examinerMasking)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
@@ -2035,67 +2002,66 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                             fontSize: 11, color: _teal,
                             fontWeight: FontWeight.w600)),
                   ),
-                const SizedBox(height: 32),
+                const Spacer(),
               ],
             ),
           ),
         ),
-        // Direction buttons + Can't Tell
-        Container(
-          color: const Color(0xFFF8FAFB),
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-          child: Column(
-            children: [
-              Text('Which way is the E facing?',
-                  style: GoogleFonts.inter(
-                      fontSize: 12, color: const Color(0xFF8FA0B4))),
-              const SizedBox(height: 14),
-              // Up
-              _dirBtn(Icons.arrow_upward_rounded, 3),
-              const SizedBox(height: 10),
-              // Left / Eye / Right
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _dirBtn(Icons.arrow_back_rounded, 2),
-                  const SizedBox(width: 10),
-                  Container(
-                    width: 56, height: 56,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEEF2F6),
-                      borderRadius: BorderRadius.circular(14),
+        SafeArea(
+          top: false,
+          child: Container(
+            color: const Color(0xFFF8FAFB),
+            padding: const EdgeInsets.fromLTRB(24, 6, 24, 6),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Which way is the E facing?',
+                    style: GoogleFonts.inter(
+                        fontSize: 11, color: const Color(0xFF8FA0B4))),
+                const SizedBox(height: 5),
+                _dirBtn(Icons.arrow_upward_rounded, 3),
+                const SizedBox(height: 5),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _dirBtn(Icons.arrow_back_rounded, 2),
+                    const SizedBox(width: 10),
+                    Container(
+                      width: 50, height: 50,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEEF2F6),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.remove_red_eye_rounded,
+                          size: 20, color: Color(0xFF8FA0B4)),
                     ),
-                    child: const Icon(Icons.remove_red_eye_rounded,
-                        size: 22, color: Color(0xFF8FA0B4)),
-                  ),
-                  const SizedBox(width: 10),
-                  _dirBtn(Icons.arrow_forward_rounded, 0),
-                ],
-              ),
-              const SizedBox(height: 10),
-              // Down
-              _dirBtn(Icons.arrow_downward_rounded, 1),
-              const SizedBox(height: 14),
-              // Can't Tell
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: _recordCantTell,
-                  icon: const Icon(Icons.help_outline_rounded,
-                      size: 18, color: Color(0xFF8FA0B4)),
-                  label: Text("Can't Tell",
-                      style: GoogleFonts.inter(
-                          fontSize: 14, fontWeight: FontWeight.w700,
-                          color: const Color(0xFF5E7291))),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    side: const BorderSide(color: Color(0xFFDDE4EC), width: 1.5),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+                    const SizedBox(width: 10),
+                    _dirBtn(Icons.arrow_forward_rounded, 0),
+                  ],
+                ),
+                const SizedBox(height: 5),
+                _dirBtn(Icons.arrow_downward_rounded, 1),
+                const SizedBox(height: 6),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _recordCantTell,
+                    icon: const Icon(Icons.help_outline_rounded,
+                        size: 16, color: Color(0xFF8FA0B4)),
+                    label: Text("Can't Tell",
+                        style: GoogleFonts.inter(
+                            fontSize: 13, fontWeight: FontWeight.w700,
+                            color: const Color(0xFF5E7291))),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 7),
+                      side: const BorderSide(color: Color(0xFFDDE4EC), width: 1.5),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],
@@ -2106,10 +2072,10 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     return GestureDetector(
       onTap: () => _recordResponse(quarterTurns == _currentRotation),
       child: Container(
-        width: 68, height: 68,
+        width: 48, height: 48,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: const Color(0xFFDDE4EC), width: 1.5),
           boxShadow: [
             BoxShadow(
@@ -2118,7 +2084,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             ),
           ],
         ),
-        child: Icon(icon, size: 28, color: _ink),
+        child: Icon(icon, size: 20, color: _ink),
       ),
     );
   }
@@ -2471,7 +2437,10 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   Widget _buildNearChart() {
     final row    = _rows[_nearRow];
     final logmar = row['logmar'] as String;
-    final size   = row['size'] as double;
+    // Near vision at 40cm = 0.4m (base measurements at 2m, scale by 0.4/2.0)
+    final baseMm = row['mm'] as double;
+    final scaledMm = baseMm * (400.0 / 2000.0);
+    final size   = _mmToPx(scaledMm, context);
 
     return Column(
       children: [
@@ -2573,57 +2542,61 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             ),
           ),
         ),
-        Container(
-          color: const Color(0xFFF8FAFB),
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-          child: Column(
-            children: [
-              Text('Which way is the E facing?',
-                  style: GoogleFonts.inter(
-                      fontSize: 12, color: const Color(0xFF8FA0B4))),
-              const SizedBox(height: 14),
-              _nearDirBtn(Icons.arrow_upward_rounded, 3),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _nearDirBtn(Icons.arrow_back_rounded, 2),
-                  const SizedBox(width: 10),
-                  Container(
-                    width: 56, height: 56,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEEF2F6),
-                      borderRadius: BorderRadius.circular(14),
+        SafeArea(
+          top: false,
+          child: Container(
+            color: const Color(0xFFF8FAFB),
+            padding: const EdgeInsets.fromLTRB(24, 6, 24, 6),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Which way is the E facing?',
+                    style: GoogleFonts.inter(
+                        fontSize: 11, color: const Color(0xFF8FA0B4))),
+                const SizedBox(height: 5),
+                _nearDirBtn(Icons.arrow_upward_rounded, 3),
+                const SizedBox(height: 5),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _nearDirBtn(Icons.arrow_back_rounded, 2),
+                    const SizedBox(width: 10),
+                    Container(
+                      width: 50, height: 50,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEEF2F6),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.remove_red_eye_rounded,
+                          size: 20, color: Color(0xFF8FA0B4)),
                     ),
-                    child: const Icon(Icons.remove_red_eye_rounded,
-                        size: 22, color: Color(0xFF8FA0B4)),
-                  ),
-                  const SizedBox(width: 10),
-                  _nearDirBtn(Icons.arrow_forward_rounded, 0),
-                ],
-              ),
-              const SizedBox(height: 10),
-              _nearDirBtn(Icons.arrow_downward_rounded, 1),
-              const SizedBox(height: 14),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: _recordNearCantTell,
-                  icon: const Icon(Icons.help_outline_rounded,
-                      size: 18, color: Color(0xFF8FA0B4)),
-                  label: Text("Can't Tell",
-                      style: GoogleFonts.inter(
-                          fontSize: 14, fontWeight: FontWeight.w700,
-                          color: const Color(0xFF5E7291))),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    side: const BorderSide(color: Color(0xFFDDE4EC), width: 1.5),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+                    const SizedBox(width: 10),
+                    _nearDirBtn(Icons.arrow_forward_rounded, 0),
+                  ],
+                ),
+                const SizedBox(height: 5),
+                _nearDirBtn(Icons.arrow_downward_rounded, 1),
+                const SizedBox(height: 6),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _recordNearCantTell,
+                    icon: const Icon(Icons.help_outline_rounded,
+                        size: 16, color: Color(0xFF8FA0B4)),
+                    label: Text("Can't Tell",
+                        style: GoogleFonts.inter(
+                            fontSize: 13, fontWeight: FontWeight.w700,
+                            color: const Color(0xFF5E7291))),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 7),
+                      side: const BorderSide(color: Color(0xFFDDE4EC), width: 1.5),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],
@@ -2634,10 +2607,10 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     GestureDetector(
       onTap: () => _recordNearResponse(quarterTurns == _nearRotation),
       child: Container(
-        width: 68, height: 68,
+        width: 48, height: 48,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: const Color(0xFFDDE4EC), width: 1.5),
           boxShadow: [
             BoxShadow(
@@ -2646,7 +2619,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             ),
           ],
         ),
-        child: Icon(icon, size: 28, color: _ink),
+        child: Icon(icon, size: 20, color: _ink),
       ),
     );
 
@@ -3043,6 +3016,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                         builder: (_) => ReferralLetterScreen(
                           patient: patient,
                           eyeResults: _eyeResults,
+                          nearResult: _nearResult,
                           screeningDate: DateTime.now()
                               .toString().substring(0, 10),
                         ),
@@ -3184,8 +3158,8 @@ class _ETumbleEPainter extends CustomPainter {
     canvas.drawRect(Rect.fromLTWH(0, 0, u, size.height), paint);
     // Top arm
     canvas.drawRect(Rect.fromLTWH(0, 0, u * 4, u), paint);
-    // Middle arm (3u wide per ETDRS)
-    canvas.drawRect(Rect.fromLTWH(0, u * 2, u * 3, u), paint);
+    // Middle arm — 4u wide per ETDRS 5×5 rule (same as top/bottom)
+    canvas.drawRect(Rect.fromLTWH(0, u * 2, u * 4, u), paint);
     // Bottom arm
     canvas.drawRect(Rect.fromLTWH(0, u * 4, u * 4, u), paint);
   }

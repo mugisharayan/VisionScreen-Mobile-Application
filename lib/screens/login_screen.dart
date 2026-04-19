@@ -99,10 +99,16 @@ class _LoginScreenState extends State<LoginScreen>
         SnackBar(
           backgroundColor: AppColors.ink2,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
           content: Text(
             'Please read and agree to the Terms of Service & Privacy Policy.',
-            style: GoogleFonts.sora(fontSize: 12, color: const Color(0xFFEF4444), fontWeight: FontWeight.w600),
+            style: GoogleFonts.sora(
+              fontSize: 12,
+              color: const Color(0xFFEF4444),
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       );
@@ -110,8 +116,14 @@ class _LoginScreenState extends State<LoginScreen>
     }
     setState(() {
       _signUpNameError = _validateRequired(_signUpNameCtrl.text, 'Full name');
-      _signUpCentreError = _validateRequired(_signUpCentreCtrl.text, 'Health center');
-      _signUpDistrictError = _validateRequired(_signUpDistrictCtrl.text, 'District');
+      _signUpCentreError = _validateRequired(
+        _signUpCentreCtrl.text,
+        'Health center',
+      );
+      _signUpDistrictError = _validateRequired(
+        _signUpDistrictCtrl.text,
+        'District',
+      );
       _signUpEmailError = _validateEmail(_signUpEmailCtrl.text);
       _signUpPhoneError = _validatePhone(_signUpPhoneCtrl.text);
       _signUpPasswordError = _validatePassword(_signUpPasswordCtrl.text);
@@ -126,7 +138,9 @@ class _LoginScreenState extends State<LoginScreen>
         _signUpEmailError != null ||
         _signUpPhoneError != null ||
         _signUpPasswordError != null ||
-        _signUpConfirmPasswordError != null) return;
+        _signUpConfirmPasswordError != null) {
+      return;
+    }
     Navigator.of(context).pushReplacementNamed('/home');
   }
 
@@ -139,15 +153,29 @@ class _LoginScreenState extends State<LoginScreen>
   String? _validateEmail(String value) {
     if (value.trim().isEmpty) return 'Email address is required';
     final emailRegex = RegExp(r'^[\w.+-]+@[\w-]+\.[\w.]+$');
-    if (!emailRegex.hasMatch(value.trim())) return 'Enter a valid email address';
+    if (!emailRegex.hasMatch(value.trim()))
+      return 'Enter a valid email address';
     const allowedDomains = [
-      'gmail.com', 'yahoo.com', 'yahoo.co.uk', 'outlook.com', 'hotmail.com',
-      'live.com', 'icloud.com', 'me.com', 'protonmail.com', 'proton.me',
-      'aol.com', 'zoho.com', 'yandex.com', 'gmx.com', 'mail.com',
+      'gmail.com',
+      'yahoo.com',
+      'yahoo.co.uk',
+      'outlook.com',
+      'hotmail.com',
+      'live.com',
+      'icloud.com',
+      'me.com',
+      'protonmail.com',
+      'proton.me',
+      'aol.com',
+      'zoho.com',
+      'yandex.com',
+      'gmx.com',
+      'mail.com',
     ];
     final domain = value.trim().split('@').last.toLowerCase();
-    if (!allowedDomains.contains(domain))
+    if (!allowedDomains.contains(domain)) {
       return 'Use a standard email (e.g. Gmail, Yahoo, Outlook)';
+    }
     return null;
   }
 
@@ -163,20 +191,89 @@ class _LoginScreenState extends State<LoginScreen>
     if (digits.length != 9) return 'Enter a valid 9-digit Uganda number';
     final prefix = digits.substring(0, 3);
     const mtn = [
-      '770','771','772','773','774','775','776','777','778','779',
-      '780','781','782','783','784','785','786','787','788','789',
-      '760','761','762','763','764','790',
-      '310','311','312','313','314','315','316','317','318','319',
-      '390','391','392','393','394','395','396','397','398','399',
+      '770',
+      '771',
+      '772',
+      '773',
+      '774',
+      '775',
+      '776',
+      '777',
+      '778',
+      '779',
+      '780',
+      '781',
+      '782',
+      '783',
+      '784',
+      '785',
+      '786',
+      '787',
+      '788',
+      '789',
+      '760',
+      '761',
+      '762',
+      '763',
+      '764',
+      '790',
+      '310',
+      '311',
+      '312',
+      '313',
+      '314',
+      '315',
+      '316',
+      '317',
+      '318',
+      '319',
+      '390',
+      '391',
+      '392',
+      '393',
+      '394',
+      '395',
+      '396',
+      '397',
+      '398',
+      '399',
     ];
     const airtel = [
-      '700','701','702','703','704','705','706','707','708','709',
-      '750','751','752','753','754','755','756','757','758','759',
+      '700',
+      '701',
+      '702',
+      '703',
+      '704',
+      '705',
+      '706',
+      '707',
+      '708',
+      '709',
+      '750',
+      '751',
+      '752',
+      '753',
+      '754',
+      '755',
+      '756',
+      '757',
+      '758',
+      '759',
       '740',
-      '200','201','202','203','204','205','206','207','208','209',
+      '200',
+      '201',
+      '202',
+      '203',
+      '204',
+      '205',
+      '206',
+      '207',
+      '208',
+      '209',
     ];
-    if (!mtn.contains(prefix) && !airtel.contains(prefix))
+    if (!mtn.contains(prefix) && !airtel.contains(prefix)) {
       return 'Invalid Uganda network prefix (MTN or Airtel)';
+    }
     return null;
   }
 
@@ -199,15 +296,18 @@ class _LoginScreenState extends State<LoginScreen>
           CustomPaint(painter: _LoginMeshPainter()),
           // ── Floating glowing orbs ──
           Positioned(
-            top: -80, left: -60,
+            top: -80,
+            left: -60,
             child: _GlowOrb(color: AppColors.teal, size: 260),
           ),
           Positioned(
-            bottom: 80, right: -80,
+            bottom: 80,
+            right: -80,
             child: _GlowOrb(color: AppColors.sky, size: 200),
           ),
           Positioned(
-            top: 300, right: -40,
+            top: 300,
+            right: -40,
             child: _GlowOrb(color: AppColors.teal2, size: 140),
           ),
 
@@ -223,80 +323,109 @@ class _LoginScreenState extends State<LoginScreen>
                       controller: _scrollCtrl,
                       padding: const EdgeInsets.fromLTRB(22, 8, 22, 32),
                       child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _TabSwitcher(controller: _tabCtrl),
-                        const SizedBox(height: 22),
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 260),
-                          switchInCurve: Curves.easeOut,
-                          switchOutCurve: Curves.easeIn,
-                          transitionBuilder: (child, anim) => FadeTransition(
-                            opacity: anim,
-                            child: SlideTransition(
-                              position: Tween<Offset>(
-                                begin: const Offset(0.04, 0),
-                                end: Offset.zero,
-                              ).animate(anim),
-                              child: child,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _TabSwitcher(controller: _tabCtrl),
+                          const SizedBox(height: 22),
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 260),
+                            switchInCurve: Curves.easeOut,
+                            switchOutCurve: Curves.easeIn,
+                            transitionBuilder: (child, anim) => FadeTransition(
+                              opacity: anim,
+                              child: SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0.04, 0),
+                                  end: Offset.zero,
+                                ).animate(anim),
+                                child: child,
+                              ),
                             ),
+                            child: _tabCtrl.index == 0
+                                ? _LoginForm(
+                                    key: const ValueKey('login'),
+                                    emailCtrl: _loginEmailCtrl,
+                                    passwordCtrl: _loginPasswordCtrl,
+                                    passwordVisible: _loginPasswordVisible,
+                                    selectedRole: _selectedRole,
+                                    emailError: _loginEmailError,
+                                    passwordError: _loginPasswordError,
+                                    rememberMe: _rememberMe,
+                                    loading: _loginLoading,
+                                    onRoleChanged: (r) =>
+                                        setState(() => _selectedRole = r),
+                                    onTogglePassword: () => setState(
+                                      () => _loginPasswordVisible =
+                                          !_loginPasswordVisible,
+                                    ),
+                                    onEmailChanged: (_) =>
+                                        setState(() => _loginEmailError = null),
+                                    onPasswordChanged: (_) => setState(
+                                      () => _loginPasswordError = null,
+                                    ),
+                                    onRememberMeChanged: (v) =>
+                                        setState(() => _rememberMe = v),
+                                    onLogin: _login,
+                                  )
+                                : _SignUpForm(
+                                    key: const ValueKey('signup'),
+                                    nameCtrl: _signUpNameCtrl,
+                                    centreCtrl: _signUpCentreCtrl,
+                                    districtCtrl: _signUpDistrictCtrl,
+                                    emailCtrl: _signUpEmailCtrl,
+                                    phoneCtrl: _signUpPhoneCtrl,
+                                    passwordCtrl: _signUpPasswordCtrl,
+                                    confirmPasswordCtrl:
+                                        _signUpConfirmPasswordCtrl,
+                                    passwordVisible: _signUpPasswordVisible,
+                                    confirmPasswordVisible:
+                                        _signUpConfirmPasswordVisible,
+                                    passwordValue: _signUpPasswordValue,
+                                    nameError: _signUpNameError,
+                                    centreError: _signUpCentreError,
+                                    districtError: _signUpDistrictError,
+                                    emailError: _signUpEmailError,
+                                    phoneError: _signUpPhoneError,
+                                    passwordError: _signUpPasswordError,
+                                    confirmPasswordError:
+                                        _signUpConfirmPasswordError,
+                                    onTogglePassword: () => setState(
+                                      () => _signUpPasswordVisible =
+                                          !_signUpPasswordVisible,
+                                    ),
+                                    onToggleConfirmPassword: () => setState(
+                                      () => _signUpConfirmPasswordVisible =
+                                          !_signUpConfirmPasswordVisible,
+                                    ),
+                                    termsAgreed: _termsAgreed,
+                                    onTermsAgreedChanged: (v) =>
+                                        setState(() => _termsAgreed = v),
+                                    onNameChanged: (_) =>
+                                        setState(() => _signUpNameError = null),
+                                    onCentreChanged: (_) => setState(
+                                      () => _signUpCentreError = null,
+                                    ),
+                                    onDistrictChanged: (_) => setState(
+                                      () => _signUpDistrictError = null,
+                                    ),
+                                    onEmailChanged: (_) => setState(
+                                      () => _signUpEmailError = null,
+                                    ),
+                                    onPhoneChanged: (_) => setState(
+                                      () => _signUpPhoneError = null,
+                                    ),
+                                    onPasswordChanged: (v) => setState(() {
+                                      _signUpPasswordError = null;
+                                      _signUpPasswordValue = v;
+                                    }),
+                                    onConfirmPasswordChanged: (_) => setState(
+                                      () => _signUpConfirmPasswordError = null,
+                                    ),
+                                    onSignUp: _signUp,
+                                  ),
                           ),
-                          child: _tabCtrl.index == 0
-                              ? _LoginForm(
-                                  key: const ValueKey('login'),
-                                  emailCtrl: _loginEmailCtrl,
-                                  passwordCtrl: _loginPasswordCtrl,
-                                  passwordVisible: _loginPasswordVisible,
-                                  selectedRole: _selectedRole,
-                                  emailError: _loginEmailError,
-                                  passwordError: _loginPasswordError,
-                                  rememberMe: _rememberMe,
-                                  loading: _loginLoading,
-                                  onRoleChanged: (r) => setState(() => _selectedRole = r),
-                                  onTogglePassword: () => setState(() => _loginPasswordVisible = !_loginPasswordVisible),
-                                  onEmailChanged: (_) => setState(() => _loginEmailError = null),
-                                  onPasswordChanged: (_) => setState(() => _loginPasswordError = null),
-                                  onRememberMeChanged: (v) => setState(() => _rememberMe = v),
-                                  onLogin: _login,
-                                )
-                              : _SignUpForm(
-                                  key: const ValueKey('signup'),
-                                  nameCtrl: _signUpNameCtrl,
-                                  centreCtrl: _signUpCentreCtrl,
-                                  districtCtrl: _signUpDistrictCtrl,
-                                  emailCtrl: _signUpEmailCtrl,
-                                  phoneCtrl: _signUpPhoneCtrl,
-                                  passwordCtrl: _signUpPasswordCtrl,
-                                  confirmPasswordCtrl: _signUpConfirmPasswordCtrl,
-                                  passwordVisible: _signUpPasswordVisible,
-                                  confirmPasswordVisible: _signUpConfirmPasswordVisible,
-                                  passwordValue: _signUpPasswordValue,
-                                  nameError: _signUpNameError,
-                                  centreError: _signUpCentreError,
-                                  districtError: _signUpDistrictError,
-                                  emailError: _signUpEmailError,
-                                  phoneError: _signUpPhoneError,
-                                  passwordError: _signUpPasswordError,
-                                  confirmPasswordError: _signUpConfirmPasswordError,
-                                  onTogglePassword: () => setState(() => _signUpPasswordVisible = !_signUpPasswordVisible),
-                                  onToggleConfirmPassword: () => setState(() => _signUpConfirmPasswordVisible = !_signUpConfirmPasswordVisible),
-                                  termsAgreed: _termsAgreed,
-                                  onTermsAgreedChanged: (v) => setState(() => _termsAgreed = v),
-                                  onNameChanged: (_) => setState(() => _signUpNameError = null),
-                                  onCentreChanged: (_) => setState(() => _signUpCentreError = null),
-                                  onDistrictChanged: (_) => setState(() => _signUpDistrictError = null),
-                                  onEmailChanged: (_) => setState(() => _signUpEmailError = null),
-                                  onPhoneChanged: (_) => setState(() => _signUpPhoneError = null),
-                                  onPasswordChanged: (v) => setState(() {
-                                    _signUpPasswordError = null;
-                                    _signUpPasswordValue = v;
-                                  }),
-                                  onConfirmPasswordChanged: (_) => setState(() => _signUpConfirmPasswordError = null),
-                                  onSignUp: _signUp,
-                                ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -375,7 +504,6 @@ class _AuthHeader extends StatelessWidget {
                       ],
                     ),
                   ),
-
                 ],
               ),
             ],
@@ -425,28 +553,28 @@ class _TabSwitcher extends StatelessWidget {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: TabBar(
-        controller: controller,
-        indicator: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppColors.teal, AppColors.teal2],
-          ),
-          borderRadius: BorderRadius.circular(7),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.teal.withValues(alpha: 0.4),
-              blurRadius: 10,
-              spreadRadius: 0,
+            controller: controller,
+            indicator: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [AppColors.teal, AppColors.teal2],
+              ),
+              borderRadius: BorderRadius.circular(7),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.teal.withValues(alpha: 0.4),
+                  blurRadius: 10,
+                  spreadRadius: 0,
+                ),
+              ],
             ),
-          ],
-        ),
-        indicatorSize: TabBarIndicatorSize.tab,
-        dividerColor: Colors.transparent,
-        labelPadding: EdgeInsets.zero,
-        tabs: [
-          _buildTab('Login', controller.index == 0),
-          _buildTab('Sign Up', controller.index == 1),
-        ],
-      ),
+            indicatorSize: TabBarIndicatorSize.tab,
+            dividerColor: Colors.transparent,
+            labelPadding: EdgeInsets.zero,
+            tabs: [
+              _buildTab('Login', controller.index == 0),
+              _buildTab('Sign Up', controller.index == 1),
+            ],
+          ),
         ),
       ),
     );
@@ -459,7 +587,9 @@ class _TabSwitcher extends StatelessWidget {
         style: GoogleFonts.sora(
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          color: active ? Colors.white : AppColors.teal3.withValues(alpha: 0.45),
+          color: active
+              ? Colors.white
+              : AppColors.teal3.withValues(alpha: 0.45),
         ),
       ),
     );
@@ -559,7 +689,9 @@ class _LoginForm extends StatelessWidget {
           suffix: GestureDetector(
             onTap: onTogglePassword,
             child: Icon(
-              passwordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+              passwordVisible
+                  ? Icons.visibility_off_outlined
+                  : Icons.visibility_outlined,
               size: 18,
               color: const Color(0xFF8FA0B4),
             ),
@@ -581,12 +713,18 @@ class _LoginForm extends StatelessWidget {
                       color: rememberMe ? AppColors.teal : AppColors.ink2,
                       borderRadius: BorderRadius.circular(5),
                       border: Border.all(
-                        color: rememberMe ? AppColors.teal : AppColors.teal.withValues(alpha: 0.25),
+                        color: rememberMe
+                            ? AppColors.teal
+                            : AppColors.teal.withValues(alpha: 0.25),
                         width: 1.5,
                       ),
                     ),
                     child: rememberMe
-                        ? const Icon(Icons.check_rounded, size: 12, color: Colors.white)
+                        ? const Icon(
+                            Icons.check_rounded,
+                            size: 12,
+                            color: Colors.white,
+                          )
                         : null,
                   ),
                   const SizedBox(width: 7),
@@ -776,7 +914,9 @@ class _SignUpForm extends StatelessWidget {
           suffix: GestureDetector(
             onTap: onTogglePassword,
             child: Icon(
-              passwordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+              passwordVisible
+                  ? Icons.visibility_off_outlined
+                  : Icons.visibility_outlined,
               size: 18,
               color: const Color(0xFF8FA0B4),
             ),
@@ -797,14 +937,17 @@ class _SignUpForm extends StatelessWidget {
           obscure: !confirmPasswordVisible,
           inputAction: TextInputAction.done,
           hasError: confirmPasswordError != null,
-          isValid: confirmPasswordError == null &&
+          isValid:
+              confirmPasswordError == null &&
               confirmPasswordCtrl.text.isNotEmpty &&
               confirmPasswordCtrl.text == passwordCtrl.text,
           onChanged: onConfirmPasswordChanged,
           suffix: GestureDetector(
             onTap: onToggleConfirmPassword,
             child: Icon(
-              confirmPasswordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+              confirmPasswordVisible
+                  ? Icons.visibility_off_outlined
+                  : Icons.visibility_outlined,
               size: 18,
               color: const Color(0xFF8FA0B4),
             ),
@@ -862,11 +1005,18 @@ class _RoleButton extends StatelessWidget {
               : Colors.white.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: active ? AppColors.teal : AppColors.teal.withValues(alpha: 0.15),
+            color: active
+                ? AppColors.teal
+                : AppColors.teal.withValues(alpha: 0.15),
             width: 1.5,
           ),
           boxShadow: active
-              ? [BoxShadow(color: AppColors.teal.withValues(alpha: 0.3), blurRadius: 16)]
+              ? [
+                  BoxShadow(
+                    color: AppColors.teal.withValues(alpha: 0.3),
+                    blurRadius: 16,
+                  ),
+                ]
               : [],
         ),
         child: ClipRRect(
@@ -878,7 +1028,9 @@ class _RoleButton extends StatelessWidget {
                 Icon(
                   icon,
                   size: 20,
-                  color: active ? AppColors.teal2 : AppColors.teal3.withValues(alpha: 0.4),
+                  color: active
+                      ? AppColors.teal2
+                      : AppColors.teal3.withValues(alpha: 0.4),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -887,7 +1039,9 @@ class _RoleButton extends StatelessWidget {
                   style: GoogleFonts.sora(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: active ? AppColors.teal2 : AppColors.teal3.withValues(alpha: 0.45),
+                    color: active
+                        ? AppColors.teal2
+                        : AppColors.teal3.withValues(alpha: 0.45),
                     height: 1.3,
                   ),
                 ),
@@ -1001,58 +1155,68 @@ class _InputFieldState extends State<_InputField> {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
           child: TextField(
-        controller: widget.controller,
-        focusNode: _focus,
-        obscureText: widget.obscure,
-        keyboardType: widget.keyboardType,
-        textInputAction: widget.inputAction,
-        onChanged: widget.onChanged,
-        style: GoogleFonts.sora(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.white),
-        cursorColor: AppColors.teal2,
-        decoration: InputDecoration(
-          hintText: widget.hint,
-          hintStyle: GoogleFonts.sora(
-            fontSize: 14,
-            color: AppColors.teal3.withValues(alpha: 0.3),
+            controller: widget.controller,
+            focusNode: _focus,
+            obscureText: widget.obscure,
+            keyboardType: widget.keyboardType,
+            textInputAction: widget.inputAction,
+            onChanged: widget.onChanged,
+            style: GoogleFonts.sora(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+            cursorColor: AppColors.teal2,
+            decoration: InputDecoration(
+              hintText: widget.hint,
+              hintStyle: GoogleFonts.sora(
+                fontSize: 14,
+                color: AppColors.teal3.withValues(alpha: 0.3),
+              ),
+              prefixIcon: widget.prefix != null
+                  ? Padding(
+                      padding: const EdgeInsets.only(left: 12, right: 8),
+                      child: Icon(
+                        widget.prefix,
+                        size: 16,
+                        color: _focused
+                            ? AppColors.teal2
+                            : AppColors.teal3.withValues(alpha: 0.4),
+                      ),
+                    )
+                  : null,
+              prefixIconConstraints: const BoxConstraints(
+                minWidth: 0,
+                minHeight: 0,
+              ),
+              suffixIcon: widget.suffix != null
+                  ? Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: widget.suffix,
+                    )
+                  : widget.isValid
+                  ? const Padding(
+                      padding: EdgeInsets.only(right: 12),
+                      child: Icon(
+                        Icons.check_circle_rounded,
+                        size: 18,
+                        color: Color(0xFF22C55E),
+                      ),
+                    )
+                  : null,
+              suffixIconConstraints: const BoxConstraints(
+                minWidth: 0,
+                minHeight: 0,
+              ),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: widget.prefix != null ? 4 : 14,
+                vertical: 10,
+              ),
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+            ),
           ),
-          prefixIcon: widget.prefix != null
-              ? Padding(
-                  padding: const EdgeInsets.only(left: 12, right: 8),
-                  child: Icon(
-                    widget.prefix,
-                    size: 16,
-                    color: _focused
-                        ? AppColors.teal2
-                        : AppColors.teal3.withValues(alpha: 0.4),
-                  ),
-                )
-              : null,
-          prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-          suffixIcon: widget.suffix != null
-              ? Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: widget.suffix,
-                )
-              : widget.isValid
-              ? const Padding(
-                  padding: EdgeInsets.only(right: 12),
-                  child: Icon(
-                    Icons.check_circle_rounded,
-                    size: 18,
-                    color: Color(0xFF22C55E),
-                  ),
-                )
-              : null,
-          suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-          contentPadding: EdgeInsets.symmetric(
-            horizontal: widget.prefix != null ? 4 : 14,
-            vertical: 10,
-          ),
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-        ),
-      ),
         ),
       ),
     );
@@ -1084,19 +1248,86 @@ class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
 
   // MTN: 077X, 078X, 076X(0-4), 079X(0), 031X, 039X
   static const _mtn = [
-    '770','771','772','773','774','775','776','777','778','779',
-    '780','781','782','783','784','785','786','787','788','789',
-    '760','761','762','763','764',
+    '770',
+    '771',
+    '772',
+    '773',
+    '774',
+    '775',
+    '776',
+    '777',
+    '778',
+    '779',
+    '780',
+    '781',
+    '782',
+    '783',
+    '784',
+    '785',
+    '786',
+    '787',
+    '788',
+    '789',
+    '760',
+    '761',
+    '762',
+    '763',
+    '764',
     '790',
-    '310','311','312','313','314','315','316','317','318','319',
-    '390','391','392','393','394','395','396','397','398','399',
+    '310',
+    '311',
+    '312',
+    '313',
+    '314',
+    '315',
+    '316',
+    '317',
+    '318',
+    '319',
+    '390',
+    '391',
+    '392',
+    '393',
+    '394',
+    '395',
+    '396',
+    '397',
+    '398',
+    '399',
   ];
   // Airtel: 070X, 075X, 074X(0), 020X
   static const _airtel = [
-    '700','701','702','703','704','705','706','707','708','709',
-    '750','751','752','753','754','755','756','757','758','759',
+    '700',
+    '701',
+    '702',
+    '703',
+    '704',
+    '705',
+    '706',
+    '707',
+    '708',
+    '709',
+    '750',
+    '751',
+    '752',
+    '753',
+    '754',
+    '755',
+    '756',
+    '757',
+    '758',
+    '759',
     '740',
-    '200','201','202','203','204','205','206','207','208','209',
+    '200',
+    '201',
+    '202',
+    '203',
+    '204',
+    '205',
+    '206',
+    '207',
+    '208',
+    '209',
   ];
 
   @override
@@ -1137,8 +1368,8 @@ class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
     final borderColor = widget.hasError
         ? const Color(0xFFEF4444)
         : _focused
-            ? AppColors.teal
-            : AppColors.teal.withValues(alpha: 0.2);
+        ? AppColors.teal
+        : AppColors.teal.withValues(alpha: 0.2);
     final glowColor = widget.hasError
         ? const Color(0xFFEF4444).withValues(alpha: 0.15)
         : AppColors.teal.withValues(alpha: 0.18);
@@ -1163,115 +1394,120 @@ class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
               child: Row(
-            children: [
-              // ── +256 badge ──
-              Container(
-                margin: const EdgeInsets.only(left: 10),
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-                decoration: BoxDecoration(
-                  color: _focused
-                      ? AppColors.teal.withValues(alpha: 0.15)
-                      : AppColors.ink3,
-                  borderRadius: BorderRadius.circular(7),
-                  border: Border.all(
-                    color: _focused
-                        ? AppColors.teal.withValues(alpha: 0.5)
-                        : AppColors.teal.withValues(alpha: 0.2),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '🇺🇬',
-                      style: const TextStyle(fontSize: 14),
+                children: [
+                  // ── +256 badge ──
+                  Container(
+                    margin: const EdgeInsets.only(left: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 6,
                     ),
-                    const SizedBox(width: 5),
-                    Text(
-                      '+256',
-                      style: GoogleFonts.sora(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        color: _focused ? AppColors.teal2 : AppColors.teal3.withValues(alpha: 0.7),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              // ── Divider ──
-              Container(
-                width: 1,
-                height: 22,
-                color: AppColors.teal.withValues(alpha: 0.2),
-              ),
-              // ── Input ──
-              Expanded(
-                child: TextField(
-                  controller: widget.controller,
-                  focusNode: _focus,
-                  keyboardType: TextInputType.phone,
-                  textInputAction: TextInputAction.next,
-                  onChanged: _onChanged,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(9),
-                    _UgandaPhoneFormatter(),
-                  ],
-                  style: GoogleFonts.sora(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                    letterSpacing: 1.4,
-                  ),
-                  cursorColor: AppColors.teal2,
-                  decoration: InputDecoration(
-                    hintText: '7XX XXX XXX',
-                    hintStyle: GoogleFonts.sora(
-                      fontSize: 14,
-                      color: AppColors.teal3.withValues(alpha: 0.3),
-                      letterSpacing: 0.5,
-                    ),
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 10,
-                    ),
-                  ),
-                ),
-              ),
-              // ── Network badge ──
-              if (_network.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(right: 10),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: _networkColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(20),
+                      color: _focused
+                          ? AppColors.teal.withValues(alpha: 0.15)
+                          : AppColors.ink3,
+                      borderRadius: BorderRadius.circular(7),
                       border: Border.all(
-                        color: _networkColor.withValues(alpha: 0.5),
+                        color: _focused
+                            ? AppColors.teal.withValues(alpha: 0.5)
+                            : AppColors.teal.withValues(alpha: 0.2),
                         width: 1,
                       ),
                     ),
-                    child: Text(
-                      _network,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('🇺🇬', style: const TextStyle(fontSize: 14)),
+                        const SizedBox(width: 5),
+                        Text(
+                          '+256',
+                          style: GoogleFonts.sora(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: _focused
+                                ? AppColors.teal2
+                                : AppColors.teal3.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // ── Divider ──
+                  Container(
+                    width: 1,
+                    height: 22,
+                    color: AppColors.teal.withValues(alpha: 0.2),
+                  ),
+                  // ── Input ──
+                  Expanded(
+                    child: TextField(
+                      controller: widget.controller,
+                      focusNode: _focus,
+                      keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.next,
+                      onChanged: _onChanged,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(9),
+                        _UgandaPhoneFormatter(),
+                      ],
                       style: GoogleFonts.sora(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: _network == 'MTN'
-                            ? const Color(0xFF92700A)
-                            : const Color(0xFFB0001F),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                        letterSpacing: 1.4,
+                      ),
+                      cursorColor: AppColors.teal2,
+                      decoration: InputDecoration(
+                        hintText: '7XX XXX XXX',
+                        hintStyle: GoogleFonts.sora(
+                          fontSize: 14,
+                          color: AppColors.teal3.withValues(alpha: 0.3),
+                          letterSpacing: 0.5,
+                        ),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 10,
+                        ),
                       ),
                     ),
                   ),
-                ),
-            ],
-          ),
+                  // ── Network badge ──
+                  if (_network.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _networkColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: _networkColor.withValues(alpha: 0.5),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          _network,
+                          style: GoogleFonts.sora(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: _network == 'MTN'
+                                ? const Color(0xFF92700A)
+                                : const Color(0xFFB0001F),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),
@@ -1479,7 +1715,9 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) { if (!widget.loading) setState(() => _pressed = true); },
+      onTapDown: (_) {
+        if (!widget.loading) setState(() => _pressed = true);
+      },
       onTapUp: (_) {
         if (widget.loading) return;
         setState(() => _pressed = false);
@@ -1578,8 +1816,14 @@ class _VersionFooter extends StatelessWidget {
               letterSpacing: -0.3,
             ),
             children: const [
-              TextSpan(text: 'Vision', style: TextStyle(color: Colors.white)),
-              TextSpan(text: 'Screen', style: TextStyle(color: AppColors.teal3)),
+              TextSpan(
+                text: 'Vision',
+                style: TextStyle(color: Colors.white),
+              ),
+              TextSpan(
+                text: 'Screen',
+                style: TextStyle(color: AppColors.teal3),
+              ),
             ],
           ),
         ),
@@ -1610,17 +1854,50 @@ class _VersionFooter extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.local_hospital_outlined, size: 11, color: AppColors.teal2.withValues(alpha: 0.7)),
+            Icon(
+              Icons.local_hospital_outlined,
+              size: 11,
+              color: AppColors.teal2.withValues(alpha: 0.7),
+            ),
             const SizedBox(width: 4),
-            Text('Uganda MOH', style: GoogleFonts.sora(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.teal3.withValues(alpha: 0.55))),
+            Text(
+              'Uganda MOH',
+              style: GoogleFonts.sora(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: AppColors.teal3.withValues(alpha: 0.55),
+              ),
+            ),
             _dot(),
-            Icon(Icons.verified_outlined, size: 11, color: AppColors.teal2.withValues(alpha: 0.7)),
+            Icon(
+              Icons.verified_outlined,
+              size: 11,
+              color: AppColors.teal2.withValues(alpha: 0.7),
+            ),
             const SizedBox(width: 4),
-            Text('WHO Compliant', style: GoogleFonts.sora(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.teal3.withValues(alpha: 0.55))),
+            Text(
+              'WHO Compliant',
+              style: GoogleFonts.sora(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: AppColors.teal3.withValues(alpha: 0.55),
+              ),
+            ),
             _dot(),
-            Icon(Icons.lock_outline_rounded, size: 11, color: AppColors.teal2.withValues(alpha: 0.7)),
+            Icon(
+              Icons.lock_outline_rounded,
+              size: 11,
+              color: AppColors.teal2.withValues(alpha: 0.7),
+            ),
             const SizedBox(width: 4),
-            Text('AES-256', style: GoogleFonts.sora(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.teal3.withValues(alpha: 0.55))),
+            Text(
+              'AES-256',
+              style: GoogleFonts.sora(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: AppColors.teal3.withValues(alpha: 0.55),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 6),
@@ -1641,16 +1918,16 @@ class _VersionFooter extends StatelessWidget {
   }
 
   Widget _dot() => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6),
-        child: Container(
-          width: 3,
-          height: 3,
-          decoration: BoxDecoration(
-            color: AppColors.teal.withValues(alpha: 0.3),
-            shape: BoxShape.circle,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 6),
+    child: Container(
+      width: 3,
+      height: 3,
+      decoration: BoxDecoration(
+        color: AppColors.teal.withValues(alpha: 0.3),
+        shape: BoxShape.circle,
+      ),
+    ),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1701,10 +1978,7 @@ class _OfflineNote extends StatelessWidget {
 // Terms agreement checkbox row
 // ─────────────────────────────────────────────────────────────
 class _TermsAgreementRow extends StatelessWidget {
-  const _TermsAgreementRow({
-    required this.agreed,
-    required this.onChanged,
-  });
+  const _TermsAgreementRow({required this.agreed, required this.onChanged});
   final bool agreed;
   final ValueChanged<bool> onChanged;
 
@@ -1740,15 +2014,26 @@ class _TermsAgreementRow extends StatelessWidget {
                 color: agreed ? AppColors.teal : Colors.transparent,
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
-                  color: agreed ? AppColors.teal : AppColors.teal.withValues(alpha: 0.35),
+                  color: agreed
+                      ? AppColors.teal
+                      : AppColors.teal.withValues(alpha: 0.35),
                   width: 1.5,
                 ),
                 boxShadow: agreed
-                    ? [BoxShadow(color: AppColors.teal.withValues(alpha: 0.35), blurRadius: 8)]
+                    ? [
+                        BoxShadow(
+                          color: AppColors.teal.withValues(alpha: 0.35),
+                          blurRadius: 8,
+                        ),
+                      ]
                     : [],
               ),
               child: agreed
-                  ? const Icon(Icons.check_rounded, size: 13, color: Colors.white)
+                  ? const Icon(
+                      Icons.check_rounded,
+                      size: 13,
+                      color: Colors.white,
+                    )
                   : null,
             ),
             const SizedBox(width: 12),
@@ -2149,7 +2434,6 @@ class _LegalSectionWidget extends StatelessWidget {
   }
 }
 
-
 // ─────────────────────────────────────────────────────────────
 // Glass card — frosted panel wrapping the form
 // ─────────────────────────────────────────────────────────────
@@ -2206,10 +2490,7 @@ class _GlowOrb extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: RadialGradient(
-          colors: [
-            color.withValues(alpha: 0.28),
-            color.withValues(alpha: 0.0),
-          ],
+          colors: [color.withValues(alpha: 0.28), color.withValues(alpha: 0.0)],
         ),
       ),
     );

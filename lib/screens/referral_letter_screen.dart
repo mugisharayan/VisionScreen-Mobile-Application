@@ -28,12 +28,14 @@ const _facilities = [
 class ReferralLetterScreen extends StatefulWidget {
   final Map<String, String> patient;
   final List<Map<String, dynamic>> eyeResults;
+  final Map<String, dynamic>? nearResult;
   final String screeningDate;
 
   const ReferralLetterScreen({
     super.key,
     required this.patient,
     required this.eyeResults,
+    this.nearResult,
     required this.screeningDate,
   });
 
@@ -128,17 +130,29 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
     buf.writeln('');
     buf.writeln('VISUAL ACUITY RESULTS (Tumbling E, LogMAR Scale)');
     buf.writeln('-' * 50);
+    buf.writeln('Distance Vision (Monocular):');
     for (final r in widget.eyeResults) {
       final eye    = r['eye'] as String;
       final logmar = r['logmar'] as String;
-      final eyeFull = eye == 'OD' ? 'Right Eye (OD)'
-          : eye == 'OS' ? 'Left Eye (OS)' : 'Both Eyes (OU)';
+      final eyeFull = eye == 'OD' ? 'Right Eye (OD)' : 'Left Eye (OS)';
       buf.writeln('$eyeFull:');
       buf.writeln('  Snellen : ${_toSnellen(logmar)}');
       buf.writeln('  LogMAR  : $logmar');
       buf.writeln('  Class   : ${_vaClass(logmar)}');
       if ((r['cantTell'] as int) > 0) {
         buf.writeln('  Note    : ${r['cantTell']} "Can\'t Tell" responses recorded');
+      }
+      buf.writeln('');
+    }
+    if (widget.nearResult != null) {
+      final logmar = widget.nearResult!['logmar'] as String;
+      buf.writeln('Near Vision (Binocular — 40cm):');
+      buf.writeln('Both Eyes (OU):');
+      buf.writeln('  Snellen : ${_toSnellen(logmar)}');
+      buf.writeln('  LogMAR  : $logmar');
+      buf.writeln('  Class   : ${_vaClass(logmar)}');
+      if ((widget.nearResult!['cantTell'] as int) > 0) {
+        buf.writeln('  Note    : ${widget.nearResult!['cantTell']} "Can\'t Tell" responses recorded');
       }
       buf.writeln('');
     }
@@ -305,7 +319,12 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
               style: GoogleFonts.plusJakartaSans(
                   fontSize: 14, fontWeight: FontWeight.w800,
                   color: const Color(0xFF1A2A3D))),
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
+          Text('Distance Vision',
+              style: GoogleFonts.inter(
+                  fontSize: 11, fontWeight: FontWeight.w600,
+                  color: const Color(0xFF8FA0B4))),
+          const SizedBox(height: 8),
           ...widget.eyeResults.map((r) {
             final eye    = r['eye'] as String;
             final logmar = r['logmar'] as String;
@@ -326,8 +345,7 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                       style: GoogleFonts.spaceGrotesk(
                           fontSize: 13, fontWeight: FontWeight.w800, color: col)),
                   const SizedBox(width: 10),
-                  Text(eye == 'OD' ? 'Right Eye'
-                      : eye == 'OS' ? 'Left Eye' : 'Both Eyes',
+                  Text(eye == 'OD' ? 'Right Eye' : 'Left Eye',
                       style: GoogleFonts.inter(
                           fontSize: 12, color: const Color(0xFF8FA0B4))),
                   const Spacer(),
@@ -342,6 +360,47 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
               ),
             );
           }),
+          if (widget.nearResult != null) ...[
+            const SizedBox(height: 8),
+            Text('Near Vision (40cm)',
+                style: GoogleFonts.inter(
+                    fontSize: 11, fontWeight: FontWeight.w600,
+                    color: const Color(0xFF8FA0B4))),
+            const SizedBox(height: 8),
+            Builder(builder: (_) {
+              final logmar = widget.nearResult!['logmar'] as String;
+              final v = double.tryParse(logmar);
+              final col = v == null ? _red : v <= 0.3 ? _green : v <= 0.5 ? _amber : _red;
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
+                ),
+                child: Row(
+                  children: [
+                    Text('OU',
+                        style: GoogleFonts.spaceGrotesk(
+                            fontSize: 13, fontWeight: FontWeight.w800, color: col)),
+                    const SizedBox(width: 10),
+                    Text('Both Eyes — Near',
+                        style: GoogleFonts.inter(
+                            fontSize: 12, color: const Color(0xFF8FA0B4))),
+                    const Spacer(),
+                    Text(_toSnellen(logmar),
+                        style: GoogleFonts.spaceGrotesk(
+                            fontSize: 14, fontWeight: FontWeight.w800, color: col)),
+                    const SizedBox(width: 6),
+                    Text('(LogMAR $logmar)',
+                        style: GoogleFonts.inter(
+                            fontSize: 10, color: const Color(0xFF8FA0B4))),
+                  ],
+                ),
+              );
+            }),
+          ],
           const SizedBox(height: 24),
           // CHW details
           Text('CHW Details',
@@ -507,15 +566,18 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                         fontSize: 10, fontWeight: FontWeight.w700,
                         color: const Color(0xFF8FA0B4),
                         letterSpacing: 1.0)),
-                const SizedBox(height: 10),
+                const SizedBox(height: 6),
+                Text('Distance Vision (Monocular)',
+                    style: GoogleFonts.inter(
+                        fontSize: 10, color: const Color(0xFF8FA0B4))),
+                const SizedBox(height: 8),
                 ...widget.eyeResults.map((r) {
                   final eye    = r['eye'] as String;
                   final logmar = r['logmar'] as String;
                   final v      = double.tryParse(logmar);
                   final col    = v == null ? _red
                       : v <= 0.3 ? _green : v <= 0.5 ? _amber : _red;
-                  final eyeFull = eye == 'OD' ? 'Right Eye (OD)'
-                      : eye == 'OS' ? 'Left Eye (OS)' : 'Both Eyes (OU)';
+                  final eyeFull = eye == 'OD' ? 'Right Eye (OD)' : 'Left Eye (OS)';
                   return Container(
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(12),
@@ -557,6 +619,58 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                     ),
                   );
                 }),
+                if (widget.nearResult != null) ...[
+                  const SizedBox(height: 8),
+                  Text('Near Vision (Binocular — 40cm)',
+                      style: GoogleFonts.inter(
+                          fontSize: 10, color: const Color(0xFF8FA0B4))),
+                  const SizedBox(height: 8),
+                  Builder(builder: (_) {
+                    final logmar = widget.nearResult!['logmar'] as String;
+                    final v = double.tryParse(logmar);
+                    final col = v == null ? _red : v <= 0.3 ? _green : v <= 0.5 ? _amber : _red;
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: col.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: col.withValues(alpha: 0.2)),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Both Eyes (OU)',
+                                    style: GoogleFonts.inter(
+                                        fontSize: 11, fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF1A2A3D))),
+                                Text(_vaClass(logmar),
+                                    style: GoogleFonts.inter(
+                                        fontSize: 10, color: const Color(0xFF8FA0B4))),
+                              ],
+                            ),
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(_toSnellen(logmar),
+                                  style: GoogleFonts.spaceGrotesk(
+                                      fontSize: 16, fontWeight: FontWeight.w800,
+                                      color: col)),
+                              Text('LogMAR $logmar',
+                                  style: GoogleFonts.inter(
+                                      fontSize: 10,
+                                      color: col.withValues(alpha: 0.7))),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
                 const SizedBox(height: 16),
                 _divider(),
                 const SizedBox(height: 16),
