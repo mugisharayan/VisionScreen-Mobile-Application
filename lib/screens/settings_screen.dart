@@ -70,8 +70,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _lastLoginTime = p.getString('last_login_time') ?? '';
       _lastLoginRole = p.getString('last_login_role') ?? '';
       _brightnessLock = p.getBool('brightness_lock') ?? true;
+      _batterySaver = p.getBool('battery_saver') ?? false;
       _eyeOrder = p.getString('eye_order') ?? 'Right → Left';
     });
+  }
+
+  Future<void> _setBatterySaver(bool value) async {
+    setState(() => _batterySaver = value);
+    final p = await SharedPreferences.getInstance();
+    await p.setBool('battery_saver', value);
+    try {
+      if (value) {
+        await ScreenBrightness().setScreenBrightness(0.3);
+      } else {
+        await ScreenBrightness().resetScreenBrightness();
+      }
+    } catch (_) {}
   }
 
   Future<void> _setBrightnessLock(bool value) async {
@@ -186,7 +200,7 @@ String _language = 'English Only';
                         label: 'Battery Saver Mode',
                         sub: 'Reduce brightness during test',
                         value: _batterySaver,
-                        onChanged: (v) => setState(() => _batterySaver = v),
+                        onChanged: (v) => _setBatterySaver(v),
                         isLast: true,
                       ),
                     ],
