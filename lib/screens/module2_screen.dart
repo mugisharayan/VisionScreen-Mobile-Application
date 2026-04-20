@@ -19,8 +19,8 @@ class _Module2ScreenState extends State<Module2Screen> {
       'color': Color(0xFF3B82F6),
       'image': 'https://images.unsplash.com/photo-1581595220892-b0739db3ba8c?w=600&q=80',
       'body':
-          'The testing distance is one of the most critical factors in a vision screening. The Tumbling E chart is designed to be read at exactly 3 metres (approximately 10 feet).\n\nIf the patient stands too close, they will read smaller letters more easily — giving a falsely good result. If they stand too far, they may fail even with normal vision.\n\nAlways measure the distance before every test.',
-      'tip': 'Use a measuring tape or mark a fixed spot on the floor at 3 metres from the screen.',
+          'The testing distance is one of the most critical factors in a vision screening. The Tumbling E chart is designed to be read at exactly 2 metres (approximately 6.5 feet).\n\nIf the patient stands too close, they will read smaller letters more easily — giving a falsely good result. If they stand too far, they may fail even with normal vision.\n\nAlways measure the distance before every test.',
+      'tip': 'Use a measuring tape or mark a fixed spot on the floor at 2 metres from the screen.',
     },
     {
       'title': 'Screen Calibration',
@@ -37,7 +37,7 @@ class _Module2ScreenState extends State<Module2Screen> {
       'color': Color(0xFF3B82F6),
       'image': 'https://images.unsplash.com/photo-1559757175-5700dde675bc?w=600&q=80',
       'body':
-          'Correct patient positioning:\n\n📏 Stand exactly 3 metres from the screen\n👁️ Eyes level with the middle of the chart\n🚫 No glasses or contact lenses (unaided test)\n💡 Room must be well lit — no glare on screen\n🙈 Cover one eye completely with a card\n\nFor children, have them stand next to a parent. For elderly patients, ensure they are comfortable and not straining their neck.',
+          'Correct patient positioning:\n\n📏 Stand exactly 2 metres from the screen\n👁️ Eyes level with the middle of the chart\n🚫 No glasses or contact lenses (unaided test)\n💡 Room must be well lit — no glare on screen\n🙈 Cover one eye completely with a card\n\nFor children, have them stand next to a parent. For elderly patients, ensure they are comfortable and not straining their neck.',
       'tip': 'Ask the patient to remove glasses BEFORE positioning — not after. This avoids confusion.',
     },
     {
@@ -46,7 +46,7 @@ class _Module2ScreenState extends State<Module2Screen> {
       'color': Color(0xFF3B82F6),
       'image': 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=600&q=80',
       'body':
-          'VisionScreen uses the device camera and proximity sensor to estimate the patient\'s distance in real time.\n\nThe distance meter shows:\n🔴 Red — Too close (move patient back)\n🟡 Amber — Getting close (fine-tune position)\n🟢 Green — Correct distance (3 metres)\n\nOnly proceed to the test when the meter shows GREEN. Tap "Distance OK" to confirm and begin the Tumbling E test.\n\nIf the sensor is unavailable, use a physical measuring tape.',
+          'VisionScreen uses the device camera and proximity sensor to estimate the patient\'s distance in real time.\n\nThe distance meter shows:\n🔴 Red — Too close (move patient back)\n🟡 Amber — Getting close (fine-tune position)\n🟢 Green — Correct distance (2 metres)\n\nOnly proceed to the test when the meter shows GREEN. Tap "Distance OK" to confirm and begin the Tumbling E test.\n\nIf the sensor is unavailable, use a physical measuring tape.',
       'tip': 'On bright outdoor days, the camera may struggle. Move to a shaded area for best sensor accuracy.',
     },
   ];
