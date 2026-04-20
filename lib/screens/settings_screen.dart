@@ -36,35 +36,35 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
 
-  // ── Editable fields ──────────────────────────────────────
-  final _nameCtrl   = TextEditingController(text: 'Nakato Mary');
-  final _centerCtrl = TextEditingController(text: 'Nakawa Health Centre III');
-  final _chwIdCtrl  = TextEditingController(text: 'CHW-UG-00412');
+  // ── Profile (read-only, from registration) ──────────────
+  String _chwName = '';
+  String _chwCenter = '';
+  String _chwDistrict = '';
+  String _chwEmail = '';
+  String _chwPhone = '';
+  String _chwId = '';
+  String _lastLoginTime = '';
+  String _lastLoginRole = '';
 
   @override
   void initState() {
     super.initState();
     _loadProfile();
-    _nameCtrl.addListener(_saveProfile);
-    _centerCtrl.addListener(_saveProfile);
-    _chwIdCtrl.addListener(_saveProfile);
   }
 
   Future<void> _loadProfile() async {
     final p = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() {
-      _nameCtrl.text   = p.getString('chw_name')   ?? 'Nakato Mary';
-      _centerCtrl.text = p.getString('chw_center')  ?? 'Nakawa Health Centre III';
-      _chwIdCtrl.text  = p.getString('chw_id')      ?? 'CHW-UG-00412';
+      _chwName     = p.getString('chw_name')     ?? '';
+      _chwCenter   = p.getString('chw_center')   ?? '';
+      _chwDistrict = p.getString('chw_district') ?? '';
+      _chwEmail    = p.getString('chw_email')    ?? '';
+      _chwPhone    = p.getString('chw_phone')    ?? '';
+      _chwId       = p.getString('chw_id')       ?? '';
+      _lastLoginTime = p.getString('last_login_time') ?? '';
+      _lastLoginRole = p.getString('last_login_role') ?? '';
     });
-  }
-
-  Future<void> _saveProfile() async {
-    final p = await SharedPreferences.getInstance();
-    await p.setString('chw_name',   _nameCtrl.text.trim());
-    await p.setString('chw_center', _centerCtrl.text.trim());
-    await p.setString('chw_id',     _chwIdCtrl.text.trim());
   }
 
   // ── Toggles ──────────────────────────────────────────────
@@ -94,9 +94,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   void dispose() {
-    _nameCtrl.dispose();
-    _centerCtrl.dispose();
-    _chwIdCtrl.dispose();
     super.dispose();
   }
 
@@ -132,6 +129,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _buildSection(
                     title: 'Profile Information',
                     children: [_buildProfileFields()],
+                  ),
+                  const SizedBox(height: 11),
+                  _buildSection(
+                    title: 'Account & Security',
+                    children: [
+                      _buildArrowRow(
+                        emoji: '🔑',
+                        emojiBg: const Color(0xFFEDE9FE),
+                        label: 'Change Password',
+                        onTap: () => _showChangePasswordSheet(),
+                      ),
+                      _buildDivider(),
+                      _buildLastLoginRow(),
+                    ],
                   ),
                   const SizedBox(height: 11),
                   _buildSection(
@@ -303,28 +314,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
                 child: Center(
-                  child: Text('NM',
-                      style: GoogleFonts.sora(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white)),
+                  child: Text(
+                    _chwName.trim().isNotEmpty
+                        ? _chwName.trim().split(' ').map((w) => w[0]).take(2).join().toUpperCase()
+                        : 'VS',
+                    style: GoogleFonts.sora(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white)),
                 ),
               ),
               const SizedBox(width: 11),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Nakato Mary',
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _chwName.isNotEmpty ? _chwName : 'VisionScreen User',
                       style: GoogleFonts.sora(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
                           color: Colors.white)),
-                  const SizedBox(height: 2),
-                  Text('CHW · Nakawa Health Centre III',
+                    const SizedBox(height: 2),
+                    Text(
+                      _chwCenter.isNotEmpty ? '$_chwCenter · $_chwDistrict' : 'Community Health Worker',
                       style: GoogleFonts.sora(
                           fontSize: 11,
-                          color: _C.teal3.withOpacity(0.55))),
-                ],
+                          color: _C.teal3.withOpacity(0.55)),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -374,98 +394,103 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Padding(
       padding: const EdgeInsets.all(14),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _fieldLabel('Health Worker Name'),
-          _textField(_nameCtrl),
-          _fieldLabel('Health Center'),
-          _textField(_centerCtrl),
-          _fieldLabel('CHW ID / Badge Number'),
-          _buildChwIdField(),
+          _profileRow(Icons.person_outline_rounded, 'Full Name', _chwName),
+          _profileDivider(),
+          _profileRow(Icons.local_hospital_outlined, 'Health Center', _chwCenter),
+          _profileDivider(),
+          _profileRow(Icons.location_on_outlined, 'District', _chwDistrict),
+          _profileDivider(),
+          _profileRow(Icons.mail_outline_rounded, 'Email', _chwEmail),
+          _profileDivider(),
+          _profileRow(Icons.phone_outlined, 'Phone',
+              _chwPhone.isNotEmpty ? '+256 $_chwPhone' : ''),
+          _profileDivider(),
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: _C.teal.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: _C.teal.withOpacity(0.2)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 32, height: 32,
+                  decoration: BoxDecoration(
+                    color: _C.teal.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: const Icon(Icons.badge_outlined, size: 16, color: _C.teal),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('CHW Badge ID', style: GoogleFonts.sora(
+                          fontSize: 10, fontWeight: FontWeight.w700,
+                          color: _C.g400, letterSpacing: 0.5)),
+                      const SizedBox(height: 2),
+                      Text(_chwId.isNotEmpty ? _chwId : '—',
+                          style: GoogleFonts.sora(
+                              fontSize: 14, fontWeight: FontWeight.w800,
+                              color: _C.teal, letterSpacing: 1.2)),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: _C.teal.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(color: _C.teal.withOpacity(0.25)),
+                  ),
+                  child: Text('Prints on referrals', style: GoogleFonts.sora(
+                      fontSize: 9, fontWeight: FontWeight.w700, color: _C.teal)),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildChwIdField() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 0),
-      child: TextField(
-        controller: _chwIdCtrl,
-        style: GoogleFonts.sora(fontSize: 13, color: _C.g800),
-        decoration: InputDecoration(
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: _C.g200, width: 1.5),
+  Widget _profileRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 9),
+      child: Row(
+        children: [
+          Container(
+            width: 32, height: 32,
+            decoration: BoxDecoration(
+                color: _C.g100, borderRadius: BorderRadius.circular(9)),
+            child: Icon(icon, size: 15, color: _C.g500),
           ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: _C.teal, width: 1.5),
-          ),
-          filled: true,
-          fillColor: Colors.white,
-          suffixIcon: Padding(
-            padding: const EdgeInsets.only(right: 10),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: _C.teal.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(99),
-                    border: Border.all(
-                        color: _C.teal.withOpacity(0.25)),
-                  ),
-                  child: Text('Prints on referrals',
-                      style: GoogleFonts.sora(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          color: _C.teal)),
-                ),
+                Text(label, style: GoogleFonts.sora(
+                    fontSize: 10, fontWeight: FontWeight.w700,
+                    color: _C.g400, letterSpacing: 0.5)),
+                const SizedBox(height: 1),
+                Text(value.isNotEmpty ? value : '—',
+                    style: GoogleFonts.sora(
+                        fontSize: 13, fontWeight: FontWeight.w600, color: _C.g800)),
               ],
             ),
           ),
-        ),
+          const Icon(Icons.lock_outline_rounded, size: 13, color: _C.g300),
+        ],
       ),
     );
   }
-  Widget _fieldLabel(String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 5),
-        child: Text(text,
-            style: GoogleFonts.sora(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: _C.g500,
-                letterSpacing: 0.8)),
-      );
 
-  Widget _textField(TextEditingController ctrl, {bool isLast = false}) {
-    return Container(
-      margin: EdgeInsets.only(bottom: isLast ? 0 : 13),
-      child: TextField(
-        controller: ctrl,
-        style: GoogleFonts.sora(fontSize: 13, color: _C.g800),
-        decoration: InputDecoration(
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: _C.g200, width: 1.5),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: _C.teal, width: 1.5),
-          ),
-          filled: true,
-          fillColor: Colors.white,
-        ),
-      ),
-    );
-  }
+  Widget _profileDivider() => const Divider(height: 1, color: _C.g100);
 
   // ── DEFAULT AGE GROUP ─────────────────────────────────────
   Widget _buildAgeGroupSelector() {
@@ -994,6 +1019,266 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 )),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLastLoginRow() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 32, height: 32,
+            decoration: BoxDecoration(
+              color: _C.gbg,
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: const Icon(Icons.access_time_rounded, size: 16, color: _C.green),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Last Login',
+                    style: GoogleFonts.sora(
+                        fontSize: 13, fontWeight: FontWeight.w600, color: _C.g800)),
+                const SizedBox(height: 2),
+                Text(
+                  _lastLoginTime.isNotEmpty ? _lastLoginTime : 'Not recorded yet',
+                  style: GoogleFonts.sora(fontSize: 11, color: _C.g400),
+                ),
+              ],
+            ),
+          ),
+          if (_lastLoginRole.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: _C.teal.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(99),
+                border: Border.all(color: _C.teal.withOpacity(0.25)),
+              ),
+              child: Text(
+                _lastLoginRole == 'Administrator' ? 'Admin' : 'CHW',
+                style: GoogleFonts.sora(
+                    fontSize: 10, fontWeight: FontWeight.w700, color: _C.teal),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showChangePasswordSheet() {
+    final currentCtrl = TextEditingController();
+    final newCtrl = TextEditingController();
+    final confirmCtrl = TextEditingController();
+    bool currentVisible = false;
+    bool newVisible = false;
+    bool confirmVisible = false;
+    bool loading = false;
+    String? currentError;
+    String? newError;
+    String? confirmError;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setSheet) {
+          return Padding(
+            padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius:
+                    BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Handle
+                  Center(
+                    child: Container(
+                      width: 40, height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                          color: _C.g200,
+                          borderRadius: BorderRadius.circular(99)),
+                    ),
+                  ),
+                  Text('Change Password',
+                      style: GoogleFonts.sora(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          color: _C.g800)),
+                  const SizedBox(height: 4),
+                  Text('Choose a strong password of at least 8 characters.',
+                      style: GoogleFonts.sora(
+                          fontSize: 12, color: _C.g400, height: 1.5)),
+                  const SizedBox(height: 20),
+                  // Current password
+                  _sheetFieldLabel('Current Password'),
+                  const SizedBox(height: 5),
+                  _sheetPasswordField(
+                    ctrl: currentCtrl,
+                    hint: 'Enter current password',
+                    visible: currentVisible,
+                    error: currentError,
+                    onToggle: () => setSheet(() => currentVisible = !currentVisible),
+                    onChanged: (_) => setSheet(() => currentError = null),
+                  ),
+                  if (currentError != null) _sheetError(currentError!),
+                  const SizedBox(height: 14),
+                  // New password
+                  _sheetFieldLabel('New Password'),
+                  const SizedBox(height: 5),
+                  _sheetPasswordField(
+                    ctrl: newCtrl,
+                    hint: 'Enter new password',
+                    visible: newVisible,
+                    error: newError,
+                    onToggle: () => setSheet(() => newVisible = !newVisible),
+                    onChanged: (_) => setSheet(() => newError = null),
+                  ),
+                  if (newError != null) _sheetError(newError!),
+                  const SizedBox(height: 14),
+                  // Confirm password
+                  _sheetFieldLabel('Confirm New Password'),
+                  const SizedBox(height: 5),
+                  _sheetPasswordField(
+                    ctrl: confirmCtrl,
+                    hint: 'Re-enter new password',
+                    visible: confirmVisible,
+                    error: confirmError,
+                    onToggle: () => setSheet(() => confirmVisible = !confirmVisible),
+                    onChanged: (_) => setSheet(() => confirmError = null),
+                  ),
+                  if (confirmError != null) _sheetError(confirmError!),
+                  const SizedBox(height: 24),
+                  // Save button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: loading
+                          ? null
+                          : () async {
+                              String? ce, ne, co;
+                              if (currentCtrl.text.isEmpty)
+                                ce = 'Current password is required';
+                              if (newCtrl.text.length < 8)
+                                ne = 'Must be at least 8 characters';
+                              if (confirmCtrl.text != newCtrl.text)
+                                co = 'Passwords do not match';
+                              setSheet(() {
+                                currentError = ce;
+                                newError = ne;
+                                confirmError = co;
+                              });
+                              if (ce != null || ne != null || co != null) return;
+                              setSheet(() => loading = true);
+                              await Future.delayed(
+                                  const Duration(milliseconds: 1200));
+                              if (ctx.mounted) Navigator.pop(ctx);
+                              if (mounted) _showSnack('Password updated successfully!', _C.teal);
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _C.teal,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      child: loading
+                          ? const SizedBox(
+                              width: 18, height: 18,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white))
+                          : Text('Save Password',
+                              style: GoogleFonts.sora(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    ).whenComplete(() {
+      currentCtrl.dispose();
+      newCtrl.dispose();
+      confirmCtrl.dispose();
+    });
+  }
+
+  Widget _sheetFieldLabel(String text) => Text(text,
+      style: GoogleFonts.sora(
+          fontSize: 11, fontWeight: FontWeight.w700,
+          color: _C.g500, letterSpacing: 0.8));
+
+  Widget _sheetError(String text) => Padding(
+      padding: const EdgeInsets.only(top: 5),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline_rounded, size: 13, color: _C.red),
+          const SizedBox(width: 5),
+          Text(text, style: GoogleFonts.sora(
+              fontSize: 11, fontWeight: FontWeight.w600, color: _C.red)),
+        ],
+      ));
+
+  Widget _sheetPasswordField({
+    required TextEditingController ctrl,
+    required String hint,
+    required bool visible,
+    required VoidCallback onToggle,
+    required ValueChanged<String> onChanged,
+    String? error,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: error != null ? const Color(0xFFFEF2F2) : Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+            color: error != null ? _C.red : _C.g200, width: 1.5),
+      ),
+      child: TextField(
+        controller: ctrl,
+        obscureText: !visible,
+        onChanged: onChanged,
+        style: GoogleFonts.sora(fontSize: 13, color: _C.g800),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: GoogleFonts.sora(fontSize: 13, color: _C.g300),
+          prefixIcon: const Padding(
+            padding: EdgeInsets.only(left: 12, right: 8),
+            child: Icon(Icons.lock_outline_rounded, size: 16, color: _C.g400),
+          ),
+          prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+          suffixIcon: GestureDetector(
+            onTap: onToggle,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Icon(
+                visible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                size: 18, color: _C.g400),
+            ),
+          ),
+          suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
         ),
       ),
     );

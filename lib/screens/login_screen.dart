@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'splash_screen.dart' show AppColors;
 
 // ─────────────────────────────────────────────────────────────
@@ -90,6 +91,11 @@ class _LoginScreenState extends State<LoginScreen>
     setState(() => _loginLoading = true);
     await Future.delayed(const Duration(milliseconds: 1400));
     if (!mounted) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('last_login_time',
+        DateTime.now().toLocal().toString().substring(0, 16));
+    await prefs.setString('last_login_role',
+        _selectedRole == 'chw' ? 'Community Health Worker' : 'Administrator');
     Navigator.of(context).pushReplacementNamed('/home');
   }
 
