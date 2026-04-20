@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:screen_brightness/screen_brightness.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // ── Colours ──────────────────────────────────────────────────
@@ -64,25 +65,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _chwId       = p.getString('chw_id')       ?? '';
       _lastLoginTime = p.getString('last_login_time') ?? '';
       _lastLoginRole = p.getString('last_login_role') ?? '';
+      _brightnessLock = p.getBool('brightness_lock') ?? true;
     });
+  }
+
+  Future<void> _setBrightnessLock(bool value) async {
+    setState(() => _brightnessLock = value);
+    final p = await SharedPreferences.getInstance();
+    await p.setBool('brightness_lock', value);
+    try {
+      if (value) {
+        await ScreenBrightness().setScreenBrightness(1.0);
+      } else {
+        await ScreenBrightness().resetScreenBrightness();
+      }
+    } catch (_) {}
   }
 
   // ── Toggles ──────────────────────────────────────────────
   bool _offlineMode  = true;
   bool _smsNotifs    = false;
   bool _batterySaver = true;
+  bool _brightnessLock = true;
+  String _eyeOrder = 'Right → Left';
 
-  // ── Default Age Group ────────────────────────────────────
-  String _defaultAgeGroup = 'Adult';
-  static const _ageGroups = [
-    {'label': 'Child',      'range': '6–12 yrs',  'threshold': '≥ 6/9',  'emoji': '🧒'},
-    {'label': 'Adult',      'range': '13–60 yrs', 'threshold': '≥ 6/12', 'emoji': '👤'},
-    {'label': 'Elderly',    'range': '60+ yrs',   'threshold': '≥ 6/18', 'emoji': '🧓'},
-    {'label': 'Pre-school', 'range': '3–5 yrs',   'threshold': '≥ 6/12', 'emoji': '👶'},
-  ];
-
-  // ── Language ─────────────────────────────────────────────
-  String _language = 'English Only';
+String _language = 'English Only';
   static const _languages = [
     'English Only', 'Luganda', 'Runyankole/Rukiga',
     'Acholi', 'Ateso', 'Lugbara', 'Luo', 'Runyoro', 'Swahili',
@@ -181,8 +188,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 11),
                   _buildSection(
-                    title: 'Default Age Group',
-                    children: [_buildAgeGroupSelector()],
+                    title: 'Screening Preferences',
+                    children: [
+                      _buildEyeOrderRow(),
+                      _buildDivider(),
+                      _buildToggleRow(
+                        emoji: '☀️',
+                        emojiBg: const Color(0xFFFEF9C3),
+                        label: 'Brightness Lock',
+                        sub: 'Auto full brightness during test',
+                        value: _brightnessLock,
+                        onChanged: (v) => _setBrightnessLock(v),
+                        isLast: true,
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 11),
                   _buildSection(
@@ -493,82 +512,78 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _profileDivider() => const Divider(height: 1, color: _C.g100);
 
   // ── DEFAULT AGE GROUP ─────────────────────────────────────
-  Widget _buildAgeGroupSelector() {
-    return Padding(
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Pre-select the age group used most in your campaigns. This will be auto-selected when starting a new test.',
-            style: GoogleFonts.sora(
-                fontSize: 11, color: _C.g400, height: 1.6),
-          ),
-          const SizedBox(height: 12),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-            childAspectRatio: 2.6,
-            children: _ageGroups.map((ag) {
-              final selected = _defaultAgeGroup == ag['label'];
-              return GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  setState(() => _defaultAgeGroup = ag['label']!);
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? _C.teal.withOpacity(0.08)
-                        : Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: selected ? _C.teal : _C.g200,
-                      width: selected ? 1.5 : 1,
+  Widget _buildEyeOrderRow() {
+    return InkWell(
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: Colors.white,
+          shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+          builder: (_) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                    color: _C.g200, borderRadius: BorderRadius.circular(99)),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                child: Text('Test Eye Order',
+                    style: GoogleFonts.sora(
+                        fontSize: 16, fontWeight: FontWeight.w800, color: _C.g800)),
+              ),
+              ...['Right → Left', 'Left → Right'].map((order) => ListTile(
+                    leading: Icon(
+                      Icons.remove_red_eye_outlined,
+                      color: _eyeOrder == order ? _C.teal : _C.g400,
+                      size: 20,
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      Text(ag['emoji']!,
-                          style: const TextStyle(fontSize: 16)),
-                      const SizedBox(width: 7),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(ag['label']!,
-                                style: GoogleFonts.sora(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: selected
-                                        ? _C.teal
-                                        : _C.g800)),
-                            Text(ag['threshold']!,
-                                style: GoogleFonts.sora(
-                                    fontSize: 10,
-                                    color: selected
-                                        ? _C.teal
-                                        : _C.g400)),
-                          ],
-                        ),
-                      ),
-                      if (selected)
-                        const Icon(Icons.check_circle_rounded,
-                            color: _C.teal, size: 14),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
+                    title: Text(order,
+                        style: GoogleFonts.sora(
+                            fontSize: 13,
+                            fontWeight: _eyeOrder == order
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            color: _eyeOrder == order ? _C.teal : _C.g800)),
+                    trailing: _eyeOrder == order
+                        ? const Icon(Icons.check_rounded, color: _C.teal, size: 18)
+                        : null,
+                    onTap: () {
+                      setState(() => _eyeOrder = order);
+                      Navigator.pop(context);
+                    },
+                  )),
+              const SizedBox(height: 16),
+            ],
           ),
-        ],
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            _emojiBox('👁️', _C.ice),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Test Eye Order',
+                      style: GoogleFonts.sora(
+                          fontSize: 13, fontWeight: FontWeight.w600, color: _C.g800)),
+                  Text('Which eye is tested first',
+                      style: GoogleFonts.sora(fontSize: 11, color: _C.g400)),
+                ],
+              ),
+            ),
+            Text(_eyeOrder,
+                style: GoogleFonts.sora(
+                    fontSize: 11, fontWeight: FontWeight.w700, color: _C.teal)),
+          ],
+        ),
       ),
     );
   }
