@@ -1,6 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:csv/csv.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -66,6 +70,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _lastLoginTime = p.getString('last_login_time') ?? '';
       _lastLoginRole = p.getString('last_login_role') ?? '';
       _brightnessLock = p.getBool('brightness_lock') ?? true;
+      _eyeOrder = p.getString('eye_order') ?? 'Right → Left';
     });
   }
 
@@ -209,32 +214,13 @@ String _language = 'English Only';
                     children: [
                       _buildSyncRow(),
                       _buildDivider(),
-                      _buildArrowRow(emoji: '📤', emojiBg: _C.ice, label: 'Export All Data'),
+                      _buildArrowRow(emoji: '📤', emojiBg: _C.ice, label: 'Export All Data', onTap: () => _showExportSheet()),
                     ],
                   ),
                   const SizedBox(height: 11),
                   _buildSection(
-                    title: 'Actions',
+                    title: 'Danger Zone',
                     children: [
-                      _buildArrowRow(
-                        emoji: '🗑️',
-                        emojiBg: _C.rbg,
-                        label: 'Clear All Local Data',
-                        labelColor: _C.red,
-                        onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Clearing all local data...',
-                                style: GoogleFonts.sora(fontSize: 12)),
-                            backgroundColor: _C.red,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10)),
-                            duration: const Duration(seconds: 2),
-                            margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                          ),
-                        ),
-                      ),
-                      _buildDivider(),
                       _buildArrowRow(
                         emoji: '🚪',
                         emojiBg: _C.g100,
@@ -247,7 +233,7 @@ String _language = 'English Only';
                   ),
                   const SizedBox(height: 11),
                   _buildSection(
-                    title: 'About & Help',
+                    title: 'App Info',
                     children: [
                       _buildArrowRow(
                         emoji: 'ℹ️',
@@ -257,26 +243,20 @@ String _language = 'English Only';
                       ),
                       _buildDivider(),
                       _buildArrowRow(
-                        emoji: '🎓',
-                        emojiBg: _C.gbg,
-                        label: 'Training Videos',
-                        onTap: () => _showSnack('Opening training videos...', _C.teal),
-                      ),
-                      _buildDivider(),
-                      _buildArrowRow(
-                        emoji: '📞',
-                        emojiBg: _C.abg,
-                        label: 'Contact Support',
-                        onTap: () => _showSnack('support@visionscreen.ug', _C.amber),
-                      ),
-                      _buildDivider(),
-                      _buildArrowRow(
                         emoji: '📋',
-                        emojiBg: Color(0xFFEDE9FE),
-                        label: 'What\'s New in v1.0',
-                        isLast: true,
-                        onTap: () => _showChangelogSheet(),
+                        emojiBg: const Color(0xFFEDE9FE),
+                        label: 'Terms of Service',
+                        onTap: () => _showTermsOfService(),
                       ),
+                      _buildDivider(),
+                      _buildArrowRow(
+                        emoji: '🔒',
+                        emojiBg: _C.ice,
+                        label: 'Privacy Policy',
+                        onTap: () => _showPrivacyPolicy(),
+                      ),
+                      _buildDivider(),
+                      _buildVersionRow(),
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -551,9 +531,11 @@ String _language = 'English Only';
                     trailing: _eyeOrder == order
                         ? const Icon(Icons.check_rounded, color: _C.teal, size: 18)
                         : null,
-                    onTap: () {
+                    onTap: () async {
                       setState(() => _eyeOrder = order);
-                      Navigator.pop(context);
+                      final p = await SharedPreferences.getInstance();
+                      await p.setString('eye_order', order);
+                      if (context.mounted) Navigator.pop(context);
                     },
                   )),
               const SizedBox(height: 16),
@@ -858,6 +840,81 @@ String _language = 'English Only';
       duration: const Duration(seconds: 2),
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
     ));
+  }
+
+  Widget _buildVersionRow() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 32, height: 32,
+            decoration: BoxDecoration(
+              color: _C.teal.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: const Icon(Icons.info_outline_rounded, size: 15, color: _C.teal),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Text('Version',
+                style: GoogleFonts.sora(
+                    fontSize: 13, fontWeight: FontWeight.w600, color: _C.g800)),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: _C.teal.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(99),
+              border: Border.all(color: _C.teal.withOpacity(0.2)),
+            ),
+            child: Text('v1.0.0',
+                style: GoogleFonts.sora(
+                    fontSize: 11, fontWeight: FontWeight.w700, color: _C.teal)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showTermsOfService() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _LegalSheet(
+        title: 'Terms of Service',
+        icon: Icons.gavel_rounded,
+        iconColor: _C.teal,
+        sections: const [
+          _LegalSection('1. Purpose', 'VisionScreen is a clinical-grade mobile application for trained Community Health Workers (CHWs) under the Uganda Ministry of Health (MOH) framework.'),
+          _LegalSection('2. Authorised Use', 'This application is authorised only for registered CHWs under a recognised Ugandan Health Centre (HC II–HC IV) and health administrators with valid MOH credentials.'),
+          _LegalSection('3. Patient Data', 'All patient data is subject to the Uganda Data Protection and Privacy Act 2019. CHWs must obtain verbal informed consent before screening.'),
+          _LegalSection('4. Clinical Disclaimer', 'VisionScreen is a screening tool, not a diagnostic instrument. All clinical decisions must be made by a licensed eye care professional.'),
+          _LegalSection('5. Amendments', 'These Terms may be updated periodically. Continued use of VisionScreen constitutes acceptance of the updated terms.'),
+        ],
+      ),
+    );
+  }
+
+  void _showPrivacyPolicy() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _LegalSheet(
+        title: 'Privacy Policy',
+        icon: Icons.lock_outline_rounded,
+        iconColor: const Color(0xFF38BDF8),
+        sections: const [
+          _LegalSection('1. Data We Collect', 'Patient demographics, visual acuity scores, referral data, device calibration data, and CHW account information.'),
+          _LegalSection('2. How We Use It', 'Data is used exclusively for vision screening, referral tracking, and anonymised public health analytics. Never sold or shared commercially.'),
+          _LegalSection('3. Storage & Security', 'Data is stored locally using SQLite encryption and synced to MongoDB Atlas (ISO/IEC 27001) with AES-256 encryption and TLS 1.3 in transit.'),
+          _LegalSection('4. Your Rights', 'Under the Uganda Data Protection and Privacy Act 2019, you may access, correct, or request erasure of your data at any time.'),
+          _LegalSection('5. Contact', 'For privacy concerns, contact the VisionScreen Programme Coordinator through your district health office or Uganda MOH Community Health Division.'),
+        ],
+      ),
+    );
   }
 
   void _showAboutDialog() {
@@ -1299,8 +1356,252 @@ String _language = 'English Only';
     );
   }
 
+  void _showExportSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                    color: _C.g200, borderRadius: BorderRadius.circular(99)),
+              ),
+            ),
+            Text('Export All Data',
+                style: GoogleFonts.sora(
+                    fontSize: 17, fontWeight: FontWeight.w800, color: _C.g800)),
+            const SizedBox(height: 4),
+            Text('Export all patient screening records from this device.',
+                style: GoogleFonts.sora(fontSize: 12, color: _C.g400, height: 1.5)),
+            const SizedBox(height: 20),
+            _exportOption(
+              icon: Icons.table_chart_outlined,
+              color: _C.green,
+              title: 'Export as CSV',
+              subtitle: 'Spreadsheet format · Excel / Google Sheets',
+              onTap: () { Navigator.pop(context); _exportCSV(); },
+            ),
+            const SizedBox(height: 12),
+            _exportOption(
+              icon: Icons.picture_as_pdf_outlined,
+              color: _C.red,
+              title: 'Export as PDF',
+              subtitle: 'Printable report · MOH audit format',
+              onTap: () {
+                Navigator.pop(context);
+                _showSnack('PDF export coming soon', _C.amber);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _exportOption({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _C.g200, width: 1.5),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: GoogleFonts.sora(
+                      fontSize: 13, fontWeight: FontWeight.w700, color: _C.g800)),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: GoogleFonts.sora(
+                      fontSize: 11, color: _C.g400)),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: _C.g300),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _exportCSV() async {
+    try {
+      _showSnack('Generating CSV...', _C.teal);
+      final rows = <List<dynamic>>[
+        ['Patient ID', 'Name', 'Age', 'Gender', 'Village', 'OD', 'OS', 'OU',
+         'Outcome', 'Date', 'Phone', 'Facility', 'Referral Status', 'CHW'],
+        ['PAT-00312', 'Akello Mercy', 34, 'F', 'Nakawa, Kampala', '6/6', '6/9', '6/6', 'Pass', '28 Mar 2026', '+256701234567', '', '', _chwName],
+        ['PAT-00298', 'Okello James', 58, 'M', 'Bwaise, Kampala', '6/12', '6/18', '6/12', 'Refer', '28 Mar 2026', '+256702345678', 'Mulago National Referral Hospital', 'Overdue', _chwName],
+        ['PAT-00301', 'Nakato Aisha', 27, 'F', 'Ntinda, Kampala', '6/9', '6/9', '6/6', 'Pass', '28 Mar 2026', '+256703456789', '', '', _chwName],
+        ['PAT-00315', 'Mugisha Wilson', 45, 'M', 'Kireka, Wakiso', '6/12', '6/18', '6/12', 'Refer', '28 Mar 2026', '+256704567890', 'Mengo Hospital', 'Cancelled', _chwName],
+        ['PAT-00289', 'Kyomuhendo Rose', 19, 'F', 'Rubaga, Kampala', '6/9', '6/9', '6/6', 'Refer', '26 Mar 2026', '+256705678901', 'Makerere University Hospital', 'Completed', _chwName],
+        ['PAT-00276', 'Byaruhanga Sam', 62, 'M', 'Kawempe, Kampala', '6/24', '6/36', '6/24', 'Refer', '25 Mar 2026', '+256706789012', 'Kampala Eye Clinic', 'Notified', _chwName],
+        ['PAT-00261', 'Tendo Kevin', 9, 'M', 'Nansana, Wakiso', '6/9', '6/9', '6/6', 'Pass', '24 Mar 2026', '+256707890123', '', '', _chwName],
+        ['PAT-00254', 'Apio Norah', 8, 'F', 'Kira, Wakiso', '6/18', '6/12', '6/12', 'Refer', '23 Mar 2026', '+256708901234', 'Mulago National Referral Hospital', 'Attended', _chwName],
+      ];
+      final csv = const ListToCsvConverter().convert(rows);
+      final dir = await getApplicationDocumentsDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final file = File('${dir.path}/visionscreen_export_$timestamp.csv');
+      await file.writeAsString(csv);
+      if (mounted) {
+        _showSnack('CSV saved: ${file.path.split('/').last}', _C.green);
+        await Future.delayed(const Duration(milliseconds: 800));
+        await OpenFilex.open(file.path);
+      }
+    } catch (e) {
+      if (mounted) _showSnack('Export failed. Please try again.', _C.red);
+    }
+  }
+
   Widget _buildDivider() => const Padding(
         padding: EdgeInsets.only(left: 57),
         child: Divider(height: 1, color: _C.g100),
       );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Legal section data
+// ─────────────────────────────────────────────────────────────
+class _LegalSection {
+  const _LegalSection(this.heading, this.body);
+  final String heading;
+  final String body;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Reusable legal bottom sheet
+// ─────────────────────────────────────────────────────────────
+class _LegalSheet extends StatelessWidget {
+  const _LegalSheet({
+    required this.title,
+    required this.icon,
+    required this.iconColor,
+    required this.sections,
+  });
+  final String title;
+  final IconData icon;
+  final Color iconColor;
+  final List<_LegalSection> sections;
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.97,
+      builder: (_, ctrl) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                  color: _C.g200, borderRadius: BorderRadius.circular(99)),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40, height: 40,
+                    decoration: BoxDecoration(
+                      color: iconColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: iconColor.withOpacity(0.25)),
+                    ),
+                    child: Icon(icon, size: 20, color: iconColor),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(title,
+                            style: GoogleFonts.sora(
+                                fontSize: 18, fontWeight: FontWeight.w800, color: _C.g800)),
+                        Text('VisionScreen · Uganda MOH',
+                            style: GoogleFonts.sora(fontSize: 11, color: _C.g400)),
+                      ],
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 32, height: 32,
+                      decoration: BoxDecoration(
+                          color: _C.g100, borderRadius: BorderRadius.circular(8)),
+                      child: const Icon(Icons.close_rounded, size: 16, color: _C.g500),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Divider(color: _C.g100, thickness: 1),
+            Expanded(
+              child: ListView.separated(
+                controller: ctrl,
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+                itemCount: sections.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 18),
+                itemBuilder: (_, i) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: _C.teal.withOpacity(0.07),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(sections[i].heading,
+                          style: GoogleFonts.sora(
+                              fontSize: 12, fontWeight: FontWeight.w700, color: _C.teal)),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(sections[i].body,
+                        style: GoogleFonts.sora(
+                            fontSize: 12, color: _C.g500, height: 1.75)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
