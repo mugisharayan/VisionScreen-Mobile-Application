@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -122,16 +122,11 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   // brightness
   bool _brightnessSet = false;
   double? _originalBrightness;
-  // camera / face
+  // camera / face — used only for near vision (40cm)
   CameraController? _cameraCtrl;
   bool _cameraReady = false;
-  bool _faceDetected = false;
-  bool _faceAtDistance = false;
-  Timer? _faceSimTimer;
-  // captured photo path (simulated)
-  String? _capturedPhotoPath;
 
-  bool get _checklistDone => _luxOk && _brightnessSet && _faceAtDistance;
+  bool get _checklistDone => _luxOk && _brightnessSet;
 
   // ── Feature: Eye test ─────────────────────────────────────────────────────
   int _currentEyeIndex = 0;
@@ -194,8 +189,9 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     _pulseCtrl.dispose();
     _cameraCtrl?.dispose();
     _photoCtrl?.dispose();
-    _faceSimTimer?.cancel();
     _nearFaceSimTimer?.cancel();
+    _countdownTimer?.cancel();
+    _nearCountdownTimer?.cancel();
     _testTimer?.cancel();
     _connectivitySub?.cancel();
     _patientSearchCtrl.dispose();
@@ -254,7 +250,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   void _runChecklist() {
     _checkLight();
     _setMaxBrightness();
-    _initCamera();
   }
 
   void _checkLight() {
@@ -332,52 +327,44 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     } catch (_) {}
   }
 
-  Future<void> _initCamera() async {
-    final status = await Permission.camera.request();
-    if (!mounted) return;
-    if (!status.isGranted) return;
-    final cameras = await availableCameras();
-    if (cameras.isEmpty) return;
-    final front = cameras.firstWhere(
-      (c) => c.lensDirection == CameraLensDirection.front,
-      orElse: () => cameras.first,
-    );
-    _cameraCtrl = CameraController(front, ResolutionPreset.medium, enableAudio: false);
-    await _cameraCtrl!.initialize();
-    if (!mounted) return;
-    setState(() => _cameraReady = true);
-    _simulateFaceDetection();
-  }
+  // ── Countdown before test ───────────────────────────────────────────────────────
+  int _countdown = 0;
+  Timer? _countdownTimer;
+  int _nearCountdown = 0;
+  Timer? _nearCountdownTimer;
 
-  void _simulateFaceDetection() {
-    int tick = 0;
-    _faceSimTimer = Timer.periodic(const Duration(milliseconds: 800), (_) {
+  void _startCountdown() {
+    setState(() => _countdown = 3);
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) return;
-      tick++;
-      setState(() {
-        if (tick >= 2) _faceDetected = true;
-        if (tick >= 4) {
-          _faceAtDistance = true;
-          _capturedPhotoPath = 'captured';
-        }
-      });
-      if (_faceAtDistance) {
-        _faceSimTimer?.cancel();
-        // Poll every 200ms until lux and brightness are also confirmed
-        _waitForAllChecks();
+      setState(() => _countdown--);
+      if (_countdown <= 0) {
+        t.cancel();
+        _generateRotation();
+        _startTestTimer();
+        setState(() => _step = 3);
       }
     });
   }
 
-  void _waitForAllChecks() {
-    if (!mounted) return;
-    if (_checklistDone) {
-      _cameraCtrl?.dispose();
-      _cameraCtrl = null;
-      setState(() => _step = 2);
-    } else {
-      Future.delayed(const Duration(milliseconds: 200), _waitForAllChecks);
-    }
+  void _startNearCountdown() {
+    setState(() => _nearCountdown = 3);
+    _nearCountdownTimer?.cancel();
+    _nearCountdownTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) return;
+      setState(() => _nearCountdown--);
+      if (_nearCountdown <= 0) {
+        t.cancel();
+        setState(() {
+          _cameraReady = false;
+          _nearFaceDetected = false;
+          _nearFaceAtDistance = false;
+          _step = 7;
+        });
+        _initNearCamera();
+      }
+    });
   }
 
   // ── Near vision face detection ─────────────────────────────────────────
@@ -1114,10 +1101,60 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             )),
             if (_selectedPatientId != null) ...[
               const SizedBox(height: 8),
-              _continueBtn('Continue to Setup', () {
-                setState(() => _step = 1);
-                _runChecklist();
-              }),
+              GestureDetector(
+                onTap: () {
+                  setState(() => _step = 1);
+                  _runChecklist();
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _teal.withValues(alpha: 0.4),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 36, height: 36,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.arrow_forward_rounded,
+                                color: Colors.white, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Text('Continue to Setup',
+                              style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white)),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text('Patient selected — proceed to checklist',
+                          style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: Colors.white.withValues(alpha: 0.7))),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ],
         ),
@@ -1162,10 +1199,60 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
         if (_selectedPatientId != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-            child: _continueBtn('Continue to Setup', () {
-              setState(() => _step = 1);
-              _runChecklist();
-            }),
+            child: GestureDetector(
+              onTap: () {
+                setState(() => _step = 1);
+                _runChecklist();
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _teal.withValues(alpha: 0.4),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 36, height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.arrow_forward_rounded,
+                              color: Colors.white, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Text('Continue to Setup',
+                            style: GoogleFonts.plusJakartaSans(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text('Patient selected — proceed to checklist',
+                        style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: Colors.white.withValues(alpha: 0.7))),
+                  ],
+                ),
+              ),
+            ),
           ),
       ],
     );
@@ -1820,105 +1907,79 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                 : 'Setting screen brightness...',
             state: _brightnessSet ? _CheckState.pass : _CheckState.loading,
           ),
-          const SizedBox(height: 10),
-          // ── Check 3: Face detection ─────────────────────────────────────
-          _checkTile(
-            icon: Icons.face_rounded,
-            title: 'Face Detection at 2 Metres',
-            subtitle: _faceAtDistance
-                ? 'Patient detected — photo captured'
-                : _faceDetected
-                    ? 'Face found — confirming distance...'
-                    : _cameraReady
-                        ? 'Looking for patient face...'
-                        : 'Initialising camera...',
-            state: _faceAtDistance
-                ? _CheckState.pass
-                : _CheckState.loading,
-          ),
-          if (_cameraReady && _cameraCtrl != null) ...[  
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: SizedBox(
-                height: 320, width: double.infinity,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    CameraPreview(_cameraCtrl!),
-                    CustomPaint(
-                      painter: _FaceOverlayPainter(
-                        faceDetected: _faceDetected,
-                        correctDistance: _faceAtDistance,
-                      ),
+          const SizedBox(height: 32),
+          if (_checklistDone)
+            GestureDetector(
+              onTap: () => setState(() => _step = 2),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _teal.withValues(alpha: 0.4),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
                     ),
-                    if (_faceAtDistance)
-                      Positioned(
-                        bottom: 10, left: 10, right: 10,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 36, height: 36,
                           decoration: BoxDecoration(
-                            color: _green.withValues(alpha: 0.85),
-                            borderRadius: BorderRadius.circular(10),
+                            color: Colors.white.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.check_circle_rounded,
-                                  color: Colors.white, size: 14),
-                              const SizedBox(width: 6),
-                              Text('Distance confirmed — photo captured',
-                                  style: GoogleFonts.inter(
-                                      fontSize: 11, fontWeight: FontWeight.w600,
-                                      color: Colors.white)),
-                            ],
-                          ),
+                          child: const Icon(Icons.check_circle_rounded,
+                              color: Colors.white, size: 20),
                         ),
-                      ),
+                        const SizedBox(width: 12),
+                        Text('Proceed to Eye Test',
+                            style: GoogleFonts.plusJakartaSans(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text('All checks passed — ready to begin',
+                        style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: Colors.white.withValues(alpha: 0.7))),
                   ],
                 ),
               ),
-            ),
-          ],
-          const SizedBox(height: 32),
-          AnimatedOpacity(
-            opacity: _checklistDone ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 400),
-            child: Container(
-              padding: const EdgeInsets.all(16),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: _green.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: _green.withValues(alpha: 0.25)),
+                color: _amber.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _amber.withValues(alpha: 0.2)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.check_circle_rounded, color: _green, size: 20),
-                  const SizedBox(width: 12),
+                  const Icon(Icons.lock_rounded, color: _amber, size: 16),
+                  const SizedBox(width: 10),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('All checks passed',
-                            style: GoogleFonts.plusJakartaSans(
-                                fontSize: 13, fontWeight: FontWeight.w800,
-                                color: _green)),
-                        Text('Proceeding to eye test automatically...',
-                            style: GoogleFonts.inter(
-                                fontSize: 11, color: const Color(0xFF5E7291))),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(
-                    width: 18, height: 18,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: _green),
+                    child: Text('Complete all checks above to proceed.',
+                        style: GoogleFonts.inter(
+                            fontSize: 11, color: const Color(0xFF5E7291))),
                   ),
                 ],
               ),
             ),
-          ),
         ],
       ),
     );
@@ -2101,11 +2162,92 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               style: GoogleFonts.inter(
                   fontSize: 13, color: const Color(0xFF5E7291), height: 1.6)),
           const SizedBox(height: 32),
-          _continueBtn('Patient is Ready — Begin Test', () {
-            _generateRotation();
-            _startTestTimer();
-            setState(() => _step = 3);
-          }),
+          if (_countdown > 0)
+            Center(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (child, anim) => ScaleTransition(
+                  scale: Tween<double>(begin: 0.5, end: 1.0).animate(
+                    CurvedAnimation(parent: anim, curve: Curves.elasticOut),
+                  ),
+                  child: FadeTransition(opacity: anim, child: child),
+                ),
+                child: Container(
+                  key: ValueKey(_countdown),
+                  width: 120, height: 120,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _teal.withValues(alpha: 0.1),
+                    border: Border.all(color: _teal, width: 3),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '$_countdown',
+                      style: GoogleFonts.spaceGrotesk(
+                          fontSize: 64,
+                          fontWeight: FontWeight.w900,
+                          color: _teal),
+                    ),
+                  ),
+                ),
+              ),
+            )
+          else
+            GestureDetector(
+              onTap: _startCountdown,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [_teal, const Color(0xFF0F766E)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _teal.withValues(alpha: 0.4),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 36, height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.remove_red_eye_rounded,
+                              color: Colors.white, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          isOD ? 'Begin Right Eye Test' : 'Begin Left Eye Test',
+                          style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Patient is ready — tap to start 3s countdown',
+                      style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: Colors.white.withValues(alpha: 0.7)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -2595,15 +2737,92 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             ),
           ),
           const SizedBox(height: 32),
-          _continueBtn('Begin Near Vision Test', () {
-            setState(() {
-              _cameraReady = false;
-              _nearFaceDetected = false;
-              _nearFaceAtDistance = false;
-              _step = 7;
-            });
-            _initNearCamera();
-          }),
+          if (_nearCountdown > 0)
+            Center(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (child, anim) => ScaleTransition(
+                  scale: Tween<double>(begin: 0.5, end: 1.0).animate(
+                    CurvedAnimation(parent: anim, curve: Curves.elasticOut),
+                  ),
+                  child: FadeTransition(opacity: anim, child: child),
+                ),
+                child: Container(
+                  key: ValueKey(_nearCountdown),
+                  width: 120, height: 120,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _teal.withValues(alpha: 0.1),
+                    border: Border.all(color: _teal, width: 3),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '$_nearCountdown',
+                      style: GoogleFonts.spaceGrotesk(
+                          fontSize: 64,
+                          fontWeight: FontWeight.w900,
+                          color: _teal),
+                    ),
+                  ),
+                ),
+              ),
+            )
+          else
+            GestureDetector(
+              onTap: _startNearCountdown,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [_teal, const Color(0xFF0F766E)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _teal.withValues(alpha: 0.4),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 36, height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.menu_book_rounded,
+                              color: Colors.white, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Begin Near Vision Test',
+                          style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Hold device at 40 cm — tap to start 3s countdown',
+                      style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: Colors.white.withValues(alpha: 0.7)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );

@@ -30,6 +30,7 @@ class ReferralLetterScreen extends StatefulWidget {
   final List<Map<String, dynamic>> eyeResults;
   final Map<String, dynamic>? nearResult;
   final String screeningDate;
+  final List<String> conditions;
 
   const ReferralLetterScreen({
     super.key,
@@ -37,6 +38,7 @@ class ReferralLetterScreen extends StatefulWidget {
     required this.eyeResults,
     this.nearResult,
     required this.screeningDate,
+    this.conditions = const [],
   });
 
   @override
@@ -127,6 +129,9 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
     buf.writeln('Age    : ${p['age']} years');
     buf.writeln('Gender : ${p['gender'] == 'M' ? 'Male' : 'Female'}');
     buf.writeln('Village: ${p['village']}');
+    if (widget.conditions.isNotEmpty) {
+      buf.writeln('Conditions: ${widget.conditions.join(', ')}');
+    }
     buf.writeln('');
     buf.writeln('VISUAL ACUITY RESULTS (Tumbling E, LogMAR Scale)');
     buf.writeln('-' * 50);
@@ -277,39 +282,62 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
               color: _ink,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 44, height: 44,
-                  decoration: BoxDecoration(
-                    color: _teal.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Text(
-                      p['name']!.split(' ').map((w) => w[0]).take(2).join(),
-                      style: GoogleFonts.plusJakartaSans(
-                          fontSize: 14, fontWeight: FontWeight.w800,
-                          color: _teal3),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(p['name']!,
+                Row(
+                  children: [
+                    Container(
+                      width: 44, height: 44,
+                      decoration: BoxDecoration(
+                        color: _teal.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Text(
+                          p['name']!.split(' ').map((w) => w[0]).take(2).join(),
                           style: GoogleFonts.plusJakartaSans(
-                              fontSize: 14, fontWeight: FontWeight.w700,
-                              color: Colors.white)),
-                      Text('${p['id']} · ${p['gender'] == 'M' ? 'Male' : 'Female'} · ${p['age']} yrs',
-                          style: GoogleFonts.inter(
-                              fontSize: 11,
-                              color: Colors.white.withValues(alpha: 0.5))),
-                    ],
-                  ),
+                              fontSize: 14, fontWeight: FontWeight.w800,
+                              color: _teal3),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(p['name']!,
+                              style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 14, fontWeight: FontWeight.w700,
+                                  color: Colors.white)),
+                          Text('${p['id']} · ${p['gender'] == 'M' ? 'Male' : 'Female'} · ${p['age']} yrs',
+                              style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  color: Colors.white.withValues(alpha: 0.5))),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
+                if (widget.conditions.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 6, runSpacing: 6,
+                    children: widget.conditions.map((c) => Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: _amber.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(99),
+                        border: Border.all(color: _amber.withValues(alpha: 0.3)),
+                      ),
+                      child: Text(c,
+                          style: GoogleFonts.inter(
+                              fontSize: 10, fontWeight: FontWeight.w600,
+                              color: _amber)),
+                    )).toList(),
+                  ),
+                ],
               ],
             ),
           ),
@@ -557,6 +585,10 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                     '${p['age']} years · ${p['gender'] == 'M' ? 'Male' : 'Female'}'),
                 const SizedBox(height: 6),
                 _letterRow('Village', p['village']!),
+                if (widget.conditions.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  _letterRow('Conditions', widget.conditions.join(', ')),
+                ],
                 const SizedBox(height: 16),
                 _divider(),
                 const SizedBox(height: 16),

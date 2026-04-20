@@ -31,6 +31,25 @@ class _ScreeningEntry {
 
 // ── Patient model ──
 class _Patient {
+  final String initials;
+  final List<Color> avatarGradient;
+  final String photoUrl;
+  final String name;
+  final int age;
+  final String gender;
+  final String village;
+  final String ageGroup;
+  final String od, os, ou;
+  final String outcome;
+  final String date;
+  final String id;
+  final String phone;
+  final String? facility;
+  final String? dueDate;
+  final String? referralStatus;
+  final List<_ScreeningEntry> history;
+  final List<String> conditions;
+
   _Patient({
     required this.initials,
     required this.avatarGradient,
@@ -51,25 +70,11 @@ class _Patient {
     this.dueDate,
     this.referralStatus,
     List<_ScreeningEntry>? history,
-  }) : history = history ?? const [];
+    List<String>? conditions,
+  })  : history = history ?? const <_ScreeningEntry>[],
+        conditions = conditions ?? const <String>[];
 
-  final String initials;
-  final List<Color> avatarGradient;
-  final String photoUrl;
-  final String name;
-  final int age;
-  final String gender;
-  final String village;
-  final String ageGroup;
-  final String od, os, ou;
-  final String outcome;
-  final String date;
-  final String id;
-  final String phone;
-  final String? facility;
-  final String? dueDate;
-  final String? referralStatus;
-  final List<_ScreeningEntry> history;
+  List<String> get safeConditions => conditions.toList();
 }
 
 final _patients = <_Patient>[
@@ -134,6 +139,7 @@ final _patients = <_Patient>[
     facility: 'Mulago National Referral Hospital',
     dueDate: '29 Mar 2026',
     referralStatus: 'overdue',
+    conditions: ['Blurred Vision', 'Wears Glasses'],
     history: [
       _ScreeningEntry(
         date: '28 Mar 2026',
@@ -254,6 +260,7 @@ final _patients = <_Patient>[
     facility: 'Kampala Eye Clinic',
     dueDate: '2 Apr 2026',
     referralStatus: 'notified',
+    conditions: ['Blurred Vision', 'Eye Pain', 'Diabetes'],
   ),
   _Patient(
     initials: 'TK',
@@ -293,6 +300,7 @@ final _patients = <_Patient>[
     facility: 'Mulago National Referral Hospital',
     dueDate: '7 Apr 2026',
     referralStatus: 'attended',
+    conditions: ['Red Eyes', 'Eye Discharge'],
   ),
 ];
 
@@ -786,6 +794,27 @@ class _PatientsScreenState extends State<PatientsScreen> {
                                 ],
                               ),
                             ),
+                          // Conditions chips
+                          if (p.safeConditions.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: 4,
+                              runSpacing: 4,
+                              children: p.safeConditions.map((c) => Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: _amber.withOpacity(0.08),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: _amber.withOpacity(0.25)),
+                                ),
+                                child: Text(c,
+                                    style: GoogleFonts.inter(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w600,
+                                        color: _amber)),
+                              )).toList(),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -1239,7 +1268,42 @@ class _PatientsScreenState extends State<PatientsScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              Divider(height: 1, color: const Color(0xFFEEF2F6)),
+              // Conditions section in bottom sheet
+              if (p.safeConditions.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Eye Conditions',
+                          style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF8FA0B4),
+                              letterSpacing: 1.0)),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: p.safeConditions.map((c) => Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: _amber.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(99),
+                            border: Border.all(color: _amber.withOpacity(0.3)),
+                          ),
+                          child: Text(c,
+                              style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: _amber)),
+                        )).toList(),
+                      ),
+                    ],
+                  ),
+                ),
+                Divider(height: 1, color: const Color(0xFFEEF2F6)),
+              ],
               // History list
               Expanded(
                 child: p.history.isEmpty
