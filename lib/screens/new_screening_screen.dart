@@ -122,10 +122,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   // brightness
   bool _brightnessSet = false;
   double? _originalBrightness;
-  // camera / face — used only for near vision (40cm)
-  CameraController? _cameraCtrl;
-  bool _cameraReady = false;
-
   bool get _checklistDone => _luxOk && _brightnessSet;
 
   // ── Feature: Eye test ─────────────────────────────────────────────────────
@@ -187,9 +183,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   @override
   void dispose() {
     _pulseCtrl.dispose();
-    _cameraCtrl?.dispose();
     _photoCtrl?.dispose();
-    _nearFaceSimTimer?.cancel();
     _countdownTimer?.cancel();
     _nearCountdownTimer?.cancel();
     _testTimer?.cancel();
@@ -254,7 +248,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 
   void _checkLight() {
     setState(() { _luxChecked = false; _luxOk = false; });
-    const channel = EventChannel('visionscreen/light');
+    final channel = EventChannel('visionscreen/light');
     StreamSubscription? sub;
     bool received = false;
     try {
@@ -356,62 +350,9 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       setState(() => _nearCountdown--);
       if (_nearCountdown <= 0) {
         t.cancel();
-        setState(() {
-          _cameraReady = false;
-          _nearFaceDetected = false;
-          _nearFaceAtDistance = false;
-          _step = 7;
-        });
-        _initNearCamera();
-      }
-    });
-  }
-
-  // ── Near vision face detection ─────────────────────────────────────────
-  bool _nearFaceDetected = false;
-  bool _nearFaceAtDistance = false;
-  Timer? _nearFaceSimTimer;
-
-  Future<void> _initNearCamera() async {
-    _nearFaceDetected = false;
-    _nearFaceAtDistance = false;
-    final status = await Permission.camera.request();
-    if (!mounted) return;
-    if (!status.isGranted) return;
-    final cameras = await availableCameras();
-    if (cameras.isEmpty) return;
-    final front = cameras.firstWhere(
-      (c) => c.lensDirection == CameraLensDirection.front,
-      orElse: () => cameras.first,
-    );
-    _cameraCtrl = CameraController(front, ResolutionPreset.medium, enableAudio: false);
-    await _cameraCtrl!.initialize();
-    if (!mounted) return;
-    setState(() => _cameraReady = true);
-    _simulateNearFaceDetection();
-  }
-
-  void _simulateNearFaceDetection() {
-    int tick = 0;
-    _nearFaceSimTimer = Timer.periodic(const Duration(milliseconds: 800), (_) {
-      if (!mounted) return;
-      tick++;
-      setState(() {
-        if (tick >= 2) _nearFaceDetected = true;
-        if (tick >= 4) _nearFaceAtDistance = true;
-      });
-      if (_nearFaceAtDistance) {
-        _nearFaceSimTimer?.cancel();
-        Future.delayed(const Duration(milliseconds: 800), () {
-          if (!mounted) return;
-          _cameraCtrl?.dispose();
-          _cameraCtrl = null;
-          setState(() {
-            _cameraReady = false;
-            _step = 7;
-          });
-          _startTestTimer();
-        });
+        setState(() => _step = 7);
+        _generateNearRotation();
+        _startTestTimer();
       }
     });
   }
@@ -2774,8 +2715,8 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 18),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [_teal, const Color(0xFF0F766E)],
+                  gradient: const LinearGradient(
+                    colors: [_teal, Color(0xFF0F766E)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -2799,12 +2740,12 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                             color: Colors.white.withValues(alpha: 0.2),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.menu_book_rounded,
+                          child: const Icon(Icons.check_circle_rounded,
                               color: Colors.white, size: 20),
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Begin Near Vision Test',
+                          'Distance Confirmed — Begin Test',
                           style: GoogleFonts.plusJakartaSans(
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
@@ -2814,7 +2755,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Hold device at 40 cm — tap to start 3s countdown',
+                      'Tap when device is at 40 cm from eyes',
                       style: GoogleFonts.inter(
                           fontSize: 11,
                           color: Colors.white.withValues(alpha: 0.7)),
@@ -2829,103 +2770,8 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   }
 
   // ── Step 7: Near Vision Chart ───────────────────────────────────────────────────
+  // -- Step 7: Near Vision Chart
   Widget _buildNearChart() {
-    // ── 40cm face detection gate ───────────────────────────────────────────────
-    if (!_nearFaceAtDistance) {
-      return SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                color: _teal.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(99),
-              ),
-              child: Text('Hold device at 40 cm',
-                  style: GoogleFonts.spaceGrotesk(
-                      fontSize: 13, fontWeight: FontWeight.w700, color: _teal)),
-            ),
-            const SizedBox(height: 16),
-            Text('Position for Near Vision',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.plusJakartaSans(
-                    fontSize: 20, fontWeight: FontWeight.w800,
-                    color: const Color(0xFF1A2A3D))),
-            const SizedBox(height: 8),
-            Text(
-              'Hold the device at arm\'s length (40 cm) with BOTH eyes open.\n'
-              'Keep still until the distance is confirmed.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                  fontSize: 13, color: const Color(0xFF5E7291), height: 1.6)),
-            const SizedBox(height: 20),
-            if (_cameraReady && _cameraCtrl != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: SizedBox(
-                  height: 320, width: double.infinity,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      CameraPreview(_cameraCtrl!),
-                      CustomPaint(
-                        painter: _FaceOverlayPainter(
-                          faceDetected: _nearFaceDetected,
-                          correctDistance: _nearFaceAtDistance,
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 10, left: 10, right: 10,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: (_nearFaceDetected ? _amber : _ink)
-                                .withValues(alpha: 0.85),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                _nearFaceDetected
-                                    ? Icons.center_focus_strong_rounded
-                                    : Icons.face_rounded,
-                                color: Colors.white, size: 14),
-                              const SizedBox(width: 6),
-                              Text(
-                                _nearFaceDetected
-                                    ? 'Face found — confirming 40 cm...'
-                                    : 'Looking for face...',
-                                style: GoogleFonts.inter(
-                                    fontSize: 11, fontWeight: FontWeight.w600,
-                                    color: Colors.white)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            else
-              Container(
-                height: 120,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEEF2F6),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Center(
-                  child: CircularProgressIndicator(color: _teal, strokeWidth: 2),
-                ),
-              ),
-          ],
-        ),
-      );
-    }
-
     // ── Near chart (40cm confirmed) ───────────────────────────────────────────────
     final row    = _rows[_nearRow];
     final logmar = row['logmar'] as String;
@@ -3522,39 +3368,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 }
 
 enum _CheckState { loading, pass, fail }
-
-class _FaceOverlayPainter extends CustomPainter {
-  final bool faceDetected;
-  final bool correctDistance;
-  const _FaceOverlayPainter({required this.faceDetected, required this.correctDistance});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final color = correctDistance ? _green : faceDetected ? _amber : _teal3;
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5;
-    final cx = size.width / 2;
-    final cy = size.height / 2;
-    final w = size.width * 0.55;
-    final h = size.height * 0.75;
-    const len = 24.0;
-    final rect = Rect.fromCenter(center: Offset(cx, cy), width: w, height: h);
-    canvas.drawLine(Offset(rect.left, rect.top), Offset(rect.left + len, rect.top), paint);
-    canvas.drawLine(Offset(rect.left, rect.top), Offset(rect.left, rect.top + len), paint);
-    canvas.drawLine(Offset(rect.right - len, rect.top), Offset(rect.right, rect.top), paint);
-    canvas.drawLine(Offset(rect.right, rect.top), Offset(rect.right, rect.top + len), paint);
-    canvas.drawLine(Offset(rect.left, rect.bottom - len), Offset(rect.left, rect.bottom), paint);
-    canvas.drawLine(Offset(rect.left, rect.bottom), Offset(rect.left + len, rect.bottom), paint);
-    canvas.drawLine(Offset(rect.right - len, rect.bottom), Offset(rect.right, rect.bottom), paint);
-    canvas.drawLine(Offset(rect.right, rect.bottom - len), Offset(rect.right, rect.bottom), paint);
-  }
-
-  @override
-  bool shouldRepaint(_FaceOverlayPainter old) =>
-      old.faceDetected != faceDetected || old.correctDistance != correctDistance;
-}
 
 // ETDRS bounding box — stroke = 1/5 of E size, gap = 1/2 of E size
 class _BoundingBoxPainter extends CustomPainter {
