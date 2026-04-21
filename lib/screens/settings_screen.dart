@@ -1,6 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:csv/csv.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:screen_brightness/screen_brightness.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // ── Colours ──────────────────────────────────────────────────
@@ -36,53 +41,74 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
 
-  // ── Editable fields ──────────────────────────────────────
-  final _nameCtrl   = TextEditingController(text: 'Nakato Mary');
-  final _centerCtrl = TextEditingController(text: 'Nakawa Health Centre III');
-  final _chwIdCtrl  = TextEditingController(text: 'CHW-UG-00412');
+  // ── Profile (read-only, from registration) ──────────────
+  String _chwName = '';
+  String _chwCenter = '';
+  String _chwDistrict = '';
+  String _chwEmail = '';
+  String _chwPhone = '';
+  String _chwId = '';
+  String _lastLoginTime = '';
+  String _lastLoginRole = '';
 
   @override
   void initState() {
     super.initState();
     _loadProfile();
-    _nameCtrl.addListener(_saveProfile);
-    _centerCtrl.addListener(_saveProfile);
-    _chwIdCtrl.addListener(_saveProfile);
   }
 
   Future<void> _loadProfile() async {
     final p = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() {
-      _nameCtrl.text   = p.getString('chw_name')   ?? 'Nakato Mary';
-      _centerCtrl.text = p.getString('chw_center')  ?? 'Nakawa Health Centre III';
-      _chwIdCtrl.text  = p.getString('chw_id')      ?? 'CHW-UG-00412';
+      _chwName     = p.getString('chw_name')     ?? '';
+      _chwCenter   = p.getString('chw_center')   ?? '';
+      _chwDistrict = p.getString('chw_district') ?? '';
+      _chwEmail    = p.getString('chw_email')    ?? '';
+      _chwPhone    = p.getString('chw_phone')    ?? '';
+      _chwId       = p.getString('chw_id')       ?? '';
+      _lastLoginTime = p.getString('last_login_time') ?? '';
+      _lastLoginRole = p.getString('last_login_role') ?? '';
+      _brightnessLock = p.getBool('brightness_lock') ?? true;
+      _batterySaver = p.getBool('battery_saver') ?? false;
+      _eyeOrder = p.getString('eye_order') ?? 'Right → Left';
     });
   }
 
-  Future<void> _saveProfile() async {
+  Future<void> _setBatterySaver(bool value) async {
+    setState(() => _batterySaver = value);
     final p = await SharedPreferences.getInstance();
-    await p.setString('chw_name',   _nameCtrl.text.trim());
-    await p.setString('chw_center', _centerCtrl.text.trim());
-    await p.setString('chw_id',     _chwIdCtrl.text.trim());
+    await p.setBool('battery_saver', value);
+    try {
+      if (value) {
+        await ScreenBrightness().setScreenBrightness(0.3);
+      } else {
+        await ScreenBrightness().resetScreenBrightness();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _setBrightnessLock(bool value) async {
+    setState(() => _brightnessLock = value);
+    final p = await SharedPreferences.getInstance();
+    await p.setBool('brightness_lock', value);
+    try {
+      if (value) {
+        await ScreenBrightness().setScreenBrightness(1.0);
+      } else {
+        await ScreenBrightness().resetScreenBrightness();
+      }
+    } catch (_) {}
   }
 
   // ── Toggles ──────────────────────────────────────────────
   bool _offlineMode  = true;
   bool _smsNotifs    = false;
   bool _batterySaver = true;
+  bool _brightnessLock = true;
+  String _eyeOrder = 'Right → Left';
 
-  // ── Default Age Group ────────────────────────────────────
-  String _defaultAgeGroup = 'Adult';
-  static const _ageGroups = [
-    {'label': 'Child',      'range': '6–12 yrs',  'threshold': '≥ 6/9',  'emoji': '🧒'},
-    {'label': 'Adult',      'range': '13–60 yrs', 'threshold': '≥ 6/12', 'emoji': '👤'},
-    {'label': 'Elderly',    'range': '60+ yrs',   'threshold': '≥ 6/18', 'emoji': '🧓'},
-    {'label': 'Pre-school', 'range': '3–5 yrs',   'threshold': '≥ 6/12', 'emoji': '👶'},
-  ];
-
-  // ── Language ─────────────────────────────────────────────
-  String _language = 'English Only';
+String _language = 'English Only';
   static const _languages = [
     'English Only', 'Luganda', 'Runyankole/Rukiga',
     'Acholi', 'Ateso', 'Lugbara', 'Luo', 'Runyoro', 'Swahili',
@@ -94,9 +120,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   void dispose() {
-    _nameCtrl.dispose();
-    _centerCtrl.dispose();
-    _chwIdCtrl.dispose();
     super.dispose();
   }
 
@@ -135,6 +158,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 11),
                   _buildSection(
+                    title: 'Account & Security',
+                    children: [
+                      _buildArrowRow(
+                        emoji: '🔑',
+                        emojiBg: const Color(0xFFEDE9FE),
+                        label: 'Change Password',
+                        onTap: () => _showChangePasswordSheet(),
+                      ),
+                      _buildDivider(),
+                      _buildLastLoginRow(),
+                    ],
+                  ),
+                  const SizedBox(height: 11),
+                  _buildSection(
                     title: 'Preferences',
                     children: [
                       _buildLanguageRow(),
@@ -163,15 +200,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         label: 'Battery Saver Mode',
                         sub: 'Reduce brightness during test',
                         value: _batterySaver,
-                        onChanged: (v) => setState(() => _batterySaver = v),
+                        onChanged: (v) => _setBatterySaver(v),
                         isLast: true,
                       ),
                     ],
                   ),
                   const SizedBox(height: 11),
                   _buildSection(
-                    title: 'Default Age Group',
-                    children: [_buildAgeGroupSelector()],
+                    title: 'Screening Preferences',
+                    children: [
+                      _buildEyeOrderRow(),
+                      _buildDivider(),
+                      _buildToggleRow(
+                        emoji: '☀️',
+                        emojiBg: const Color(0xFFFEF9C3),
+                        label: 'Brightness Lock',
+                        sub: 'Auto full brightness during test',
+                        value: _brightnessLock,
+                        onChanged: (v) => _setBrightnessLock(v),
+                        isLast: true,
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 11),
                   _buildSection(
@@ -179,32 +228,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     children: [
                       _buildSyncRow(),
                       _buildDivider(),
-                      _buildArrowRow(emoji: '📤', emojiBg: _C.ice, label: 'Export All Data'),
+                      _buildArrowRow(emoji: '📤', emojiBg: _C.ice, label: 'Export All Data', onTap: () => _showExportSheet()),
                     ],
                   ),
                   const SizedBox(height: 11),
                   _buildSection(
-                    title: 'Actions',
+                    title: 'Danger Zone',
                     children: [
-                      _buildArrowRow(
-                        emoji: '🗑️',
-                        emojiBg: _C.rbg,
-                        label: 'Clear All Local Data',
-                        labelColor: _C.red,
-                        onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Clearing all local data...',
-                                style: GoogleFonts.sora(fontSize: 12)),
-                            backgroundColor: _C.red,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10)),
-                            duration: const Duration(seconds: 2),
-                            margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                          ),
-                        ),
-                      ),
-                      _buildDivider(),
                       _buildArrowRow(
                         emoji: '🚪',
                         emojiBg: _C.g100,
@@ -217,7 +247,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 11),
                   _buildSection(
-                    title: 'About & Help',
+                    title: 'App Info',
                     children: [
                       _buildArrowRow(
                         emoji: 'ℹ️',
@@ -227,26 +257,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       _buildDivider(),
                       _buildArrowRow(
-                        emoji: '🎓',
-                        emojiBg: _C.gbg,
-                        label: 'Training Videos',
-                        onTap: () => _showSnack('Opening training videos...', _C.teal),
-                      ),
-                      _buildDivider(),
-                      _buildArrowRow(
-                        emoji: '📞',
-                        emojiBg: _C.abg,
-                        label: 'Contact Support',
-                        onTap: () => _showSnack('support@visionscreen.ug', _C.amber),
-                      ),
-                      _buildDivider(),
-                      _buildArrowRow(
                         emoji: '📋',
-                        emojiBg: Color(0xFFEDE9FE),
-                        label: 'What\'s New in v1.0',
-                        isLast: true,
-                        onTap: () => _showChangelogSheet(),
+                        emojiBg: const Color(0xFFEDE9FE),
+                        label: 'Terms of Service',
+                        onTap: () => _showTermsOfService(),
                       ),
+                      _buildDivider(),
+                      _buildArrowRow(
+                        emoji: '🔒',
+                        emojiBg: _C.ice,
+                        label: 'Privacy Policy',
+                        onTap: () => _showPrivacyPolicy(),
+                      ),
+                      _buildDivider(),
+                      _buildVersionRow(),
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -303,28 +327,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
                 child: Center(
-                  child: Text('NM',
-                      style: GoogleFonts.sora(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white)),
+                  child: Text(
+                    _chwName.trim().isNotEmpty
+                        ? _chwName.trim().split(' ').map((w) => w[0]).take(2).join().toUpperCase()
+                        : 'VS',
+                    style: GoogleFonts.sora(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white)),
                 ),
               ),
               const SizedBox(width: 11),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Nakato Mary',
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _chwName.isNotEmpty ? _chwName : 'VisionScreen User',
                       style: GoogleFonts.sora(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
                           color: Colors.white)),
-                  const SizedBox(height: 2),
-                  Text('CHW · Nakawa Health Centre III',
+                    const SizedBox(height: 2),
+                    Text(
+                      _chwCenter.isNotEmpty ? '$_chwCenter · $_chwDistrict' : 'Community Health Worker',
                       style: GoogleFonts.sora(
                           fontSize: 11,
-                          color: _C.teal3.withOpacity(0.55))),
-                ],
+                          color: _C.teal3.withOpacity(0.55)),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -374,176 +407,179 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Padding(
       padding: const EdgeInsets.all(14),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _fieldLabel('Health Worker Name'),
-          _textField(_nameCtrl),
-          _fieldLabel('Health Center'),
-          _textField(_centerCtrl),
-          _fieldLabel('CHW ID / Badge Number'),
-          _buildChwIdField(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildChwIdField() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 0),
-      child: TextField(
-        controller: _chwIdCtrl,
-        style: GoogleFonts.sora(fontSize: 13, color: _C.g800),
-        decoration: InputDecoration(
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: _C.g200, width: 1.5),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: _C.teal, width: 1.5),
-          ),
-          filled: true,
-          fillColor: Colors.white,
-          suffixIcon: Padding(
-            padding: const EdgeInsets.only(right: 10),
+          _profileRow(Icons.person_outline_rounded, 'Full Name', _chwName),
+          _profileDivider(),
+          _profileRow(Icons.local_hospital_outlined, 'Health Center', _chwCenter),
+          _profileDivider(),
+          _profileRow(Icons.location_on_outlined, 'District', _chwDistrict),
+          _profileDivider(),
+          _profileRow(Icons.mail_outline_rounded, 'Email', _chwEmail),
+          _profileDivider(),
+          _profileRow(Icons.phone_outlined, 'Phone',
+              _chwPhone.isNotEmpty ? '+256 $_chwPhone' : ''),
+          _profileDivider(),
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: _C.teal.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: _C.teal.withOpacity(0.2)),
+            ),
             child: Row(
-              mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                  width: 32, height: 32,
+                  decoration: BoxDecoration(
+                    color: _C.teal.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: const Icon(Icons.badge_outlined, size: 16, color: _C.teal),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('CHW Badge ID', style: GoogleFonts.sora(
+                          fontSize: 10, fontWeight: FontWeight.w700,
+                          color: _C.g400, letterSpacing: 0.5)),
+                      const SizedBox(height: 2),
+                      Text(_chwId.isNotEmpty ? _chwId : '—',
+                          style: GoogleFonts.sora(
+                              fontSize: 14, fontWeight: FontWeight.w800,
+                              color: _C.teal, letterSpacing: 1.2)),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: _C.teal.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(99),
-                    border: Border.all(
-                        color: _C.teal.withOpacity(0.25)),
+                    border: Border.all(color: _C.teal.withOpacity(0.25)),
                   ),
-                  child: Text('Prints on referrals',
-                      style: GoogleFonts.sora(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          color: _C.teal)),
+                  child: Text('Prints on referrals', style: GoogleFonts.sora(
+                      fontSize: 9, fontWeight: FontWeight.w700, color: _C.teal)),
                 ),
               ],
             ),
           ),
-        ),
+        ],
       ),
     );
   }
-  Widget _fieldLabel(String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 5),
-        child: Text(text,
-            style: GoogleFonts.sora(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: _C.g500,
-                letterSpacing: 0.8)),
-      );
 
-  Widget _textField(TextEditingController ctrl, {bool isLast = false}) {
-    return Container(
-      margin: EdgeInsets.only(bottom: isLast ? 0 : 13),
-      child: TextField(
-        controller: ctrl,
-        style: GoogleFonts.sora(fontSize: 13, color: _C.g800),
-        decoration: InputDecoration(
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: _C.g200, width: 1.5),
+  Widget _profileRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 9),
+      child: Row(
+        children: [
+          Container(
+            width: 32, height: 32,
+            decoration: BoxDecoration(
+                color: _C.g100, borderRadius: BorderRadius.circular(9)),
+            child: Icon(icon, size: 15, color: _C.g500),
           ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: _C.teal, width: 1.5),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: GoogleFonts.sora(
+                    fontSize: 10, fontWeight: FontWeight.w700,
+                    color: _C.g400, letterSpacing: 0.5)),
+                const SizedBox(height: 1),
+                Text(value.isNotEmpty ? value : '—',
+                    style: GoogleFonts.sora(
+                        fontSize: 13, fontWeight: FontWeight.w600, color: _C.g800)),
+              ],
+            ),
           ),
-          filled: true,
-          fillColor: Colors.white,
-        ),
+          const Icon(Icons.lock_outline_rounded, size: 13, color: _C.g300),
+        ],
       ),
     );
   }
+
+  Widget _profileDivider() => const Divider(height: 1, color: _C.g100);
 
   // ── DEFAULT AGE GROUP ─────────────────────────────────────
-  Widget _buildAgeGroupSelector() {
-    return Padding(
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Pre-select the age group used most in your campaigns. This will be auto-selected when starting a new test.',
-            style: GoogleFonts.sora(
-                fontSize: 11, color: _C.g400, height: 1.6),
-          ),
-          const SizedBox(height: 12),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-            childAspectRatio: 2.6,
-            children: _ageGroups.map((ag) {
-              final selected = _defaultAgeGroup == ag['label'];
-              return GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  setState(() => _defaultAgeGroup = ag['label']!);
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? _C.teal.withOpacity(0.08)
-                        : Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: selected ? _C.teal : _C.g200,
-                      width: selected ? 1.5 : 1,
+  Widget _buildEyeOrderRow() {
+    return InkWell(
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: Colors.white,
+          shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+          builder: (_) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                    color: _C.g200, borderRadius: BorderRadius.circular(99)),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                child: Text('Test Eye Order',
+                    style: GoogleFonts.sora(
+                        fontSize: 16, fontWeight: FontWeight.w800, color: _C.g800)),
+              ),
+              ...['Right → Left', 'Left → Right'].map((order) => ListTile(
+                    leading: Icon(
+                      Icons.remove_red_eye_outlined,
+                      color: _eyeOrder == order ? _C.teal : _C.g400,
+                      size: 20,
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      Text(ag['emoji']!,
-                          style: const TextStyle(fontSize: 16)),
-                      const SizedBox(width: 7),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(ag['label']!,
-                                style: GoogleFonts.sora(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: selected
-                                        ? _C.teal
-                                        : _C.g800)),
-                            Text(ag['threshold']!,
-                                style: GoogleFonts.sora(
-                                    fontSize: 10,
-                                    color: selected
-                                        ? _C.teal
-                                        : _C.g400)),
-                          ],
-                        ),
-                      ),
-                      if (selected)
-                        const Icon(Icons.check_circle_rounded,
-                            color: _C.teal, size: 14),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
+                    title: Text(order,
+                        style: GoogleFonts.sora(
+                            fontSize: 13,
+                            fontWeight: _eyeOrder == order
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            color: _eyeOrder == order ? _C.teal : _C.g800)),
+                    trailing: _eyeOrder == order
+                        ? const Icon(Icons.check_rounded, color: _C.teal, size: 18)
+                        : null,
+                    onTap: () async {
+                      setState(() => _eyeOrder = order);
+                      final p = await SharedPreferences.getInstance();
+                      await p.setString('eye_order', order);
+                      if (context.mounted) Navigator.pop(context);
+                    },
+                  )),
+              const SizedBox(height: 16),
+            ],
           ),
-        ],
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            _emojiBox('👁️', _C.ice),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Test Eye Order',
+                      style: GoogleFonts.sora(
+                          fontSize: 13, fontWeight: FontWeight.w600, color: _C.g800)),
+                  Text('Which eye is tested first',
+                      style: GoogleFonts.sora(fontSize: 11, color: _C.g400)),
+                ],
+              ),
+            ),
+            Text(_eyeOrder,
+                style: GoogleFonts.sora(
+                    fontSize: 11, fontWeight: FontWeight.w700, color: _C.teal)),
+          ],
+        ),
       ),
     );
   }
@@ -820,6 +856,81 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ));
   }
 
+  Widget _buildVersionRow() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 32, height: 32,
+            decoration: BoxDecoration(
+              color: _C.teal.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: const Icon(Icons.info_outline_rounded, size: 15, color: _C.teal),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Text('Version',
+                style: GoogleFonts.sora(
+                    fontSize: 13, fontWeight: FontWeight.w600, color: _C.g800)),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: _C.teal.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(99),
+              border: Border.all(color: _C.teal.withOpacity(0.2)),
+            ),
+            child: Text('v1.0.0',
+                style: GoogleFonts.sora(
+                    fontSize: 11, fontWeight: FontWeight.w700, color: _C.teal)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showTermsOfService() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _LegalSheet(
+        title: 'Terms of Service',
+        icon: Icons.gavel_rounded,
+        iconColor: _C.teal,
+        sections: const [
+          _LegalSection('1. Purpose', 'VisionScreen is a clinical-grade mobile application for trained Community Health Workers (CHWs) under the Uganda Ministry of Health (MOH) framework.'),
+          _LegalSection('2. Authorised Use', 'This application is authorised only for registered CHWs under a recognised Ugandan Health Centre (HC II–HC IV) and health administrators with valid MOH credentials.'),
+          _LegalSection('3. Patient Data', 'All patient data is subject to the Uganda Data Protection and Privacy Act 2019. CHWs must obtain verbal informed consent before screening.'),
+          _LegalSection('4. Clinical Disclaimer', 'VisionScreen is a screening tool, not a diagnostic instrument. All clinical decisions must be made by a licensed eye care professional.'),
+          _LegalSection('5. Amendments', 'These Terms may be updated periodically. Continued use of VisionScreen constitutes acceptance of the updated terms.'),
+        ],
+      ),
+    );
+  }
+
+  void _showPrivacyPolicy() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _LegalSheet(
+        title: 'Privacy Policy',
+        icon: Icons.lock_outline_rounded,
+        iconColor: const Color(0xFF38BDF8),
+        sections: const [
+          _LegalSection('1. Data We Collect', 'Patient demographics, visual acuity scores, referral data, device calibration data, and CHW account information.'),
+          _LegalSection('2. How We Use It', 'Data is used exclusively for vision screening, referral tracking, and anonymised public health analytics. Never sold or shared commercially.'),
+          _LegalSection('3. Storage & Security', 'Data is stored locally using SQLite encryption and synced to MongoDB Atlas (ISO/IEC 27001) with AES-256 encryption and TLS 1.3 in transit.'),
+          _LegalSection('4. Your Rights', 'Under the Uganda Data Protection and Privacy Act 2019, you may access, correct, or request erasure of your data at any time.'),
+          _LegalSection('5. Contact', 'For privacy concerns, contact the VisionScreen Programme Coordinator through your district health office or Uganda MOH Community Health Division.'),
+        ],
+      ),
+    );
+  }
+
   void _showAboutDialog() {
     showDialog(
       context: context,
@@ -999,8 +1110,512 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildLastLoginRow() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 32, height: 32,
+            decoration: BoxDecoration(
+              color: _C.gbg,
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: const Icon(Icons.access_time_rounded, size: 16, color: _C.green),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Last Login',
+                    style: GoogleFonts.sora(
+                        fontSize: 13, fontWeight: FontWeight.w600, color: _C.g800)),
+                const SizedBox(height: 2),
+                Text(
+                  _lastLoginTime.isNotEmpty ? _lastLoginTime : 'Not recorded yet',
+                  style: GoogleFonts.sora(fontSize: 11, color: _C.g400),
+                ),
+              ],
+            ),
+          ),
+          if (_lastLoginRole.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: _C.teal.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(99),
+                border: Border.all(color: _C.teal.withOpacity(0.25)),
+              ),
+              child: Text(
+                _lastLoginRole == 'Administrator' ? 'Admin' : 'CHW',
+                style: GoogleFonts.sora(
+                    fontSize: 10, fontWeight: FontWeight.w700, color: _C.teal),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showChangePasswordSheet() {
+    final currentCtrl = TextEditingController();
+    final newCtrl = TextEditingController();
+    final confirmCtrl = TextEditingController();
+    bool currentVisible = false;
+    bool newVisible = false;
+    bool confirmVisible = false;
+    bool loading = false;
+    String? currentError;
+    String? newError;
+    String? confirmError;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setSheet) {
+          return Padding(
+            padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius:
+                    BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Handle
+                  Center(
+                    child: Container(
+                      width: 40, height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                          color: _C.g200,
+                          borderRadius: BorderRadius.circular(99)),
+                    ),
+                  ),
+                  Text('Change Password',
+                      style: GoogleFonts.sora(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          color: _C.g800)),
+                  const SizedBox(height: 4),
+                  Text('Choose a strong password of at least 8 characters.',
+                      style: GoogleFonts.sora(
+                          fontSize: 12, color: _C.g400, height: 1.5)),
+                  const SizedBox(height: 20),
+                  // Current password
+                  _sheetFieldLabel('Current Password'),
+                  const SizedBox(height: 5),
+                  _sheetPasswordField(
+                    ctrl: currentCtrl,
+                    hint: 'Enter current password',
+                    visible: currentVisible,
+                    error: currentError,
+                    onToggle: () => setSheet(() => currentVisible = !currentVisible),
+                    onChanged: (_) => setSheet(() => currentError = null),
+                  ),
+                  if (currentError != null) _sheetError(currentError!),
+                  const SizedBox(height: 14),
+                  // New password
+                  _sheetFieldLabel('New Password'),
+                  const SizedBox(height: 5),
+                  _sheetPasswordField(
+                    ctrl: newCtrl,
+                    hint: 'Enter new password',
+                    visible: newVisible,
+                    error: newError,
+                    onToggle: () => setSheet(() => newVisible = !newVisible),
+                    onChanged: (_) => setSheet(() => newError = null),
+                  ),
+                  if (newError != null) _sheetError(newError!),
+                  const SizedBox(height: 14),
+                  // Confirm password
+                  _sheetFieldLabel('Confirm New Password'),
+                  const SizedBox(height: 5),
+                  _sheetPasswordField(
+                    ctrl: confirmCtrl,
+                    hint: 'Re-enter new password',
+                    visible: confirmVisible,
+                    error: confirmError,
+                    onToggle: () => setSheet(() => confirmVisible = !confirmVisible),
+                    onChanged: (_) => setSheet(() => confirmError = null),
+                  ),
+                  if (confirmError != null) _sheetError(confirmError!),
+                  const SizedBox(height: 24),
+                  // Save button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: loading
+                          ? null
+                          : () async {
+                              String? ce, ne, co;
+                              if (currentCtrl.text.isEmpty)
+                                ce = 'Current password is required';
+                              if (newCtrl.text.length < 8)
+                                ne = 'Must be at least 8 characters';
+                              if (confirmCtrl.text != newCtrl.text)
+                                co = 'Passwords do not match';
+                              setSheet(() {
+                                currentError = ce;
+                                newError = ne;
+                                confirmError = co;
+                              });
+                              if (ce != null || ne != null || co != null) return;
+                              setSheet(() => loading = true);
+                              await Future.delayed(
+                                  const Duration(milliseconds: 1200));
+                              if (ctx.mounted) Navigator.pop(ctx);
+                              if (mounted) _showSnack('Password updated successfully!', _C.teal);
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _C.teal,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      child: loading
+                          ? const SizedBox(
+                              width: 18, height: 18,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white))
+                          : Text('Save Password',
+                              style: GoogleFonts.sora(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    ).whenComplete(() {
+      currentCtrl.dispose();
+      newCtrl.dispose();
+      confirmCtrl.dispose();
+    });
+  }
+
+  Widget _sheetFieldLabel(String text) => Text(text,
+      style: GoogleFonts.sora(
+          fontSize: 11, fontWeight: FontWeight.w700,
+          color: _C.g500, letterSpacing: 0.8));
+
+  Widget _sheetError(String text) => Padding(
+      padding: const EdgeInsets.only(top: 5),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline_rounded, size: 13, color: _C.red),
+          const SizedBox(width: 5),
+          Text(text, style: GoogleFonts.sora(
+              fontSize: 11, fontWeight: FontWeight.w600, color: _C.red)),
+        ],
+      ));
+
+  Widget _sheetPasswordField({
+    required TextEditingController ctrl,
+    required String hint,
+    required bool visible,
+    required VoidCallback onToggle,
+    required ValueChanged<String> onChanged,
+    String? error,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: error != null ? const Color(0xFFFEF2F2) : Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+            color: error != null ? _C.red : _C.g200, width: 1.5),
+      ),
+      child: TextField(
+        controller: ctrl,
+        obscureText: !visible,
+        onChanged: onChanged,
+        style: GoogleFonts.sora(fontSize: 13, color: _C.g800),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: GoogleFonts.sora(fontSize: 13, color: _C.g300),
+          prefixIcon: const Padding(
+            padding: EdgeInsets.only(left: 12, right: 8),
+            child: Icon(Icons.lock_outline_rounded, size: 16, color: _C.g400),
+          ),
+          prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+          suffixIcon: GestureDetector(
+            onTap: onToggle,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Icon(
+                visible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                size: 18, color: _C.g400),
+            ),
+          ),
+          suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+        ),
+      ),
+    );
+  }
+
+  void _showExportSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                    color: _C.g200, borderRadius: BorderRadius.circular(99)),
+              ),
+            ),
+            Text('Export All Data',
+                style: GoogleFonts.sora(
+                    fontSize: 17, fontWeight: FontWeight.w800, color: _C.g800)),
+            const SizedBox(height: 4),
+            Text('Export all patient screening records from this device.',
+                style: GoogleFonts.sora(fontSize: 12, color: _C.g400, height: 1.5)),
+            const SizedBox(height: 20),
+            _exportOption(
+              icon: Icons.table_chart_outlined,
+              color: _C.green,
+              title: 'Export as CSV',
+              subtitle: 'Spreadsheet format · Excel / Google Sheets',
+              onTap: () { Navigator.pop(context); _exportCSV(); },
+            ),
+            const SizedBox(height: 12),
+            _exportOption(
+              icon: Icons.picture_as_pdf_outlined,
+              color: _C.red,
+              title: 'Export as PDF',
+              subtitle: 'Printable report · MOH audit format',
+              onTap: () {
+                Navigator.pop(context);
+                _showSnack('PDF export coming soon', _C.amber);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _exportOption({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _C.g200, width: 1.5),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: GoogleFonts.sora(
+                      fontSize: 13, fontWeight: FontWeight.w700, color: _C.g800)),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: GoogleFonts.sora(
+                      fontSize: 11, color: _C.g400)),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: _C.g300),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _exportCSV() async {
+    try {
+      _showSnack('Generating CSV...', _C.teal);
+      final rows = <List<dynamic>>[
+        ['Patient ID', 'Name', 'Age', 'Gender', 'Village', 'OD', 'OS', 'OU',
+         'Outcome', 'Date', 'Phone', 'Facility', 'Referral Status', 'CHW'],
+        ['PAT-00312', 'Akello Mercy', 34, 'F', 'Nakawa, Kampala', '6/6', '6/9', '6/6', 'Pass', '28 Mar 2026', '+256701234567', '', '', _chwName],
+        ['PAT-00298', 'Okello James', 58, 'M', 'Bwaise, Kampala', '6/12', '6/18', '6/12', 'Refer', '28 Mar 2026', '+256702345678', 'Mulago National Referral Hospital', 'Overdue', _chwName],
+        ['PAT-00301', 'Nakato Aisha', 27, 'F', 'Ntinda, Kampala', '6/9', '6/9', '6/6', 'Pass', '28 Mar 2026', '+256703456789', '', '', _chwName],
+        ['PAT-00315', 'Mugisha Wilson', 45, 'M', 'Kireka, Wakiso', '6/12', '6/18', '6/12', 'Refer', '28 Mar 2026', '+256704567890', 'Mengo Hospital', 'Cancelled', _chwName],
+        ['PAT-00289', 'Kyomuhendo Rose', 19, 'F', 'Rubaga, Kampala', '6/9', '6/9', '6/6', 'Refer', '26 Mar 2026', '+256705678901', 'Makerere University Hospital', 'Completed', _chwName],
+        ['PAT-00276', 'Byaruhanga Sam', 62, 'M', 'Kawempe, Kampala', '6/24', '6/36', '6/24', 'Refer', '25 Mar 2026', '+256706789012', 'Kampala Eye Clinic', 'Notified', _chwName],
+        ['PAT-00261', 'Tendo Kevin', 9, 'M', 'Nansana, Wakiso', '6/9', '6/9', '6/6', 'Pass', '24 Mar 2026', '+256707890123', '', '', _chwName],
+        ['PAT-00254', 'Apio Norah', 8, 'F', 'Kira, Wakiso', '6/18', '6/12', '6/12', 'Refer', '23 Mar 2026', '+256708901234', 'Mulago National Referral Hospital', 'Attended', _chwName],
+      ];
+      final csv = const ListToCsvConverter().convert(rows);
+      final dir = await getApplicationDocumentsDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final file = File('${dir.path}/visionscreen_export_$timestamp.csv');
+      await file.writeAsString(csv);
+      if (mounted) {
+        _showSnack('CSV saved: ${file.path.split('/').last}', _C.green);
+        await Future.delayed(const Duration(milliseconds: 800));
+        await OpenFilex.open(file.path);
+      }
+    } catch (e) {
+      if (mounted) _showSnack('Export failed. Please try again.', _C.red);
+    }
+  }
+
   Widget _buildDivider() => const Padding(
         padding: EdgeInsets.only(left: 57),
         child: Divider(height: 1, color: _C.g100),
       );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Legal section data
+// ─────────────────────────────────────────────────────────────
+class _LegalSection {
+  const _LegalSection(this.heading, this.body);
+  final String heading;
+  final String body;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Reusable legal bottom sheet
+// ─────────────────────────────────────────────────────────────
+class _LegalSheet extends StatelessWidget {
+  const _LegalSheet({
+    required this.title,
+    required this.icon,
+    required this.iconColor,
+    required this.sections,
+  });
+  final String title;
+  final IconData icon;
+  final Color iconColor;
+  final List<_LegalSection> sections;
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.97,
+      builder: (_, ctrl) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                  color: _C.g200, borderRadius: BorderRadius.circular(99)),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40, height: 40,
+                    decoration: BoxDecoration(
+                      color: iconColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: iconColor.withOpacity(0.25)),
+                    ),
+                    child: Icon(icon, size: 20, color: iconColor),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(title,
+                            style: GoogleFonts.sora(
+                                fontSize: 18, fontWeight: FontWeight.w800, color: _C.g800)),
+                        Text('VisionScreen · Uganda MOH',
+                            style: GoogleFonts.sora(fontSize: 11, color: _C.g400)),
+                      ],
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 32, height: 32,
+                      decoration: BoxDecoration(
+                          color: _C.g100, borderRadius: BorderRadius.circular(8)),
+                      child: const Icon(Icons.close_rounded, size: 16, color: _C.g500),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Divider(color: _C.g100, thickness: 1),
+            Expanded(
+              child: ListView.separated(
+                controller: ctrl,
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+                itemCount: sections.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 18),
+                itemBuilder: (_, i) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: _C.teal.withOpacity(0.07),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(sections[i].heading,
+                          style: GoogleFonts.sora(
+                              fontSize: 12, fontWeight: FontWeight.w700, color: _C.teal)),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(sections[i].body,
+                        style: GoogleFonts.sora(
+                            fontSize: 12, color: _C.g500, height: 1.75)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
