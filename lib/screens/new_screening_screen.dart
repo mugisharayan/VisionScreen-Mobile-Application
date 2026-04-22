@@ -11,7 +11,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import 'referral_letter_screen.dart';
+import '../db/database_helper.dart';
 
 // ── Colours ──────────────────────────────────────────────────────────────────
 const _ink  = Color(0xFF04091A);
@@ -98,20 +100,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   String? _newPhotoPath;
   CameraController? _photoCtrl;
   bool _showPhotoCamera = false;
-  List<Map<String, String>> _patientListRuntime = _staticPatients
-      .map((p) => Map<String, String>.from(p))
-      .toList();
-
-  static const _staticPatients = [
-    {'id': 'PAT-00312', 'name': 'Akello Mercy',    'age': '34', 'gender': 'F', 'village': 'Nakawa, Kampala'},
-    {'id': 'PAT-00298', 'name': 'Okello James',    'age': '58', 'gender': 'M', 'village': 'Bwaise, Kampala'},
-    {'id': 'PAT-00301', 'name': 'Nakato Aisha',    'age': '27', 'gender': 'F', 'village': 'Ntinda, Kampala'},
-    {'id': 'PAT-00315', 'name': 'Mugisha Wilson',  'age': '45', 'gender': 'M', 'village': 'Kireka, Wakiso'},
-    {'id': 'PAT-00289', 'name': 'Kyomuhendo Rose', 'age': '19', 'gender': 'F', 'village': 'Rubaga, Kampala'},
-    {'id': 'PAT-00276', 'name': 'Byaruhanga Sam',  'age': '62', 'gender': 'M', 'village': 'Kawempe, Kampala'},
-    {'id': 'PAT-00261', 'name': 'Tendo Kevin',     'age': '9',  'gender': 'M', 'village': 'Nansana, Wakiso'},
-    {'id': 'PAT-00254', 'name': 'Apio Norah',      'age': '8',  'gender': 'F', 'village': 'Kira, Wakiso'},
-  ];
+  List<Map<String, String>> _patientListRuntime = [];
 
   // ── Feature: Checklist ────────────────────────────────────────────────────
   // light
@@ -173,10 +162,27 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
     );
     _loadUnsyncedCount();
+    _loadPatients();
     _recoverLostPhoto();
     _connectivitySub = Connectivity().onConnectivityChanged.listen((r) {
       if (!mounted) return;
       setState(() => _isOffline = r.every((x) => x == ConnectivityResult.none));
+    });
+  }
+
+  Future<void> _loadPatients() async {
+    final rows = await DatabaseHelper.instance.getAllPatients();
+    if (!mounted) return;
+    setState(() {
+      _patientListRuntime = rows.map((r) => {
+        'id': r['id'] as String,
+        'name': r['name'] as String,
+        'age': r['age'].toString(),
+        'gender': r['gender'] as String,
+        'village': r['village'] as String,
+        'dob': (r['dob'] as String?) ?? '',
+        'conditions': (r['conditions'] as String?) ?? '',
+      }).toList();
     });
   }
 
@@ -213,11 +219,15 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     if (_photoCtrl == null || !_photoCtrl!.value.isInitialized) return;
     try {
       final file = await _photoCtrl!.takePicture();
-      final path = file.path;
+      // Copy to permanent app documents directory so it survives camera disposal
+      final appDir = await getApplicationDocumentsDirectory();
+      final fileName = 'patient_photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final permanentPath = '${appDir.path}/$fileName';
+      await File(file.path).copy(permanentPath);
       final ctrl = _photoCtrl;
       _photoCtrl = null;
       setState(() {
-        _newPhotoPath = path;
+        _newPhotoPath = permanentPath;
         _showPhotoCamera = false;
       });
       await ctrl?.dispose();
@@ -621,21 +631,75 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
         'duration': _testDuration,
         'cantTell': _nearCantTellCount,
       };
-      _step = 5; // go straight to final summary
+      _step = 5;
     });
+    _saveScreening();
+  }
+
+  Future<void> _saveScreening() async {
+    if (_selectedPatientId == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    final chwName = prefs.getString('chw_name') ?? '';
+
+    String odLogmar = '';
+    String osLogmar = '';
+    int odCantTell = 0;
+    int osCantTell = 0;
+    String odDuration = '';
+    String osDuration = '';
+
+    for (final r in _eyeResults) {
+      if (r['eye'] == 'OD') {
+        odLogmar = r['logmar'] as String;
+        odCantTell = r['cantTell'] as int;
+        odDuration = r['duration'] as String;
+      } else if (r['eye'] == 'OS') {
+        osLogmar = r['logmar'] as String;
+        osCantTell = r['cantTell'] as int;
+        osDuration = r['duration'] as String;
+      }
+    }
+
+    final nearLogmar = _nearResult?['logmar'] as String? ?? '';
+    final nearCantTell = _nearResult?['cantTell'] as int? ?? 0;
+    final nearDuration = _nearResult?['duration'] as String? ?? '';
+
+    final outcome = _needsReferral ? 'refer' : 'pass';
+
+    await DatabaseHelper.instance.insertScreening({
+      'patient_id': _selectedPatientId,
+      'screening_date': DateTime.now().toIso8601String(),
+      'od_logmar': odLogmar,
+      'os_logmar': osLogmar,
+      'ou_near_logmar': nearLogmar,
+      'od_snellen': odLogmar.isNotEmpty ? _toSnellen(odLogmar) : '',
+      'os_snellen': osLogmar.isNotEmpty ? _toSnellen(osLogmar) : '',
+      'ou_near_snellen': nearLogmar.isNotEmpty ? _toSnellen(nearLogmar) : '',
+      'od_cant_tell': odCantTell,
+      'os_cant_tell': osCantTell,
+      'near_cant_tell': nearCantTell,
+      'od_duration': odDuration,
+      'os_duration': osDuration,
+      'near_duration': nearDuration,
+      'outcome': outcome,
+      'referral_facility': '',
+      'referral_status': outcome == 'refer' ? 'pending' : '',
+      'chw_name': chwName,
+      'synced': _isOffline ? 0 : 0,
+    });
+
+    await _loadUnsyncedCount();
   }
 
   // ── Unsynced ──────────────────────────────────────────────────────────────
   Future<void> _loadUnsyncedCount() async {
-    final p = await SharedPreferences.getInstance();
-    if (mounted) setState(() => _unsyncedCount = p.getInt('unsynced_count') ?? 0);
+    final count = await DatabaseHelper.instance.getUnsyncedCount();
+    if (mounted) setState(() => _unsyncedCount = count);
   }
 
   Future<void> _incrementUnsynced() async {
-    final p = await SharedPreferences.getInstance();
-    final n = (p.getInt('unsynced_count') ?? 0) + 1;
-    await p.setInt('unsynced_count', n);
-    if (mounted) setState(() => _unsyncedCount = n);
+    final count = await DatabaseHelper.instance.getUnsyncedCount();
+    if (mounted) setState(() => _unsyncedCount = count);
   }
 
   // ── VA helpers ────────────────────────────────────────────────────────────
@@ -1556,7 +1620,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () {
+              onPressed: () async {
                 final name = _newNameCtrl.text.trim();
                 final vil  = _newVillageCtrl.text.trim();
                 if (name.isEmpty || _newDob == null || vil.isEmpty) {
@@ -1578,17 +1642,22 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   return;
                 }
                 final age = _calcAge(_newDob!);
-                final id  = 'PAT-NEW-${DateTime.now().millisecondsSinceEpoch % 100000}';
+                final id  = 'PAT-${DateTime.now().millisecondsSinceEpoch}';
+                final newPatient = {
+                  'id': id,
+                  'name': name,
+                  'age': age,
+                  'dob': '${_newDob!.day}/${_newDob!.month}/${_newDob!.year}',
+                  'gender': _newGender,
+                  'village': vil,
+                  'phone': '',
+                  'conditions': _newConditions.join(', '),
+                  'photo_path': _newPhotoPath ?? '',
+                  'created_at': DateTime.now().toIso8601String(),
+                };
+                await DatabaseHelper.instance.insertPatient(newPatient);
+                await _loadPatients();
                 setState(() {
-                  _patientListRuntime.insert(0, {
-                    'id': id,
-                    'name': name,
-                    'age': '$age',
-                    'dob': '${_newDob!.day}/${_newDob!.month}/${_newDob!.year}',
-                    'gender': _newGender,
-                    'village': vil,
-                    'conditions': _newConditions.join(', '),
-                  });
                   _selectedPatientId = id;
                   _showNewPatientForm = false;
                   _newNameCtrl.clear();
@@ -3332,7 +3401,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () async {
-                if (_isOffline) await _incrementUnsynced();
                 _restoreBrightness();
                 if (mounted) Navigator.pop(context);
               },

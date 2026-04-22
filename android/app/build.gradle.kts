@@ -44,5 +44,4 @@ flutter {
 }
 
 dependencies {
-    implementation("com.google.mlkit:face-detection:16.1.7")
 }

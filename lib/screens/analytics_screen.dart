@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math';
+import '../db/database_helper.dart';
 
 
 class AnalyticsScreen extends StatefulWidget {
@@ -12,6 +13,35 @@ class AnalyticsScreen extends StatefulWidget {
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
   String _selectedPeriod = 'Today';
   final List<String> _periods = ['Today', 'Week', 'Month', 'Year'];
+
+  int _totalScreened = 0;
+  int _totalPassed = 0;
+  int _totalReferred = 0;
+  Map<String, int> _ageGroups = {};
+  Map<String, int> _genderCounts = {};
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    setState(() => _loading = true);
+    final outcomes = await DatabaseHelper.instance.getOutcomeCounts();
+    final ages = await DatabaseHelper.instance.getAgeGroupCounts();
+    final genders = await DatabaseHelper.instance.getGenderCounts();
+    if (!mounted) return;
+    setState(() {
+      _totalPassed = outcomes['pass'] ?? 0;
+      _totalReferred = outcomes['refer'] ?? 0;
+      _totalScreened = _totalPassed + _totalReferred;
+      _ageGroups = ages;
+      _genderCounts = genders;
+      _loading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

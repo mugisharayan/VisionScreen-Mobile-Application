@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:async' show TimeoutException;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -12,6 +12,7 @@ import 'patients_screen.dart';
 
 import 'analytics_screen.dart';
 import 'settings_screen.dart';
+import '../db/database_helper.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -33,6 +34,11 @@ class _HomeScreenState extends State<HomeScreen>
   late StreamSubscription<List<ConnectivityResult>> _connectivitySub;
   String _locationLabel = 'Detecting location...';
   bool _showClinicalTipDialog = false;
+
+  int _totalScreened = 0;
+  int _totalReferred = 0;
+  int _unsyncedCount = 0;
+  List<Map<String, dynamic>> _recentScreenings = [];
 
   final List<Map<String, dynamic>> _tips = [
     {'icon': Icons.wb_sunny_rounded, 'color': Color(0xFFF59E0B), 'text': 'Ensure adequate room lighting before starting a vision test.', 'image': 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&q=80'},
@@ -59,6 +65,7 @@ class _HomeScreenState extends State<HomeScreen>
         if (mounted) setState(() => _now = DateTime.now());
       },
     );
+    _loadDbStats();
     
     // Check initial connectivity
     Connectivity().checkConnectivity().then((results) {
@@ -109,9 +116,21 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
+  Future<void> _loadDbStats() async {
+    final outcomes = await DatabaseHelper.instance.getOutcomeCounts();
+    final unsynced = await DatabaseHelper.instance.getUnsyncedCount();
+    final recent = await DatabaseHelper.instance.getRecentScreeningsWithPatient(limit: 4);
+    if (!mounted) return;
+    setState(() {
+      _totalScreened = (outcomes['pass'] ?? 0) + (outcomes['refer'] ?? 0);
+      _totalReferred = outcomes['refer'] ?? 0;
+      _unsyncedCount = unsynced;
+      _recentScreenings = recent;
+    });
+  }
+
   Future<void> _onRefresh() async {
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() {});
+    await _loadDbStats();
   }
 
   void _doSync() async {
@@ -121,7 +140,7 @@ class _HomeScreenState extends State<HomeScreen>
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Sync complete! 3 records uploaded.',
+          content: Text('Sync complete! $_unsyncedCount records uploaded.',
               style: GoogleFonts.ibmPlexSans(fontSize: 12)),
           backgroundColor: const Color(0xFF0D9488),
           behavior: SnackBarBehavior.floating,
@@ -768,7 +787,7 @@ class _HomeScreenState extends State<HomeScreen>
               child: Text(
                 _isSyncing
                     ? 'Syncing to MongoDB Atlas...'
-                    : '3 records pending sync to MongoDB Atlas',
+                    : '$_unsyncedCount record${_unsyncedCount == 1 ? '' : 's'} pending sync',
                 style: GoogleFonts.inter(
                     fontSize: 11,
                     color: const Color(0xCC5EEAD4),
@@ -795,14 +814,14 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildStatsRow() {
+    Widget _buildStatsRow() {
     return Row(
       children: [
-        _buildStatCard('47', 'Screened', 'â†‘ 8 today', const Color(0xFF5EEAD4)),
+        _buildStatCard('$_totalScreened', 'Screened', 'Total', const Color(0xFF5EEAD4)),
         const SizedBox(width: 8),
-        _buildStatCard('6', 'Referrals', 'â†‘ 2 today', const Color(0xFFF59E0B)),
+        _buildStatCard('$_totalReferred', 'Referrals', 'Need follow-up', const Color(0xFFF59E0B)),
         const SizedBox(width: 8),
-        _buildStatCard('3', 'High Risk', 'â†‘ 1 today', const Color(0xFFEF4444)),
+        _buildStatCard('$_unsyncedCount', 'Unsynced', 'Pending upload', const Color(0xFFEF4444)),
       ],
     );
   }
@@ -1254,31 +1273,53 @@ class _HomeScreenState extends State<HomeScreen>
           ],
         ),
         const SizedBox(height: 12),
-        // Patient cards
-        _buildPatientCard(
-            'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=150&q=80',
-            ['#0D9488', '#14B8A6'], 'AK', 'Akello Mercy', 'F · 34 yrs',
-            'OD 6/6', 'OS 6/9', 'OU 6/6', '8m ago', 'pass', 'PAT-00312', 'adult'),
-        const SizedBox(height: 8),
-        _buildPatientCard(
-            'https://images.unsplash.com/photo-1506277886164-e25aa3f4ef7f?w=150&q=80',
-            ['#7F1D1D', '#EF4444'], 'OJ', 'Okello James', 'M · 58 yrs',
-            'OD 6/12', 'OS 6/18', 'OU 6/12', '22m ago', 'refer', 'PAT-00298', 'adult'),
-        const SizedBox(height: 8),
-        _buildPatientCard(
-            'https://images.unsplash.com/photo-1589156280159-27698a70f29e?w=150&q=80',
-            ['#065F46', '#22C55E'], 'NA', 'Nakato Aisha', 'F · 27 yrs',
-            'OD 6/9', 'OS 6/9', 'OU 6/6', '1hr ago', 'pass', 'PAT-00301', 'adult'),
-        const SizedBox(height: 8),
-        _buildPatientCard(
-            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&q=80',
-            ['#78350F', '#F59E0B'], 'MW', 'Mugisha Wilson', 'M · 45 yrs',
-            'â€”', 'â€”', 'â€”', 'Pending', 'pending', 'PAT-00315', 'adult'),
+        if (_recentScreenings.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: Text(
+                'No screenings yet.\nTap the eye button below to start.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF8FA0B4), height: 1.6),
+              ),
+            ),
+          )
+        else
+          ..._recentScreenings.asMap().entries.map((entry) {
+            final i = entry.key;
+            final r = entry.value;
+            final name = r['name'] as String;
+            final age = (r['age'] as int?) ?? 0;
+            final gender = (r['gender'] as String?) ?? '';
+            final outcome = (r['outcome'] as String?) ?? 'pass';
+            final od = (r['od_snellen'] as String?) ?? '—';
+            final os = (r['os_snellen'] as String?) ?? '—';
+            final ou = (r['ou_near_snellen'] as String?) ?? '—';
+            final pid = (r['patient_id'] as String?) ?? '';
+            final ageGroup = age < 18 ? 'child' : age > 60 ? 'elderly' : 'adult';
+            final initials = name.split(' ').map((w) => w.isEmpty ? '' : w[0]).take(2).join();
+            String timeLabel;
+            try {
+              final dt = DateTime.parse(r['screening_date'] as String);
+              final diff = DateTime.now().difference(dt);
+              timeLabel = diff.inMinutes < 60 ? '${diff.inMinutes}m ago' : '${diff.inHours}hr ago';
+            } catch (_) {
+              timeLabel = 'Today';
+            }
+            return Padding(
+              padding: EdgeInsets.only(bottom: i < _recentScreenings.length - 1 ? 8 : 0),
+              child: _buildPatientCard(
+                '', ['#0D9488', '#14B8A6'], initials, name,
+                '$gender · $age yrs', 'OD $od', 'OS $os', 'OU $ou',
+                timeLabel, outcome, pid, ageGroup,
+              ),
+            );
+          }),
       ],
     );
   }
 
-  Widget _buildPatientCard(
+    Widget _buildPatientCard(
     String photoUrl,
     List<String> gradientHex,
     String initials,
