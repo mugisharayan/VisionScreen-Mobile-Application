@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:async' show TimeoutException;
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -9,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'training_screen.dart';
 import 'notifications_screen.dart';
 import 'patients_screen.dart';
+import 'new_screening_screen.dart';
 
 import 'analytics_screen.dart';
 import 'settings_screen.dart';
@@ -1087,7 +1089,12 @@ class _HomeScreenState extends State<HomeScreen>
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap: () {
-          if (a['title'] == 'Training') {
+          if (a['title'] == 'New Screening') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NewScreeningScreen()),
+            ).then((_) => _loadDbStats());
+          } else if (a['title'] == 'Training') {
             Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const TrainingScreen()));
           } else if (a['title'] == 'Analytics') {
@@ -1297,6 +1304,7 @@ class _HomeScreenState extends State<HomeScreen>
             final ou = (r['ou_near_snellen'] as String?) ?? '—';
             final pid = (r['patient_id'] as String?) ?? '';
             final ageGroup = age < 18 ? 'child' : age > 60 ? 'elderly' : 'adult';
+            final photoPath = (r['photo_path'] as String?) ?? '';
             final initials = name.split(' ').map((w) => w.isEmpty ? '' : w[0]).take(2).join();
             String timeLabel;
             try {
@@ -1309,7 +1317,7 @@ class _HomeScreenState extends State<HomeScreen>
             return Padding(
               padding: EdgeInsets.only(bottom: i < _recentScreenings.length - 1 ? 8 : 0),
               child: _buildPatientCard(
-                '', ['#0D9488', '#14B8A6'], initials, name,
+                photoPath, ['#0D9488', '#14B8A6'], initials, name,
                 '$gender · $age yrs', 'OD $od', 'OS $os', 'OU $ou',
                 timeLabel, outcome, pid, ageGroup,
               ),
@@ -1405,16 +1413,15 @@ class _HomeScreenState extends State<HomeScreen>
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(14),
-                        child: Image.network(
-                          photoUrl, fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(colors: [c1, c2], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Center(child: Text(initials, style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white))),
-                          ),
-                        ),
+                         child: photoUrl.isNotEmpty && File(photoUrl).existsSync()
+                             ? Image.file(File(photoUrl), fit: BoxFit.cover, width: 50, height: 50)
+                             : Container(
+                                 decoration: BoxDecoration(
+                                   gradient: LinearGradient(colors: [c1, c2], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                                   borderRadius: BorderRadius.circular(14),
+                                 ),
+                                 child: Center(child: Text(initials, style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white))),
+                               ),
                       ),
                     ),
                     const SizedBox(width: 12),

@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../db/database_helper.dart';
 
 // ── Colours (shared with the rest of the app) ──
 const _ink = Color(0xFF04091A);
@@ -77,232 +79,11 @@ class _Patient {
   List<String> get safeConditions => conditions.toList();
 }
 
-final _patients = <_Patient>[
-  _Patient(
-    initials: 'AK',
-    avatarGradient: [_teal, _teal2],
-    photoUrl:
-        'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=150&q=80',
-    name: 'Akello Mercy',
-    age: 34,
-    gender: 'F',
-    village: 'Nakawa, Kampala',
-    ageGroup: 'adult',
-    od: '6/6',
-    os: '6/9',
-    ou: '6/6',
-    outcome: 'pass',
-    date: 'Today · 8m ago',
-    id: 'PAT-00312',
-    phone: '+256701234567',
-    history: [
-      _ScreeningEntry(
-        date: '28 Mar 2026',
-        od: '6/6',
-        os: '6/9',
-        ou: '6/6',
-        outcome: 'pass',
-      ),
-      _ScreeningEntry(
-        date: '10 Jan 2026',
-        od: '6/6',
-        os: '6/6',
-        ou: '6/6',
-        outcome: 'pass',
-      ),
-      _ScreeningEntry(
-        date: '5 Aug 2025',
-        od: '6/9',
-        os: '6/9',
-        ou: '6/6',
-        outcome: 'pass',
-      ),
-    ],
-  ),
-  _Patient(
-    initials: 'OJ',
-    avatarGradient: [Color(0xFF7F1D1D), _red],
-    photoUrl:
-        'https://images.unsplash.com/photo-1506277886164-e25aa3f4ef7f?w=150&q=80',
-    name: 'Okello James',
-    age: 58,
-    gender: 'M',
-    village: 'Bwaise, Kampala',
-    ageGroup: 'adult',
-    od: '6/12',
-    os: '6/18',
-    ou: '6/12',
-    outcome: 'refer',
-    date: 'Today · 22m ago',
-    id: 'PAT-00298',
-    phone: '+256702345678',
-    facility: 'Mulago National Referral Hospital',
-    dueDate: '29 Mar 2026',
-    referralStatus: 'overdue',
-    conditions: ['Blurred Vision', 'Wears Glasses'],
-    history: [
-      _ScreeningEntry(
-        date: '28 Mar 2026',
-        od: '6/12',
-        os: '6/18',
-        ou: '6/12',
-        outcome: 'refer',
-      ),
-      _ScreeningEntry(
-        date: '15 Nov 2025',
-        od: '6/9',
-        os: '6/12',
-        ou: '6/9',
-        outcome: 'refer',
-      ),
-      _ScreeningEntry(
-        date: '2 Jun 2025',
-        od: '6/6',
-        os: '6/9',
-        ou: '6/6',
-        outcome: 'pass',
-      ),
-    ],
-  ),
-  _Patient(
-    initials: 'NA',
-    avatarGradient: [Color(0xFF065F46), _green],
-    photoUrl:
-        'https://images.unsplash.com/photo-1589156280159-27698a70f29e?w=150&q=80',
-    name: 'Nakato Aisha',
-    age: 27,
-    gender: 'F',
-    village: 'Ntinda, Kampala',
-    ageGroup: 'adult',
-    od: '6/9',
-    os: '6/9',
-    ou: '6/6',
-    outcome: 'pass',
-    date: 'Today · 1hr ago',
-    id: 'PAT-00301',
-    phone: '+256703456789',
-    history: [
-      _ScreeningEntry(
-        date: '28 Mar 2026',
-        od: '6/9',
-        os: '6/9',
-        ou: '6/6',
-        outcome: 'pass',
-      ),
-      _ScreeningEntry(
-        date: '20 Dec 2025',
-        od: '6/12',
-        os: '6/9',
-        ou: '6/9',
-        outcome: 'refer',
-      ),
-    ],
-  ),
-  _Patient(
-    initials: 'MW',
-    avatarGradient: [Color(0xFF78350F), _amber],
-    photoUrl:
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&q=80',
-    name: 'Mugisha Wilson',
-    age: 45,
-    gender: 'M',
-    village: 'Kireka, Wakiso',
-    ageGroup: 'adult',
-    od: '6/12',
-    os: '6/18',
-    ou: '6/12',
-    outcome: 'refer',
-    date: 'Today · Pending',
-    id: 'PAT-00315',
-    phone: '+256704567890',
-    facility: 'Mengo Hospital',
-    dueDate: '12 Apr 2026',
-    referralStatus: 'cancelled',
-  ),
-  _Patient(
-    initials: 'KR',
-    avatarGradient: [_teal, _teal2],
-    photoUrl:
-        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&q=80',
-    name: 'Kyomuhendo Rose',
-    age: 19,
-    gender: 'F',
-    village: 'Rubaga, Kampala',
-    ageGroup: 'adult',
-    od: '6/9',
-    os: '6/9',
-    ou: '6/6',
-    outcome: 'refer',
-    date: '26 Mar',
-    id: 'PAT-00289',
-    phone: '+256705678901',
-    facility: 'Makerere University Hospital',
-    dueDate: '10 Apr 2026',
-    referralStatus: 'completed',
-  ),
-  _Patient(
-    initials: 'BS',
-    avatarGradient: [Color(0xFF1E3A5F), _blue],
-    photoUrl:
-        'https://images.unsplash.com/photo-1552058544-f2b08422138a?w=150&q=80',
-    name: 'Byaruhanga Sam',
-    age: 62,
-    gender: 'M',
-    village: 'Kawempe, Kampala',
-    ageGroup: 'elderly',
-    od: '6/24',
-    os: '6/36',
-    ou: '6/24',
-    outcome: 'refer',
-    date: '25 Mar',
-    id: 'PAT-00276',
-    phone: '+256706789012',
-    facility: 'Kampala Eye Clinic',
-    dueDate: '2 Apr 2026',
-    referralStatus: 'notified',
-    conditions: ['Blurred Vision', 'Eye Pain', 'Diabetes'],
-  ),
-  _Patient(
-    initials: 'TK',
-    avatarGradient: [Color(0xFF1E3A5F), _blue],
-    photoUrl:
-        'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=150&q=80',
-    name: 'Tendo Kevin',
-    age: 9,
-    gender: 'M',
-    village: 'Nansana, Wakiso',
-    ageGroup: 'child',
-    od: '6/9',
-    os: '6/9',
-    ou: '6/6',
-    outcome: 'pass',
-    date: '24 Mar',
-    id: 'PAT-00261',
-    phone: '+256707890123',
-  ),
-  _Patient(
-    initials: 'AN',
-    avatarGradient: [Color(0xFF4C1D95), Color(0xFF7C3AED)],
-    photoUrl:
-        'https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=150&q=80',
-    name: 'Apio Norah',
-    age: 8,
-    gender: 'F',
-    village: 'Kira, Wakiso',
-    ageGroup: 'child',
-    od: '6/18',
-    os: '6/12',
-    ou: '6/12',
-    outcome: 'refer',
-    date: '23 Mar',
-    id: 'PAT-00254',
-    phone: '+256708901234',
-    facility: 'Mulago National Referral Hospital',
-    dueDate: '7 Apr 2026',
-    referralStatus: 'attended',
-    conditions: ['Red Eyes', 'Eye Discharge'],
-  ),
-];
+// Static mock data removed — patients loaded from SQLite
+
+extension _Let<T> on T {
+  R let<R>(R Function(T) block) => block(this);
+}
 
 class PatientsScreen extends StatefulWidget {
   const PatientsScreen({super.key});
@@ -315,12 +96,81 @@ class _PatientsScreenState extends State<PatientsScreen> {
   final _searchCtrl = TextEditingController();
   String _filter = 'All';
   String _query = '';
+  List<_Patient> _patients = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPatients();
+  }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
     super.dispose();
   }
+
+  Future<void> _loadPatients() async {
+    setState(() => _loading = true);
+    final patientRows = await DatabaseHelper.instance.getAllPatients();
+    final list = <_Patient>[];
+    for (final r in patientRows) {
+      final pid = r['id'] as String;
+      final latest = await DatabaseHelper.instance.getLatestScreening(pid);
+      final age = (r['age'] as int?) ?? 0;
+      final conditions = ((r['conditions'] as String?) ?? '')
+          .split(',')
+          .map((s) => s.trim())
+          .where((s) => s.isNotEmpty)
+          .toList();
+      final outcome = (latest?['outcome'] as String?) ?? 'pending';
+      final od = (latest?['od_snellen'] as String?) ?? '—';
+      final os = (latest?['os_snellen'] as String?) ?? '—';
+      final ou = (latest?['ou_near_snellen'] as String?) ?? '—';
+      final screeningDate = latest?['screening_date'] as String?;
+      list.add(_Patient(
+        initials: (r['name'] as String)
+            .split(' ').map((w) => w.isEmpty ? '' : w[0]).take(2).join(),
+        avatarGradient: [_teal, _teal2],
+        photoUrl: (r['photo_path'] as String?) ?? '',
+        name: r['name'] as String,
+        age: age,
+        gender: r['gender'] as String,
+        village: r['village'] as String,
+        ageGroup: age < 18 ? 'child' : age > 60 ? 'elderly' : 'adult',
+        od: od, os: os, ou: ou,
+        outcome: outcome,
+        date: screeningDate != null ? _formatDate(screeningDate) : 'Not screened',
+        id: pid,
+        phone: (r['phone'] as String?) ?? '',
+        facility: (latest?['referral_facility'] as String?)
+            ?.let((f) => f.isEmpty ? null : f),
+        referralStatus: (latest?['referral_status'] as String?)
+            ?.let((s) => s.isEmpty ? null : s),
+        conditions: conditions,
+      ));
+    }
+    if (mounted) setState(() { _patients = list; _loading = false; });
+  }
+
+  String _formatDate(String iso) {
+    try {
+      final dt = DateTime.parse(iso);
+      final now = DateTime.now();
+      if (dt.year == now.year && dt.month == now.month && dt.day == now.day) {
+        final diff = now.difference(dt);
+        if (diff.inMinutes < 60) return 'Today · ${diff.inMinutes}m ago';
+        return 'Today · ${diff.inHours}hr ago';
+      }
+      return '${dt.day} ${_month(dt.month)}';
+    } catch (_) { return iso.substring(0, 10); }
+  }
+
+  String _month(int m) => const [
+    '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  ][m];
 
   List<_Patient> get _filtered => _patients.where((p) {
     final matchQ =
@@ -358,22 +208,27 @@ class _PatientsScreenState extends State<PatientsScreen> {
         children: [
           _buildHeader(total, passed, referred, pending),
           Expanded(
-            child: list.isEmpty
-                ? _buildEmpty()
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 24),
-                    itemCount: list.length + 1,
-                    itemBuilder: (_, i) {
-                      if (i == 0) {
-                        return _sectionLabel(
-                          'Today · ${DateTime.now().day} Mar ${DateTime.now().year}',
-                        );
-                      }
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 9),
-                        child: _buildCard(list[i - 1]),
-                      );
-                    },
+            child: _loading
+                ? const Center(child: CircularProgressIndicator(color: _teal))
+                : RefreshIndicator(
+                    onRefresh: _loadPatients,
+                    color: _teal,
+                    child: list.isEmpty
+                        ? ListView(children: [_buildEmpty()])
+                        : ListView.builder(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(14, 12, 14, 24),
+                            itemCount: list.length + 1,
+                            itemBuilder: (_, i) {
+                              if (i == 0) return _sectionLabel(
+                                '${list.length} patient${list.length == 1 ? '' : 's'} registered',
+                              );
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 9),
+                                child: _buildCard(list[i - 1]),
+                              );
+                            },
+                          ),
                   ),
           ),
         ],
@@ -654,30 +509,28 @@ class _PatientsScreenState extends State<PatientsScreen> {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(14),
-                        child: Image.network(
-                          p.photoUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: p.avatarGradient,
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Center(
-                              child: Text(
-                                p.initials,
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
+                        child: p.photoUrl.isNotEmpty && File(p.photoUrl).existsSync()
+                            ? Image.file(File(p.photoUrl), fit: BoxFit.cover, width: 50, height: 50)
+                            : Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: p.avatarGradient,
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    p.initials,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
-                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1174,180 +1027,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.4,
-        maxChildSize: 0.92,
-        expand: false,
-        builder: (_, ctrl) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            children: [
-              // Handle
-              Padding(
-                padding: const EdgeInsets.only(top: 12, bottom: 4),
-                child: Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFDDE4EC),
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                  ),
-                ),
-              ),
-              // Header
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: p.avatarGradient),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Center(
-                        child: Text(
-                          p.initials,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            p.name,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: const Color(0xFF1A2A3D),
-                            ),
-                          ),
-                          Text(
-                            '${p.id} · ${p.age} yrs · ${p.village}',
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              color: const Color(0xFF8FA0B4),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF0F4F7),
-                        borderRadius: BorderRadius.circular(99),
-                      ),
-                      child: Text(
-                        '${p.history.length + 1} screenings',
-                        style: GoogleFonts.inter(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF5E7291),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Conditions section in bottom sheet
-              if (p.safeConditions.isNotEmpty) ...[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Eye Conditions',
-                          style: GoogleFonts.inter(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF8FA0B4),
-                              letterSpacing: 1.0)),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: p.safeConditions.map((c) => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: _amber.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(99),
-                            border: Border.all(color: _amber.withOpacity(0.3)),
-                          ),
-                          child: Text(c,
-                              style: GoogleFonts.inter(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: _amber)),
-                        )).toList(),
-                      ),
-                    ],
-                  ),
-                ),
-                Divider(height: 1, color: const Color(0xFFEEF2F6)),
-              ],
-              // History list
-              Expanded(
-                child: p.history.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.history_rounded,
-                              size: 40,
-                              color: Color(0xFFDDE4EC),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'No previous screenings',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFF1A2A3D),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'This is the patient\'s first screening',
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: const Color(0xFF8FA0B4),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        controller: ctrl,
-                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-                        itemCount: p.history.length,
-                        itemBuilder: (_, i) =>
-                            _historyEntry(p.history[i], i, p.history.length),
-                      ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      builder: (_) => _PatientHistorySheet(patient: p),
     );
   }
 
@@ -1523,35 +1203,38 @@ class _PatientsScreenState extends State<PatientsScreen> {
 
   // ── Empty state ──
   Widget _buildEmpty() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.search_off_rounded,
-            size: 48,
-            color: Color(0xFFDDE4EC),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'No patients found',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF1A2A3D),
+    return SizedBox(
+      height: 300,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.search_off_rounded,
+              size: 48,
+              color: Color(0xFFDDE4EC),
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Try a different name, ID or village,\nor clear the filter.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              color: const Color(0xFF8FA0B4),
-              height: 1.6,
+            const SizedBox(height: 12),
+            Text(
+              'No patients found',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF1A2A3D),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 6),
+            Text(
+              'Try a different name, ID or village,\nor clear the filter.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: const Color(0xFF8FA0B4),
+                height: 1.6,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2365,3 +2048,256 @@ class _PatientsScreenState extends State<PatientsScreen> {
     );
   }
 }
+
+
+// ── Patient history bottom sheet — loads real screenings from SQLite ──
+class _PatientHistorySheet extends StatefulWidget {
+  final _Patient patient;
+  const _PatientHistorySheet({required this.patient});
+  @override
+  State<_PatientHistorySheet> createState() => _PatientHistorySheetState();
+}
+
+class _PatientHistorySheetState extends State<_PatientHistorySheet> {
+  List<Map<String, dynamic>> _history = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final rows = await DatabaseHelper.instance.getScreeningsForPatient(widget.patient.id);
+    if (mounted) setState(() { _history = rows; _loading = false; });
+  }
+
+  String _fmtDate(String iso) {
+    try {
+      final dt = DateTime.parse(iso);
+      final m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][dt.month - 1];
+      return '${dt.day} $m ${dt.year}';
+    } catch (_) { return iso.substring(0, 10); }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = widget.patient;
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      minChildSize: 0.4,
+      maxChildSize: 0.92,
+      expand: false,
+      builder: (_, ctrl) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            // Handle
+            Padding(
+              padding: const EdgeInsets.only(top: 12, bottom: 4),
+              child: Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(color: const Color(0xFFDDE4EC), borderRadius: BorderRadius.circular(99)),
+                ),
+              ),
+            ),
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: p.photoUrl.isNotEmpty && File(p.photoUrl).existsSync()
+                        ? Image.file(File(p.photoUrl), width: 44, height: 44, fit: BoxFit.cover)
+                        : Container(
+                            width: 44, height: 44,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(colors: p.avatarGradient),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Center(child: Text(p.initials,
+                                style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white))),
+                          ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(p.name, style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w800, color: const Color(0xFF1A2A3D))),
+                        Text('${p.id} · ${p.age} yrs · ${p.village}',
+                            style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8FA0B4))),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(color: const Color(0xFFF0F4F7), borderRadius: BorderRadius.circular(99)),
+                    child: Text('${_history.length} screening${_history.length == 1 ? '' : 's'}',
+                        style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF5E7291))),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Conditions
+            if (p.safeConditions.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                child: Wrap(
+                  spacing: 6, runSpacing: 6,
+                  children: p.safeConditions.map((c) => Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: _amber.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(99),
+                      border: Border.all(color: _amber.withOpacity(0.3)),
+                    ),
+                    child: Text(c, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: _amber)),
+                  )).toList(),
+                ),
+              ),
+              const Divider(height: 1, color: Color(0xFFEEF2F6)),
+            ],
+            // Screenings list
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator(color: _teal))
+                  : _history.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.history_rounded, size: 40, color: Color(0xFFDDE4EC)),
+                              const SizedBox(height: 12),
+                              Text('No screenings yet',
+                                  style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: const Color(0xFF1A2A3D))),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          controller: ctrl,
+                          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                          itemCount: _history.length,
+                          itemBuilder: (_, i) => _historyRow(_history[i], i, _history.length),
+                        ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _historyRow(Map<String, dynamic> r, int index, int total) {
+    final isLatest = index == 0;
+    final outcome = r['outcome'] as String;
+    final col = outcome == 'pass' ? _green : _red;
+    final od = (r['od_snellen'] as String?) ?? '—';
+    final os = (r['os_snellen'] as String?) ?? '—';
+    final ou = (r['ou_near_snellen'] as String?) ?? '—';
+    final chw = (r['chw_name'] as String?) ?? '';
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
+          children: [
+            Container(
+              width: 28, height: 28,
+              decoration: BoxDecoration(
+                color: col.withOpacity(0.1), shape: BoxShape.circle,
+                border: Border.all(color: col.withOpacity(0.3), width: 1.5),
+              ),
+              child: Icon(outcome == 'pass' ? Icons.check_rounded : Icons.warning_rounded, size: 14, color: col),
+            ),
+            if (index < total - 1)
+              Container(width: 2, height: 60, color: const Color(0xFFEEF2F6)),
+          ],
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: isLatest ? col.withOpacity(0.04) : Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isLatest ? col.withOpacity(0.2) : const Color(0xFFEEF2F6),
+                  width: 1.5,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(_fmtDate(r['screening_date'] as String),
+                          style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF1A2A3D))),
+                      const Spacer(),
+                      if (isLatest)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(color: _teal.withOpacity(0.1), borderRadius: BorderRadius.circular(99)),
+                          child: Text('Latest', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: _teal)),
+                        ),
+                      Container(
+                        margin: const EdgeInsets.only(left: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(color: col.withOpacity(0.1), borderRadius: BorderRadius.circular(99)),
+                        child: Text(outcome == 'pass' ? 'Pass' : 'Refer',
+                            style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: col)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      _pill('OD', od),
+                      const SizedBox(width: 6),
+                      _pill('OS', os),
+                      const SizedBox(width: 6),
+                      _pill('OU', ou),
+                      const Spacer(),
+                      if (chw.isNotEmpty) ...[
+                        const Icon(Icons.person_outline_rounded, size: 11, color: Color(0xFF8FA0B4)),
+                        const SizedBox(width: 4),
+                        Text(chw, style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF8FA0B4))),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _pill(String eye, String value) {
+    final isBad = value != '6/6' && value != '6/9' && value != '—';
+    final col = isBad ? _amber : _green;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: col.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(7),
+        border: Border.all(color: col.withOpacity(0.2)),
+      ),
+      child: RichText(
+        text: TextSpan(children: [
+          TextSpan(text: '$eye ', style: GoogleFonts.inter(fontSize: 9, color: const Color(0xFF8FA0B4), fontWeight: FontWeight.w500)),
+          TextSpan(text: value, style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.w700, color: col)),
+        ]),
+      ),
+    );
+  }
+}
+
