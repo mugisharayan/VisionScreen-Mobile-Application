@@ -459,6 +459,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: () => _showHistory(p),
+        onLongPress: () => _confirmDelete(p),
         borderRadius: BorderRadius.circular(16),
         highlightColor: const Color(0xFFF0F4F7),
         splashColor: const Color(0xFFDDE4EC),
@@ -1018,6 +1019,70 @@ class _PatientsScreenState extends State<PatientsScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _confirmDelete(_Patient p) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(
+                color: _red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.delete_rounded, color: _red, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text('Delete Patient',
+                  style: GoogleFonts.plusJakartaSans(
+                      fontSize: 16, fontWeight: FontWeight.w800,
+                      color: const Color(0xFF1A2A3D))),
+            ),
+          ],
+        ),
+        content: Text(
+          'Delete ${p.name} and all their screening records? This cannot be undone.',
+          style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF5E7291), height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w600,
+                    color: const Color(0xFF8FA0B4))),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await DatabaseHelper.instance.deletePatient(p.id);
+              await _loadPatients();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text('${p.name} deleted',
+                      style: GoogleFonts.inter(fontSize: 12, color: Colors.white)),
+                  backgroundColor: _red,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  duration: const Duration(seconds: 2),
+                ));
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _red,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              elevation: 0,
+            ),
+            child: Text('Delete',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: Colors.white)),
+          ),
+        ],
       ),
     );
   }

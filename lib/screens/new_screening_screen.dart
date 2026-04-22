@@ -93,6 +93,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   bool _showNewPatientForm = false;
   final _newNameCtrl    = TextEditingController();
   final _newVillageCtrl = TextEditingController();
+  final _newPhoneCtrl   = TextEditingController();
   String _newGender = 'M';
   DateTime? _newDob;
   bool _detectingLocation = false;
@@ -101,6 +102,8 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   CameraController? _photoCtrl;
   bool _showPhotoCamera = false;
   List<Map<String, String>> _patientListRuntime = [];
+
+  int? _savedScreeningId;
 
   // ── Feature: Checklist ────────────────────────────────────────────────────
   // light
@@ -197,6 +200,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     _patientSearchCtrl.dispose();
     _newNameCtrl.dispose();
     _newVillageCtrl.dispose();
+    _newPhoneCtrl.dispose();
     super.dispose();
   }
 
@@ -666,7 +670,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 
     final outcome = _needsReferral ? 'refer' : 'pass';
 
-    await DatabaseHelper.instance.insertScreening({
+    final id = await DatabaseHelper.instance.insertScreening({
       'patient_id': _selectedPatientId,
       'screening_date': DateTime.now().toIso8601String(),
       'od_logmar': odLogmar,
@@ -687,6 +691,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       'chw_name': chwName,
       'synced': _isOffline ? 0 : 0,
     });
+    if (mounted) setState(() => _savedScreeningId = id);
 
     await _loadUnsyncedCount();
   }
@@ -1557,6 +1562,10 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          // Phone number
+          _newField(_newPhoneCtrl, 'Phone Number', Icons.phone_rounded,
+              inputType: TextInputType.phone),
           const SizedBox(height: 16),
           // Current conditions
           Text('Current Eye Conditions',
@@ -1650,7 +1659,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   'dob': '${_newDob!.day}/${_newDob!.month}/${_newDob!.year}',
                   'gender': _newGender,
                   'village': vil,
-                  'phone': '',
+                  'phone': _newPhoneCtrl.text.trim(),
                   'conditions': _newConditions.join(', '),
                   'photo_path': _newPhotoPath ?? '',
                   'created_at': DateTime.now().toIso8601String(),
@@ -1662,6 +1671,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   _showNewPatientForm = false;
                   _newNameCtrl.clear();
                   _newVillageCtrl.clear();
+                  _newPhoneCtrl.clear();
                   _newDob = null;
                   _newConditions.clear();
                   _newPhotoPath = null;
@@ -3377,6 +3387,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                           nearResult: _nearResult,
                           screeningDate: DateTime.now()
                               .toString().substring(0, 10),
+                          screeningId: _savedScreeningId,
                         ),
                       ),
                     );

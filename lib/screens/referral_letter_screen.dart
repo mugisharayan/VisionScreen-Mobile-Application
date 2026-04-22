@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../db/database_helper.dart';
 
 const _ink  = Color(0xFF04091A);
 const _ink2 = Color(0xFF0B1530);
@@ -31,6 +32,7 @@ class ReferralLetterScreen extends StatefulWidget {
   final Map<String, dynamic>? nearResult;
   final String screeningDate;
   final List<String> conditions;
+  final int? screeningId;
 
   const ReferralLetterScreen({
     super.key,
@@ -39,6 +41,7 @@ class ReferralLetterScreen extends StatefulWidget {
     this.nearResult,
     required this.screeningDate,
     this.conditions = const [],
+    this.screeningId,
   });
 
   @override
@@ -50,7 +53,9 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
   final _chwTitleCtrl      = TextEditingController(text: 'Community Health Worker');
   final _facilityOtherCtrl = TextEditingController();
   String _selectedFacility = _facilities[0];
+  DateTime? _appointmentDate;
   bool _showLetter = false;
+  bool _saved = false;
 
   @override
   void initState() {
@@ -81,6 +86,21 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
     _chwTitleCtrl.dispose();
     _facilityOtherCtrl.dispose();
     super.dispose();
+  }
+
+  String get _appointmentDateStr => _appointmentDate == null
+      ? ''
+      : '${_appointmentDate!.day}/${_appointmentDate!.month}/${_appointmentDate!.year}';
+
+  Future<void> _saveToDb() async {
+    if (widget.screeningId == null) return;
+    await DatabaseHelper.instance.updateReferralDetails(
+      widget.screeningId!,
+      facility: _facilityName,
+      appointmentDate: _appointmentDate?.toIso8601String(),
+      status: 'pending',
+    );
+    if (mounted) setState(() => _saved = true);
   }
 
   String _toSnellen(String logmar) {
@@ -131,6 +151,9 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
     buf.writeln('Village: ${p['village']}');
     if (widget.conditions.isNotEmpty) {
       buf.writeln('Conditions: ${widget.conditions.join(', ')}');
+    }
+    if (_appointmentDate != null) {
+      buf.writeln('Appointment: $_appointmentDateStr');
     }
     buf.writeln('');
     buf.writeln('VISUAL ACUITY RESULTS (Tumbling E, LogMAR Scale)');
@@ -474,6 +497,72 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
             const SizedBox(height: 8),
             _formField(_facilityOtherCtrl, 'Facility name', Icons.local_hospital_rounded),
           ],
+          const SizedBox(height: 20),
+          // Appointment date
+          Text('Appointment Date',
+              style: GoogleFonts.plusJakartaSans(
+                  fontSize: 14, fontWeight: FontWeight.w800,
+                  color: const Color(0xFF1A2A3D))),
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: DateTime.now().add(const Duration(days: 7)),
+                firstDate: DateTime.now(),
+                lastDate: DateTime.now().add(const Duration(days: 365)),
+                helpText: 'Select Appointment Date',
+                builder: (ctx, child) => Theme(
+                  data: Theme.of(ctx).copyWith(
+                    colorScheme: const ColorScheme.light(
+                      primary: _teal, onPrimary: Colors.white),
+                  ),
+                  child: child!,
+                ),
+              );
+              if (picked != null) setState(() => _appointmentDate = picked);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _appointmentDate != null
+                      ? _teal : const Color(0xFFEEF2F6),
+                  width: 1.5,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.calendar_today_rounded,
+                      size: 16,
+                      color: _appointmentDate != null
+                          ? _teal : const Color(0xFF8FA0B4)),
+                  const SizedBox(width: 10),
+                  Text(
+                    _appointmentDate == null
+                        ? 'Select appointment date (optional)'
+                        : 'Appointment: $_appointmentDateStr',
+                    style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: _appointmentDate != null
+                            ? const Color(0xFF1A2A3D)
+                            : const Color(0xFF8FA0B4),
+                        fontWeight: _appointmentDate != null
+                            ? FontWeight.w600 : FontWeight.w400),
+                  ),
+                  const Spacer(),
+                  if (_appointmentDate != null)
+                    GestureDetector(
+                      onTap: () => setState(() => _appointmentDate = null),
+                      child: const Icon(Icons.close_rounded,
+                          size: 16, color: Color(0xFF8FA0B4)),
+                    ),
+                ],
+              ),
+            ),
+          ),
           const SizedBox(height: 32),
           SizedBox(
             width: double.infinity,
@@ -588,6 +677,10 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                 if (widget.conditions.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   _letterRow('Conditions', widget.conditions.join(', ')),
+                ],
+                if (_appointmentDate != null) ...[
+                  const SizedBox(height: 6),
+                  _letterRow('Appointment', _appointmentDateStr),
                 ],
                 const SizedBox(height: 16),
                 _divider(),
@@ -745,6 +838,37 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
             ),
           ),
           const SizedBox(height: 24),
+          // Save button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _saved ? null : () async {
+                await _saveToDb();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text('Referral saved to patient record',
+                        style: GoogleFonts.inter(fontSize: 12, color: Colors.white)),
+                    backgroundColor: _green,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    duration: const Duration(seconds: 2),
+                  ));
+                }
+              },
+              icon: Icon(_saved ? Icons.check_circle_rounded : Icons.save_rounded,
+                  size: 18, color: Colors.white),
+              label: Text(_saved ? 'Saved to Record' : 'Save to Patient Record',
+                  style: GoogleFonts.inter(
+                      fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _saved ? _green : _teal,
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           // Share button
           SizedBox(
             width: double.infinity,
@@ -754,13 +878,11 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
               icon: const Icon(Icons.share_rounded, size: 18, color: Colors.white),
               label: Text('Share Referral Letter',
                   style: GoogleFonts.inter(
-                      fontSize: 14, fontWeight: FontWeight.w700,
-                      color: Colors.white)),
+                      fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: _teal,
+                backgroundColor: const Color(0xFF1A2A3D),
                 padding: const EdgeInsets.symmetric(vertical: 15),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 elevation: 0,
               ),
             ),

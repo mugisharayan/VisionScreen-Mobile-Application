@@ -16,7 +16,7 @@ class DatabaseHelper {
     final path = join(await getDatabasesPath(), 'visionscreen.db');
     return openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, _) async {
         await db.execute('''
           CREATE TABLE patients (
@@ -52,11 +52,17 @@ class DatabaseHelper {
             outcome TEXT NOT NULL,
             referral_facility TEXT,
             referral_status TEXT,
+            appointment_date TEXT,
             chw_name TEXT,
             synced INTEGER DEFAULT 0,
             FOREIGN KEY (patient_id) REFERENCES patients(id)
           )
         ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute('ALTER TABLE screenings ADD COLUMN appointment_date TEXT');
+        }
       },
     );
   }
@@ -70,6 +76,12 @@ class DatabaseHelper {
       patient,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+  }
+
+  Future<void> deletePatient(String patientId) async {
+    final database = await db;
+    await database.delete('screenings', where: 'patient_id = ?', whereArgs: [patientId]);
+    await database.delete('patients', where: 'id = ?', whereArgs: [patientId]);
   }
 
   Future<List<Map<String, dynamic>>> getAllPatients() async {
@@ -140,6 +152,35 @@ class DatabaseHelper {
       where: 'id = ?',
       whereArgs: [screeningId],
     );
+  }
+
+  Future<void> updateReferralDetails(int screeningId, {
+    String? facility,
+    String? appointmentDate,
+    String? status,
+  }) async {
+    final database = await db;
+    final data = <String, dynamic>{};
+    if (facility != null) data['referral_facility'] = facility;
+    if (appointmentDate != null) data['appointment_date'] = appointmentDate;
+    if (status != null) data['referral_status'] = status;
+    if (data.isEmpty) return;
+    await database.update('screenings', data, where: 'id = ?', whereArgs: [screeningId]);
+  }
+
+  Future<List<Map<String, dynamic>>> getReferredPatients() async {
+    final database = await db;
+    return database.rawQuery('''
+      SELECT s.id as screening_id, s.patient_id, s.od_snellen, s.os_snellen,
+             s.referral_facility, s.referral_status, s.appointment_date,
+             p.name, p.age, p.gender, p.photo_path
+      FROM screenings s
+      JOIN patients p ON s.patient_id = p.id
+      WHERE s.outcome = 'refer'
+        AND s.referral_facility IS NOT NULL
+        AND s.referral_facility != ''
+      ORDER BY s.appointment_date ASC
+    ''');
   }
 
   Future<int> getUnsyncedCount() async {

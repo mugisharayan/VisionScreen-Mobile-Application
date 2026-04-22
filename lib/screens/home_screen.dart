@@ -41,6 +41,7 @@ class _HomeScreenState extends State<HomeScreen>
   int _totalReferred = 0;
   int _unsyncedCount = 0;
   List<Map<String, dynamic>> _recentScreenings = [];
+  List<Map<String, dynamic>> _referredPatients = [];
 
   final List<Map<String, dynamic>> _tips = [
     {'icon': Icons.wb_sunny_rounded, 'color': Color(0xFFF59E0B), 'text': 'Ensure adequate room lighting before starting a vision test.', 'image': 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&q=80'},
@@ -122,12 +123,14 @@ class _HomeScreenState extends State<HomeScreen>
     final outcomes = await DatabaseHelper.instance.getOutcomeCounts();
     final unsynced = await DatabaseHelper.instance.getUnsyncedCount();
     final recent = await DatabaseHelper.instance.getRecentScreeningsWithPatient(limit: 4);
+    final referred = await DatabaseHelper.instance.getReferredPatients();
     if (!mounted) return;
     setState(() {
       _totalScreened = (outcomes['pass'] ?? 0) + (outcomes['refer'] ?? 0);
       _totalReferred = outcomes['refer'] ?? 0;
       _unsyncedCount = unsynced;
       _recentScreenings = recent;
+      _referredPatients = referred;
     });
   }
 
@@ -1478,7 +1481,7 @@ class _HomeScreenState extends State<HomeScreen>
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
                         Icon(badgeIcon, size: 11, color: accentColor),
                         const SizedBox(width: 4),
-                        Text(badgeLabel, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: badgeText)),
+                        Text(badgeLabel, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: accentColor)),
                       ]),
                     ),
                   ],
@@ -1528,10 +1531,13 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildReferralFollowUps() {
+    final overdue = _referredPatients.where((r) => r['referral_status'] == 'overdue').length;
+    final pending = _referredPatients.where((r) =>
+        r['referral_status'] == 'pending' || r['referral_status'] == 'notified').length;
+    final dueCount = overdue + pending;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -1540,77 +1546,91 @@ class _HomeScreenState extends State<HomeScreen>
               children: [
                 Text('Referral Follow-Ups',
                     style: GoogleFonts.plusJakartaSans(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF1A2A3D),
-                        letterSpacing: 0.1)),
-                Text('2 due Â· Action required',
+                        fontSize: 16, fontWeight: FontWeight.w800,
+                        color: const Color(0xFF1A2A3D), letterSpacing: 0.1)),
+                Text(dueCount > 0 ? '$dueCount due Â· Action required' : 'All up to date',
                     style: GoogleFonts.inter(
                         fontSize: 11,
-                        color: const Color(0xFFEF4444),
+                        color: dueCount > 0 ? const Color(0xFFEF4444) : const Color(0xFF8FA0B4),
                         fontWeight: FontWeight.w500)),
               ],
             ),
             TextButton.icon(
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PatientsScreen())),
-              icon: const Icon(Icons.arrow_forward_rounded,
-                  size: 13, color: Color(0xFF0D9488)),
-              label: Text('View all',
-                  style: GoogleFonts.inter(
-                      fontSize: 11,
-                      color: const Color(0xFF0D9488),
-                      fontWeight: FontWeight.w600)),
+              icon: const Icon(Icons.arrow_forward_rounded, size: 13, color: Color(0xFF0D9488)),
+              label: Text('View all', style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF0D9488), fontWeight: FontWeight.w600)),
               style: TextButton.styleFrom(
                 backgroundColor: const Color(0xFF0D9488).withOpacity(0.08),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(99)),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(99)),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               ),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        _buildReferralCard(
-          'https://images.unsplash.com/photo-1506277886164-e25aa3f4ef7f?w=150&q=80',
-          const Color(0xFFEF4444),
-          'Okello James', 'M · 58 yrs',
-          'Mulago National Referral Hospital',
-          'Due 29 Mar 2026', 'Overdue',
-          const Color(0xFF92400E), const Color(0xFFFEF3C7),
-          const Color(0xFFF59E0B), Icons.error_rounded,
-          '6/12', '6/18', '6/12',
-        ),
-        const SizedBox(height: 8),
-        _buildReferralCard(
-          'https://images.unsplash.com/photo-1552058544-f2b08422138a?w=150&q=80',
-          const Color(0xFF3B82F6),
-          'Byaruhanga Sam', 'M · 62 yrs',
-          'Kampala Eye Clinic',
-          'Due 2 Apr 2026', 'Notified',
-          const Color(0xFF0369A1), const Color(0xFFE0F2FE),
-          const Color(0xFF38BDF8), Icons.notifications_active_rounded,
-          '6/24', '6/36', '6/24',
-        ),
+        if (_referredPatients.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Center(
+              child: Text('No referrals yet.',
+                  style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF8FA0B4))),
+            ),
+          )
+        else
+          ..._referredPatients.take(3).map((r) {
+            final name = r['name'] as String;
+            final age = (r['age'] as int?) ?? 0;
+            final gender = (r['gender'] as String?) ?? '';
+            final facility = (r['referral_facility'] as String?) ?? 'Unknown Facility';
+            final status = (r['referral_status'] as String?) ?? 'pending';
+            final photoPath = (r['photo_path'] as String?) ?? '';
+            final od = (r['od_snellen'] as String?) ?? 'â€”';
+            final os = (r['os_snellen'] as String?) ?? 'â€”';
+            final appointmentDate = r['appointment_date'] as String?;
+            String dueLabel = 'No date set';
+            if (appointmentDate != null && appointmentDate.isNotEmpty) {
+              try {
+                final dt = DateTime.parse(appointmentDate);
+                dueLabel = 'Due ${dt.day}/${dt.month}/${dt.year}';
+              } catch (_) {}
+            }
+            final statusColor = status == 'overdue'
+                ? const Color(0xFFEF4444)
+                : status == 'completed' ? const Color(0xFF22C55E)
+                : status == 'attended' ? const Color(0xFF0D9488)
+                : status == 'notified' ? const Color(0xFF3B82F6)
+                : const Color(0xFFF59E0B);
+            final initials = name.split(' ').map((w) => w.isEmpty ? '' : w[0]).take(2).join();
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _buildReferralCard(
+                photoPath, statusColor, name, '$gender Â· $age yrs',
+                facility, dueLabel,
+                status[0].toUpperCase() + status.substring(1),
+                statusColor.withOpacity(0.15), statusColor,
+                status == 'overdue' ? Icons.error_rounded : Icons.notifications_active_rounded,
+                od, os, initials,
+              ),
+            );
+          }),
       ],
     );
   }
 
   Widget _buildReferralCard(
-    String photoUrl,
+    String photoPath,
     Color avatarColor,
     String name,
     String demographic,
     String facility,
     String dueDate,
     String status,
-    Color badgeText,
     Color badgeBg,
     Color accentColor,
     IconData statusIcon,
     String od,
     String os,
-    String ou,
+    String initials,
   ) {
     return Material(
       color: Colors.white,
@@ -1649,15 +1669,13 @@ class _HomeScreenState extends State<HomeScreen>
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.network(
-                          photoUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stack) => Container(
-                            color: avatarColor.withOpacity(0.15),
-                            child: Icon(Icons.person_rounded,
-                                color: avatarColor, size: 26),
-                          ),
-                        ),
+                        child: photoPath.isNotEmpty && File(photoPath).existsSync()
+                            ? Image.file(File(photoPath), fit: BoxFit.cover, width: 48, height: 48)
+                            : Container(
+                                color: avatarColor.withOpacity(0.15),
+                                child: Center(child: Text(initials,
+                                    style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w800, color: avatarColor))),
+                              ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1704,8 +1722,8 @@ class _HomeScreenState extends State<HomeScreen>
                             _homeVaPill(od, 'refer'),
                             const SizedBox(width: 5),
                             _homeVaPill(os, 'refer'),
-                            const SizedBox(width: 5),
-                            _homeVaPill(ou, 'refer'),
+
+                            
                           ]),
                         ],
                       ),
@@ -1717,7 +1735,7 @@ class _HomeScreenState extends State<HomeScreen>
                         color: badgeBg,
                         borderRadius: BorderRadius.circular(99),
                         border: Border.all(
-                            color: badgeText.withOpacity(0.2), width: 1),
+                            color: accentColor.withOpacity(0.2), width: 1),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -1728,7 +1746,7 @@ class _HomeScreenState extends State<HomeScreen>
                               style: GoogleFonts.inter(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
-                                  color: badgeText)),
+                                  color: accentColor)),
                         ],
                       ),
                     ),
@@ -1758,7 +1776,7 @@ class _HomeScreenState extends State<HomeScreen>
                         style: GoogleFonts.inter(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: badgeText)),
+                            color: accentColor)),
                     const Spacer(),
                     Text('Update Status â†’',
                         style: GoogleFonts.inter(
