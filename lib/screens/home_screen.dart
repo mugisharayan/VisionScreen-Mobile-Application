@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:async' show TimeoutException;
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -169,21 +170,22 @@ class _HomeScreenState extends State<HomeScreen>
               color: const Color(0xFF0D9488),
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 16),
                 child: Column(
+            mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (_isOffline) _buildOfflineBanner(),
                     _buildSectionLabel('Quick Actions'),
                     _buildActionGrid(),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     _buildPassRateStrip(),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
                     _buildSectionLabel('Recent Patients'),
                     _buildRecentPatients(),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
                     _buildReferralFollowUps(),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 100),
                   ],
                 ),
               ),
@@ -414,7 +416,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(22, 50, 22, 0),
+      padding: const EdgeInsets.fromLTRB(18, 38, 18, 0),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -426,11 +428,11 @@ class _HomeScreenState extends State<HomeScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildUserRow(),
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
           Text(
             'Ready to screen,',
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 26,
+              fontSize: 20,
               color: Colors.white,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.5,
@@ -439,13 +441,13 @@ class _HomeScreenState extends State<HomeScreen>
           Text(
             "let's go!",
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 26,
+              fontSize: 20,
               color: const Color(0xFF5EEAD4),
               fontStyle: FontStyle.italic,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 3),
           // Location row â€” tappable to retry
           GestureDetector(
             onTap: _fetchLocation,
@@ -473,7 +475,7 @@ class _HomeScreenState extends State<HomeScreen>
               ],
             ),
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 3),
           // Date and time row
           Row(
             children: [
@@ -513,11 +515,11 @@ class _HomeScreenState extends State<HomeScreen>
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           _buildSyncBar(),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           _buildStatsRow(),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
         ],
       ),
     );
@@ -761,12 +763,23 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildSyncBar() {
     return GestureDetector(
       onTap: _isSyncing ? null : _doSync,
-      child: Container(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF0D9488).withOpacity(0.12),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFF0D9488).withOpacity(0.2)),
+          color: Colors.white.withOpacity(0.07),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withOpacity(0.15)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -815,6 +828,8 @@ class _HomeScreenState extends State<HomeScreen>
                         fontWeight: FontWeight.w700)),
           ],
         ),
+          ),
+        ),
       ),
     );
   }
@@ -834,12 +849,23 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildStatCard(
       String number, String label, String change, Color changeColor) {
     return Expanded(
-      child: Container(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
         padding: const EdgeInsets.all(11),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.06),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          color: Colors.white.withOpacity(0.09),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white.withOpacity(0.2)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.12),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           children: [
@@ -861,6 +887,8 @@ class _HomeScreenState extends State<HomeScreen>
                     color: changeColor,
                     fontWeight: FontWeight.w600)),
           ],
+        ),
+          ),
         ),
       ),
     );
@@ -941,7 +969,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildSectionLabel(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 5),
+      padding: const EdgeInsets.only(bottom: 2),
       child: Text(text.toUpperCase(),
           style: GoogleFonts.inter(
             fontSize: 11,
@@ -953,6 +981,9 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildPassRateStrip() {
+    final passed = _totalScreened - _totalReferred;
+    final passRate = _totalScreened > 0 ? passed / _totalScreened : 0.0;
+    final passPercent = (passRate * 100).round();
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
@@ -972,7 +1003,6 @@ class _HomeScreenState extends State<HomeScreen>
       ),
       child: Row(
         children: [
-          // Donut-style pass rate
           SizedBox(
             width: 52,
             height: 52,
@@ -980,7 +1010,7 @@ class _HomeScreenState extends State<HomeScreen>
               fit: StackFit.expand,
               children: [
                 TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0, end: 0.74),
+                  tween: Tween(begin: 0.0, end: passRate),
                   duration: const Duration(milliseconds: 1000),
                   curve: Curves.easeOutCubic,
                   builder: (context, val, child) => CircularProgressIndicator(
@@ -992,11 +1022,12 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                 ),
                 Center(
-                  child: Text('74%',
-                      style: GoogleFonts.spaceGrotesk(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white)),
+                  child: Text(
+                    _totalScreened == 0 ? 'N/A' : '${passPercent}%',
+                    style: GoogleFonts.spaceGrotesk(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white)),
                 ),
               ],
             ),
@@ -1006,32 +1037,35 @@ class _HomeScreenState extends State<HomeScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Pass Rate Today',
+                Text('Pass Rate (All Time)',
                     style: GoogleFonts.plusJakartaSans(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: Colors.white)),
                 const SizedBox(height: 3),
-                Text('35 passed Â· 12 referred Â· 6 high risk',
-                    style: GoogleFonts.inter(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.white.withOpacity(0.6))),
+                Text(
+                  _totalScreened == 0
+                      ? 'No screenings yet'
+                      : '${passed} passed \u00b7 ${_totalReferred} referred',
+                  style: GoogleFonts.inter(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.white.withOpacity(0.6))),
               ],
             ),
           ),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.15),
               borderRadius: BorderRadius.circular(99),
             ),
-            child: Text('â†‘ 3%',
-                style: GoogleFonts.spaceGrotesk(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white)),
+            child: Text(
+              '${_totalScreened} total',
+              style: GoogleFonts.spaceGrotesk(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white)),
           ),
         ],
       ),
@@ -1078,9 +1112,10 @@ class _HomeScreenState extends State<HomeScreen>
       crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.zero,
       crossAxisSpacing: 10,
       mainAxisSpacing: 10,
-      childAspectRatio: 1.3,
+      childAspectRatio: 1.7,
       children: actions.map((a) => _buildActionCard(a)).toList(),
     );
   }
@@ -1147,7 +1182,7 @@ class _HomeScreenState extends State<HomeScreen>
               ),
               // Content
               Padding(
-                padding: const EdgeInsets.all(13),
+                padding: const EdgeInsets.all(10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1156,17 +1191,17 @@ class _HomeScreenState extends State<HomeScreen>
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Container(
-                          width: 34,
-                          height: 34,
+                          width: 28,
+                          height: 28,
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.18),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(8),
                             border: Border.all(
                                 color: Colors.white.withOpacity(0.25),
                                 width: 1),
                           ),
                           child: Icon(a['icon'] as IconData,
-                              color: Colors.white, size: 17),
+                              color: Colors.white, size: 14),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -1200,7 +1235,7 @@ class _HomeScreenState extends State<HomeScreen>
                             children: [
                               Text(a['title'] as String,
                                   style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 15,
+                                      fontSize: 13,
                                       fontWeight: FontWeight.w800,
                                       color: Colors.white,
                                       letterSpacing: 0.1,
@@ -1208,21 +1243,21 @@ class _HomeScreenState extends State<HomeScreen>
                               const SizedBox(height: 3),
                               Text(a['sub'] as String,
                                   style: GoogleFonts.inter(
-                                      fontSize: 10,
+                                      fontSize: 9,
                                       fontWeight: FontWeight.w400,
                                       color: Colors.white.withOpacity(0.65))),
                             ],
                           ),
                         ),
                         Container(
-                          width: 26,
-                          height: 26,
+                          width: 22,
+                          height: 22,
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.2),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(Icons.arrow_forward,
-                              color: Colors.white, size: 13),
+                              color: Colors.white, size: 11),
                         ),
                       ],
                     ),
@@ -1253,7 +1288,7 @@ class _HomeScreenState extends State<HomeScreen>
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFF1A2A3D),
                         letterSpacing: 0.1)),
-                Text('4 patients Â· 27 Mar 2026',
+                Text('${_recentScreenings.length} patient${_recentScreenings.length == 1 ? '' : 's'} · ${_formatDate(_now)}',
                     style: GoogleFonts.inter(
                         fontSize: 11,
                         color: const Color(0xFF8FA0B4),
@@ -1320,7 +1355,7 @@ class _HomeScreenState extends State<HomeScreen>
             return Padding(
               padding: EdgeInsets.only(bottom: i < _recentScreenings.length - 1 ? 8 : 0),
               child: _buildPatientCard(
-                photoPath, ['#0D9488', '#14B8A6'], initials, name,
+                photoPath, outcome == 'refer' ? ['#EF4444', '#F97316'] : outcome == 'pass' ? ['#0D9488', '#14B8A6'] : ['#F59E0B', '#FBBF24'], initials, name,
                 '$gender · $age yrs', 'OD $od', 'OS $os', 'OU $ou',
                 timeLabel, outcome, pid, ageGroup,
               ),
@@ -1505,7 +1540,7 @@ class _HomeScreenState extends State<HomeScreen>
                     const SizedBox(width: 4),
                     Text(time, style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8FA0B4), fontWeight: FontWeight.w500)),
                     const SizedBox(width: 10),
-                    Text('View â†’', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: accentColor)),
+                    Text('View →', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: accentColor)),
                   ],
                 ),
               ),
@@ -1548,7 +1583,7 @@ class _HomeScreenState extends State<HomeScreen>
                     style: GoogleFonts.plusJakartaSans(
                         fontSize: 16, fontWeight: FontWeight.w800,
                         color: const Color(0xFF1A2A3D), letterSpacing: 0.1)),
-                Text(dueCount > 0 ? '$dueCount due Â· Action required' : 'All up to date',
+                Text(dueCount > 0 ? '$dueCount due · Action required' : 'All up to date',
                     style: GoogleFonts.inter(
                         fontSize: 11,
                         color: dueCount > 0 ? const Color(0xFFEF4444) : const Color(0xFF8FA0B4),
@@ -1584,8 +1619,8 @@ class _HomeScreenState extends State<HomeScreen>
             final facility = (r['referral_facility'] as String?) ?? 'Unknown Facility';
             final status = (r['referral_status'] as String?) ?? 'pending';
             final photoPath = (r['photo_path'] as String?) ?? '';
-            final od = (r['od_snellen'] as String?) ?? 'â€”';
-            final os = (r['os_snellen'] as String?) ?? 'â€”';
+            final od = (r['od_snellen'] as String?) ?? '—';
+            final os = (r['os_snellen'] as String?) ?? '—';
             final appointmentDate = r['appointment_date'] as String?;
             String dueLabel = 'No date set';
             if (appointmentDate != null && appointmentDate.isNotEmpty) {
@@ -1604,7 +1639,7 @@ class _HomeScreenState extends State<HomeScreen>
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: _buildReferralCard(
-                photoPath, statusColor, name, '$gender Â· $age yrs',
+                photoPath, statusColor, name, '$gender · $age yrs',
                 facility, dueLabel,
                 status[0].toUpperCase() + status.substring(1),
                 statusColor.withOpacity(0.15), statusColor,
@@ -1634,6 +1669,7 @@ class _HomeScreenState extends State<HomeScreen>
   ) {
     return Material(
       color: Colors.white,
+      clipBehavior: Clip.antiAlias,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: () {},
@@ -1641,6 +1677,7 @@ class _HomeScreenState extends State<HomeScreen>
         highlightColor: const Color(0xFFF0F4F7),
         splashColor: const Color(0xFFDDE4EC),
         child: Container(
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
@@ -1653,6 +1690,7 @@ class _HomeScreenState extends State<HomeScreen>
             ],
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Top section
               Padding(
@@ -1778,10 +1816,9 @@ class _HomeScreenState extends State<HomeScreen>
                             fontWeight: FontWeight.w600,
                             color: accentColor)),
                     const Spacer(),
-                    Text('Update Status â†’',
+                    Text('Update Status →',
                         style: GoogleFonts.inter(
                             fontSize: 11,
-                            fontWeight: FontWeight.w600,
                             color: accentColor)),
                   ],
                 ),

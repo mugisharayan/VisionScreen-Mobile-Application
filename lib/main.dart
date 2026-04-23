@@ -61,7 +61,7 @@ class BottomNavClipper extends CustomClipper<Path> {
   Path getClip(Size size) {
     final path = Path();
     const radius = 40.0;
-    const notchHeight = 50.0;
+    const notchHeight = 40.0;
 
     // Start from bottom left
     path.lineTo(0, 0);
@@ -122,6 +122,8 @@ class _MainShellState extends State<MainShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
+      backgroundColor: const Color(0xFFF8FAFB),
       body: IndexedStack(
         index: _index,
         children: const [
@@ -140,7 +142,7 @@ class _MainShellState extends State<MainShell> {
     final lastItems = _items.sublist(2);
 
     return SizedBox(
-      height: 100,
+      height: 82,
       child: Stack(
         alignment: Alignment.bottomCenter,
         children: [
@@ -149,22 +151,12 @@ class _MainShellState extends State<MainShell> {
             bottom: 0,
             left: 0,
             right: 0,
-            height: 76,
+            height: 62,
             child: ClipPath(
               clipper: BottomNavClipper(),
               child: Container(
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: Colors.white,
-                  border: const Border(
-                    top: BorderSide(color: Color(0xFFEEF2F6), width: 1.5),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 24,
-                      offset: const Offset(0, -6),
-                    ),
-                  ],
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -190,7 +182,7 @@ class _MainShellState extends State<MainShell> {
                               children: [
                                 Icon(
                                   e.value['icon'] as IconData,
-                                  size: active ? 24 : 22,
+                                  size: active ? 20 : 18,
                                   color: active
                                       ? const Color(0xFF0D9488)
                                       : const Color(0xFF8FA0B4),
@@ -224,7 +216,7 @@ class _MainShellState extends State<MainShell> {
                         ),
                       );
                     }),
-                    const SizedBox(width: 70),
+                    const SizedBox(width: 58),
                     ...lastItems.asMap().entries.map((e) {
                       final index = e.key + 2;
                       final active = index == _index;
@@ -247,7 +239,7 @@ class _MainShellState extends State<MainShell> {
                               children: [
                                 Icon(
                                   e.value['icon'] as IconData,
-                                  size: active ? 24 : 22,
+                                  size: active ? 20 : 18,
                                   color: active
                                       ? const Color(0xFF0D9488)
                                       : const Color(0xFF8FA0B4),
@@ -292,8 +284,8 @@ class _MainShellState extends State<MainShell> {
             child: GestureDetector(
               onTap: _startNewScreening,
               child: Container(
-                width: 80,
-                height: 80,
+                width: 64,
+                height: 64,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   boxShadow: [
@@ -329,7 +321,7 @@ class _MainShellState extends State<MainShell> {
                   child: const Center(
                     child: Icon(
                       Icons.remove_red_eye_rounded,
-                      size: 40,
+                      size: 32,
                       color: Colors.white,
                     ),
                   ),
