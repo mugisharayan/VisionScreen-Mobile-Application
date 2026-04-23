@@ -27,7 +27,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
-  int _notificationCount = 3;
+  int _notificationCount = 0;
   bool _isSyncing = false;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -133,6 +133,9 @@ class _HomeScreenState extends State<HomeScreen>
       _recentScreenings = recent;
       _referredPatients = referred;
     });
+    final notifications = await DatabaseHelper.instance.getNotifications();
+    if (!mounted) return;
+    setState(() => _notificationCount = notifications.where((n) => n['read'] == false).length);
   }
 
   Future<void> _onRefresh() async {

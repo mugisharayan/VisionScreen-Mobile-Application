@@ -259,4 +259,93 @@ class DatabaseHelper {
       LIMIT ?
     ''', [limit]);
   }
+
+  // ── NOTIFICATIONS ─────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getNotifications() async {
+    final List<Map<String, dynamic>> notifications = [];
+
+    // 1. Overdue referrals (appointment_date passed, status still pending/notified)
+    final overdueRows = await (await db).rawQuery('''
+      SELECT s.id, p.name, s.referral_facility, s.appointment_date
+      FROM screenings s JOIN patients p ON s.patient_id = p.id
+      WHERE s.outcome = 'refer'
+        AND s.referral_status IN ('pending','notified')
+        AND s.appointment_date IS NOT NULL
+        AND s.appointment_date < datetime('now')
+      ORDER BY s.appointment_date ASC
+    ''');
+    for (final r in overdueRows) {
+      notifications.add({
+        'icon': 'warning',
+        'color': 0xFFEF4444,
+        'title': 'Referral Overdue',
+        'body': '${r['name']} has not attended ${r['referral_facility']}.',
+        'time': r['appointment_date'],
+        'read': false,
+        'tag': 'URGENT',
+      });
+    }
+
+    // 2. Upcoming appointments (within next 3 days)
+    final upcomingRows = await (await db).rawQuery('''
+      SELECT s.id, p.name, s.referral_facility, s.appointment_date
+      FROM screenings s JOIN patients p ON s.patient_id = p.id
+      WHERE s.outcome = 'refer'
+        AND s.referral_status IN ('pending','notified')
+        AND s.appointment_date >= datetime('now')
+        AND s.appointment_date <= datetime('now', '+3 days')
+      ORDER BY s.appointment_date ASC
+    ''');
+    for (final r in upcomingRows) {
+      notifications.add({
+        'icon': 'reminder',
+        'color': 0xFF8B5CF6,
+        'title': 'Appointment Reminder',
+        'body': '${r['name']} — ${r['referral_facility']} on ${r['appointment_date']}.',
+        'time': r['appointment_date'],
+        'read': false,
+        'tag': 'REMINDER',
+      });
+    }
+
+    // 3. Recent screenings (last 24 hours)
+    final recentRows = await (await db).rawQuery('''
+      SELECT s.id, p.name, s.outcome, s.od_snellen, s.os_snellen, s.screening_date
+      FROM screenings s JOIN patients p ON s.patient_id = p.id
+      WHERE s.screening_date >= datetime('now', '-1 day')
+      ORDER BY s.screening_date DESC
+      LIMIT 5
+    ''');
+    for (final r in recentRows) {
+      final passed = r['outcome'] == 'pass';
+      notifications.add({
+        'icon': passed ? 'check' : 'assignment',
+        'color': passed ? 0xFF22C55E : 0xFFF59E0B,
+        'title': passed ? 'Screening Passed' : 'Referral Generated',
+        'body': passed
+            ? '${r['name']} passed. OD ${r['od_snellen']}, OS ${r['os_snellen']}.'
+            : 'Referral created for ${r['name']}.',
+        'time': r['screening_date'],
+        'read': true,
+        'tag': passed ? 'RESULT' : 'REFERRAL',
+      });
+    }
+
+    // 4. Unsynced records
+    final unsynced = await getUnsyncedCount();
+    if (unsynced > 0) {
+      notifications.add({
+        'icon': 'sync',
+        'color': 0xFF38BDF8,
+        'title': 'Sync Pending',
+        'body': '$unsynced record${unsynced == 1 ? '' : 's'} waiting to sync.',
+        'time': DateTime.now().toIso8601String(),
+        'read': unsynced < 3,
+        'tag': 'SYNC',
+      });
+    }
+
+    return notifications;
+  }
 }

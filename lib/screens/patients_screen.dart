@@ -238,164 +238,220 @@ class _PatientsScreenState extends State<PatientsScreen> {
 
   // ── Header ──
   Widget _buildHeader(int total, int passed, int referred, int pending) {
+    final passRate = total > 0 ? (passed / total * 100).round() : 0;
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [_ink, _ink2],
+          colors: [Color(0xFF04091A), Color(0xFF0B1A2E)],
+        ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(32),
+          bottomRight: Radius.circular(32),
         ),
       ),
-      child: SafeArea(
-        bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Title row
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-              child: Row(
+      child: Stack(
+        clipBehavior: Clip.hardEdge,
+        children: [
+          // Large teal glow top-right
+          Positioned(
+            top: -60, right: -60,
+            child: Container(
+              width: 260, height: 260,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(colors: [
+                  _teal.withOpacity(0.2),
+                  Colors.transparent,
+                ]),
+              ),
+            ),
+          ),
+          // Small blue accent bottom-left
+          Positioned(
+            bottom: 40, left: -30,
+            child: Container(
+              width: 120, height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(colors: [
+                  _blue.withOpacity(0.1),
+                  Colors.transparent,
+                ]),
+              ),
+            ),
+          ),
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  // ── Top bar: label + icon ──
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text(
-                        'Patients & Referrals',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(children: [
+                            Container(
+                              width: 8, height: 8,
+                              decoration: const BoxDecoration(color: _teal3, shape: BoxShape.circle),
+                            ),
+                            const SizedBox(width: 7),
+                            Text('PATIENT REGISTRY', style: GoogleFonts.ibmPlexSans(fontSize: 10, fontWeight: FontWeight.w800, color: _teal3.withOpacity(0.7), letterSpacing: 2.0)),
+                          ]),
+                          const SizedBox(height: 6),
+                          Text('Patients &', style: GoogleFonts.barlow(fontSize: 34, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -1.2, height: 1.0)),
+                          Text('Referrals', style: GoogleFonts.barlow(fontSize: 34, fontWeight: FontWeight.w900, color: _teal3, letterSpacing: -1.2, height: 1.0, fontStyle: FontStyle.italic)),
+                        ],
                       ),
-                      Text(
-                        '$total registered · Wakiso & Kampala',
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          color: _teal3.withOpacity(0.55),
-                          fontWeight: FontWeight.w400,
+                      const Spacer(),
+                      // Hero number circle
+                      Container(
+                        width: 72, height: 72,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            colors: [_teal, _teal2],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          boxShadow: [
+                            BoxShadow(color: _teal.withOpacity(0.5), blurRadius: 20, offset: const Offset(0, 8)),
+                          ],
+                          border: Border.all(color: Colors.white.withOpacity(0.2), width: 2),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('$total', style: GoogleFonts.barlow(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.white, height: 1.0)),
+                            Text('patients', style: GoogleFonts.ibmPlexSans(fontSize: 8, fontWeight: FontWeight.w600, color: Colors.white.withOpacity(0.7), letterSpacing: 0.5)),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 14),
-
-            // Stats row
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  _statChip('$total', 'Total', Colors.white),
-                  const SizedBox(width: 8),
-                  _statChip('$passed', 'Passed', _green),
-                  const SizedBox(width: 8),
-                  _statChip('$referred', 'Referred', _red),
-                  const SizedBox(width: 8),
-                  _statChip('$pending', 'Pending', _amber),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 14),
-
-            // Search bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.white.withOpacity(0.12)),
-                ),
-                child: TextField(
-                  controller: _searchCtrl,
-                  onChanged: (v) => setState(() => _query = v.toLowerCase()),
-                  style: GoogleFonts.inter(fontSize: 13, color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: 'Search by name, ID, village, or facility...',
-                    hintStyle: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: _teal3.withOpacity(0.4),
+                  const SizedBox(height: 20),
+                  // ── Stats cards row ──
+                  Row(children: [
+                    _statChip('$passed', 'Passed', _green, Icons.check_circle_rounded, passed / (total == 0 ? 1 : total)),
+                    const SizedBox(width: 8),
+                    _statChip('$referred', 'Referred', _red, Icons.warning_rounded, referred / (total == 0 ? 1 : total)),
+                    const SizedBox(width: 8),
+                    _statChip('$pending', 'Pending', _amber, Icons.schedule_rounded, pending / (total == 0 ? 1 : total)),
+                    const SizedBox(width: 8),
+                    _statChip('$passRate%', 'Pass Rate', _teal3, Icons.insights_rounded, passed / (total == 0 ? 1 : total)),
+                  ]),
+                  const SizedBox(height: 16),
+                  // ── Search bar ──
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFEEF2F6)),
                     ),
-                    prefixIcon: Icon(
-                      Icons.search_rounded,
-                      size: 18,
-                      color: _teal3.withOpacity(0.5),
-                    ),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
+                    child: Row(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 14),
+                          child: Icon(Icons.search_rounded, size: 18, color: const Color(0xFF0D9488)),
+                        ),
+                        Expanded(
+                          child: TextField(
+                            controller: _searchCtrl,
+                            onChanged: (v) => setState(() => _query = v.toLowerCase()),
+                            style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF1A2A3D)),
+                            decoration: InputDecoration(
+                              hintText: 'Search name, ID, village...',
+                              hintStyle: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF8FA0B4)),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+                            ),
+                          ),
+                        ),
+                        if (_query.isNotEmpty)
+                          GestureDetector(
+                            onTap: () { _searchCtrl.clear(); setState(() => _query = ''); },
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 12),
+                              child: Container(
+                                width: 22, height: 22,
+                                decoration: BoxDecoration(color: const Color(0xFFEEF2F6), shape: BoxShape.circle),
+                                child: const Icon(Icons.close_rounded, size: 13, color: const Color(0xFF8FA0B4)),
+                              ),
+                            ),
+                          )
+                        else
+                          Padding(
+                            padding: const EdgeInsets.only(right: 12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: _teal.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: _teal3.withOpacity(0.3)),
+                              ),
+                              child: Text('Search', style: GoogleFonts.ibmPlexSans(fontSize: 9, fontWeight: FontWeight.w700, color: _teal3)),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  // ── Filter chips ──
+                  SizedBox(
+                    height: 34,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: [
+                        'All','Pass','Refer','Pending','Child','Adult','Elderly',
+                        'Overdue','Notified','Attended','Completed','Cancelled',
+                      ].map((f) => _filterChip(f)).toList(),
+                    ),
+                  ),
+                ],
               ),
             ),
-
-            const SizedBox(height: 12),
-
-            // Filter chips
-            SizedBox(
-              height: 34,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                children: [
-                  'All',
-                  'Pass',
-                  'Refer',
-                  'Pending',
-                  'Child',
-                  'Adult',
-                  'Elderly',
-                  'Overdue',
-                  'Notified',
-                  'Attended',
-                  'Completed',
-                  'Cancelled',
-                ].map((f) => _filterChip(f)).toList(),
-              ),
-            ),
-
-            const SizedBox(height: 14),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _statChip(String number, String label, Color numColor) {
+  Widget _statChip(String number, String label, Color color, IconData icon, double ratio) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.07),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          color: color.withOpacity(0.07),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withOpacity(0.22)),
         ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              number,
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: numColor,
+            Row(children: [
+              Icon(icon, size: 11, color: color.withOpacity(0.8)),
+              const Spacer(),
+              Text(number, style: GoogleFonts.barlow(fontSize: 18, fontWeight: FontWeight.w900, color: color, height: 1.0)),
+            ]),
+            const SizedBox(height: 6),
+            // Progress bar
+            ClipRRect(
+              borderRadius: BorderRadius.circular(99),
+              child: LinearProgressIndicator(
+                value: ratio.clamp(0.0, 1.0),
+                minHeight: 3,
+                backgroundColor: Colors.white.withOpacity(0.08),
+                valueColor: AlwaysStoppedAnimation<Color>(color),
               ),
             ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 9,
-                color: _teal3.withOpacity(0.5),
-                fontWeight: FontWeight.w500,
-                letterSpacing: 0.5,
-              ),
-            ),
+            const SizedBox(height: 5),
+            Text(label.toUpperCase(), style: GoogleFonts.ibmPlexSans(fontSize: 7, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.35), letterSpacing: 1.0)),
           ],
         ),
       ),
