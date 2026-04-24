@@ -1145,7 +1145,10 @@ class _HomeScreenState extends State<HomeScreen>
             Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const TrainingScreen()));
           } else if (a['title'] == 'Analytics') {
-            Navigator.pushNamed(context, '/analytics');
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AnalyticsScreen()),
+            );
           }
         },
         splashColor: Colors.white.withOpacity(0.1),
@@ -1658,10 +1661,93 @@ class _HomeScreenState extends State<HomeScreen>
                 statusColor.withOpacity(0.15), statusColor,
                 status == 'overdue' ? Icons.error_rounded : Icons.notifications_active_rounded,
                 od, os, initials,
+                (r['screening_id'] as int? ?? 0),
               ),
             );
           }),
       ],
+    );
+  }
+
+  void _showUpdateStatusSheet(BuildContext ctx, int screeningId, String currentStatus, String patientName) {
+    final statuses = [
+      {'value': 'pending',   'label': 'Pending',   'icon': Icons.schedule_rounded,             'color': const Color(0xFFF59E0B)},
+      {'value': 'notified',  'label': 'Notified',  'icon': Icons.notifications_active_rounded, 'color': const Color(0xFF3B82F6)},
+      {'value': 'attended',  'label': 'Attended',  'icon': Icons.check_circle_outline_rounded, 'color': const Color(0xFF0D9488)},
+      {'value': 'completed', 'label': 'Completed', 'icon': Icons.check_circle_rounded,         'color': const Color(0xFF22C55E)},
+      {'value': 'overdue',   'label': 'Overdue',   'icon': Icons.error_rounded,                'color': const Color(0xFFEF4444)},
+      {'value': 'cancelled', 'label': 'Cancelled', 'icon': Icons.cancel_rounded,               'color': Colors.grey},
+    ];
+    showModalBottomSheet(
+      context: ctx,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(child: Container(width: 40, height: 4,
+                decoration: BoxDecoration(color: const Color(0xFFDDE4EC), borderRadius: BorderRadius.circular(99)))),
+            const SizedBox(height: 16),
+            Row(children: [
+              Container(width: 44, height: 44,
+                  decoration: BoxDecoration(color: const Color(0xFF0D9488).withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                  child: const Icon(Icons.update_rounded, color: Color(0xFF0D9488), size: 22)),
+              const SizedBox(width: 12),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Update Referral Status', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF1A2A3D))),
+                Text(patientName, style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF8FA0B4))),
+              ])),
+            ]),
+            const SizedBox(height: 20),
+            ...statuses.map((st) {
+              final val = st['value'] as String;
+              final isActive = currentStatus == val;
+              final color = st['color'] as Color;
+              return GestureDetector(
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await DatabaseHelper.instance.updateReferralStatus(screeningId, val);
+                  await _loadDbStats();
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text('Status updated to ' + (st['label'] as String),
+                        style: GoogleFonts.inter(fontSize: 12, color: Colors.white)),
+                    backgroundColor: color, behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    duration: const Duration(seconds: 2),
+                  ));
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: isActive ? color.withOpacity(0.08) : Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: isActive ? color : const Color(0xFFEEF2F6), width: isActive ? 2 : 1.5),
+                  ),
+                  child: Row(children: [
+                    Container(width: 36, height: 36,
+                        decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+                        child: Icon(st['icon'] as IconData, size: 18, color: color)),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(st['label'] as String,
+                        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600,
+                            color: isActive ? color : const Color(0xFF1A2A3D)))),
+                    if (isActive) Icon(Icons.check_circle_rounded, color: color, size: 20),
+                  ]),
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1679,6 +1765,7 @@ class _HomeScreenState extends State<HomeScreen>
     String od,
     String os,
     String initials,
+    int screeningId,
   ) {
     return Material(
       color: Colors.white,
@@ -1829,10 +1916,28 @@ class _HomeScreenState extends State<HomeScreen>
                             fontWeight: FontWeight.w600,
                             color: accentColor)),
                     const Spacer(),
-                    Text('Update Status →',
-                        style: GoogleFonts.inter(
-                            fontSize: 11,
-                            color: accentColor)),
+                    GestureDetector(
+                      onTap: () => _showUpdateStatusSheet(
+                        context,
+                        screeningId,
+                        (status.toLowerCase()),
+                        name,
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: accentColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(color: accentColor.withOpacity(0.3)),
+                        ),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Text('Update Status',
+                              style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: accentColor)),
+                          const SizedBox(width: 4),
+                          Icon(Icons.edit_rounded, size: 11, color: accentColor),
+                        ]),
+                      ),
+                    ),
                   ],
                 ),
               ),

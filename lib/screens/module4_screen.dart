@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 class Module4Screen extends StatefulWidget {
   final VoidCallback? onCompleted;
   const Module4Screen({super.key, this.onCompleted});
-
   @override
   State<Module4Screen> createState() => _Module4ScreenState();
 }
@@ -14,49 +13,91 @@ class _Module4ScreenState extends State<Module4Screen> {
 
   final List<Map<String, dynamic>> _steps = [
     {
+      'icon': Icons.warning_rounded,
+      'color': Color(0xFFEF4444),
+      'image': 'https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=400&q=80',
       'title': 'When to Refer a Patient',
-      'icon': Icons.assignment_rounded,
-      'color': Color(0xFFF59E0B),
-      'image': 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=600&q=80',
-      'body':
-          'A referral is generated when a patient\'s visual acuity falls below the age-appropriate threshold:\n\n👶 Pre-school (3–5 yrs) — Refer if VA < 6/12\n🧒 Child (6–12 yrs) — Refer if VA < 6/9\n🧑 Adult (13–60 yrs) — Refer if VA < 6/12\n👴 Elderly (60+ yrs) — Refer if VA < 6/18\n\nAlso refer immediately if:\n• The patient reports sudden vision loss\n• One eye is significantly worse than the other\n• The patient has visible eye injury or infection',
-      'tip': 'When in doubt, always refer. It is better to send a patient who does not need specialist care than to miss one who does.',
+      'body': 'A patient is automatically flagged for referral when:\n\n'
+          '• Any eye has LogMAR > 0.5 (Snellen worse than 6/18)\n'
+          '• Near vision LogMAR > 0.5 (individual screening only)\n\n'
+          'The app shows a red "REFER" badge and a "Referral Recommended" banner on the summary screen.\n\n'
+          'Common reasons for referral:\n'
+          '• Uncorrected refractive error (needs glasses)\n'
+          '• Cataract\n'
+          '• Glaucoma\n'
+          '• Diabetic retinopathy\n'
+          '• Other eye diseases',
+      'tip': 'Always explain to the patient why they are being referred and what to expect at the eye clinic.',
     },
     {
-      'title': 'Generating the Referral',
-      'icon': Icons.note_add_rounded,
+      'icon': Icons.description_rounded,
       'color': Color(0xFFF59E0B),
-      'image': 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&q=80',
-      'body':
-          'After a test result shows "Refer", tap "Generate Referral" on the results screen.\n\nThe referral document is auto-filled with:\n✓ Patient name, age, gender, village\n✓ Visual acuity scores (OD, OS, OU)\n✓ Date of screening\n✓ Screened by (your name & health centre)\n✓ Reason for referral\n\nYou then need to:\n1. Select the referral facility\n2. Set priority (Routine or Urgent)\n3. Set appointment date\n4. Add any clinical notes\n5. Tap "Save Referral"',
-      'tip': 'Always select the nearest facility first — long travel distances reduce the chance the patient will attend.',
+      'image': 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=400&q=80',
+      'title': 'Generating a Referral Letter',
+      'body': 'To generate a referral letter:\n\n'
+          'INDIVIDUAL SCREENING:\n'
+          '1. Complete the eye test\n'
+          '2. On the summary screen, tap "Generate Referral Letter"\n'
+          '3. Select the referral facility from the dropdown\n'
+          '4. Set an appointment date\n'
+          '5. Enter CHW name and title\n'
+          '6. Tap "Preview Letter" to review\n'
+          '7. Share via WhatsApp, PDF or print\n\n'
+          'BULK MODE:\n'
+          '1. On the result screen after each patient, tap "Generate Referral Letter"\n'
+          '2. Same steps as above',
+      'tip': 'The referral letter includes patient demographics, VA results, eye conditions, facility name and appointment date — all pre-filled from the screening data.',
     },
     {
-      'title': 'Priority Levels',
-      'icon': Icons.priority_high_rounded,
-      'color': Color(0xFFF59E0B),
-      'image': 'https://images.unsplash.com/photo-1587614382346-4ec70e388b28?w=600&q=80',
-      'body':
-          'VisionScreen has two referral priority levels:\n\n🟡 ROUTINE\n• VA is reduced but not severely\n• Patient is stable\n• Appointment within 4–6 weeks\n• Example: Adult with VA 6/18\n\n🔴 URGENT\n• VA is severely reduced (≤ 6/36)\n• Sudden vision loss reported\n• Visible eye injury or infection\n• Appointment within 1 week\n• Notify your supervisor immediately\n\nAlways explain the priority level to the patient so they understand the urgency.',
-      'tip': 'For urgent referrals, call the facility in advance to book the appointment — do not just send the patient.',
+      'icon': Icons.local_hospital_rounded,
+      'color': Color(0xFF0D9488),
+      'image': 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=400&q=80',
+      'title': 'Referral Facilities',
+      'body': 'The app includes a preset list of Uganda eye clinics:\n\n'
+          '• Mulago National Referral Hospital Eye Clinic\n'
+          '• Kampala Eye Clinic\n'
+          '• Mengo Hospital Eye Department\n'
+          '• Kibuli Muslim Hospital Eye Clinic\n'
+          '• St. Francis Hospital Nsambya Eye Clinic\n'
+          '• Jinja Regional Referral Hospital\n'
+          '• Mbarara Regional Referral Hospital\n'
+          '• Gulu Regional Referral Hospital\n'
+          '• Other (specify)\n\n'
+          'Select "Other" to type a custom facility name.',
+      'tip': 'Always refer to the nearest facility — long distances reduce the chance the patient will actually attend.',
     },
     {
-      'title': 'SMS & Patient Notification',
-      'icon': Icons.sms_rounded,
-      'color': Color(0xFFF59E0B),
-      'image': 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=600&q=80',
-      'body':
-          'VisionScreen can send an SMS reminder to the patient with their appointment details.\n\nThe SMS includes:\n• Patient name\n• Referral facility name\n• Appointment date\n• Your contact number\n\nTo enable SMS:\n1. Go to Settings\n2. Turn on "SMS Notifications"\n3. Ensure the patient\'s phone number was entered during registration\n\nIf the patient has no phone, give them a printed referral slip or write the details on paper.',
-      'tip': 'Always confirm the phone number with the patient before sending — a wrong number means a missed appointment.',
+      'icon': Icons.notifications_active_rounded,
+      'color': Color(0xFF8B5CF6),
+      'image': 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&q=80',
+      'title': 'Patient Notifications',
+      'body': 'From the Patients screen, you can notify referred patients:\n\n'
+          '• SMS REMINDER — sends a text to the patient\'s phone number\n'
+          '• WHATSAPP REMINDER — sends a WhatsApp message with appointment details\n'
+          '• CALL PATIENT — dials the patient\'s number directly\n\n'
+          'To send a notification:\n'
+          '1. Open the Patients screen\n'
+          '2. Find the referred patient\n'
+          '3. Tap the bell icon (🔔) on their card\n'
+          '4. Choose SMS, WhatsApp or Call\n\n'
+          'Notifications help ensure patients actually attend their referral appointments.',
+      'tip': 'Send a reminder 2–3 days before the appointment date for best attendance rates.',
     },
     {
-      'title': 'Tracking & Follow-Up',
       'icon': Icons.track_changes_rounded,
       'color': Color(0xFFF59E0B),
-      'image': 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=600&q=80',
-      'body':
-          'After generating a referral, track its status in the Referrals tab:\n\n🟡 Pending — Referral created, not yet communicated\n🔵 Notified — Patient has been informed\n🟣 Attended — Patient visited the facility\n🟢 Completed — Treatment outcome recorded\n🔴 Overdue — Patient missed appointment\n⚫ Cancelled — Referral withdrawn\n\nYour job as a CHW is to follow up on every referral. Call or visit the patient if they are overdue.\n\nUpdate the status in the app after each follow-up so the programme data stays accurate.',
-      'tip': 'Set a reminder on your phone for every referral due date — do not rely on memory alone.',
+      'image': 'https://images.unsplash.com/photo-1584515933487-779824d29309?w=400&q=80',
+      'title': 'Tracking Referral Status',
+      'body': 'Each referral has a status that you update manually:\n\n'
+          '• PENDING — referral created, patient not yet attended\n'
+          '• NOTIFIED — patient has been contacted\n'
+          '• ATTENDED — patient attended the appointment\n'
+          '• COMPLETED — treatment completed\n'
+          '• OVERDUE — appointment date passed, patient not attended\n'
+          '• CANCELLED — referral cancelled\n\n'
+          'The Home screen "Referral Follow-Ups" section shows all pending and overdue referrals.\n\n'
+          'The Notifications screen automatically alerts you when appointments are overdue or upcoming (within 3 days).',
+      'tip': 'Update referral status after each follow-up call — this keeps your data accurate and helps track programme outcomes.',
     },
   ];
 
@@ -68,370 +109,147 @@ class _Module4ScreenState extends State<Module4Screen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFB),
-      body: Column(
-        children: [
-          _buildHeader(context, color),
-          _buildProgressBar(color),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 350),
-                switchInCurve: Curves.easeOutCubic,
-                transitionBuilder: (child, anim) => SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0.08, 0),
-                    end: Offset.zero,
-                  ).animate(CurvedAnimation(
-                      parent: anim, curve: Curves.easeOutCubic)),
-                  child: FadeTransition(opacity: anim, child: child),
-                ),
-                child: _buildStepContent(step, color,
-                    key: ValueKey(_currentStep)),
-              ),
-            ),
-          ),
-          _buildFooter(context, color, isLast),
-        ],
-      ),
+      body: Column(children: [
+        _buildHeader(color),
+        Expanded(child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 350),
+          child: _buildStepContent(step, color, key: ValueKey(_currentStep)),
+        )),
+        _buildNavBar(color, isLast),
+      ]),
     );
   }
 
-  Widget _buildHeader(BuildContext context, Color color) {
-    final top = MediaQuery.of(context).padding.top;
+  Widget _buildHeader(Color color) {
     return Container(
-      padding: EdgeInsets.fromLTRB(20, top + 12, 20, 16),
+      padding: const EdgeInsets.fromLTRB(20, 50, 20, 16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [const Color(0xFF04091A), color.withOpacity(0.85)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
-        ),
+        gradient: LinearGradient(colors: [const Color(0xFF04091A), color], begin: Alignment.topLeft, end: Alignment.bottomRight),
       ),
-      child: Row(
-        children: [
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
           GestureDetector(
             onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 40, height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withOpacity(0.2)),
-              ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded,
-                  color: Colors.white, size: 16),
-            ),
+            child: Container(width: 38, height: 38,
+                decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(11),
+                    border: Border.all(color: Colors.white.withOpacity(0.2))),
+                child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 18)),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Module 4',
-                    style: GoogleFonts.ibmPlexSans(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white.withOpacity(0.6),
-                        letterSpacing: 1.2)),
-                Text('Referral Generation',
-                    style: GoogleFonts.barlow(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white)),
-              ],
-            ),
-          ),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Module 4', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.6), letterSpacing: 1.0)),
+            Text('Referrals & Follow-Up', style: GoogleFonts.barlow(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.white)),
+          ])),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(99),
-              border: Border.all(color: Colors.white.withOpacity(0.25)),
-            ),
-            child: Text(
-              '${_currentStep + 1} / ${_steps.length}',
-              style: GoogleFonts.ibmPlexSans(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white),
-            ),
+            decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(99)),
+            child: Text('${_currentStep + 1} / ${_steps.length}',
+                style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white)),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProgressBar(Color color) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Column(
-        children: [
-          Row(
-            children: List.generate(_steps.length, (i) {
-              final isDone = i < _currentStep;
-              final isCurrent = i == _currentStep;
-              return Expanded(
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  margin: const EdgeInsets.symmetric(horizontal: 2),
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: isDone
-                        ? color
-                        : isCurrent
-                            ? color.withOpacity(0.5)
-                            : const Color(0xFFEEF2F6),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-              );
-            }),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Text(_steps[_currentStep]['title'] as String,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.ibmPlexSans(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: color)),
-              ),
-              Text(
-                  '${((_currentStep + 1) / _steps.length * 100).toInt()}% complete',
-                  style: GoogleFonts.ibmPlexSans(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF8FA0B4))),
-            ],
-          ),
-        ],
-      ),
+        ]),
+        const SizedBox(height: 14),
+        Row(children: List.generate(_steps.length, (i) => Expanded(child: Row(children: [
+          Expanded(child: AnimatedContainer(duration: const Duration(milliseconds: 300), height: 4,
+              decoration: BoxDecoration(color: i <= _currentStep ? Colors.white : Colors.white.withOpacity(0.25), borderRadius: BorderRadius.circular(99)))),
+          if (i < _steps.length - 1) const SizedBox(width: 4),
+        ])))),
+        const SizedBox(height: 10),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Text(_steps[_currentStep]['title'] as String,
+              style: GoogleFonts.ibmPlexSans(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white.withOpacity(0.8))),
+          Text('${((_currentStep + 1) / _steps.length * 100).toInt()}% complete',
+              style: GoogleFonts.ibmPlexSans(fontSize: 11, color: Colors.white.withOpacity(0.6))),
+        ]),
+      ]),
     );
   }
 
   Widget _buildStepContent(Map step, Color color, {required Key key}) {
-    return Column(
+    return SingleChildScrollView(
       key: key,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+      padding: const EdgeInsets.all(20),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(16),
-          child: Stack(
-            children: [
-              Image.network(
-                step['image'] as String,
-                height: 180,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => Container(
-                  height: 180,
-                  color: color.withOpacity(0.15),
-                  child: Icon(step['icon'] as IconData, size: 60, color: color),
-                ),
-              ),
-              Container(
-                height: 180,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.black.withOpacity(0.1),
-                      color.withOpacity(0.6),
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: 14, left: 14,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 36, height: 36,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                            color: Colors.white.withOpacity(0.4)),
-                      ),
-                      child: Icon(step['icon'] as IconData,
-                          color: Colors.white, size: 18),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(step['title'] as String,
-                        style: GoogleFonts.barlow(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white)),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          child: Stack(children: [
+            Image.network(step['image'] as String, height: 160, width: double.infinity, fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(height: 160, color: color.withOpacity(0.15),
+                    child: Icon(step['icon'] as IconData, size: 60, color: color))),
+            Container(height: 160, decoration: BoxDecoration(gradient: LinearGradient(
+                colors: [Colors.black.withOpacity(0.5), Colors.transparent],
+                begin: Alignment.bottomCenter, end: Alignment.topCenter))),
+            Positioned(bottom: 14, left: 14, child: Container(width: 44, height: 44,
+                decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(12),
+                    boxShadow: [BoxShadow(color: color.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 4))]),
+                child: Icon(step['icon'] as IconData, color: Colors.white, size: 22))),
+          ]),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
+        Text(step['title'] as String, style: GoogleFonts.barlow(fontSize: 22, fontWeight: FontWeight.w900, color: const Color(0xFF1A2A3D))),
+        const SizedBox(height: 14),
         Container(
-          width: double.infinity,
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              )
-            ],
-          ),
-          child: Text(
-            step['body'] as String,
-            style: GoogleFonts.ibmPlexSans(
-                fontSize: 13,
-                fontWeight: FontWeight.w400,
-                color: const Color(0xFF3D5470),
-                height: 1.75),
-          ),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))]),
+          child: Text(step['body'] as String, style: GoogleFonts.ibmPlexSans(fontSize: 13, color: const Color(0xFF1A2A3D), height: 1.7)),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         Container(
           padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.07),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: color.withOpacity(0.25)),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 32, height: 32,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.lightbulb_rounded, color: color, size: 16),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('PRO TIP',
-                        style: GoogleFonts.ibmPlexSans(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
-                            color: color,
-                            letterSpacing: 1.2)),
-                    const SizedBox(height: 4),
-                    Text(step['tip'] as String,
-                        style: GoogleFonts.ibmPlexSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFF3D5470),
-                            height: 1.6)),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          decoration: BoxDecoration(color: color.withOpacity(0.06), borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withOpacity(0.2))),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Icon(Icons.lightbulb_rounded, size: 16, color: color),
+            const SizedBox(width: 10),
+            Expanded(child: Text(step['tip'] as String, style: GoogleFonts.ibmPlexSans(fontSize: 12, color: const Color(0xFF1A2A3D), height: 1.5))),
+          ]),
         ),
-        const SizedBox(height: 8),
-      ],
+        const SizedBox(height: 20),
+      ]),
     );
   }
 
-  Widget _buildFooter(BuildContext context, Color color, bool isLast) {
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-          16, 12, 16, MediaQuery.of(context).padding.bottom + 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: const Border(top: BorderSide(color: Color(0xFFEEF2F6))),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 12,
-            offset: const Offset(0, -3),
-          )
-        ],
-      ),
-      child: Row(
-        children: [
-          if (_currentStep > 0)
+  Widget _buildNavBar(Color color, bool isLast) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+        child: Row(children: [
+          if (_currentStep > 0) ...[
             GestureDetector(
               onTap: () => setState(() => _currentStep--),
-              child: Container(
-                width: 48, height: 48,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0F4F7),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFDDE4EC)),
-                ),
-                child: const Icon(Icons.arrow_back_rounded,
-                    color: Color(0xFF5E7291), size: 20),
-              ),
+              child: Container(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  decoration: BoxDecoration(color: const Color(0xFFF0F4F7), borderRadius: BorderRadius.circular(12)),
+                  child: Text('← Back', style: GoogleFonts.ibmPlexSans(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF5E7291)))),
             ),
-          if (_currentStep > 0) const SizedBox(width: 10),
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                if (isLast) {
-                  widget.onCompleted?.call();
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text('Module 4 completed! All modules done! 🎓',
-                        style: GoogleFonts.ibmPlexSans(fontSize: 12)),
-                    backgroundColor: const Color(0xFFF59E0B),
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                    duration: const Duration(seconds: 3),
-                  ));
-                  Navigator.pop(context);
-                } else {
-                  setState(() => _currentStep++);
-                }
-              },
-              child: Container(
-                height: 48,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [color, color.withOpacity(0.75)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withOpacity(0.35),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    )
-                  ],
-                ),
-                child: Center(
-                  child: Text(
-                    isLast ? 'Complete All Modules 🎓' : 'Next Step →',
-                    style: GoogleFonts.ibmPlexSans(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white),
-                  ),
-                ),
+            const SizedBox(width: 10),
+          ],
+          Expanded(child: GestureDetector(
+            onTap: () {
+              if (isLast) {
+                widget.onCompleted?.call();
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text('Module 4 completed! All modules done! 🎓', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: Colors.white)),
+                  backgroundColor: color, behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  duration: const Duration(seconds: 3),
+                ));
+                Navigator.pop(context);
+              } else {
+                setState(() => _currentStep++);
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [color, color.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [BoxShadow(color: color.withOpacity(0.35), blurRadius: 12, offset: const Offset(0, 4))],
               ),
+              child: Center(child: Text(isLast ? 'Complete All Modules 🎓' : 'Next Step →',
+                  style: GoogleFonts.ibmPlexSans(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white))),
             ),
-          ),
-        ],
+          )),
+        ]),
       ),
     );
   }
