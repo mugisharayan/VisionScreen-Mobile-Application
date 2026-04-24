@@ -258,7 +258,7 @@ class DatabaseHelper {
     final database = await db;
     await database.update(
       'screenings',
-      {'referral_status': status},
+      {'referral_status': status.toLowerCase().trim()},
       where: 'id = ?',
       whereArgs: [screeningId],
     );
@@ -273,7 +273,7 @@ class DatabaseHelper {
     final data = <String, dynamic>{};
     if (facility != null) data['referral_facility'] = facility;
     if (appointmentDate != null) data['appointment_date'] = appointmentDate;
-    if (status != null) data['referral_status'] = status;
+    if (status != null) data['referral_status'] = status.toLowerCase().trim();
     if (data.isEmpty) return;
     await database.update('screenings', data, where: 'id = ?', whereArgs: [screeningId]);
   }
@@ -311,10 +311,11 @@ class DatabaseHelper {
 
   // ── ANALYTICS ─────────────────────────────────────────────
 
-  Future<Map<String, int>> getOutcomeCounts() async {
+  Future<Map<String, int>> getOutcomeCounts({String period = 'All'}) async {
     final database = await db;
+    final where = _periodWhere(period);
     final rows = await database.rawQuery(
-      'SELECT outcome, COUNT(*) as count FROM screenings GROUP BY outcome',
+      'SELECT outcome, COUNT(*) as count FROM screenings ${where.isEmpty ? '' : 'WHERE $where'} GROUP BY outcome',
     );
     final map = <String, int>{};
     for (final row in rows) {
@@ -323,18 +324,22 @@ class DatabaseHelper {
     return map;
   }
 
-  Future<Map<String, int>> getAgeGroupCounts() async {
+  Future<Map<String, int>> getAgeGroupCounts({String period = 'All'}) async {
     final database = await db;
+    final where = _periodWhere(period);
+    final whereClause = where.isEmpty ? '' : 'WHERE $where';
     final rows = await database.rawQuery('''
       SELECT
         CASE
-          WHEN age BETWEEN 0 AND 17 THEN '0-17'
-          WHEN age BETWEEN 18 AND 40 THEN '18-40'
-          WHEN age BETWEEN 41 AND 60 THEN '41-60'
+          WHEN p.age BETWEEN 0  AND 17 THEN '0-17'
+          WHEN p.age BETWEEN 18 AND 40 THEN '18-40'
+          WHEN p.age BETWEEN 41 AND 60 THEN '41-60'
           ELSE '60+'
         END as age_group,
-        COUNT(*) as count
-      FROM patients
+        COUNT(DISTINCT p.id) as count
+      FROM patients p
+      INNER JOIN screenings s ON s.patient_id = p.id
+      $whereClause
       GROUP BY age_group
     ''');
     final map = <String, int>{};
@@ -344,16 +349,316 @@ class DatabaseHelper {
     return map;
   }
 
-  Future<Map<String, int>> getGenderCounts() async {
+  Future<Map<String, int>> getGenderCounts({String period = 'All'}) async {
     final database = await db;
-    final rows = await database.rawQuery(
-      'SELECT gender, COUNT(*) as count FROM patients GROUP BY gender',
-    );
+    final where = _periodWhere(period);
+    final whereClause = where.isEmpty ? '' : 'WHERE $where';
+    final rows = await database.rawQuery('''
+      SELECT p.gender, COUNT(DISTINCT p.id) as count
+      FROM patients p
+      INNER JOIN screenings s ON s.patient_id = p.id
+      $whereClause
+      GROUP BY p.gender
+    ''');
     final map = <String, int>{};
     for (final row in rows) {
       map[row['gender'] as String] = (row['count'] as int?) ?? 0;
     }
     return map;
+  }
+
+  /// Returns a WHERE clause fragment (no leading WHERE) for the given period.
+  String _periodWhere(String period) {
+    switch (period) {
+      case 'Today':
+        return "DATE(screening_date) = DATE('now')";
+      case 'Week':
+        return "screening_date >= DATE('now', '-6 days')";
+      case 'Month':
+        return "screening_date >= DATE('now', '-29 days')";
+      case 'Year':
+        return "screening_date >= DATE('now', '-364 days')";
+      default:
+        return '';
+    }
+  }
+
+  /// Pass-rate trend: returns one row per day/hour depending on period.
+  /// Each row: { label, pass_count, refer_count }
+  /// Also returns a 'total' summary row as the last element with label '__total__'.
+  Future<List<Map<String, dynamic>>> getPassRateTrend(String period) async {
+    final database = await db;
+    String groupExpr;
+    String whereClause;
+    switch (period) {
+      case 'Today':
+        groupExpr   = "strftime('%H:00', screening_date)";
+        whereClause = "DATE(screening_date) = DATE('now')";
+        break;
+      case 'Month':
+        groupExpr   = "DATE(screening_date)";
+        whereClause = "screening_date >= DATE('now', '-29 days')";
+        break;
+      case 'Year':
+        groupExpr   = "strftime('%Y-%m', screening_date)";
+        whereClause = "screening_date >= DATE('now', '-364 days')";
+        break;
+      default: // Week
+        groupExpr   = "DATE(screening_date)";
+        whereClause = "screening_date >= DATE('now', '-6 days')";
+    }
+    final rows = await database.rawQuery('''
+      SELECT
+        $groupExpr AS label,
+        SUM(CASE WHEN outcome = 'pass'  THEN 1 ELSE 0 END) AS pass_count,
+        SUM(CASE WHEN outcome = 'refer' THEN 1 ELSE 0 END) AS refer_count
+      FROM screenings
+      WHERE $whereClause
+      GROUP BY $groupExpr
+      ORDER BY $groupExpr ASC
+    ''');
+    final points = rows
+        .map((r) => {
+              'label':       r['label'] as String? ?? '',
+              'pass_count':  (r['pass_count']  as num?)?.toInt() ?? 0,
+              'refer_count': (r['refer_count'] as num?)?.toInt() ?? 0,
+            })
+        .toList();
+
+    // Append a period-total summary so the chart headline shows
+    // the overall rate for the whole period, not just the last bucket.
+    final totalPass  = points.fold(0, (s, r) => s + (r['pass_count']  as int));
+    final totalRefer = points.fold(0, (s, r) => s + (r['refer_count'] as int));
+    points.add({
+      'label':       '__total__',
+      'pass_count':  totalPass,
+      'refer_count': totalRefer,
+    });
+    return points;
+  }
+
+  /// Buckets worst-eye Snellen per patient into 5 acuity levels.
+  Future<Map<String, int>> getVisualAcuityDistribution({String period = 'All'}) async {
+    final database = await db;
+    final where = _periodWhere(period);
+    final periodFilter = where.isEmpty ? '' : 'AND $where';
+    final rows = await database.rawQuery('''
+      SELECT od_snellen, os_snellen
+      FROM screenings
+      WHERE id IN (
+        SELECT MAX(id)
+        FROM screenings
+        WHERE 1=1 $periodFilter
+        GROUP BY patient_id
+      )
+      AND (od_snellen IS NOT NULL OR os_snellen IS NOT NULL)
+    ''');
+    final counts = <String, int>{
+      'Normal': 0, 'Near Normal': 0, 'Moderate': 0, 'Severe': 0, 'Blind Range': 0,
+    };
+    for (final row in rows) {
+      final od = row['od_snellen'] as String?;
+      final os = row['os_snellen'] as String?;
+      final bucket = _worstAcuityBucket(od, os);
+      if (bucket != null) counts[bucket] = (counts[bucket] ?? 0) + 1;
+    }
+    return counts;
+  }
+
+  /// Returns the acuity bucket for the worse of two eyes.
+  /// Returns null if both values are null/empty (unrecorded).
+  String? _worstAcuityBucket(String? od, String? os) {
+    int rank(String? s) {
+      if (s == null || s.trim().isEmpty) return -1; // unrecorded
+      if (s.contains('6/6') && !s.contains('6/60')) return 0;
+      if (s.contains('6/9') || s.contains('6/12')) return 1;
+      if (s.contains('6/18') || s.contains('6/24')) return 2;
+      if (s.contains('6/36') || s.contains('6/60')) return 3;
+      return 4; // CF / HM / PL / <6/60
+    }
+    final rOd = rank(od);
+    final rOs = rank(os);
+    // Both unrecorded — skip this row
+    if (rOd == -1 && rOs == -1) return null;
+    final worst = rOd >= rOs ? rOd : rOs;
+    if (worst <= 0) return 'Normal';
+    if (worst == 1) return 'Near Normal';
+    if (worst == 2) return 'Moderate';
+    if (worst == 3) return 'Severe';
+    return 'Blind Range';
+  }
+
+  /// Counts occurrences of each condition tag stored in patients.conditions.
+  Future<Map<String, int>> getConditionCounts({String period = 'All'}) async {
+    final database = await db;
+    final where = _periodWhere(period);
+    final rows = where.isEmpty
+        ? await database.rawQuery(
+            "SELECT conditions FROM patients WHERE conditions IS NOT NULL AND conditions != ''")
+        : await database.rawQuery('''
+            SELECT p.conditions
+            FROM patients p
+            INNER JOIN screenings s ON s.patient_id = p.id
+            WHERE $where
+              AND p.conditions IS NOT NULL AND p.conditions != ''
+          ''');
+    final counts = <String, int>{};
+    for (final row in rows) {
+      final raw = row['conditions'] as String? ?? '';
+      for (final tag in raw.split(',')) {
+        final t = tag.trim();
+        if (t.isNotEmpty) counts[t] = (counts[t] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }
+
+  /// Derives severity from worst-eye logMAR per patient.
+  /// Uses the same thresholds as the screening app's _needsReferral logic.
+  /// Normal: logMAR <= 0.3 (6/12 or better)
+  /// Mild:   logMAR 0.4–0.5
+  /// Moderate: logMAR 0.6–1.0
+  /// Severe: logMAR > 1.0
+  /// Critical: cant_tell on both eyes (unable to assess)
+  Future<Map<String, int>> getSeverityClassification({String period = 'All'}) async {
+    final database = await db;
+    final where = _periodWhere(period);
+    final periodFilter = where.isEmpty ? '' : 'AND $where';
+    // Get latest screening per patient within the period
+    final rows = await database.rawQuery('''
+      SELECT od_logmar, os_logmar, od_cant_tell, os_cant_tell
+      FROM screenings
+      WHERE id IN (
+        SELECT MAX(id)
+        FROM screenings
+        WHERE 1=1 $periodFilter
+        GROUP BY patient_id
+      )
+    ''');
+
+    final counts = <String, int>{
+      'Normal': 0, 'Mild': 0, 'Moderate': 0, 'Severe': 0, 'Critical': 0,
+    };
+
+    for (final row in rows) {
+      final odLogmar    = double.tryParse((row['od_logmar'] as String?) ?? '');
+      final osLogmar    = double.tryParse((row['os_logmar'] as String?) ?? '');
+      final odCantTell  = (row['od_cant_tell'] as int?) ?? 0;
+      final osCantTell  = (row['os_cant_tell'] as int?) ?? 0;
+
+      // Both eyes unable to assess
+      if (odLogmar == null && osLogmar == null) {
+        if (odCantTell > 0 || osCantTell > 0) {
+          counts['Critical'] = counts['Critical']! + 1;
+        }
+        // No data at all — skip
+        continue;
+      }
+
+      // Use the worse (higher logMAR) of the two recorded eyes
+      final worst = [odLogmar, osLogmar]
+          .whereType<double>()
+          .fold<double>(-1, (m, v) => v > m ? v : m);
+
+      if (worst <= 0.3)      counts['Normal']   = counts['Normal']!   + 1;
+      else if (worst <= 0.5) counts['Mild']     = counts['Mild']!     + 1;
+      else if (worst <= 1.0) counts['Moderate'] = counts['Moderate']! + 1;
+      else if (worst <= 2.0) counts['Severe']   = counts['Severe']!   + 1;
+      else                   counts['Critical'] = counts['Critical']! + 1;
+    }
+    return counts;
+  }
+
+  /// Referral status breakdown for all referred screenings.
+  Future<Map<String, int>> getReferralStatusCounts({String period = 'All'}) async {
+    final database = await db;
+    final where = _periodWhere(period);
+    final periodFilter = where.isEmpty ? '' : 'AND $where';
+    final rows = await database.rawQuery('''
+      SELECT
+        CASE
+          WHEN referral_status IS NULL OR TRIM(referral_status) = '' THEN 'pending'
+          ELSE LOWER(TRIM(referral_status))
+        END AS status,
+        COUNT(*) AS count
+      FROM screenings
+      WHERE outcome = 'refer' $periodFilter
+      GROUP BY status
+    ''');
+    final map = <String, int>{};
+    for (final row in rows) {
+      final key = row['status'] as String;
+      map[key] = ((map[key] ?? 0) + ((row['count'] as int?) ?? 0));
+    }
+    return map;
+  }
+
+  /// Follow-up compliance: maps referral_status to attendance buckets.
+  Future<Map<String, int>> getFollowUpCompliance({String period = 'All'}) async {
+    final statuses = await getReferralStatusCounts(period: period);
+    return {
+      'Attended':    statuses['completed']   ?? 0,
+      'Rescheduled': statuses['rescheduled'] ?? 0,
+      'Pending':     (statuses['pending'] ?? 0) + (statuses['notified'] ?? 0),
+      'Missed':      statuses['overdue']     ?? 0,
+    };
+  }
+
+  /// Conditions broken down by age group.
+  Future<Map<String, Map<String, int>>> getConditionsByAgeGroup({String period = 'All'}) async {
+    final database = await db;
+    final where = _periodWhere(period);
+    final joinClause = where.isEmpty
+        ? ''
+        : 'INNER JOIN screenings s ON s.patient_id = p.id AND $where';
+    final rows = await database.rawQuery('''
+      SELECT
+        p.conditions,
+        CASE
+          WHEN p.age BETWEEN 0  AND 17 THEN '0-17'
+          WHEN p.age BETWEEN 18 AND 60 THEN '18-60'
+          ELSE '60+'
+        END AS age_group
+      FROM patients p
+      $joinClause
+      WHERE p.conditions IS NOT NULL AND p.conditions != ''
+    ''');
+    final result = <String, Map<String, int>>{};
+    for (final row in rows) {
+      final ageGroup = row['age_group'] as String;
+      final raw      = row['conditions'] as String? ?? '';
+      for (final tag in raw.split(',')) {
+        final t = tag.trim();
+        if (t.isEmpty) continue;
+        result.putIfAbsent(t, () => {'0-17': 0, '18-60': 0, '60+': 0});
+        result[t]![ageGroup] = (result[t]![ageGroup] ?? 0) + 1;
+      }
+    }
+    return result;
+  }
+
+  /// Village breakdown: total patients + referred count per village.
+  Future<List<Map<String, dynamic>>> getVillageBreakdown({String period = 'All'}) async {
+    final database = await db;
+    final where = _periodWhere(period);
+    final periodFilter = where.isEmpty ? '' : 'AND $where';
+    final rows = await database.rawQuery('''
+      SELECT
+        p.village,
+        COUNT(DISTINCT p.id) AS total,
+        SUM(CASE WHEN s.outcome = 'refer' THEN 1 ELSE 0 END) AS referred
+      FROM patients p
+      LEFT JOIN screenings s ON s.patient_id = p.id $periodFilter
+      GROUP BY p.village
+      ORDER BY total DESC
+    ''');
+    return rows
+        .map((r) => {
+              'village':  r['village']  as String? ?? 'Unknown',
+              'total':    (r['total']   as int?) ?? 0,
+              'referred': (r['referred'] as int?) ?? 0,
+            })
+        .toList();
   }
 
   Future<List<Map<String, dynamic>>> getRecentScreeningsWithPatient(
