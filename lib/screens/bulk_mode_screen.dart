@@ -860,7 +860,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
       'dob':         '',
       'gender':      _quickGender,
       'village':     _locationCtrl.text.trim(),
-      'phone':       '',
+      'phone':       _phoneCtrl.text.trim(),
       'conditions':  _quickConditions.join(', '),
       'photo_path':  '',
       'campaign_id': _campaignId,

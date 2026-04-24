@@ -3024,6 +3024,15 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
   }
 
   Future<void> _callPatient() async {
+    if (p.phone.isEmpty) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('No phone number for ${p.name}.', style: GoogleFonts.inter(fontSize: 12, color: Colors.white)),
+        backgroundColor: _amber, behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 2),
+      ));
+      return;
+    }
     final uri = Uri(scheme: 'tel', path: p.phone);
     if (!await launchUrl(uri)) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -3168,7 +3177,7 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
                     style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8FA0B4), fontWeight: FontWeight.w500))),
                 const SizedBox(width: 8),
                 GestureDetector(
-                  onTap: p.phone.isNotEmpty ? _callPatient : null,
+                  onTap: _callPatient,
                   child: Container(
                     padding: const EdgeInsets.all(5),
                     decoration: BoxDecoration(
