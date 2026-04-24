@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../db/database_helper.dart';
+import 'referral_letter_screen.dart';
 
 const _ink   = Color(0xFF04091A);
 const _ink2  = Color(0xFF0B1530);
@@ -69,6 +70,8 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
   String _quickGender     = 'M';
   bool   _registering     = false;
   String? _currentPatientId;
+  final _phoneCtrl = TextEditingController();
+  final List<String> _quickConditions = [];
 
   // ── Section 3: Eye test state ────────────────────────────
   static const _eyeOrder = ['OD', 'OS'];
@@ -304,6 +307,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
     _campaignNameCtrl.dispose();
     _locationCtrl.dispose();
     _nameCtrl.dispose();
+    _phoneCtrl.dispose();
     _facilityCtrl.dispose();
     super.dispose();
   }
@@ -822,6 +826,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
   // ── Section 2: Quick Register ────────────────────────────
   void _resetRegistration() {
     _nameCtrl.clear();
+    _phoneCtrl.clear();
     _facilityCtrl.clear();
     setState(() {
       _quickAge          = 10;
@@ -829,6 +834,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
       _currentPatientId  = null;
       _selectedFacility  = null;
       _appointmentDate   = null;
+      _quickConditions.clear();
     });
   }
 
@@ -855,7 +861,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
       'gender':      _quickGender,
       'village':     _locationCtrl.text.trim(),
       'phone':       '',
-      'conditions':  '',
+      'conditions':  _quickConditions.join(', '),
       'photo_path':  '',
       'campaign_id': _campaignId,
       'created_at':  DateTime.now().toIso8601String(),
@@ -1000,7 +1006,57 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
               ),
             );
           }).toList()),
-          const SizedBox(height: 32),
+          const SizedBox(height: 16),
+
+          // Phone number
+          _label('Phone Number (optional)'),
+          const SizedBox(height: 6),
+          _field(ctrl: _phoneCtrl, hint: 'e.g. 0701234567', icon: Icons.phone_rounded),
+          const SizedBox(height: 20),
+
+          // Current eye conditions
+          _label('Current Eye Conditions'),
+          const SizedBox(height: 4),
+          Text('Select all that apply', style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8FA0B4))),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8, runSpacing: 8,
+            children: [
+              {'label': 'Red Eyes',         'icon': Icons.remove_red_eye_rounded},
+              {'label': 'Swollen Eyes',     'icon': Icons.visibility_off_rounded},
+              {'label': 'Eye Discharge',    'icon': Icons.water_drop_rounded},
+              {'label': 'Blurred Vision',   'icon': Icons.blur_on_rounded},
+              {'label': 'Eye Pain',         'icon': Icons.warning_amber_rounded},
+              {'label': 'Previous Surgery', 'icon': Icons.medical_services_rounded},
+              {'label': 'Wears Glasses',    'icon': Icons.remove_red_eye_outlined},
+              {'label': 'Diabetes',         'icon': Icons.monitor_heart_rounded},
+              {'label': 'Hypertension',     'icon': Icons.favorite_rounded},
+            ].map((c) {
+              final label    = c['label'] as String;
+              final icon     = c['icon'] as IconData;
+              final selected = _quickConditions.contains(label);
+              return GestureDetector(
+                onTap: () => setState(() => selected ? _quickConditions.remove(label) : _quickConditions.add(label)),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: selected ? _teal.withOpacity(0.1) : Colors.white,
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(color: selected ? _teal : const Color(0xFFDDE4EC), width: 1.5),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(icon, size: 13, color: selected ? _teal : const Color(0xFF8FA0B4)),
+                    const SizedBox(width: 5),
+                    Text(label, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600,
+                        color: selected ? _teal : const Color(0xFF5E7291))),
+                  ]),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 24),
+
 
           // Proceed button
           GestureDetector(
@@ -1285,96 +1341,50 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
         ),
         const SizedBox(height: 20),
 
-        // Referral details (only if refer)
+        // Referral letter (only if refer)
         if (!passed) ...[
-          // Facility dropdown
-          _label('Referral Facility'),
-          const SizedBox(height: 6),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: _selectedFacility,
-                hint: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  child: Row(children: [
-                    Icon(Icons.local_hospital_rounded, size: 18, color: _teal.withOpacity(0.6)),
-                    const SizedBox(width: 10),
-                    Text('Select facility', style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF8FA0B4))),
-                  ]),
-                ),
-                isExpanded: true,
-                borderRadius: BorderRadius.circular(14),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF8FA0B4)),
-                items: _facilities.map((f) => DropdownMenuItem(
-                  value: f,
-                  child: Text(f, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF1A2A3D))),
-                )).toList(),
-                onChanged: (v) => setState(() => _selectedFacility = v),
-              ),
-            ),
-          ),
-          // Other facility text field
-          if (_selectedFacility == 'Other (specify below)') ...[
-            const SizedBox(height: 8),
-            _field(ctrl: _facilityCtrl, hint: 'Enter facility name', icon: Icons.edit_rounded),
-          ],
-          const SizedBox(height: 16),
-
-          // Appointment date
-          _label('Appointment Date'),
-          const SizedBox(height: 6),
+          // Generate referral letter button
           GestureDetector(
             onTap: () async {
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: DateTime.now().add(const Duration(days: 7)),
-                firstDate: DateTime.now(),
-                lastDate: DateTime.now().add(const Duration(days: 365)),
-                helpText: 'Select Appointment Date',
-                builder: (ctx, child) => Theme(
-                  data: Theme.of(ctx).copyWith(
-                    colorScheme: const ColorScheme.light(primary: _teal, onPrimary: Colors.white),
-                  ),
-                  child: child!,
+              // Save facility first if entered
+              if (_facilityCtrl.text.trim().isNotEmpty || _selectedFacility != null) {
+                await _saveFacility();
+              }
+              // Get patient data for referral letter
+              final patient = await DatabaseHelper.instance.getPatient(_currentPatientId!);
+              if (patient == null || !mounted) return;
+              final patientMap = {
+                'id':     patient['id'] as String,
+                'name':   patient['name'] as String,
+                'age':    patient['age'].toString(),
+                'gender': patient['gender'] as String,
+                'village':patient['village'] as String,
+                'phone':  (patient['phone'] as String?) ?? '',
+                'conditions': (patient['conditions'] as String?) ?? '',
+              };
+              Navigator.push(context, MaterialPageRoute(
+                builder: (_) => ReferralLetterScreen(
+                  patient: patientMap,
+                  eyeResults: _eyeResults,
+                  screeningDate: DateTime.now().toString().substring(0, 10),
+                  conditions: ((patient['conditions'] as String?) ?? '').split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
+                  screeningId: null,
                 ),
-              );
-              if (picked != null) setState(() => _appointmentDate = picked);
+              ));
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: _appointmentDate != null ? _teal.withOpacity(0.4) : const Color(0xFFEEF2F6),
-                  width: 1.5,
-                ),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+                color: _red.withOpacity(0.06),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: _red.withOpacity(0.3), width: 1.5),
               ),
-              child: Row(children: [
-                Icon(Icons.calendar_today_rounded, size: 18,
-                    color: _appointmentDate != null ? _teal : const Color(0xFF8FA0B4)),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _appointmentDate == null
-                      ? Text('Select appointment date',
-                            style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF8FA0B4)))
-                      : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(
-                            '${_appointmentDate!.day}/${_appointmentDate!.month}/${_appointmentDate!.year}',
-                            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF1A2A3D)),
-                          ),
-                          Text('Appointment scheduled', style: GoogleFonts.inter(fontSize: 10, color: _teal)),
-                        ]),
-                ),
-                const Icon(Icons.chevron_right_rounded, color: Color(0xFF8FA0B4)),
+              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                const Icon(Icons.description_rounded, size: 18, color: _red),
+                const SizedBox(width: 8),
+                Text('Generate Referral Letter',
+                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: _red)),
               ]),
             ),
           ),
@@ -1384,9 +1394,6 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
         // Next patient button
         GestureDetector(
           onTap: () async {
-            if (!passed && _facilityCtrl.text.trim().isNotEmpty) {
-              await _saveFacility();
-            }
             _resetRegistration();
             _resetEyeTest();
             setState(() => _section = 1);
@@ -1416,7 +1423,6 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
         // End session button
         GestureDetector(
           onTap: () async {
-            if (!passed && _facilityCtrl.text.trim().isNotEmpty) await _saveFacility();
             await _loadSummary();
             setState(() => _section = 3);
           },
