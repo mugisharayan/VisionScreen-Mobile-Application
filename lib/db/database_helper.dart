@@ -109,8 +109,15 @@ class DatabaseHelper {
 
   Future<void> deletePatient(String patientId) async {
     final database = await db;
+    // Get campaign_id before deleting
+    final patient = await getPatient(patientId);
+    final campaignId = patient?['campaign_id'] as String?;
     await database.delete('screenings', where: 'patient_id = ?', whereArgs: [patientId]);
     await database.delete('patients', where: 'id = ?', whereArgs: [patientId]);
+    // Update campaign stats if this patient belonged to a campaign
+    if (campaignId != null && campaignId.isNotEmpty) {
+      await updateCampaignStats(campaignId);
+    }
   }
 
   Future<List<Map<String, dynamic>>> getAllPatients() async {
@@ -148,7 +155,15 @@ class DatabaseHelper {
 
   Future<List<Map<String, dynamic>>> getAllCampaigns() async {
     final database = await db;
-    return database.query('campaigns', orderBy: 'created_at DESC');
+    final campaigns = await database.query('campaigns', orderBy: 'created_at DESC');
+    // Recalculate stats for each campaign fresh
+    final result = <Map<String, dynamic>>[];
+    for (final c in campaigns) {
+      await updateCampaignStats(c['id'] as String);
+      final updated = await database.query('campaigns', where: 'id = ?', whereArgs: [c['id']], limit: 1);
+      if (updated.isNotEmpty) result.add(updated.first);
+    }
+    return result;
   }
 
   Future<Map<String, dynamic>?> getCampaign(String id) async {
@@ -175,6 +190,19 @@ class DatabaseHelper {
         'referred': result.first['referred'] ?? 0,
       }, where: 'id = ?', whereArgs: [campaignId]);
     }
+  }
+
+  Future<void> deleteCampaign(String campaignId) async {
+    final database = await db;
+    // Delete all screenings for patients in this campaign
+    final patients = await database.query('patients', where: 'campaign_id = ?', whereArgs: [campaignId]);
+    for (final p in patients) {
+      await database.delete('screenings', where: 'patient_id = ?', whereArgs: [p['id']]);
+    }
+    // Delete all patients in this campaign
+    await database.delete('patients', where: 'campaign_id = ?', whereArgs: [campaignId]);
+    // Delete the campaign
+    await database.delete('campaigns', where: 'id = ?', whereArgs: [campaignId]);
   }
 
   Future<List<Map<String, dynamic>>> getPatientsForCampaign(String campaignId) async {

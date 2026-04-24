@@ -99,6 +99,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
   String _query = '';
   List<_Patient> _patients = [];
   List<Map<String,dynamic>> _campaigns = [];
+  List<_Patient> _allCampaignPatients = [];
   bool _loading = true;
 
   @override
@@ -158,7 +159,37 @@ class _PatientsScreenState extends State<PatientsScreen> {
         conditions: conditions,
       ));
     }
-    if (mounted) setState(() { _patients = list; _campaigns = campaignRows; _loading = false; });
+    // Load all campaign patients for search
+    final campPatientRows = (await DatabaseHelper.instance.getAllPatients())
+        .where((r) => r['campaign_id'] != null && (r['campaign_id'] as String).isNotEmpty)
+        .toList();
+    final campList = <_Patient>[];
+    for (final r in campPatientRows) {
+      final age = (r['age'] as int?) ?? 0;
+      final latest = await DatabaseHelper.instance.getLatestScreening(r['id'] as String);
+      final outcome = (latest?['outcome'] as String?) ?? 'pending';
+      campList.add(_Patient(
+        initials: (r['name'] as String).split(' ').map((w) => w.isEmpty ? '' : w[0]).take(2).join(),
+        avatarGradient: [_teal, _teal2],
+        photoUrl: (r['photo_path'] as String?) ?? '',
+        name: r['name'] as String,
+        age: age,
+        gender: r['gender'] as String,
+        village: (r['village'] as String?) ?? '',
+        ageGroup: age < 18 ? 'child' : age > 60 ? 'elderly' : 'adult',
+        od: (latest?['od_snellen'] as String?) ?? '—',
+        os: (latest?['os_snellen'] as String?) ?? '—',
+        ou: (latest?['ou_near_snellen'] as String?) ?? '—',
+        outcome: outcome,
+        date: latest?['screening_date'] != null ? _formatDate(latest!['screening_date'] as String) : 'Not screened',
+        id: r['id'] as String,
+        phone: (r['phone'] as String?) ?? '',
+        facility: (latest?['referral_facility'] as String?)?.let((f) => f.isEmpty ? null : f),
+        referralStatus: (latest?['referral_status'] as String?)?.let((s) => s.isEmpty ? null : s),
+        conditions: ((r['conditions'] as String?) ?? '').split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
+      ));
+    }
+    if (mounted) setState(() { _patients = list; _campaigns = campaignRows; _allCampaignPatients = campList; _loading = false; });
   }
 
   String _formatDate(String iso) {
@@ -178,6 +209,24 @@ class _PatientsScreenState extends State<PatientsScreen> {
     '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
   ][m];
+
+  List<Map<String,dynamic>> get _filteredCampaigns => _query.isEmpty
+      ? _campaigns
+      : _campaigns.where((c) {
+          final q = _query.toLowerCase();
+          return (c['name'] as String).toLowerCase().contains(q) ||
+                 (c['location'] as String).toLowerCase().contains(q) ||
+                 (c['target_group'] as String).toLowerCase().contains(q);
+        }).toList();
+
+  List<_Patient> get _filteredCampaignPatients => _query.isEmpty
+      ? []
+      : _allCampaignPatients.where((p) {
+          return p.name.toLowerCase().contains(_query) ||
+                 p.id.toLowerCase().contains(_query) ||
+                 p.village.toLowerCase().contains(_query) ||
+                 (p.facility?.toLowerCase().contains(_query) ?? false);
+        }).toList();
 
   List<_Patient> get _filtered => _patients.where((p) {
     final matchQ =
@@ -205,10 +254,20 @@ class _PatientsScreenState extends State<PatientsScreen> {
   @override
   Widget build(BuildContext context) {
     final list = _filtered;
-    final total = _patients.length;
-    final passed = _patients.where((p) => p.outcome == 'pass').length;
-    final referred = _patients.where((p) => p.outcome == 'refer').length;
-    final pending = _patients.where((p) => p.outcome == 'pending').length;
+    // Individual patient stats
+    final indivTotal   = _patients.length;
+    final indivPassed  = _patients.where((p) => p.outcome == 'pass').length;
+    final indivReferred = _patients.where((p) => p.outcome == 'refer').length;
+    final indivPending  = _patients.where((p) => p.outcome == 'pending').length;
+    // Campaign stats
+    final campTotal    = _campaigns.fold<int>(0, (sum, c) => sum + ((c['total'] as int?) ?? 0));
+    final campPassed   = _campaigns.fold<int>(0, (sum, c) => sum + ((c['passed'] as int?) ?? 0));
+    final campReferred = _campaigns.fold<int>(0, (sum, c) => sum + ((c['referred'] as int?) ?? 0));
+    // Combined
+    final total    = indivTotal + campTotal;
+    final passed   = indivPassed + campPassed;
+    final referred = indivReferred + campReferred;
+    final pending  = indivPending;
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFB),
       body: Column(
@@ -220,36 +279,71 @@ class _PatientsScreenState extends State<PatientsScreen> {
                 : RefreshIndicator(
                     onRefresh: _loadPatients,
                     color: _teal,
-                    child: (list.isEmpty && _campaigns.isEmpty)
-                        ? ListView(children: [_buildEmpty()])
-                        : ListView.builder(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.fromLTRB(14, 12, 14, 100),
-                            itemCount: _campaigns.length + list.length + (_campaigns.isNotEmpty ? 2 : 1),
-                            itemBuilder: (_, i) {
-                              // Campaign section label
-                              if (i == 0 && _campaigns.isNotEmpty) {
-                                return _sectionLabel('Campaigns (' + _campaigns.length.toString() + ')');
-                              }
-                              // Campaign cards
-                              if (_campaigns.isNotEmpty && i <= _campaigns.length) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 10),
-                                  child: _buildCampaignCard(_campaigns[i - 1]),
-                                );
-                              }
-                              // Individual patients section label
-                              final offset = _campaigns.isNotEmpty ? _campaigns.length + 1 : 0;
-                              if (i == offset) {
-                                return _sectionLabel(list.length.toString() + ' patient' + (list.length == 1 ? '' : 's') + ' registered');
-                              }
-                              // Individual patient cards
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 9),
-                                child: _buildCard(list[i - offset - 1]),
+                    child: () {
+                      if (_query.isEmpty) {
+                        // No search — show campaigns + individual patients
+                        if (_campaigns.isEmpty && list.isEmpty) return ListView(children: [_buildEmpty()]);
+                        return ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(14, 12, 14, 100),
+                          itemCount: (_campaigns.isNotEmpty ? _campaigns.length + 1 : 0) + list.length + 1,
+                          itemBuilder: (_, i) {
+                            int idx = i;
+                            if (_campaigns.isNotEmpty) {
+                              if (idx == 0) return _sectionLabel('Campaigns (' + _campaigns.length.toString() + ')');
+                              if (idx <= _campaigns.length) return Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: _buildCampaignCard(_campaigns[idx - 1]),
                               );
-                            },
-                          ),
+                              idx -= _campaigns.length + 1;
+                            }
+                            if (idx == 0) return _sectionLabel(list.length.toString() + ' individual patient' + (list.length == 1 ? '' : 's'));
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 9),
+                              child: _buildCard(list[idx - 1]),
+                            );
+                          },
+                        );
+                      }
+                      // Has search query — show ONLY exact matches per section
+                      final mCampaigns = _filteredCampaigns;
+                      final mCampPatients = _filteredCampaignPatients;
+                      final mIndiv = list;
+                      if (mCampaigns.isEmpty && mCampPatients.isEmpty && mIndiv.isEmpty) return ListView(children: [_buildEmpty()]);
+                      int total = 0;
+                      if (mCampaigns.isNotEmpty) total += mCampaigns.length + 1;
+                      if (mCampPatients.isNotEmpty) total += mCampPatients.length + 1;
+                      if (mIndiv.isNotEmpty) total += mIndiv.length + 1;
+                      return ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(14, 12, 14, 100),
+                        itemCount: total,
+                        itemBuilder: (_, i) {
+                          int idx = i;
+                          if (mCampaigns.isNotEmpty) {
+                            if (idx == 0) return _sectionLabel('Campaigns (' + mCampaigns.length.toString() + ')');
+                            if (idx <= mCampaigns.length) return Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: _buildCampaignCard(mCampaigns[idx - 1]),
+                            );
+                            idx -= mCampaigns.length + 1;
+                          }
+                          if (mCampPatients.isNotEmpty) {
+                            if (idx == 0) return _sectionLabel('Campaign Patients (' + mCampPatients.length.toString() + ')');
+                            if (idx <= mCampPatients.length) return Padding(
+                              padding: const EdgeInsets.only(bottom: 9),
+                              child: _buildCard(mCampPatients[idx - 1]),
+                            );
+                            idx -= mCampPatients.length + 1;
+                          }
+                          if (idx == 0) return _sectionLabel('Individual Patients (' + mIndiv.length.toString() + ')');
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 9),
+                            child: _buildCard(mIndiv[idx - 1]),
+                          );
+                        },
+                      );
+                    }(),
                   ),
           ),
         ],
@@ -549,6 +643,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
         onTap: () => Navigator.push(context, MaterialPageRoute(
           builder: (_) => _CampaignDetailScreen(campaign: c),
         )).then((_) => _loadPatients()),
+        onLongPress: () => _confirmDeleteCampaign(c),
         borderRadius: BorderRadius.circular(16),
         child: Container(
           decoration: BoxDecoration(
@@ -602,6 +697,56 @@ class _PatientsScreenState extends State<PatientsScreen> {
             ),
           ]),
         ),
+      ),
+    );
+  }
+
+  void _confirmDeleteCampaign(Map<String,dynamic> c) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(children: [
+          Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(color: _red.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+            child: const Icon(Icons.delete_rounded, color: _red, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Text('Delete Campaign',
+              style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF1A2A3D)))),
+        ]),
+        content: Text(
+          'Delete "${c['name']}" and all ${(c['total'] as int?) ?? 0} patient records inside? This cannot be undone.',
+          style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF5E7291), height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: const Color(0xFF8FA0B4))),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await DatabaseHelper.instance.deleteCampaign(c['id'] as String);
+              await _loadPatients();
+              if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text('Campaign "${c['name']}" deleted.',
+                    style: GoogleFonts.inter(fontSize: 12, color: Colors.white)),
+                backgroundColor: _red,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                duration: const Duration(seconds: 2),
+              ));
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _red,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              elevation: 0,
+            ),
+            child: Text('Delete All', style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: Colors.white)),
+          ),
+        ],
       ),
     );
   }
