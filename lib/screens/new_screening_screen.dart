@@ -127,7 +127,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   int _correctCount = 0;      // correct answers in current row
   int _staircaseJumpIndex = 0; // where we are in _staircaseJumps
   bool _staircasePhase = true; // true=initial jumps, false=fine search
-  int _fineSearchDir = 0;      // +1 going harder, -1 going easier
   final List<Map<String, dynamic>> _eyeResults = [];
   int _cantTellCount = 0;
 
@@ -168,7 +167,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     _showNewPatientForm = widget.startWithNewPatient;
     _loadUnsyncedCount();
     _loadPatients();
-    _recoverLostPhoto();
     _connectivitySub = Connectivity().onConnectivityChanged.listen((r) {
       if (!mounted) return;
       setState(() => _isOffline = r.every((x) => x == ConnectivityResult.none));
@@ -252,7 +250,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     ctrl?.dispose();
   }
 
-  Future<void> _recoverLostPhoto() async {}
 
   void _showPhotoOptions() => _openPhotoCamera();
 
@@ -456,7 +453,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       } else {
         // failed a jump level — switch to fine search going easier
         _staircasePhase = false;
-        _fineSearchDir = -1;
         _currentRow = (_currentRow + 1).clamp(0, _rows.length - 1);
         if (_currentRow >= _rows.length - 1) {
           _finishEye(_rows[_lastPassedRow]['logmar'] as String);
@@ -514,7 +510,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
         _correctCount = 0;
         _staircaseJumpIndex = 0;
         _staircasePhase = true;
-        _fineSearchDir = 0;
         _cantTellCount = 0;
         _generateRotation();
         _step = 2; // cover eye reminder
@@ -538,22 +533,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 
 
 
-
-  void _goToSummary() {
-    // after all distance eyes done, go to near vision
-    setState(() {
-      _nearRow = 0;
-      _nearLetterIndex = 0;
-      _nearCorrectCount = 0;
-      _nearLastPassedRow = 0;
-      _nearStaircasePhase = true;
-      _nearStaircaseJumpIndex = 0;
-      _nearCantTellCount = 0;
-      _nearResult = null;
-      _step = 6;
-    });
-    _generateNearRotation();
-  }
 
   void _goToFinalSummary() => setState(() => _step = 5);
 
@@ -704,10 +683,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     if (mounted) setState(() => _unsyncedCount = count);
   }
 
-  Future<void> _incrementUnsynced() async {
-    final count = await DatabaseHelper.instance.getUnsyncedCount();
-    if (mounted) setState(() => _unsyncedCount = count);
-  }
 
   // ── VA helpers ────────────────────────────────────────────────────────────
   String _toSnellen(String logmar) {
@@ -2550,7 +2525,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               () => setState(() => _step = 2),
             )
           else
-            _continueBtn('View Near Vision Test', _goToSummary),
+            _continueBtn('View Near Vision Test', () => setState(() => _step = 6)),
         ],
       ),
     );

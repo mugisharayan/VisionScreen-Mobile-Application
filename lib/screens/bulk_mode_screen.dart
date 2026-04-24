@@ -70,6 +70,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
   String _quickGender     = 'M';
   bool   _registering     = false;
   String? _currentPatientId;
+  int?    _currentScreeningId;
   final _phoneCtrl = TextEditingController();
   final List<String> _quickConditions = [];
 
@@ -226,7 +227,6 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
     if (_campaignId == null) return;
     setState(() => _loadingSummary = true);
     final rows = await DatabaseHelper.instance.getPatientsForCampaign(_campaignId!);
-    final campaign = await DatabaseHelper.instance.getCampaign(_campaignId!);
     if (mounted) setState(() {
       _sessionPatients = rows;
       _loadingSummary  = false;
@@ -832,6 +832,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
       _quickAge          = 10;
       _quickGender       = 'M';
       _currentPatientId  = null;
+      _currentScreeningId = null;
       _selectedFacility  = null;
       _appointmentDate   = null;
       _quickConditions.clear();
@@ -1525,7 +1526,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
               const SizedBox(width: 8),
               _summaryStatCard('$referred', 'Referred', _red),
               const SizedBox(width: 8),
-              _summaryStatCard('$passRate%','Pass Rate', _teal3),
+              _summaryStatCard(pending > 0 ? '$pending' : '$passRate%', pending > 0 ? 'Pending' : 'Pass Rate', pending > 0 ? _amber : _teal3),
             ]),
           ]),
         ),
