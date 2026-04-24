@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../db/database_helper.dart';
+import '../services/pdf_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'bulk_mode_screen.dart';
 
 // ── Colours (shared with the rest of the app) ──
@@ -1877,82 +1879,72 @@ class _PatientsScreenState extends State<PatientsScreen> {
     );
   }
 
-  void _exportPatientToPDF(_Patient p) async {
+  Future<void> _exportPatientToPDF(_Patient p) async {
     Navigator.pop(context);
-
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Row(children: [
+        const SizedBox(width: 16, height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white))),
+        const SizedBox(width: 12),
+        Text('Generating PDF...', style: GoogleFonts.inter(fontSize: 12, color: Colors.white)),
+      ]),
+      backgroundColor: _teal, behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      duration: const Duration(seconds: 30),
+    ));
     try {
-      // Show loading
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Generating PDF for ${p.name}...',
-                style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
-              ),
-            ],
-          ),
-          backgroundColor: _teal,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-
-      // Simulate PDF generation
-      await Future.delayed(const Duration(seconds: 2));
-
-      // Simulate random failure (20% chance)
-      if (DateTime.now().millisecond % 5 == 0) {
-        throw Exception('PDF generation failed');
+      final screenings = await DatabaseHelper.instance.getScreeningsForPatient(p.id);
+      final latest = screenings.isNotEmpty ? screenings.first : null;
+      final eyeResults = <Map<String, dynamic>>[];
+      if (latest != null) {
+        final od = (latest['od_logmar'] as String? ?? '');
+        final os = (latest['os_logmar'] as String? ?? '');
+        if (od.isNotEmpty) eyeResults.add({'eye': 'OD', 'logmar': od, 'cantTell': 0});
+        if (os.isNotEmpty) eyeResults.add({'eye': 'OS', 'logmar': os, 'cantTell': 0});
+        if (eyeResults.isEmpty) {
+          final ods = (latest['od_snellen'] as String? ?? '');
+          final oss = (latest['os_snellen'] as String? ?? '');
+          if (ods.isNotEmpty && ods != '—') eyeResults.add({'eye': 'OD', 'logmar': _snellenToLogmar(ods), 'cantTell': 0});
+          if (oss.isNotEmpty && oss != '—') eyeResults.add({'eye': 'OS', 'logmar': _snellenToLogmar(oss), 'cantTell': 0});
+        }
       }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(
-                  Icons.check_circle_rounded,
-                  color: Colors.white,
-                  size: 16,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'PDF exported successfully! Saved to Downloads.',
-                  style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
-                ),
-              ],
-            ),
-            backgroundColor: _green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            duration: const Duration(seconds: 3),
-          ),
+      final patientMap = {'name': p.name, 'id': p.id, 'age': p.age.toString(),
+          'gender': p.gender, 'village': p.village, 'phone': p.phone};
+      final date = (latest?['screening_date'] as String? ?? DateTime.now().toIso8601String()).substring(0, 10);
+      final prefs = await SharedPreferences.getInstance();
+      final chwName   = prefs.getString('chw_name')   ?? '';
+      final chwCenter = prefs.getString('chw_center') ?? '';
+      final chwTitle  = chwCenter.isNotEmpty ? 'Community Health Worker · $chwCenter' : 'Community Health Worker';
+      String filePath;
+      if (p.outcome == 'refer') {
+        filePath = await PdfService.generateReferralPdf(
+          patient: patientMap, eyeResults: eyeResults, screeningDate: date,
+          facility: p.facility ?? 'Nearest Eye Clinic',
+          chwName: chwName, chwTitle: chwTitle,
+          appointmentDate: latest?['appointment_date'] as String?,
+          conditions: p.safeConditions,
+        );
+      } else {
+        filePath = await PdfService.generatePassResultPdf(
+          patient: patientMap, eyeResults: eyeResults, screeningDate: date,
+          chwName: chwName, chwTitle: chwTitle, conditions: p.safeConditions,
         );
       }
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      if (mounted) await PdfService.openOrShare(context, filePath,
+          '${p.outcome == 'refer' ? 'Referral Letter' : 'Screening Result'} — ${p.name}');
     } catch (e) {
-      _showErrorSnackBar(
-        'Export failed',
-        'Unable to generate PDF for ${p.name}. Please try again.',
-        retryAction: () => _exportPatientToPDF(p),
-      );
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      if (mounted) _showErrorSnackBar('PDF failed', e.toString());
     }
   }
 
+  String _snellenToLogmar(String s) {
+    const m = {'6/6':'0.0','6/9':'0.2','6/12':'0.3','6/18':'0.5',
+               '6/24':'0.6','6/36':'0.8','6/48':'0.9','6/60':'1.0'};
+    return m[s] ?? '0.5';
+  }
   void _exportPatientToCSV(_Patient p) async {
     Navigator.pop(context);
 
@@ -3213,16 +3205,67 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
     }
   }
 
-  void _exportPatientDataCampaign(_Patient p) {
+  Future<void> _exportPatientDataCampaign(_Patient p) async {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('Generating PDF for ' + p.name + '...',
-          style: GoogleFonts.inter(fontSize: 12, color: Colors.white)),
+      content: Row(children: [
+        const SizedBox(width: 16, height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white))),
+        const SizedBox(width: 12),
+        Text('Generating PDF...', style: GoogleFonts.inter(fontSize: 12, color: Colors.white)),
+      ]),
       backgroundColor: _teal, behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      duration: const Duration(seconds: 2),
+      duration: const Duration(seconds: 30),
     ));
+    try {
+      final screenings = await DatabaseHelper.instance.getScreeningsForPatient(p.id);
+      final latest = screenings.isNotEmpty ? screenings.first : null;
+      final eyeResults = <Map<String, dynamic>>[];
+      if (latest != null) {
+        final od = (latest['od_logmar'] as String? ?? '');
+        final os = (latest['os_logmar'] as String? ?? '');
+        if (od.isNotEmpty) eyeResults.add({'eye': 'OD', 'logmar': od, 'cantTell': 0});
+        if (os.isNotEmpty) eyeResults.add({'eye': 'OS', 'logmar': os, 'cantTell': 0});
+        if (eyeResults.isEmpty) {
+          if (p.od != '—') eyeResults.add({'eye': 'OD', 'logmar': _snellenToLogmar(p.od), 'cantTell': 0});
+          if (p.os != '—') eyeResults.add({'eye': 'OS', 'logmar': _snellenToLogmar(p.os), 'cantTell': 0});
+        }
+      }
+      final patientMap = {'name': p.name, 'id': p.id, 'age': p.age.toString(),
+          'gender': p.gender, 'village': p.village, 'phone': p.phone};
+      final date = (latest?['screening_date'] as String? ?? DateTime.now().toIso8601String()).substring(0, 10);
+      final prefs = await SharedPreferences.getInstance();
+      final chwName   = prefs.getString('chw_name')   ?? '';
+      final chwCenter = prefs.getString('chw_center') ?? '';
+      final chwTitle  = chwCenter.isNotEmpty ? 'Community Health Worker · $chwCenter' : 'Community Health Worker';
+      String filePath;
+      if (p.outcome == 'refer') {
+        filePath = await PdfService.generateReferralPdf(
+          patient: patientMap, eyeResults: eyeResults, screeningDate: date,
+          facility: p.facility ?? 'Nearest Eye Clinic',
+          chwName: chwName, chwTitle: chwTitle,
+          appointmentDate: latest?['appointment_date'] as String?,
+          conditions: p.safeConditions,
+        );
+      } else {
+        filePath = await PdfService.generatePassResultPdf(
+          patient: patientMap, eyeResults: eyeResults, screeningDate: date,
+          chwName: chwName, chwTitle: chwTitle, conditions: p.safeConditions,
+        );
+      }
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      if (mounted) await PdfService.openOrShare(context, filePath,
+          '${p.outcome == 'refer' ? 'Referral Letter' : 'Screening Result'} — ${p.name}');
+    } catch (e) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('PDF failed: $e', style: GoogleFonts.inter(fontSize: 12, color: Colors.white)),
+        backgroundColor: _red, behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ));
+    }
   }
-
   Widget _vaPill(String eye, String value, String outcome) {
     final isBad = outcome == 'refer' && value != '6/6' && value != '6/9' && value != '6/12';
     final fg = isBad ? _red : _teal;
@@ -3257,5 +3300,11 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
     if (digits.startsWith('256') && digits.length >= 12) return digits;
     if (digits.startsWith('0') && digits.length == 10) return '256${digits.substring(1)}';
     return digits;
+  }
+
+  String _snellenToLogmar(String s) {
+    const m = {'6/6':'0.0','6/9':'0.2','6/12':'0.3','6/18':'0.5',
+               '6/24':'0.6','6/36':'0.8','6/48':'0.9','6/60':'1.0'};
+    return m[s] ?? '0.5';
   }
 }
