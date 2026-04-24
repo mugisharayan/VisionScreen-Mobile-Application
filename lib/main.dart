@@ -284,8 +284,8 @@ class _MainShellState extends State<MainShell> {
             child: GestureDetector(
               onTap: _startNewScreening,
               child: Container(
-                width: 64,
-                height: 64,
+                width: 74,
+                height: 74,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   boxShadow: [
@@ -321,7 +321,7 @@ class _MainShellState extends State<MainShell> {
                   child: const Center(
                     child: Icon(
                       Icons.remove_red_eye_rounded,
-                      size: 32,
+                      size: 38,
                       color: Colors.white,
                     ),
                   ),
@@ -338,7 +338,7 @@ class _MainShellState extends State<MainShell> {
     Navigator.push(
       context,
       PageRouteBuilder(
-        pageBuilder: (_, _, _) => const NewScreeningScreen(),
+        pageBuilder: (_, _, _) => const NewScreeningScreen(startWithNewPatient: true),
         transitionsBuilder: (_, animation, _, child) {
           return FadeTransition(
             opacity: Tween<double>(begin: 0.0, end: 1.0).animate(

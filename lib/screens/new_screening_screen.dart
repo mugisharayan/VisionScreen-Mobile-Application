@@ -75,7 +75,8 @@ double _mmToPx(double mm, BuildContext context) {
 }
 
 class NewScreeningScreen extends StatefulWidget {
-  const NewScreeningScreen({super.key});
+  final bool startWithNewPatient;
+  const NewScreeningScreen({super.key, this.startWithNewPatient = false});
   @override
   State<NewScreeningScreen> createState() => _NewScreeningScreenState();
 }
@@ -90,7 +91,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   String? _selectedPatientId;
   final _patientSearchCtrl = TextEditingController();
   String _patientQuery = '';
-  bool _showNewPatientForm = false;
+  bool _showNewPatientForm = false; // set in initState
   final _newNameCtrl    = TextEditingController();
   final _newVillageCtrl = TextEditingController();
   final _newPhoneCtrl   = TextEditingController();
@@ -164,6 +165,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     _pulseAnim = Tween<double>(begin: 0.85, end: 1.0).animate(
       CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
     );
+    _showNewPatientForm = widget.startWithNewPatient;
     _loadUnsyncedCount();
     _loadPatients();
     _recoverLostPhoto();

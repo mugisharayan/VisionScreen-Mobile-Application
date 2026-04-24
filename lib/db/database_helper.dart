@@ -16,8 +16,20 @@ class DatabaseHelper {
     final path = join(await getDatabasesPath(), 'visionscreen.db');
     return openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: (db, _) async {
+        await db.execute('''
+          CREATE TABLE campaigns (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            location TEXT NOT NULL,
+            target_group TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            total INTEGER DEFAULT 0,
+            passed INTEGER DEFAULT 0,
+            referred INTEGER DEFAULT 0
+          )
+        ''');
         await db.execute('''
           CREATE TABLE patients (
             id TEXT PRIMARY KEY,
@@ -29,7 +41,9 @@ class DatabaseHelper {
             phone TEXT,
             conditions TEXT,
             photo_path TEXT,
-            created_at TEXT NOT NULL
+            campaign_id TEXT,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (campaign_id) REFERENCES campaigns(id)
           )
         ''');
         await db.execute('''
@@ -62,6 +76,21 @@ class DatabaseHelper {
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
           await db.execute('ALTER TABLE screenings ADD COLUMN appointment_date TEXT');
+        }
+        if (oldVersion < 3) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS campaigns (
+              id TEXT PRIMARY KEY,
+              name TEXT NOT NULL,
+              location TEXT NOT NULL,
+              target_group TEXT NOT NULL,
+              created_at TEXT NOT NULL,
+              total INTEGER DEFAULT 0,
+              passed INTEGER DEFAULT 0,
+            referred INTEGER DEFAULT 0
+            )
+          ''');
+          await db.execute('ALTER TABLE patients ADD COLUMN campaign_id TEXT');
         }
       },
     );
@@ -107,6 +136,59 @@ class DatabaseHelper {
       'SELECT * FROM patients WHERE LOWER(name) LIKE ? OR LOWER(id) LIKE ? OR LOWER(village) LIKE ? ORDER BY created_at DESC',
       [q, q, q],
     );
+  }
+
+  // ── CAMPAIGNS ─────────────────────────────────────────────
+
+  Future<String> insertCampaign(Map<String, dynamic> campaign) async {
+    final database = await db;
+    await database.insert('campaigns', campaign, conflictAlgorithm: ConflictAlgorithm.replace);
+    return campaign['id'] as String;
+  }
+
+  Future<List<Map<String, dynamic>>> getAllCampaigns() async {
+    final database = await db;
+    return database.query('campaigns', orderBy: 'created_at DESC');
+  }
+
+  Future<Map<String, dynamic>?> getCampaign(String id) async {
+    final database = await db;
+    final rows = await database.query('campaigns', where: 'id = ?', whereArgs: [id], limit: 1);
+    return rows.isEmpty ? null : rows.first;
+  }
+
+  Future<void> updateCampaignStats(String campaignId) async {
+    final database = await db;
+    final result = await database.rawQuery('''
+      SELECT
+        COUNT(DISTINCT p.id) as total,
+        SUM(CASE WHEN s.outcome = 'pass' THEN 1 ELSE 0 END) as passed,
+        SUM(CASE WHEN s.outcome = 'refer' THEN 1 ELSE 0 END) as referred
+      FROM patients p
+      LEFT JOIN screenings s ON s.patient_id = p.id
+      WHERE p.campaign_id = ?
+    ''', [campaignId]);
+    if (result.isNotEmpty) {
+      await database.update('campaigns', {
+        'total': result.first['total'] ?? 0,
+        'passed': result.first['passed'] ?? 0,
+        'referred': result.first['referred'] ?? 0,
+      }, where: 'id = ?', whereArgs: [campaignId]);
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getPatientsForCampaign(String campaignId) async {
+    final database = await db;
+    return database.rawQuery('''
+      SELECT p.*, s.outcome, s.od_snellen, s.os_snellen, s.ou_near_snellen,
+             s.referral_facility, s.referral_status, s.screening_date
+      FROM patients p
+      LEFT JOIN screenings s ON s.id = (
+        SELECT id FROM screenings WHERE patient_id = p.id ORDER BY screening_date DESC LIMIT 1
+      )
+      WHERE p.campaign_id = ?
+      ORDER BY p.created_at ASC
+    ''', [campaignId]);
   }
 
   // ── SCREENINGS ────────────────────────────────────────────
@@ -177,8 +259,6 @@ class DatabaseHelper {
       FROM screenings s
       JOIN patients p ON s.patient_id = p.id
       WHERE s.outcome = 'refer'
-        AND s.referral_facility IS NOT NULL
-        AND s.referral_facility != ''
       ORDER BY s.appointment_date ASC
     ''');
   }

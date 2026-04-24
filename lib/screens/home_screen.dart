@@ -12,6 +12,7 @@ import 'training_screen.dart';
 import 'notifications_screen.dart';
 import 'patients_screen.dart';
 import 'new_screening_screen.dart';
+import 'bulk_mode_screen.dart';
 
 import 'analytics_screen.dart';
 import 'settings_screen.dart';
@@ -1133,7 +1134,12 @@ class _HomeScreenState extends State<HomeScreen>
           if (a['title'] == 'New Screening') {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const NewScreeningScreen()),
+              MaterialPageRoute(builder: (_) => const NewScreeningScreen(startWithNewPatient: true)),
+            ).then((_) => _loadDbStats());
+          } else if (a['title'] == 'Bulk Mode') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const BulkModeScreen()),
             ).then((_) => _loadDbStats());
           } else if (a['title'] == 'Training') {
             Navigator.push(context,
@@ -1617,9 +1623,13 @@ class _HomeScreenState extends State<HomeScreen>
         else
           ..._referredPatients.take(3).map((r) {
             final name = r['name'] as String;
+            final campaignId = (r['campaign_id'] as String?) ?? '';
+            final isBulk = campaignId.isNotEmpty;
             final age = (r['age'] as int?) ?? 0;
             final gender = (r['gender'] as String?) ?? '';
-            final facility = (r['referral_facility'] as String?) ?? 'Unknown Facility';
+            final facility = ((r['referral_facility'] as String?) ?? '').isEmpty
+                ? 'No facility set'
+                : r['referral_facility'] as String;
             final status = (r['referral_status'] as String?) ?? 'pending';
             final photoPath = (r['photo_path'] as String?) ?? '';
             final od = (r['od_snellen'] as String?) ?? '—';

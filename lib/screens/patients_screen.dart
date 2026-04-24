@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../db/database_helper.dart';
+import 'bulk_mode_screen.dart';
 
 // ── Colours (shared with the rest of the app) ──
 const _ink = Color(0xFF04091A);
@@ -97,6 +98,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
   String _filter = 'All';
   String _query = '';
   List<_Patient> _patients = [];
+  List<Map<String,dynamic>> _campaigns = [];
   bool _loading = true;
 
   @override
@@ -112,8 +114,13 @@ class _PatientsScreenState extends State<PatientsScreen> {
   }
 
   Future<void> _loadPatients() async {
+    final campaignRows = await DatabaseHelper.instance.getAllCampaigns();
     setState(() => _loading = true);
-    final patientRows = await DatabaseHelper.instance.getAllPatients();
+    final allPatients = await DatabaseHelper.instance.getAllPatients();
+    final patientRows = allPatients.where((r) {
+      final cid = r['campaign_id'];
+      return cid == null || cid.toString().isEmpty;
+    }).toList();
     final list = <_Patient>[];
     for (final r in patientRows) {
       final pid = r['id'] as String;
@@ -151,7 +158,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
         conditions: conditions,
       ));
     }
-    if (mounted) setState(() { _patients = list; _loading = false; });
+    if (mounted) setState(() { _patients = list; _campaigns = campaignRows; _loading = false; });
   }
 
   String _formatDate(String iso) {
@@ -213,19 +220,33 @@ class _PatientsScreenState extends State<PatientsScreen> {
                 : RefreshIndicator(
                     onRefresh: _loadPatients,
                     color: _teal,
-                    child: list.isEmpty
+                    child: (list.isEmpty && _campaigns.isEmpty)
                         ? ListView(children: [_buildEmpty()])
                         : ListView.builder(
                             physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.fromLTRB(14, 12, 14, 24),
-                            itemCount: list.length + 1,
+                            padding: const EdgeInsets.fromLTRB(14, 12, 14, 100),
+                            itemCount: _campaigns.length + list.length + (_campaigns.isNotEmpty ? 2 : 1),
                             itemBuilder: (_, i) {
-                              if (i == 0) return _sectionLabel(
-                                '${list.length} patient${list.length == 1 ? '' : 's'} registered',
-                              );
+                              // Campaign section label
+                              if (i == 0 && _campaigns.isNotEmpty) {
+                                return _sectionLabel('Campaigns (' + _campaigns.length.toString() + ')');
+                              }
+                              // Campaign cards
+                              if (_campaigns.isNotEmpty && i <= _campaigns.length) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 10),
+                                  child: _buildCampaignCard(_campaigns[i - 1]),
+                                );
+                              }
+                              // Individual patients section label
+                              final offset = _campaigns.isNotEmpty ? _campaigns.length + 1 : 0;
+                              if (i == offset) {
+                                return _sectionLabel(list.length.toString() + ' patient' + (list.length == 1 ? '' : 's') + ' registered');
+                              }
+                              // Individual patient cards
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 9),
-                                child: _buildCard(list[i - 1]),
+                                child: _buildCard(list[i - offset - 1]),
                               );
                             },
                           ),
@@ -504,6 +525,95 @@ class _PatientsScreenState extends State<PatientsScreen> {
     );
   }
 
+  // ── Campaign card ──
+  Widget _buildCampaignCard(Map<String,dynamic> c) {
+    final name     = c['name'] as String;
+    final location = c['location'] as String;
+    final group    = c['target_group'] as String;
+    final total    = (c['total'] as int?) ?? 0;
+    final passed   = (c['passed'] as int?) ?? 0;
+    final referred = (c['referred'] as int?) ?? 0;
+    final passRate = total > 0 ? (passed / total * 100).round() : 0;
+    final createdAt = c['created_at'] as String;
+    String dateLabel = '';
+    try {
+      final dt = DateTime.parse(createdAt);
+      const months = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      dateLabel = dt.day.toString() + ' ' + months[dt.month] + ' ' + dt.year.toString();
+    } catch (_) {}
+
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: () => Navigator.push(context, MaterialPageRoute(
+          builder: (_) => _CampaignDetailScreen(campaign: c),
+        )).then((_) => _loadPatients()),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 3))],
+          ),
+          child: Column(children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(colors: [_ink, _ink2], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                borderRadius: BorderRadius.only(topLeft: Radius.circular(15), topRight: Radius.circular(15)),
+              ),
+              child: Row(children: [
+                Container(
+                  width: 44, height: 44,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [_teal, _teal2]),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [BoxShadow(color: _teal.withOpacity(0.4), blurRadius: 10, offset: const Offset(0, 3))],
+                  ),
+                  child: const Icon(Icons.groups_rounded, color: Colors.white, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(name, style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white)),
+                  Text(location + ' · ' + group, style: GoogleFonts.inter(fontSize: 11, color: Colors.white.withOpacity(0.5))),
+                ])),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(color: _teal.withOpacity(0.2), borderRadius: BorderRadius.circular(99), border: Border.all(color: _teal3.withOpacity(0.3))),
+                  child: Text('CAMPAIGN', style: GoogleFonts.ibmPlexSans(fontSize: 8, fontWeight: FontWeight.w800, color: _teal3, letterSpacing: 1.0)),
+                ),
+              ]),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(children: [
+                _campStat(total.toString(),    'Screened', Colors.black87),
+                _campStat(passed.toString(),   'Passed',   _green),
+                _campStat(referred.toString(), 'Referred', _red),
+                _campStat(passRate.toString() + '%', 'Pass Rate', _teal),
+                const Spacer(),
+                Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                  Text(dateLabel, style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF8FA0B4))),
+                  const SizedBox(height: 2),
+                  Text('View →', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: _teal)),
+                ]),
+              ]),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Widget _campStat(String value, String label, Color color) => Padding(
+    padding: const EdgeInsets.only(right: 14),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(value, style: GoogleFonts.barlow(fontSize: 18, fontWeight: FontWeight.w900, color: color, height: 1.0)),
+      Text(label, style: GoogleFonts.ibmPlexSans(fontSize: 9, fontWeight: FontWeight.w600, color: const Color(0xFF8FA0B4))),
+    ]),
+  );
+
   // ── Patient card ──
   Widget _buildCard(_Patient p) {
     final (badgeLabel, badgeBg, badgeText, badgeIcon, accentColor) =
@@ -647,12 +757,15 @@ class _PatientsScreenState extends State<PatientsScreen> {
                                 color: Color(0xFF8FA0B4),
                               ),
                               const SizedBox(width: 4),
-                              Text(
-                                '${p.age} yrs · ${p.gender} · ${p.village}',
-                                style: GoogleFonts.inter(
-                                  fontSize: 11,
-                                  color: const Color(0xFF8FA0B4),
-                                  fontWeight: FontWeight.w400,
+                              Flexible(
+                                child: Text(
+                                  '${p.age} yrs · ${p.gender} · ${p.village}',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    color: const Color(0xFF8FA0B4),
+                                    fontWeight: FontWeight.w400,
+                                  ),
                                 ),
                               ),
                             ],
@@ -852,12 +965,15 @@ class _PatientsScreenState extends State<PatientsScreen> {
                                         color: Color(0xFF8FA0B4),
                                       ),
                                       const SizedBox(width: 5),
-                                      Text(
-                                        p.id,
-                                        style: GoogleFonts.inter(
-                                          fontSize: 11,
-                                          color: const Color(0xFF8FA0B4),
-                                          fontWeight: FontWeight.w500,
+                                      Flexible(
+                                        child: Text(
+                                          p.id,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 11,
+                                            color: const Color(0xFF8FA0B4),
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                         ),
                                       ),
                                       const Spacer(),
@@ -867,12 +983,15 @@ class _PatientsScreenState extends State<PatientsScreen> {
                                         color: Color(0xFF8FA0B4),
                                       ),
                                       const SizedBox(width: 4),
-                                      Text(
-                                        p.date,
-                                        style: GoogleFonts.inter(
-                                          fontSize: 11,
-                                          color: const Color(0xFF8FA0B4),
-                                          fontWeight: FontWeight.w500,
+                                      Flexible(
+                                        child: Text(
+                                          p.date,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 11,
+                                            color: const Color(0xFF8FA0B4),
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -2422,3 +2541,465 @@ class _PatientHistorySheetState extends State<_PatientHistorySheet> {
   }
 }
 
+
+// ── Campaign Detail Screen ────────────────────────────────────────────────────
+class _CampaignDetailScreen extends StatefulWidget {
+  final Map<String,dynamic> campaign;
+  const _CampaignDetailScreen({required this.campaign});
+  @override
+  State<_CampaignDetailScreen> createState() => _CampaignDetailScreenState();
+}
+
+class _CampaignDetailScreenState extends State<_CampaignDetailScreen> {
+  List<_Patient> _patients = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  String _formatDate(String iso) {
+    try {
+      final dt = DateTime.parse(iso);
+      final now = DateTime.now();
+      if (dt.year == now.year && dt.month == now.month && dt.day == now.day) {
+        final diff = now.difference(dt);
+        if (diff.inMinutes < 60) return 'Today · ${diff.inMinutes}m ago';
+        return 'Today · ${diff.inHours}hr ago';
+      }
+      return '${dt.day} ${['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][dt.month]}';
+    } catch (_) { return iso.substring(0, 10); }
+  }
+
+  Future<void> _load() async {
+    final rows = await DatabaseHelper.instance.getPatientsForCampaign(widget.campaign['id'] as String);
+    final list = <_Patient>[];
+    for (final r in rows) {
+      final age = (r['age'] as int?) ?? 0;
+      final conditions = ((r['conditions'] as String?) ?? '').split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+      final outcome = (r['outcome'] as String?) ?? 'pending';
+      final screeningDate = r['screening_date'] as String?;
+      list.add(_Patient(
+        initials: (r['name'] as String).split(' ').map((w) => w.isEmpty ? '' : w[0]).take(2).join(),
+        avatarGradient: [_teal, _teal2],
+        photoUrl: (r['photo_path'] as String?) ?? '',
+        name: r['name'] as String,
+        age: age,
+        gender: r['gender'] as String,
+        village: (r['village'] as String?) ?? '',
+        ageGroup: age < 18 ? 'child' : age > 60 ? 'elderly' : 'adult',
+        od: (r['od_snellen'] as String?) ?? '—',
+        os: (r['os_snellen'] as String?) ?? '—',
+        ou: (r['ou_near_snellen'] as String?) ?? '—',
+        outcome: outcome,
+        date: screeningDate != null ? _formatDate(screeningDate) : 'Not screened',
+        id: r['id'] as String,
+        phone: (r['phone'] as String?) ?? '',
+        facility: (r['referral_facility'] as String?)?.let((f) => f.isEmpty ? null : f),
+        referralStatus: (r['referral_status'] as String?)?.let((s) => s.isEmpty ? null : s),
+        conditions: conditions,
+      ));
+    }
+    if (mounted) setState(() { _patients = list; _loading = false; });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c        = widget.campaign;
+    final name     = c['name'] as String;
+    final location = c['location'] as String;
+    final group    = c['target_group'] as String;
+    final total    = (c['total'] as int?) ?? 0;
+    final passed   = (c['passed'] as int?) ?? 0;
+    final referred = (c['referred'] as int?) ?? 0;
+    final passRate = total > 0 ? (passed / total * 100).round() : 0;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFB),
+      body: Column(children: [
+        // Header
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(colors: [_ink, _ink2], begin: Alignment.topLeft, end: Alignment.bottomRight),
+            borderRadius: BorderRadius.only(bottomLeft: Radius.circular(28), bottomRight: Radius.circular(28)),
+          ),
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 22),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    width: 38, height: 38,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(11),
+                      border: Border.all(color: Colors.white.withOpacity(0.12)),
+                    ),
+                    child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 15),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _teal.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(99),
+                        border: Border.all(color: _teal3.withOpacity(0.3)),
+                      ),
+                      child: Text('CAMPAIGN · $group', style: GoogleFonts.ibmPlexSans(fontSize: 9, fontWeight: FontWeight.w800, color: _teal3, letterSpacing: 1.0)),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(name, style: GoogleFonts.barlow(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -0.8, height: 1.1)),
+                    const SizedBox(height: 4),
+                    Text(location, style: GoogleFonts.ibmPlexSans(fontSize: 11, color: Colors.white.withOpacity(0.4))),
+                  ])),
+                  const SizedBox(width: 12),
+                  Container(
+                    width: 64, height: 64,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(colors: [_teal, _teal2], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: [BoxShadow(color: _teal.withOpacity(0.45), blurRadius: 16, offset: const Offset(0, 6))],
+                    ),
+                    child: const Icon(Icons.groups_rounded, color: Colors.white, size: 28),
+                  ),
+                ]),
+                const SizedBox(height: 18),
+                // Stats
+                Row(children: [
+                  _hStat('$total',    'Screened', Colors.white),
+                  const SizedBox(width: 8),
+                  _hStat('$passed',   'Passed',   _green),
+                  const SizedBox(width: 8),
+                  _hStat('$referred', 'Referred', _red),
+                  const SizedBox(width: 8),
+                  _hStat('$passRate%','Pass Rate', _teal3),
+                ]),
+              ]),
+            ),
+          ),
+        ),
+        // Patient list
+        Expanded(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator(color: _teal))
+              : _patients.isEmpty
+                  ? Center(child: Text('No patients in this campaign yet.',
+                        style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF8FA0B4))))
+                  : RefreshIndicator(
+                      onRefresh: _load,
+                      color: _teal,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(14, 16, 14, 100),
+                        itemCount: _patients.length + 1,
+                        itemBuilder: (_, i) {
+                          if (i == 0) return Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: Text(_patients.length.toString() + ' patient' + (_patients.length == 1 ? '' : 's'),
+                                style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF8FA0B4), letterSpacing: 1.2)),
+                          );
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 9),
+                            child: _CampaignPatientCard(patient: _patients[i - 1], onRefresh: _load),
+                          );
+                        },
+                      ),
+                    ),
+        ),
+      ]),
+    );
+  }
+
+  Widget _hStat(String value, String label, Color color) => Expanded(
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.25)),
+      ),
+      child: Column(children: [
+        Text(value, style: GoogleFonts.barlow(fontSize: 20, fontWeight: FontWeight.w900, color: color, height: 1.0)),
+        Text(label.toUpperCase(), style: GoogleFonts.ibmPlexSans(fontSize: 7, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.35), letterSpacing: 0.8)),
+      ]),
+    ),
+  );
+
+  Widget _detailVaPill(String eye, String snellen, String outcome) {
+    final col = outcome == 'refer' ? _red : _green;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(color: col.withOpacity(0.08), borderRadius: BorderRadius.circular(7), border: Border.all(color: col.withOpacity(0.2))),
+      child: Text('$eye $snellen', style: GoogleFonts.spaceGrotesk(fontSize: 10, fontWeight: FontWeight.w700, color: col)),
+    );
+  }
+}
+
+// ── Campaign Patient Card — full featured, same as individual patient card ────
+class _CampaignPatientCard extends StatelessWidget {
+  final _Patient patient;
+  final VoidCallback onRefresh;
+  const _CampaignPatientCard({required this.patient, required this.onRefresh});
+
+  @override
+  Widget build(BuildContext context) {
+    // Reuse the full patient card by wrapping in a temporary state holder
+    return _CampaignPatientCardState(patient: patient, onRefresh: onRefresh);
+  }
+}
+
+class _CampaignPatientCardState extends StatefulWidget {
+  final _Patient patient;
+  final VoidCallback onRefresh;
+  const _CampaignPatientCardState({required this.patient, required this.onRefresh});
+  @override
+  State<_CampaignPatientCardState> createState() => __CampaignPatientCardStateState();
+}
+
+class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
+  _Patient get p => widget.patient;
+
+  void _showHistory() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _PatientHistorySheet(patient: p),
+    );
+  }
+
+  void _confirmDelete() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(children: [
+          Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(color: _red.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+            child: const Icon(Icons.delete_rounded, color: _red, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Text('Delete Patient',
+              style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF1A2A3D)))),
+        ]),
+        content: Text('Delete ${p.name} and all their screening records? This cannot be undone.',
+            style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF5E7291), height: 1.5)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: const Color(0xFF8FA0B4))),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await DatabaseHelper.instance.deletePatient(p.id);
+              widget.onRefresh();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: _red, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), elevation: 0),
+            child: Text('Delete', style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _callPatient() async {
+    final uri = Uri(scheme: 'tel', path: p.phone);
+    if (!await launchUrl(uri)) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Unable to dial ${p.name}.', style: GoogleFonts.inter(fontSize: 12, color: Colors.white)),
+        backgroundColor: _red, behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final (badgeLabel, badgeBg, badgeText, badgeIcon, accentColor) = _badgeProps(p.outcome);
+    final ageGroupColor = _ageGroupColor(p.ageGroup);
+
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: _showHistory,
+        onLongPress: _confirmDelete,
+        borderRadius: BorderRadius.circular(16),
+        highlightColor: const Color(0xFFF0F4F7),
+        splashColor: const Color(0xFFDDE4EC),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 3))],
+          ),
+          child: Column(children: [
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Container(
+                  width: 4, height: 72,
+                  decoration: BoxDecoration(color: accentColor, borderRadius: BorderRadius.circular(99)),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  width: 50, height: 50,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [BoxShadow(color: p.avatarGradient.last.withOpacity(0.35), blurRadius: 10, offset: const Offset(0, 4))],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: p.photoUrl.isNotEmpty && File(p.photoUrl).existsSync()
+                        ? Image.file(File(p.photoUrl), fit: BoxFit.cover, width: 50, height: 50)
+                        : Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(colors: p.avatarGradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Center(child: Text(p.initials,
+                                style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white))),
+                          ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Row(children: [
+                      Flexible(child: Text(p.name, overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: const Color(0xFF1A2A3D)))),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(color: ageGroupColor.withOpacity(0.1), borderRadius: BorderRadius.circular(99), border: Border.all(color: ageGroupColor.withOpacity(0.25))),
+                        child: Text(_capitalize(p.ageGroup), style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: ageGroupColor)),
+                      ),
+                    ]),
+                    const SizedBox(height: 4),
+                    Row(children: [
+                      const Icon(Icons.person_outline_rounded, size: 11, color: Color(0xFF8FA0B4)),
+                      const SizedBox(width: 4),
+                      Flexible(child: Text('${p.age} yrs · ${p.gender} · ${p.village}',
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8FA0B4)))),
+                    ]),
+                    const SizedBox(height: 8),
+                    if (p.outcome != 'pending')
+                      Row(children: [
+                        _vaPill('OD', p.od, p.outcome),
+                        const SizedBox(width: 5),
+                        _vaPill('OS', p.os, p.outcome),
+                        const SizedBox(width: 5),
+                        _vaPill('OU', p.ou, p.outcome),
+                      ])
+                    else
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                        decoration: BoxDecoration(color: _amber.withOpacity(0.08), borderRadius: BorderRadius.circular(8), border: Border.all(color: _amber.withOpacity(0.2))),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          const Icon(Icons.hourglass_top_rounded, size: 11, color: _amber),
+                          const SizedBox(width: 5),
+                          Text('Awaiting screening', style: GoogleFonts.inter(fontSize: 11, color: _amber, fontWeight: FontWeight.w600)),
+                        ]),
+                      ),
+                    if (p.safeConditions.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Wrap(spacing: 4, runSpacing: 4,
+                        children: p.safeConditions.map((c) => Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(color: _amber.withOpacity(0.08), borderRadius: BorderRadius.circular(6), border: Border.all(color: _amber.withOpacity(0.25))),
+                          child: Text(c, style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w600, color: _amber)),
+                        )).toList(),
+                      ),
+                    ],
+                  ]),
+                ),
+                Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(color: badgeBg, borderRadius: BorderRadius.circular(99), border: Border.all(color: accentColor.withOpacity(0.25))),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(badgeIcon, size: 11, color: accentColor),
+                      const SizedBox(width: 4),
+                      Text(badgeLabel, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: badgeText)),
+                    ]),
+                  ),
+                ]),
+              ]),
+            ),
+            // Bottom strip
+            Container(
+              decoration: BoxDecoration(
+                color: accentColor.withOpacity(0.05),
+                borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(15), bottomRight: Radius.circular(15)),
+                border: Border(top: BorderSide(color: accentColor.withOpacity(0.12))),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+              child: Row(children: [
+                const Icon(Icons.badge_outlined, size: 12, color: Color(0xFF8FA0B4)),
+                const SizedBox(width: 5),
+                Flexible(child: Text(p.id, overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8FA0B4), fontWeight: FontWeight.w500))),
+                const Spacer(),
+                const Icon(Icons.access_time_rounded, size: 11, color: Color(0xFF8FA0B4)),
+                const SizedBox(width: 4),
+                Flexible(child: Text(p.date, overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8FA0B4), fontWeight: FontWeight.w500))),
+                const SizedBox(width: 8),
+                if (p.phone.isNotEmpty)
+                  GestureDetector(
+                    onTap: _callPatient,
+                    child: Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(color: _blue.withOpacity(0.1), borderRadius: BorderRadius.circular(7)),
+                      child: const Icon(Icons.phone_rounded, size: 13, color: _blue),
+                    ),
+                  ),
+                const SizedBox(width: 6),
+                Text('View →', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: accentColor)),
+              ]),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Widget _vaPill(String eye, String value, String outcome) {
+    final isBad = outcome == 'refer' && value != '6/6' && value != '6/9' && value != '6/12';
+    final fg = isBad ? _red : _teal;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(color: fg.withOpacity(0.08), borderRadius: BorderRadius.circular(7), border: Border.all(color: fg.withOpacity(0.2))),
+      child: RichText(text: TextSpan(children: [
+        TextSpan(text: '$eye ', style: GoogleFonts.inter(fontSize: 9, color: const Color(0xFF8FA0B4), fontWeight: FontWeight.w500)),
+        TextSpan(text: value, style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.w700, color: fg)),
+      ])),
+    );
+  }
+
+  (String, Color, Color, IconData, Color) _badgeProps(String outcome) {
+    return switch (outcome) {
+      'pass' => ('Pass', const Color(0xFFDCFCE7), const Color(0xFF15803D), Icons.check_circle_rounded, _green),
+      'refer' => ('Refer', const Color(0xFFFEE2E2), const Color(0xFF991B1B), Icons.warning_rounded, _red),
+      _ => ('Pending', const Color(0xFFE0F2FE), const Color(0xFF0369A1), Icons.schedule_rounded, _amber),
+    };
+  }
+
+  Color _ageGroupColor(String group) => switch (group) {
+    'child' => _blue,
+    'elderly' => _red,
+    _ => _teal,
+  };
+
+  String _capitalize(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+}
