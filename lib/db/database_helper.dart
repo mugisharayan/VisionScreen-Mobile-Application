@@ -174,20 +174,27 @@ class DatabaseHelper {
 
   Future<void> updateCampaignStats(String campaignId) async {
     final database = await db;
+    // Count distinct patients, and their latest screening outcome
     final result = await database.rawQuery('''
       SELECT
-        COUNT(DISTINCT p.id) as total,
-        SUM(CASE WHEN s.outcome = 'pass' THEN 1 ELSE 0 END) as passed,
-        SUM(CASE WHEN s.outcome = 'refer' THEN 1 ELSE 0 END) as referred
+        COUNT(DISTINCT p.id) AS total,
+        SUM(CASE WHEN latest.outcome = 'pass'  THEN 1 ELSE 0 END) AS passed,
+        SUM(CASE WHEN latest.outcome = 'refer' THEN 1 ELSE 0 END) AS referred
       FROM patients p
-      LEFT JOIN screenings s ON s.patient_id = p.id
+      LEFT JOIN (
+        SELECT patient_id, outcome
+        FROM screenings
+        WHERE id IN (
+          SELECT MAX(id) FROM screenings GROUP BY patient_id
+        )
+      ) latest ON latest.patient_id = p.id
       WHERE p.campaign_id = ?
     ''', [campaignId]);
     if (result.isNotEmpty) {
       await database.update('campaigns', {
-        'total': result.first['total'] ?? 0,
-        'passed': result.first['passed'] ?? 0,
-        'referred': result.first['referred'] ?? 0,
+        'total':    (result.first['total']    as int?) ?? 0,
+        'passed':   (result.first['passed']   as num?)?.toInt() ?? 0,
+        'referred': (result.first['referred'] as num?)?.toInt() ?? 0,
       }, where: 'id = ?', whereArgs: [campaignId]);
     }
   }
@@ -608,9 +615,7 @@ class DatabaseHelper {
   Future<Map<String, Map<String, int>>> getConditionsByAgeGroup({String period = 'All'}) async {
     final database = await db;
     final where = _periodWhere(period);
-    final joinClause = where.isEmpty
-        ? ''
-        : 'INNER JOIN screenings s ON s.patient_id = p.id AND $where';
+    final periodFilter = where.isEmpty ? '' : 'AND $where';
     final rows = await database.rawQuery('''
       SELECT
         p.conditions,
@@ -620,8 +625,12 @@ class DatabaseHelper {
           ELSE '60+'
         END AS age_group
       FROM patients p
-      $joinClause
-      WHERE p.conditions IS NOT NULL AND p.conditions != ''
+      WHERE p.conditions IS NOT NULL
+        AND p.conditions != ''
+        AND EXISTS (
+          SELECT 1 FROM screenings s
+          WHERE s.patient_id = p.id $periodFilter
+        )
     ''');
     final result = <String, Map<String, int>>{};
     for (final row in rows) {
@@ -641,22 +650,44 @@ class DatabaseHelper {
   Future<List<Map<String, dynamic>>> getVillageBreakdown({String period = 'All'}) async {
     final database = await db;
     final where = _periodWhere(period);
-    final periodFilter = where.isEmpty ? '' : 'AND $where';
-    final rows = await database.rawQuery('''
-      SELECT
-        p.village,
-        COUNT(DISTINCT p.id) AS total,
-        SUM(CASE WHEN s.outcome = 'refer' THEN 1 ELSE 0 END) AS referred
-      FROM patients p
-      LEFT JOIN screenings s ON s.patient_id = p.id $periodFilter
-      GROUP BY p.village
-      ORDER BY total DESC
-    ''');
+
+    // When a period is set, only count patients who had a screening in that period.
+    // Use a subquery to get per-patient stats within the period, then group by village.
+    String sql;
+    if (where.isEmpty) {
+      sql = '''
+        SELECT
+          p.village,
+          COUNT(DISTINCT p.id) AS total,
+          SUM(CASE WHEN latest.outcome = 'refer' THEN 1 ELSE 0 END) AS referred
+        FROM patients p
+        LEFT JOIN (
+          SELECT patient_id, outcome
+          FROM screenings
+          WHERE id IN (SELECT MAX(id) FROM screenings GROUP BY patient_id)
+        ) latest ON latest.patient_id = p.id
+        GROUP BY p.village
+        ORDER BY total DESC
+      ''';
+    } else {
+      sql = '''
+        SELECT
+          p.village,
+          COUNT(DISTINCT p.id) AS total,
+          SUM(CASE WHEN s.outcome = 'refer' THEN 1 ELSE 0 END) AS referred
+        FROM patients p
+        INNER JOIN screenings s ON s.patient_id = p.id AND $where
+        GROUP BY p.village
+        ORDER BY total DESC
+      ''';
+    }
+
+    final rows = await database.rawQuery(sql);
     return rows
         .map((r) => {
               'village':  r['village']  as String? ?? 'Unknown',
-              'total':    (r['total']   as int?) ?? 0,
-              'referred': (r['referred'] as int?) ?? 0,
+              'total':    (r['total']   as int?)          ?? 0,
+              'referred': (r['referred'] as num?)?.toInt() ?? 0,
             })
         .toList();
   }
