@@ -143,13 +143,15 @@ String _language = 'English Only';
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _C.g50,
-      body: Column(
+      backgroundColor: const Color(0xFFF2F4F7),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
         children: [
           _buildHeader(),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
+              padding: const EdgeInsets.fromLTRB(0, 12, 0, 24),
               child: Column(
                 children: [
                   _buildSection(
@@ -295,73 +297,173 @@ String _language = 'English Only';
           ),
         ],
       ),
+      ),
       bottomNavigationBar: null,
     );
   }
 
-  // ── HEADER ───────────────────────────────────────────────
+  // ── HEADER — Profile Card ──────────────────────────────
   Widget _buildHeader() {
+    final initials = _chwName.trim().isNotEmpty
+        ? _chwName.trim().split(' ').map((w) => w.isEmpty ? '' : w[0]).take(2).join().toUpperCase()
+        : 'VS';
+    final roleLabel = _lastLoginRole == 'Administrator' ? 'Admin' : 'CHW';
+
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [_C.ink, _C.ink2],
         ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: _C.ink.withOpacity(0.35),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-          child: Row(
-            children: [
-              // Avatar
-              Container(
-                width: 48, height: 48,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(15),
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [_C.teal, _C.teal2],
+      child: Stack(
+        clipBehavior: Clip.hardEdge,
+        children: [
+          // Decorative blob top-right
+          Positioned(
+            top: -30, right: -30,
+            child: Container(
+              width: 160, height: 160,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _C.teal.withOpacity(0.12),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -20, left: 60,
+            child: Container(
+              width: 100, height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _C.teal2.withOpacity(0.08),
+              ),
+            ),
+          ),
+          // Content
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+            child: Row(
+              children: [
+                // Avatar
+                Container(
+                  width: 58, height: 58,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      colors: [_C.teal, _C.teal2],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _C.teal.withOpacity(0.5),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      initials,
+                      style: GoogleFonts.barlow(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 ),
-                child: Center(
-                  child: Text(
-                    _chwName.trim().isNotEmpty
-                        ? _chwName.trim().split(' ').map((w) => w[0]).take(2).join().toUpperCase()
-                        : 'VS',
-                    style: GoogleFonts.sora(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white)),
+                const SizedBox(width: 16),
+                // Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _chwName.isNotEmpty ? _chwName : 'VisionScreen User',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        _chwCenter.isNotEmpty
+                            ? '$_chwCenter · $_chwDistrict'
+                            : 'Community Health Worker',
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.ibmPlexSans(
+                          fontSize: 12,
+                          color: Colors.white.withOpacity(0.55),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          // Role chip
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: _C.teal.withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(99),
+                              border: Border.all(
+                                  color: _C.teal3.withOpacity(0.4)),
+                            ),
+                            child: Text(
+                              roleLabel,
+                              style: GoogleFonts.ibmPlexSans(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: _C.teal3,
+                              ),
+                            ),
+                          ),
+                          if (_chwId.isNotEmpty) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(99),
+                              ),
+                              child: Text(
+                                _chwId,
+                                style: GoogleFonts.ibmPlexSans(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white.withOpacity(0.6),
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 11),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _chwName.isNotEmpty ? _chwName : 'VisionScreen User',
-                      style: GoogleFonts.sora(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white)),
-                    const SizedBox(height: 2),
-                    Text(
-                      _chwCenter.isNotEmpty ? '$_chwCenter · $_chwDistrict' : 'Community Health Worker',
-                      style: GoogleFonts.sora(
-                          fontSize: 11,
-                          color: _C.teal3.withOpacity(0.55)),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
