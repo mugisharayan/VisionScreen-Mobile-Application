@@ -10,26 +10,26 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // ── Colours ──────────────────────────────────────────────────
 class _C {
-  static const ink        = Color(0xFF04091A);
-  static const ink2       = Color(0xFF0B1530);
-  static const teal       = Color(0xFF0D9488);
-  static const teal2      = Color(0xFF14B8A6);
-  static const teal3      = Color(0xFF5EEAD4);
-  static const ice        = Color(0xFFE0F2FE);
-  static const g50        = Color(0xFFF8FAFB);
-  static const g100       = Color(0xFFF0F4F7);
-  static const g200       = Color(0xFFDDE4EC);
-  static const g300       = Color(0xFFC4CFDB);
-  static const g400       = Color(0xFF8FA0B4);
-  static const g500       = Color(0xFF5E7291);
-  static const g800       = Color(0xFF1A2A3D);
-  static const green      = Color(0xFF22C55E);
-  static const gbg        = Color(0xFFDCFCE7);
-  static const amber      = Color(0xFFF59E0B);
-  static const abg        = Color(0xFFFEF3C7);
-  static const red        = Color(0xFFEF4444);
-  static const rbg        = Color(0xFFFEE2E2);
-  static const rtext      = Color(0xFF991B1B);
+  static const ink = Color(0xFF04091A);
+  static const ink2 = Color(0xFF0B1530);
+  static const teal = Color(0xFF0D9488);
+  static const teal2 = Color(0xFF14B8A6);
+  static const teal3 = Color(0xFF5EEAD4);
+  static const ice = Color(0xFFE0F2FE);
+  static const g50 = Color(0xFFF8FAFB);
+  static const g100 = Color(0xFFF0F4F7);
+  static const g200 = Color(0xFFDDE4EC);
+  static const g300 = Color(0xFFC4CFDB);
+  static const g400 = Color(0xFF8FA0B4);
+  static const g500 = Color(0xFF5E7291);
+  static const g800 = Color(0xFF1A2A3D);
+  static const green = Color(0xFF22C55E);
+  static const gbg = Color(0xFFDCFCE7);
+  static const amber = Color(0xFFF59E0B);
+  static const abg = Color(0xFFFEF3C7);
+  static const red = Color(0xFFEF4444);
+  static const rbg = Color(0xFFFEE2E2);
+  static const rtext = Color(0xFF991B1B);
 }
 
 class SettingsScreen extends StatefulWidget {
@@ -40,7 +40,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-
   // ── Profile (read-only, from registration) ──────────────
   String _chwName = '';
   String _chwCenter = '';
@@ -61,12 +60,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final p = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() {
-      _chwName     = p.getString('chw_name')     ?? '';
-      _chwCenter   = p.getString('chw_center')   ?? '';
+      _chwName = p.getString('chw_name') ?? '';
+      _chwCenter = p.getString('chw_center') ?? '';
       _chwDistrict = p.getString('chw_district') ?? '';
-      _chwEmail    = p.getString('chw_email')    ?? '';
-      _chwPhone    = p.getString('chw_phone')    ?? '';
-      _chwId       = p.getString('chw_id')       ?? '';
+      _chwEmail = p.getString('chw_email') ?? '';
+      _chwPhone = p.getString('chw_phone') ?? '';
+      _chwId = p.getString('chw_id') ?? '';
       _lastLoginTime = p.getString('last_login_time') ?? '';
       _lastLoginRole = p.getString('last_login_role') ?? '';
       _brightnessLock = p.getBool('brightness_lock') ?? true;
@@ -84,7 +83,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (value) HapticFeedback.selectionClick();
   }
 
-    Future<void> _setBatterySaver(bool value) async {
+  Future<void> _setBatterySaver(bool value) async {
     setState(() => _batterySaver = value);
     final p = await SharedPreferences.getInstance();
     await p.setBool('battery_saver', value);
@@ -112,21 +111,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // ── Toggles ──────────────────────────────────────────────
   bool _hapticFeedback = true;
-  bool _offlineMode  = true;
-  bool _smsNotifs    = false;
+  bool _offlineMode = true;
+  bool _smsNotifs = false;
   bool _batterySaver = true;
   bool _brightnessLock = true;
   String _eyeOrder = 'Right → Left';
 
-String _language = 'English Only';
+  String _language = 'English Only';
   static const _languages = [
-    'English Only', 'Luganda', 'Runyankole/Rukiga',
-    'Acholi', 'Ateso', 'Lugbara', 'Luo', 'Runyoro', 'Swahili',
+    'English Only',
+    'Luganda',
+    'Runyankole/Rukiga',
+    'Acholi',
+    'Ateso',
+    'Lugbara',
+    'Luo',
+    'Runyoro',
+    'Swahili',
   ];
 
   // ── Sync state ───────────────────────────────────────────
-  bool _isSyncing   = false;
-  bool _synced      = false;
+  bool _isSyncing = false;
+  bool _synced = false;
 
   @override
   void dispose() {
@@ -136,17 +142,27 @@ String _language = 'English Only';
   void _doSync() async {
     setState(() => _isSyncing = true);
     await Future.delayed(const Duration(seconds: 2));
-    if (mounted) setState(() { _isSyncing = false; _synced = true; });
+    if (mounted)
+      setState(() {
+        _isSyncing = false;
+        _synced = true;
+      });
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Sync complete! 3 records uploaded to MongoDB Atlas',
-            style: GoogleFonts.sora(fontSize: 12, color: Colors.white)),
-        backgroundColor: _C.teal,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: const Duration(seconds: 2),
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Sync complete! 3 records uploaded to MongoDB Atlas',
+            style: GoogleFonts.sora(fontSize: 12, color: Colors.white),
+          ),
+          backgroundColor: _C.teal,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          duration: const Duration(seconds: 2),
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        ),
+      );
     }
   }
 
@@ -157,271 +173,288 @@ String _language = 'English Only';
       body: SafeArea(
         bottom: false,
         child: Column(
-        children: [
-          _buildHeader(),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(0, 12, 0, 24),
-              child: Column(
-                children: [
-                  _buildSection(
-                    title: 'Profile Information',
-                    children: [_buildProfileFields()],
-                  ),
-                  const SizedBox(height: 11),
-                  _buildSection(
-                    title: 'Account',
-                    children: [
-                      _buildRow(
-                        badgeColor: const Color(0xFF8B5CF6),
-                        badgeIcon: Icons.mail_outline_rounded,
-                        label: _chwEmail.isNotEmpty ? _chwEmail : 'No email set',
-                        subtitle: 'Account email',
-                        showChevron: false,
-                        isFirst: true,
-                      ),
-                      _buildRow(
-                        badgeColor: const Color(0xFF22C55E),
-                        badgeIcon: Icons.access_time_rounded,
-                        label: _lastLoginTime.isNotEmpty ? _lastLoginTime : 'Not recorded yet',
-                        subtitle: 'Last login',
-                        showChevron: false,
-                        trailing: _lastLoginRole.isNotEmpty
-                            ? Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: _C.teal.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(99),
-                                ),
-                                child: Text(
-                                  _lastLoginRole == 'Administrator' ? 'Admin' : 'CHW',
-                                  style: GoogleFonts.ibmPlexSans(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: _C.teal,
+          children: [
+            _buildHeader(),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(0, 12, 0, 24),
+                child: Column(
+                  children: [
+                    _buildSection(
+                      title: 'Profile Information',
+                      children: [_buildProfileFields()],
+                    ),
+                    const SizedBox(height: 11),
+                    _buildSection(
+                      title: 'Account',
+                      children: [
+                        _buildRow(
+                          badgeColor: const Color(0xFF8B5CF6),
+                          badgeIcon: Icons.mail_outline_rounded,
+                          label: _chwEmail.isNotEmpty
+                              ? _chwEmail
+                              : 'No email set',
+                          subtitle: 'Account email',
+                          showChevron: false,
+                          isFirst: true,
+                        ),
+                        _buildRow(
+                          badgeColor: const Color(0xFF22C55E),
+                          badgeIcon: Icons.access_time_rounded,
+                          label: _lastLoginTime.isNotEmpty
+                              ? _lastLoginTime
+                              : 'Not recorded yet',
+                          subtitle: 'Last login',
+                          showChevron: false,
+                          trailing: _lastLoginRole.isNotEmpty
+                              ? Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
                                   ),
-                                ),
-                              )
-                            : null,
-                        isLast: true,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 11),
-                  _buildSection(
-                    title: 'Preferences',
-                    children: [
-                      _buildRow(
-                        badgeColor: const Color(0xFF3B82F6),
-                        badgeIcon: Icons.language_rounded,
-                        label: 'Referral Language',
-                        subtitle: _language,
-                        isFirst: true,
-                        onTap: () => _showLanguagePicker(),
-                      ),
-                      _buildRow(
-                        badgeColor: const Color(0xFFF59E0B),
-                        badgeIcon: Icons.vibration_rounded,
-                        label: 'Haptic Feedback',
-                        subtitle: 'Vibrate on actions',
-                        showChevron: false,
-                        trailing: _buildToggle(
-                          value: _hapticFeedback,
-                          onChanged: _setHapticFeedback,
+                                  decoration: BoxDecoration(
+                                    color: _C.teal.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(99),
+                                  ),
+                                  child: Text(
+                                    _lastLoginRole == 'Administrator'
+                                        ? 'Admin'
+                                        : 'CHW',
+                                    style: GoogleFonts.ibmPlexSans(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: _C.teal,
+                                    ),
+                                  ),
+                                )
+                              : null,
+                          isLast: true,
                         ),
-                      ),
-                      _buildRow(
-                        badgeColor: const Color(0xFFEF4444),
-                        badgeIcon: Icons.battery_saver_rounded,
-                        label: 'Battery Saver',
-                        subtitle: 'Reduce brightness during screening',
-                        showChevron: false,
-                        isLast: true,
-                        trailing: _buildToggle(
-                          value: _batterySaver,
-                          onChanged: _setBatterySaver,
+                      ],
+                    ),
+                    const SizedBox(height: 11),
+                    _buildSection(
+                      title: 'Preferences',
+                      children: [
+                        _buildRow(
+                          badgeColor: const Color(0xFF3B82F6),
+                          badgeIcon: Icons.language_rounded,
+                          label: 'Referral Language',
+                          subtitle: _language,
+                          isFirst: true,
+                          onTap: () => _showLanguagePicker(),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 11),
-                  _buildSection(
-                    title: 'Screening',
-                    children: [
-                      _buildRow(
-                        badgeColor: _C.teal,
-                        badgeIcon: Icons.remove_red_eye_outlined,
-                        label: 'Test Eye Order',
-                        subtitle: _eyeOrder,
-                        isFirst: true,
-                        onTap: () => _showEyeOrderPicker(),
-                      ),
-                      _buildRow(
-                        badgeColor: const Color(0xFFEAB308),
-                        badgeIcon: Icons.wb_sunny_rounded,
-                        label: 'Brightness Lock',
-                        subtitle: 'Auto full brightness during test',
-                        showChevron: false,
-                        isLast: true,
-                        trailing: _buildToggle(
-                          value: _brightnessLock,
-                          onChanged: _setBrightnessLock,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 11),
-                  _buildSection(
-                    title: 'Data & Sync',
-                    children: [
-                      _buildRow(
-                        badgeColor: const Color(0xFF22C55E),
-                        badgeIcon: Icons.cloud_outlined,
-                        label: 'Sync Status',
-                        subtitle: '0 records pending sync',
-                        showChevron: false,
-                        isFirst: true,
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: _C.g100,
-                            borderRadius: BorderRadius.circular(99),
+                        _buildRow(
+                          badgeColor: const Color(0xFFF59E0B),
+                          badgeIcon: Icons.vibration_rounded,
+                          label: 'Haptic Feedback',
+                          subtitle: 'Vibrate on actions',
+                          showChevron: false,
+                          trailing: _buildToggle(
+                            value: _hapticFeedback,
+                            onChanged: _setHapticFeedback,
                           ),
-                          child: Text(
-                            'Coming Soon',
-                            style: GoogleFonts.ibmPlexSans(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: _C.g400,
+                        ),
+                        _buildRow(
+                          badgeColor: const Color(0xFFEF4444),
+                          badgeIcon: Icons.battery_saver_rounded,
+                          label: 'Battery Saver',
+                          subtitle: 'Reduce brightness during screening',
+                          showChevron: false,
+                          isLast: true,
+                          trailing: _buildToggle(
+                            value: _batterySaver,
+                            onChanged: _setBatterySaver,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 11),
+                    _buildSection(
+                      title: 'Screening',
+                      children: [
+                        _buildRow(
+                          badgeColor: _C.teal,
+                          badgeIcon: Icons.remove_red_eye_outlined,
+                          label: 'Test Eye Order',
+                          subtitle: _eyeOrder,
+                          isFirst: true,
+                          onTap: () => _showEyeOrderPicker(),
+                        ),
+                        _buildRow(
+                          badgeColor: const Color(0xFFEAB308),
+                          badgeIcon: Icons.wb_sunny_rounded,
+                          label: 'Brightness Lock',
+                          subtitle: 'Auto full brightness during test',
+                          showChevron: false,
+                          isLast: true,
+                          trailing: _buildToggle(
+                            value: _brightnessLock,
+                            onChanged: _setBrightnessLock,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 11),
+                    _buildSection(
+                      title: 'Data & Sync',
+                      children: [
+                        _buildRow(
+                          badgeColor: const Color(0xFF22C55E),
+                          badgeIcon: Icons.cloud_outlined,
+                          label: 'Sync Status',
+                          subtitle: '0 records pending sync',
+                          showChevron: false,
+                          isFirst: true,
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 9,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _C.g100,
+                              borderRadius: BorderRadius.circular(99),
+                            ),
+                            child: Text(
+                              'Coming Soon',
+                              style: GoogleFonts.ibmPlexSans(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: _C.g400,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      _buildRow(
-                        badgeColor: const Color(0xFF3B82F6),
-                        badgeIcon: Icons.download_rounded,
-                        label: 'Export as CSV',
-                        subtitle: 'Spreadsheet · Excel / Google Sheets',
-                        isLast: true,
-                        onTap: () => _showExportSheet(),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 11),
-                  _buildSection(
-                    title: 'Danger Zone',
-                    children: [
-                      _buildRow(
-                        badgeColor: const Color(0xFFEF4444),
-                        badgeIcon: Icons.delete_outline_rounded,
-                        label: 'Clear All Data',
-                        labelColor: const Color(0xFFEF4444),
-                        subtitle: 'Permanently wipe all local records',
-                        isFirst: true,
-                        onTap: () => _showClearDataDialog(),
-                      ),
-                      _buildRow(
-                        badgeColor: const Color(0xFFEF4444),
-                        badgeIcon: Icons.logout_rounded,
-                        label: 'Logout',
-                        labelColor: const Color(0xFFEF4444),
-                        isLast: true,
-                        onTap: () => Navigator.of(context)
-                            .pushNamedAndRemoveUntil('/login', (_) => false),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 11),
-                  _buildSection(
-                    title: 'App Info',
-                    children: [
-                      _buildRow(
-                        badgeColor: _C.teal,
-                        badgeIcon: Icons.info_outline_rounded,
-                        label: 'About VisionScreen',
-                        isFirst: true,
-                        onTap: () => _showAboutDialog(),
-                      ),
-                      _buildRow(
-                        badgeColor: const Color(0xFF8B5CF6),
-                        badgeIcon: Icons.auto_awesome_rounded,
-                        label: "What's New",
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: _C.amber.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(99),
+                        _buildRow(
+                          badgeColor: const Color(0xFF3B82F6),
+                          badgeIcon: Icons.download_rounded,
+                          label: 'Export as CSV',
+                          subtitle: 'Spreadsheet · Excel / Google Sheets',
+                          isLast: true,
+                          onTap: () => _showExportSheet(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 11),
+                    _buildSection(
+                      title: 'Danger Zone',
+                      children: [
+                        _buildRow(
+                          badgeColor: const Color(0xFFEF4444),
+                          badgeIcon: Icons.delete_outline_rounded,
+                          label: 'Clear All Data',
+                          labelColor: const Color(0xFFEF4444),
+                          subtitle: 'Permanently wipe all local records',
+                          isFirst: true,
+                          onTap: () => _showClearDataDialog(),
+                        ),
+                        _buildRow(
+                          badgeColor: const Color(0xFFEF4444),
+                          badgeIcon: Icons.logout_rounded,
+                          label: 'Logout',
+                          labelColor: const Color(0xFFEF4444),
+                          isLast: true,
+                          onTap: () => Navigator.of(
+                            context,
+                          ).pushNamedAndRemoveUntil('/login', (_) => false),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 11),
+                    _buildSection(
+                      title: 'App Info',
+                      children: [
+                        _buildRow(
+                          badgeColor: _C.teal,
+                          badgeIcon: Icons.info_outline_rounded,
+                          label: 'About VisionScreen',
+                          isFirst: true,
+                          onTap: () => _showAboutDialog(),
+                        ),
+                        _buildRow(
+                          badgeColor: const Color(0xFF8B5CF6),
+                          badgeIcon: Icons.auto_awesome_rounded,
+                          label: "What's New",
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _C.amber.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(99),
+                            ),
+                            child: Text(
+                              'NEW',
+                              style: GoogleFonts.ibmPlexSans(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                color: _C.amber,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
                           ),
-                          child: Text(
-                            'NEW',
-                            style: GoogleFonts.ibmPlexSans(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                              color: _C.amber,
-                              letterSpacing: 0.8,
+                          onTap: () => _showChangelogSheet(),
+                        ),
+                        _buildRow(
+                          badgeColor: const Color(0xFF1A2A3D),
+                          badgeIcon: Icons.gavel_rounded,
+                          label: 'Terms of Service',
+                          onTap: () => _showTermsOfService(),
+                        ),
+                        _buildRow(
+                          badgeColor: const Color(0xFF1A2A3D),
+                          badgeIcon: Icons.lock_outline_rounded,
+                          label: 'Privacy Policy',
+                          onTap: () => _showPrivacyPolicy(),
+                        ),
+                        _buildRow(
+                          badgeColor: _C.teal,
+                          badgeIcon: Icons.tag_rounded,
+                          label: 'Version',
+                          showChevron: false,
+                          isLast: true,
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _C.teal.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(99),
+                            ),
+                            child: Text(
+                              'v1.0.0',
+                              style: GoogleFonts.ibmPlexSans(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: _C.teal,
+                              ),
                             ),
                           ),
                         ),
-                        onTap: () => _showChangelogSheet(),
-                      ),
-                      _buildRow(
-                        badgeColor: const Color(0xFF1A2A3D),
-                        badgeIcon: Icons.gavel_rounded,
-                        label: 'Terms of Service',
-                        onTap: () => _showTermsOfService(),
-                      ),
-                      _buildRow(
-                        badgeColor: const Color(0xFF1A2A3D),
-                        badgeIcon: Icons.lock_outline_rounded,
-                        label: 'Privacy Policy',
-                        onTap: () => _showPrivacyPolicy(),
-                      ),
-                      _buildRow(
-                        badgeColor: _C.teal,
-                        badgeIcon: Icons.tag_rounded,
-                        label: 'Version',
-                        showChevron: false,
-                        isLast: true,
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: _C.teal.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(99),
-                          ),
-                          child: Text(
-                            'v1.0.0',
-                            style: GoogleFonts.ibmPlexSans(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: _C.teal,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  // ── Footer ──
-                  Text(
-                    'VisionScreen v1.0 · Flutter / SQLite / MongoDB Atlas',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.sora(
-                        fontSize: 11, color: _C.g400),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Made for Community Health Workers · Uganda',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.sora(
-                        fontSize: 10, color: _C.g400),
-                  ),
-                  const SizedBox(height: 20),
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    // ── Footer ──
+                    Text(
+                      'VisionScreen v1.0',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.sora(fontSize: 11, color: _C.g400),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Made for Community Health Workers · Uganda',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.sora(fontSize: 10, color: _C.g400),
+                    ),
+                    const SizedBox(height: 80),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
       bottomNavigationBar: null,
     );
@@ -430,7 +463,13 @@ String _language = 'English Only';
   // ── HEADER — Profile Card ──────────────────────────────
   Widget _buildHeader() {
     final initials = _chwName.trim().isNotEmpty
-        ? _chwName.trim().split(' ').map((w) => w.isEmpty ? '' : w[0]).take(2).join().toUpperCase()
+        ? _chwName
+              .trim()
+              .split(' ')
+              .map((w) => w.isEmpty ? '' : w[0])
+              .take(2)
+              .join()
+              .toUpperCase()
         : 'VS';
     final roleLabel = _lastLoginRole == 'Administrator' ? 'Admin' : 'CHW';
 
@@ -456,9 +495,11 @@ String _language = 'English Only';
         children: [
           // Decorative blob top-right
           Positioned(
-            top: -30, right: -30,
+            top: -30,
+            right: -30,
             child: Container(
-              width: 160, height: 160,
+              width: 160,
+              height: 160,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: _C.teal.withOpacity(0.12),
@@ -466,9 +507,11 @@ String _language = 'English Only';
             ),
           ),
           Positioned(
-            bottom: -20, left: 60,
+            bottom: -20,
+            left: 60,
             child: Container(
-              width: 100, height: 100,
+              width: 100,
+              height: 100,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: _C.teal2.withOpacity(0.08),
@@ -482,7 +525,8 @@ String _language = 'English Only';
               children: [
                 // Avatar
                 Container(
-                  width: 58, height: 58,
+                  width: 58,
+                  height: 58,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: const LinearGradient(
@@ -544,12 +588,15 @@ String _language = 'English Only';
                           // Role chip
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
                               color: _C.teal.withOpacity(0.3),
                               borderRadius: BorderRadius.circular(99),
                               border: Border.all(
-                                  color: _C.teal3.withOpacity(0.4)),
+                                color: _C.teal3.withOpacity(0.4),
+                              ),
                             ),
                             child: Text(
                               roleLabel,
@@ -564,7 +611,9 @@ String _language = 'English Only';
                             const SizedBox(width: 6),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 3),
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.08),
                                 borderRadius: BorderRadius.circular(99),
@@ -628,9 +677,7 @@ String _language = 'English Only';
                 ),
               ],
             ),
-            child: Column(
-              children: _intersperse(children),
-            ),
+            child: Column(children: _intersperse(children)),
           ),
         ],
       ),
@@ -644,13 +691,15 @@ String _language = 'English Only';
     for (int i = 0; i < rows.length; i++) {
       result.add(rows[i]);
       if (i < rows.length - 1) {
-        result.add(const Divider(
-          height: 1,
-          thickness: 1,
-          color: Color(0xFFF2F4F7),
-          indent: 16,
-          endIndent: 0,
-        ));
+        result.add(
+          const Divider(
+            height: 1,
+            thickness: 1,
+            color: Color(0xFFF2F4F7),
+            indent: 16,
+            endIndent: 0,
+          ),
+        );
       }
     }
     return result;
@@ -670,10 +719,10 @@ String _language = 'English Only';
     bool isLast = false,
   }) {
     final radius = BorderRadius.only(
-      topLeft:     isFirst ? const Radius.circular(16) : Radius.zero,
-      topRight:    isFirst ? const Radius.circular(16) : Radius.zero,
-      bottomLeft:  isLast  ? const Radius.circular(16) : Radius.zero,
-      bottomRight: isLast  ? const Radius.circular(16) : Radius.zero,
+      topLeft: isFirst ? const Radius.circular(16) : Radius.zero,
+      topRight: isFirst ? const Radius.circular(16) : Radius.zero,
+      bottomLeft: isLast ? const Radius.circular(16) : Radius.zero,
+      bottomRight: isLast ? const Radius.circular(16) : Radius.zero,
     );
     return Material(
       color: Colors.white,
@@ -689,7 +738,8 @@ String _language = 'English Only';
             children: [
               // Icon badge
               Container(
-                width: 36, height: 36,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   color: badgeColor,
                   borderRadius: BorderRadius.circular(10),
@@ -714,10 +764,7 @@ String _language = 'English Only';
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: _C.g400,
-                        ),
+                        style: GoogleFonts.inter(fontSize: 12, color: _C.g400),
                       ),
                     ],
                   ],
@@ -749,14 +796,21 @@ String _language = 'English Only';
         children: [
           _profileRow(Icons.person_outline_rounded, 'Full Name', _chwName),
           _profileDivider(),
-          _profileRow(Icons.local_hospital_outlined, 'Health Center', _chwCenter),
+          _profileRow(
+            Icons.local_hospital_outlined,
+            'Health Center',
+            _chwCenter,
+          ),
           _profileDivider(),
           _profileRow(Icons.location_on_outlined, 'District', _chwDistrict),
           _profileDivider(),
           _profileRow(Icons.mail_outline_rounded, 'Email', _chwEmail),
           _profileDivider(),
-          _profileRow(Icons.phone_outlined, 'Phone',
-              _chwPhone.isNotEmpty ? '+256 $_chwPhone' : ''),
+          _profileRow(
+            Icons.phone_outlined,
+            'Phone',
+            _chwPhone.isNotEmpty ? '+256 $_chwPhone' : '',
+          ),
           _profileDivider(),
           const SizedBox(height: 4),
           Container(
@@ -769,38 +823,63 @@ String _language = 'English Only';
             child: Row(
               children: [
                 Container(
-                  width: 32, height: 32,
+                  width: 32,
+                  height: 32,
                   decoration: BoxDecoration(
                     color: _C.teal.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(9),
                   ),
-                  child: const Icon(Icons.badge_outlined, size: 16, color: _C.teal),
+                  child: const Icon(
+                    Icons.badge_outlined,
+                    size: 16,
+                    color: _C.teal,
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('CHW Badge ID', style: GoogleFonts.sora(
-                          fontSize: 10, fontWeight: FontWeight.w700,
-                          color: _C.g400, letterSpacing: 0.5)),
+                      Text(
+                        'CHW Badge ID',
+                        style: GoogleFonts.sora(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: _C.g400,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                       const SizedBox(height: 2),
-                      Text(_chwId.isNotEmpty ? _chwId : '—',
-                          style: GoogleFonts.sora(
-                              fontSize: 14, fontWeight: FontWeight.w800,
-                              color: _C.teal, letterSpacing: 1.2)),
+                      Text(
+                        _chwId.isNotEmpty ? _chwId : '—',
+                        style: GoogleFonts.sora(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: _C.teal,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: _C.teal.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(99),
                     border: Border.all(color: _C.teal.withOpacity(0.25)),
                   ),
-                  child: Text('Prints on referrals', style: GoogleFonts.sora(
-                      fontSize: 9, fontWeight: FontWeight.w700, color: _C.teal)),
+                  child: Text(
+                    'Prints on referrals',
+                    style: GoogleFonts.sora(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      color: _C.teal,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -816,9 +895,12 @@ String _language = 'English Only';
       child: Row(
         children: [
           Container(
-            width: 32, height: 32,
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
-                color: _C.g100, borderRadius: BorderRadius.circular(9)),
+              color: _C.g100,
+              borderRadius: BorderRadius.circular(9),
+            ),
             child: Icon(icon, size: 15, color: _C.g500),
           ),
           const SizedBox(width: 10),
@@ -826,13 +908,24 @@ String _language = 'English Only';
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: GoogleFonts.sora(
-                    fontSize: 10, fontWeight: FontWeight.w700,
-                    color: _C.g400, letterSpacing: 0.5)),
+                Text(
+                  label,
+                  style: GoogleFonts.sora(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: _C.g400,
+                    letterSpacing: 0.5,
+                  ),
+                ),
                 const SizedBox(height: 1),
-                Text(value.isNotEmpty ? value : '—',
-                    style: GoogleFonts.sora(
-                        fontSize: 13, fontWeight: FontWeight.w600, color: _C.g800)),
+                Text(
+                  value.isNotEmpty ? value : '—',
+                  style: GoogleFonts.sora(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: _C.g800,
+                  ),
+                ),
               ],
             ),
           ),
@@ -852,45 +945,63 @@ String _language = 'English Only';
           context: context,
           backgroundColor: Colors.white,
           shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
           builder: (_) => Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 margin: const EdgeInsets.only(top: 12, bottom: 8),
-                width: 40, height: 4,
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
-                    color: _C.g200, borderRadius: BorderRadius.circular(99)),
+                  color: _C.g200,
+                  borderRadius: BorderRadius.circular(99),
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-                child: Text('Test Eye Order',
-                    style: GoogleFonts.sora(
-                        fontSize: 16, fontWeight: FontWeight.w800, color: _C.g800)),
+                child: Text(
+                  'Test Eye Order',
+                  style: GoogleFonts.sora(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: _C.g800,
+                  ),
+                ),
               ),
-              ...['Right → Left', 'Left → Right'].map((order) => ListTile(
-                    leading: Icon(
-                      Icons.remove_red_eye_outlined,
-                      color: _eyeOrder == order ? _C.teal : _C.g400,
-                      size: 20,
+              ...['Right → Left', 'Left → Right'].map(
+                (order) => ListTile(
+                  leading: Icon(
+                    Icons.remove_red_eye_outlined,
+                    color: _eyeOrder == order ? _C.teal : _C.g400,
+                    size: 20,
+                  ),
+                  title: Text(
+                    order,
+                    style: GoogleFonts.sora(
+                      fontSize: 13,
+                      fontWeight: _eyeOrder == order
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      color: _eyeOrder == order ? _C.teal : _C.g800,
                     ),
-                    title: Text(order,
-                        style: GoogleFonts.sora(
-                            fontSize: 13,
-                            fontWeight: _eyeOrder == order
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            color: _eyeOrder == order ? _C.teal : _C.g800)),
-                    trailing: _eyeOrder == order
-                        ? const Icon(Icons.check_rounded, color: _C.teal, size: 18)
-                        : null,
-                    onTap: () async {
-                      setState(() => _eyeOrder = order);
-                      final p = await SharedPreferences.getInstance();
-                      await p.setString('eye_order', order);
-                      if (context.mounted) Navigator.pop(context);
-                    },
-                  )),
+                  ),
+                  trailing: _eyeOrder == order
+                      ? const Icon(
+                          Icons.check_rounded,
+                          color: _C.teal,
+                          size: 18,
+                        )
+                      : null,
+                  onTap: () async {
+                    setState(() => _eyeOrder = order);
+                    final p = await SharedPreferences.getInstance();
+                    await p.setString('eye_order', order);
+                    if (context.mounted) Navigator.pop(context);
+                  },
+                ),
+              ),
               const SizedBox(height: 16),
             ],
           ),
@@ -906,17 +1017,29 @@ String _language = 'English Only';
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Test Eye Order',
-                      style: GoogleFonts.sora(
-                          fontSize: 13, fontWeight: FontWeight.w600, color: _C.g800)),
-                  Text('Which eye is tested first',
-                      style: GoogleFonts.sora(fontSize: 11, color: _C.g400)),
+                  Text(
+                    'Test Eye Order',
+                    style: GoogleFonts.sora(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: _C.g800,
+                    ),
+                  ),
+                  Text(
+                    'Which eye is tested first',
+                    style: GoogleFonts.sora(fontSize: 11, color: _C.g400),
+                  ),
                 ],
               ),
             ),
-            Text(_eyeOrder,
-                style: GoogleFonts.sora(
-                    fontSize: 11, fontWeight: FontWeight.w700, color: _C.teal)),
+            Text(
+              _eyeOrder,
+              style: GoogleFonts.sora(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: _C.teal,
+              ),
+            ),
           ],
         ),
       ),
@@ -937,22 +1060,29 @@ String _language = 'English Only';
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Referral Language',
-                      style: GoogleFonts.sora(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: _C.g800)),
-                  Text("Olulimi lw'okuweereza",
-                      style: GoogleFonts.sora(
-                          fontSize: 11, color: _C.g400)),
+                  Text(
+                    'Referral Language',
+                    style: GoogleFonts.sora(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: _C.g800,
+                    ),
+                  ),
+                  Text(
+                    "Olulimi lw'okuweereza",
+                    style: GoogleFonts.sora(fontSize: 11, color: _C.g400),
+                  ),
                 ],
               ),
             ),
-            Text(_language,
-                style: GoogleFonts.sora(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: _C.teal)),
+            Text(
+              _language,
+              style: GoogleFonts.sora(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: _C.teal,
+              ),
+            ),
           ],
         ),
       ),
@@ -964,40 +1094,52 @@ String _language = 'English Only';
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (_) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             margin: const EdgeInsets.only(top: 12, bottom: 8),
-            width: 40, height: 4,
+            width: 40,
+            height: 4,
             decoration: BoxDecoration(
-                color: _C.g200, borderRadius: BorderRadius.circular(99)),
+              color: _C.g200,
+              borderRadius: BorderRadius.circular(99),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-            child: Text('Referral Language',
-                style: GoogleFonts.sora(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: _C.g800)),
+            child: Text(
+              'Referral Language',
+              style: GoogleFonts.sora(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: _C.g800,
+              ),
+            ),
           ),
-          ..._languages.map((lang) => ListTile(
-                title: Text(lang,
-                    style: GoogleFonts.sora(
-                        fontSize: 13,
-                        fontWeight: _language == lang
-                            ? FontWeight.w700
-                            : FontWeight.w500,
-                        color: _language == lang ? _C.teal : _C.g800)),
-                trailing: _language == lang
-                    ? const Icon(Icons.check_rounded, color: _C.teal, size: 18)
-                    : null,
-                onTap: () {
-                  setState(() => _language = lang);
-                  Navigator.pop(context);
-                },
-              )),
+          ..._languages.map(
+            (lang) => ListTile(
+              title: Text(
+                lang,
+                style: GoogleFonts.sora(
+                  fontSize: 13,
+                  fontWeight: _language == lang
+                      ? FontWeight.w700
+                      : FontWeight.w500,
+                  color: _language == lang ? _C.teal : _C.g800,
+                ),
+              ),
+              trailing: _language == lang
+                  ? const Icon(Icons.check_rounded, color: _C.teal, size: 18)
+                  : null,
+              onTap: () {
+                setState(() => _language = lang);
+                Navigator.pop(context);
+              },
+            ),
+          ),
           const SizedBox(height: 16),
         ],
       ),
@@ -1024,15 +1166,19 @@ String _language = 'English Only';
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    style: GoogleFonts.sora(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: _C.g800)),
+                Text(
+                  label,
+                  style: GoogleFonts.sora(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: _C.g800,
+                  ),
+                ),
                 const SizedBox(height: 1),
-                Text(sub,
-                    style: GoogleFonts.sora(
-                        fontSize: 11, color: _C.g400)),
+                Text(
+                  sub,
+                  style: GoogleFonts.sora(fontSize: 11, color: _C.g400),
+                ),
               ],
             ),
           ),
@@ -1054,20 +1200,24 @@ String _language = 'English Only';
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Sync Status',
-                    style: GoogleFonts.sora(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: _C.g800)),
+                Text(
+                  'Sync Status',
+                  style: GoogleFonts.sora(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: _C.g800,
+                  ),
+                ),
                 const SizedBox(height: 1),
                 Text(
                   _synced
                       ? 'All records synced ✓'
                       : '3 records pending · 244 synced',
                   style: GoogleFonts.sora(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: _synced ? _C.green : _C.amber),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: _synced ? _C.green : _C.amber,
+                  ),
                 ),
               ],
             ),
@@ -1083,14 +1233,21 @@ String _language = 'English Only';
               ),
               child: _isSyncing
                   ? const SizedBox(
-                      width: 12, height: 12,
+                      width: 12,
+                      height: 12,
                       child: CircularProgressIndicator(
-                          strokeWidth: 1.5, color: _C.teal))
-                  : Text('Sync Now',
+                        strokeWidth: 1.5,
+                        color: _C.teal,
+                      ),
+                    )
+                  : Text(
+                      'Sync Now',
                       style: GoogleFonts.sora(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: _C.teal)),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: _C.teal,
+                      ),
+                    ),
             ),
           ),
         ],
@@ -1116,17 +1273,23 @@ String _language = 'English Only';
             _emojiBox(emoji, emojiBg),
             const SizedBox(width: 11),
             Expanded(
-              child: Text(label,
-                  style: GoogleFonts.sora(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: labelColor ?? _C.g800)),
+              child: Text(
+                label,
+                style: GoogleFonts.sora(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: labelColor ?? _C.g800,
+                ),
+              ),
             ),
-            Text('›',
-                style: TextStyle(
-                    fontSize: 18,
-                    color: _C.g300,
-                    fontWeight: FontWeight.w300)),
+            Text(
+              '›',
+              style: TextStyle(
+                fontSize: 18,
+                color: _C.g300,
+                fontWeight: FontWeight.w300,
+              ),
+            ),
           ],
         ),
       ),
@@ -1135,13 +1298,14 @@ String _language = 'English Only';
 
   // ── EMOJI BOX ────────────────────────────────────────────
   Widget _emojiBox(String emoji, Color bg) => Container(
-        width: 32, height: 32,
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(9),
-        ),
-        child: Center(child: Text(emoji, style: const TextStyle(fontSize: 16))),
-      );
+    width: 32,
+    height: 32,
+    decoration: BoxDecoration(
+      color: bg,
+      borderRadius: BorderRadius.circular(9),
+    ),
+    child: Center(child: Text(emoji, style: const TextStyle(fontSize: 16))),
+  );
 
   // ── CUSTOM TOGGLE ────────────────────────────────────────
   Widget _buildToggle({
@@ -1155,7 +1319,8 @@ String _language = 'English Only';
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        width: 40, height: 22,
+        width: 40,
+        height: 22,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(99),
           color: value ? _C.teal : _C.g200,
@@ -1165,15 +1330,17 @@ String _language = 'English Only';
           alignment: value ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(
             margin: const EdgeInsets.all(2),
-            width: 18, height: 18,
+            width: 18,
+            height: 18,
             decoration: BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1))
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
               ],
             ),
           ),
@@ -1184,15 +1351,19 @@ String _language = 'English Only';
 
   // ── ABOUT & HELP HELPERS ─────────────────────────────────
   void _showSnack(String msg, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg,
-          style: GoogleFonts.sora(fontSize: 12, color: Colors.white)),
-      backgroundColor: color,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      duration: const Duration(seconds: 2),
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          msg,
+          style: GoogleFonts.sora(fontSize: 12, color: Colors.white),
+        ),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 2),
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      ),
+    );
   }
 
   Widget _buildVersionRow() {
@@ -1201,18 +1372,28 @@ String _language = 'English Only';
       child: Row(
         children: [
           Container(
-            width: 32, height: 32,
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
               color: _C.teal.withOpacity(0.08),
               borderRadius: BorderRadius.circular(9),
             ),
-            child: const Icon(Icons.info_outline_rounded, size: 15, color: _C.teal),
+            child: const Icon(
+              Icons.info_outline_rounded,
+              size: 15,
+              color: _C.teal,
+            ),
           ),
           const SizedBox(width: 11),
           Expanded(
-            child: Text('Version',
-                style: GoogleFonts.sora(
-                    fontSize: 13, fontWeight: FontWeight.w600, color: _C.g800)),
+            child: Text(
+              'Version',
+              style: GoogleFonts.sora(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: _C.g800,
+              ),
+            ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -1221,9 +1402,14 @@ String _language = 'English Only';
               borderRadius: BorderRadius.circular(99),
               border: Border.all(color: _C.teal.withOpacity(0.2)),
             ),
-            child: Text('v1.0.0',
-                style: GoogleFonts.sora(
-                    fontSize: 11, fontWeight: FontWeight.w700, color: _C.teal)),
+            child: Text(
+              'v1.0.0',
+              style: GoogleFonts.sora(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: _C.teal,
+              ),
+            ),
           ),
         ],
       ),
@@ -1240,11 +1426,26 @@ String _language = 'English Only';
         icon: Icons.gavel_rounded,
         iconColor: _C.teal,
         sections: const [
-          _LegalSection('1. Purpose', 'VisionScreen is a clinical-grade mobile application for trained Community Health Workers (CHWs) under the Uganda Ministry of Health (MOH) framework.'),
-          _LegalSection('2. Authorised Use', 'This application is authorised only for registered CHWs under a recognised Ugandan Health Centre (HC II–HC IV) and health administrators with valid MOH credentials.'),
-          _LegalSection('3. Patient Data', 'All patient data is subject to the Uganda Data Protection and Privacy Act 2019. CHWs must obtain verbal informed consent before screening.'),
-          _LegalSection('4. Clinical Disclaimer', 'VisionScreen is a screening tool, not a diagnostic instrument. All clinical decisions must be made by a licensed eye care professional.'),
-          _LegalSection('5. Amendments', 'These Terms may be updated periodically. Continued use of VisionScreen constitutes acceptance of the updated terms.'),
+          _LegalSection(
+            '1. Purpose',
+            'VisionScreen is a clinical-grade mobile application for trained Community Health Workers (CHWs) under the Uganda Ministry of Health (MOH) framework.',
+          ),
+          _LegalSection(
+            '2. Authorised Use',
+            'This application is authorised only for registered CHWs under a recognised Ugandan Health Centre (HC II–HC IV) and health administrators with valid MOH credentials.',
+          ),
+          _LegalSection(
+            '3. Patient Data',
+            'All patient data is subject to the Uganda Data Protection and Privacy Act 2019. CHWs must obtain verbal informed consent before screening.',
+          ),
+          _LegalSection(
+            '4. Clinical Disclaimer',
+            'VisionScreen is a screening tool, not a diagnostic instrument. All clinical decisions must be made by a licensed eye care professional.',
+          ),
+          _LegalSection(
+            '5. Amendments',
+            'These Terms may be updated periodically. Continued use of VisionScreen constitutes acceptance of the updated terms.',
+          ),
         ],
       ),
     );
@@ -1260,11 +1461,26 @@ String _language = 'English Only';
         icon: Icons.lock_outline_rounded,
         iconColor: const Color(0xFF38BDF8),
         sections: const [
-          _LegalSection('1. Data We Collect', 'Patient demographics, visual acuity scores, referral data, device calibration data, and CHW account information.'),
-          _LegalSection('2. How We Use It', 'Data is used exclusively for vision screening, referral tracking, and anonymised public health analytics. Never sold or shared commercially.'),
-          _LegalSection('3. Storage & Security', 'Data is stored locally using SQLite encryption and synced to MongoDB Atlas (ISO/IEC 27001) with AES-256 encryption and TLS 1.3 in transit.'),
-          _LegalSection('4. Your Rights', 'Under the Uganda Data Protection and Privacy Act 2019, you may access, correct, or request erasure of your data at any time.'),
-          _LegalSection('5. Contact', 'For privacy concerns, contact the VisionScreen Programme Coordinator through your district health office or Uganda MOH Community Health Division.'),
+          _LegalSection(
+            '1. Data We Collect',
+            'Patient demographics, visual acuity scores, referral data, device calibration data, and CHW account information.',
+          ),
+          _LegalSection(
+            '2. How We Use It',
+            'Data is used exclusively for vision screening, referral tracking, and anonymised public health analytics. Never sold or shared commercially.',
+          ),
+          _LegalSection(
+            '3. Storage & Security',
+            'Data is stored locally using SQLite encryption and synced to MongoDB Atlas (ISO/IEC 27001) with AES-256 encryption and TLS 1.3 in transit.',
+          ),
+          _LegalSection(
+            '4. Your Rights',
+            'Under the Uganda Data Protection and Privacy Act 2019, you may access, correct, or request erasure of your data at any time.',
+          ),
+          _LegalSection(
+            '5. Contact',
+            'For privacy concerns, contact the VisionScreen Programme Coordinator through your district health office or Uganda MOH Community Health Division.',
+          ),
         ],
       ),
     );
@@ -1298,7 +1514,8 @@ String _language = 'English Only';
                 child: Column(
                   children: [
                     Container(
-                      width: 56, height: 56,
+                      width: 56,
+                      height: 56,
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           colors: [_C.teal, _C.teal2],
@@ -1307,20 +1524,29 @@ String _language = 'English Only';
                         ),
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: const Icon(Icons.remove_red_eye_rounded,
-                          color: Colors.white, size: 26),
+                      child: const Icon(
+                        Icons.remove_red_eye_rounded,
+                        color: Colors.white,
+                        size: 26,
+                      ),
                     ),
                     const SizedBox(height: 12),
-                    Text('VisionScreen',
-                        style: GoogleFonts.sora(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white)),
+                    Text(
+                      'VisionScreen',
+                      style: GoogleFonts.sora(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text('Version 1.0.0',
-                        style: GoogleFonts.sora(
-                            fontSize: 12,
-                            color: _C.teal3.withOpacity(0.7))),
+                    Text(
+                      'Version 1.0.0',
+                      style: GoogleFonts.sora(
+                        fontSize: 12,
+                        color: _C.teal3.withOpacity(0.7),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -1328,8 +1554,16 @@ String _language = 'English Only';
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
-                    _aboutRow('🏥', 'Built for', 'Community Health Workers · Uganda'),
-                    _aboutRow('👁️', 'Test Method', 'Tumbling E · LogMAR Scale'),
+                    _aboutRow(
+                      '🏥',
+                      'Built for',
+                      'Community Health Workers · Uganda',
+                    ),
+                    _aboutRow(
+                      '👁️',
+                      'Test Method',
+                      'Tumbling E · LogMAR Scale',
+                    ),
                     _aboutRow('📱', 'Storage', 'SQLite (offline-first)'),
                     _aboutRow('☁️', 'Cloud Sync', 'MongoDB Atlas'),
                     _aboutRow('📞', 'Support', 'support@visionscreen.ug'),
@@ -1342,14 +1576,18 @@ String _language = 'English Only';
                           backgroundColor: _C.teal,
                           padding: const EdgeInsets.symmetric(vertical: 13),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           elevation: 0,
                         ),
-                        child: Text('Close',
-                            style: GoogleFonts.sora(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white)),
+                        child: Text(
+                          'Close',
+                          style: GoogleFonts.sora(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -1369,14 +1607,16 @@ String _language = 'English Only';
         children: [
           Text(emoji, style: const TextStyle(fontSize: 16)),
           const SizedBox(width: 10),
-          Text(label,
-              style: GoogleFonts.sora(fontSize: 12, color: _C.g400)),
+          Text(label, style: GoogleFonts.sora(fontSize: 12, color: _C.g400)),
           const Spacer(),
-          Text(value,
-              style: GoogleFonts.sora(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: _C.g800)),
+          Text(
+            value,
+            style: GoogleFonts.sora(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: _C.g800,
+            ),
+          ),
         ],
       ),
     );
@@ -1387,7 +1627,8 @@ String _language = 'English Only';
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (_) => Padding(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         child: Column(
@@ -1396,21 +1637,28 @@ String _language = 'English Only';
           children: [
             Center(
               child: Container(
-                width: 40, height: 4,
+                width: 40,
+                height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                    color: _C.g200,
-                    borderRadius: BorderRadius.circular(99)),
+                  color: _C.g200,
+                  borderRadius: BorderRadius.circular(99),
+                ),
               ),
             ),
-            Text("What's New in v1.0",
-                style: GoogleFonts.sora(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                    color: _C.g800)),
+            Text(
+              "What's New in v1.0",
+              style: GoogleFonts.sora(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: _C.g800,
+              ),
+            ),
             const SizedBox(height: 4),
-            Text('Initial release · March 2026',
-                style: GoogleFonts.sora(fontSize: 11, color: _C.g400)),
+            Text(
+              'Initial release · March 2026',
+              style: GoogleFonts.sora(fontSize: 11, color: _C.g400),
+            ),
             const SizedBox(height: 16),
             ...[
               'Tumbling E vision test with LogMAR scale',
@@ -1421,34 +1669,41 @@ String _language = 'English Only';
               'Bulk campaign screening mode',
               'Referral lifecycle tracking',
               'Multi-language referral support',
-            ].map((item) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        margin: const EdgeInsets.only(top: 5),
-                        width: 6, height: 6,
-                        decoration: const BoxDecoration(
-                            color: _C.teal, shape: BoxShape.circle),
+            ].map(
+              (item) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.only(top: 5),
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: _C.teal,
+                        shape: BoxShape.circle,
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(item,
-                            style: GoogleFonts.sora(
-                                fontSize: 13,
-                                color: _C.g800,
-                                height: 1.5)),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        item,
+                        style: GoogleFonts.sora(
+                          fontSize: 13,
+                          color: _C.g800,
+                          height: 1.5,
+                        ),
                       ),
-                    ],
-                  ),
-                )),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
-
 
   void _showChangePasswordSheet() {
     final currentCtrl = TextEditingController();
@@ -1470,12 +1725,12 @@ String _language = 'English Only';
         builder: (ctx, setSheet) {
           return Padding(
             padding: EdgeInsets.only(
-                bottom: MediaQuery.of(ctx).viewInsets.bottom),
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            ),
             child: Container(
               decoration: const BoxDecoration(
                 color: Colors.white,
-                borderRadius:
-                    BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
               child: Column(
@@ -1485,22 +1740,32 @@ String _language = 'English Only';
                   // Handle
                   Center(
                     child: Container(
-                      width: 40, height: 4,
+                      width: 40,
+                      height: 4,
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
-                          color: _C.g200,
-                          borderRadius: BorderRadius.circular(99)),
+                        color: _C.g200,
+                        borderRadius: BorderRadius.circular(99),
+                      ),
                     ),
                   ),
-                  Text('Change Password',
-                      style: GoogleFonts.sora(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800,
-                          color: _C.g800)),
+                  Text(
+                    'Change Password',
+                    style: GoogleFonts.sora(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: _C.g800,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text('Choose a strong password of at least 8 characters.',
-                      style: GoogleFonts.sora(
-                          fontSize: 12, color: _C.g400, height: 1.5)),
+                  Text(
+                    'Choose a strong password of at least 8 characters.',
+                    style: GoogleFonts.sora(
+                      fontSize: 12,
+                      color: _C.g400,
+                      height: 1.5,
+                    ),
+                  ),
                   const SizedBox(height: 20),
                   // Current password
                   _sheetFieldLabel('Current Password'),
@@ -1510,7 +1775,8 @@ String _language = 'English Only';
                     hint: 'Enter current password',
                     visible: currentVisible,
                     error: currentError,
-                    onToggle: () => setSheet(() => currentVisible = !currentVisible),
+                    onToggle: () =>
+                        setSheet(() => currentVisible = !currentVisible),
                     onChanged: (_) => setSheet(() => currentError = null),
                   ),
                   if (currentError != null) _sheetError(currentError!),
@@ -1536,7 +1802,8 @@ String _language = 'English Only';
                     hint: 'Re-enter new password',
                     visible: confirmVisible,
                     error: confirmError,
-                    onToggle: () => setSheet(() => confirmVisible = !confirmVisible),
+                    onToggle: () =>
+                        setSheet(() => confirmVisible = !confirmVisible),
                     onChanged: (_) => setSheet(() => confirmError = null),
                   ),
                   if (confirmError != null) _sheetError(confirmError!),
@@ -1560,30 +1827,44 @@ String _language = 'English Only';
                                 newError = ne;
                                 confirmError = co;
                               });
-                              if (ce != null || ne != null || co != null) return;
+                              if (ce != null || ne != null || co != null)
+                                return;
                               setSheet(() => loading = true);
                               await Future.delayed(
-                                  const Duration(milliseconds: 1200));
+                                const Duration(milliseconds: 1200),
+                              );
                               if (ctx.mounted) Navigator.pop(ctx);
-                              if (mounted) _showSnack('Password updated successfully!', _C.teal);
+                              if (mounted)
+                                _showSnack(
+                                  'Password updated successfully!',
+                                  _C.teal,
+                                );
                             },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _C.teal,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         elevation: 0,
                       ),
                       child: loading
                           ? const SizedBox(
-                              width: 18, height: 18,
+                              width: 18,
+                              height: 18,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white))
-                          : Text('Save Password',
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(
+                              'Save Password',
                               style: GoogleFonts.sora(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white)),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ),
                 ],
@@ -1599,21 +1880,33 @@ String _language = 'English Only';
     });
   }
 
-  Widget _sheetFieldLabel(String text) => Text(text,
-      style: GoogleFonts.sora(
-          fontSize: 11, fontWeight: FontWeight.w700,
-          color: _C.g500, letterSpacing: 0.8));
+  Widget _sheetFieldLabel(String text) => Text(
+    text,
+    style: GoogleFonts.sora(
+      fontSize: 11,
+      fontWeight: FontWeight.w700,
+      color: _C.g500,
+      letterSpacing: 0.8,
+    ),
+  );
 
   Widget _sheetError(String text) => Padding(
-      padding: const EdgeInsets.only(top: 5),
-      child: Row(
-        children: [
-          const Icon(Icons.error_outline_rounded, size: 13, color: _C.red),
-          const SizedBox(width: 5),
-          Text(text, style: GoogleFonts.sora(
-              fontSize: 11, fontWeight: FontWeight.w600, color: _C.red)),
-        ],
-      ));
+    padding: const EdgeInsets.only(top: 5),
+    child: Row(
+      children: [
+        const Icon(Icons.error_outline_rounded, size: 13, color: _C.red),
+        const SizedBox(width: 5),
+        Text(
+          text,
+          style: GoogleFonts.sora(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: _C.red,
+          ),
+        ),
+      ],
+    ),
+  );
 
   Widget _sheetPasswordField({
     required TextEditingController ctrl,
@@ -1627,8 +1920,7 @@ String _language = 'English Only';
       decoration: BoxDecoration(
         color: error != null ? const Color(0xFFFEF2F2) : Colors.white,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-            color: error != null ? _C.red : _C.g200, width: 1.5),
+        border: Border.all(color: error != null ? _C.red : _C.g200, width: 1.5),
       ),
       child: TextField(
         controller: ctrl,
@@ -1642,18 +1934,31 @@ String _language = 'English Only';
             padding: EdgeInsets.only(left: 12, right: 8),
             child: Icon(Icons.lock_outline_rounded, size: 16, color: _C.g400),
           ),
-          prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+          prefixIconConstraints: const BoxConstraints(
+            minWidth: 0,
+            minHeight: 0,
+          ),
           suffixIcon: GestureDetector(
             onTap: onToggle,
             child: Padding(
               padding: const EdgeInsets.only(right: 12),
               child: Icon(
-                visible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                size: 18, color: _C.g400),
+                visible
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                size: 18,
+                color: _C.g400,
+              ),
             ),
           ),
-          suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+          suffixIconConstraints: const BoxConstraints(
+            minWidth: 0,
+            minHeight: 0,
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 4,
+            vertical: 12,
+          ),
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
@@ -1667,7 +1972,8 @@ String _language = 'English Only';
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (_) => Padding(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         child: Column(
@@ -1676,25 +1982,42 @@ String _language = 'English Only';
           children: [
             Center(
               child: Container(
-                width: 40, height: 4,
+                width: 40,
+                height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                    color: _C.g200, borderRadius: BorderRadius.circular(99)),
+                  color: _C.g200,
+                  borderRadius: BorderRadius.circular(99),
+                ),
               ),
             ),
-            Text('Export All Data',
-                style: GoogleFonts.sora(
-                    fontSize: 17, fontWeight: FontWeight.w800, color: _C.g800)),
+            Text(
+              'Export All Data',
+              style: GoogleFonts.sora(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: _C.g800,
+              ),
+            ),
             const SizedBox(height: 4),
-            Text('Export all patient screening records from this device.',
-                style: GoogleFonts.sora(fontSize: 12, color: _C.g400, height: 1.5)),
+            Text(
+              'Export all patient screening records from this device.',
+              style: GoogleFonts.sora(
+                fontSize: 12,
+                color: _C.g400,
+                height: 1.5,
+              ),
+            ),
             const SizedBox(height: 20),
             _exportOption(
               icon: Icons.table_chart_outlined,
               color: _C.green,
               title: 'Export as CSV',
               subtitle: 'Spreadsheet format · Excel / Google Sheets',
-              onTap: () { Navigator.pop(context); _exportCSV(); },
+              onTap: () {
+                Navigator.pop(context);
+                _exportCSV();
+              },
             ),
             const SizedBox(height: 12),
             _exportOption(
@@ -1732,7 +2055,8 @@ String _language = 'English Only';
         child: Row(
           children: [
             Container(
-              width: 40, height: 40,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
@@ -1744,15 +2068,27 @@ String _language = 'English Only';
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: GoogleFonts.sora(
-                      fontSize: 13, fontWeight: FontWeight.w700, color: _C.g800)),
+                  Text(
+                    title,
+                    style: GoogleFonts.sora(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: _C.g800,
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text(subtitle, style: GoogleFonts.sora(
-                      fontSize: 11, color: _C.g400)),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.sora(fontSize: 11, color: _C.g400),
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: _C.g300),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 14,
+              color: _C.g300,
+            ),
           ],
         ),
       ),
@@ -1763,16 +2099,150 @@ String _language = 'English Only';
     try {
       _showSnack('Generating CSV...', _C.teal);
       final rows = <List<dynamic>>[
-        ['Patient ID', 'Name', 'Age', 'Gender', 'Village', 'OD', 'OS', 'OU',
-         'Outcome', 'Date', 'Phone', 'Facility', 'Referral Status', 'CHW'],
-        ['PAT-00312', 'Akello Mercy', 34, 'F', 'Nakawa, Kampala', '6/6', '6/9', '6/6', 'Pass', '28 Mar 2026', '+256701234567', '', '', _chwName],
-        ['PAT-00298', 'Okello James', 58, 'M', 'Bwaise, Kampala', '6/12', '6/18', '6/12', 'Refer', '28 Mar 2026', '+256702345678', 'Mulago National Referral Hospital', 'Overdue', _chwName],
-        ['PAT-00301', 'Nakato Aisha', 27, 'F', 'Ntinda, Kampala', '6/9', '6/9', '6/6', 'Pass', '28 Mar 2026', '+256703456789', '', '', _chwName],
-        ['PAT-00315', 'Mugisha Wilson', 45, 'M', 'Kireka, Wakiso', '6/12', '6/18', '6/12', 'Refer', '28 Mar 2026', '+256704567890', 'Mengo Hospital', 'Cancelled', _chwName],
-        ['PAT-00289', 'Kyomuhendo Rose', 19, 'F', 'Rubaga, Kampala', '6/9', '6/9', '6/6', 'Refer', '26 Mar 2026', '+256705678901', 'Makerere University Hospital', 'Completed', _chwName],
-        ['PAT-00276', 'Byaruhanga Sam', 62, 'M', 'Kawempe, Kampala', '6/24', '6/36', '6/24', 'Refer', '25 Mar 2026', '+256706789012', 'Kampala Eye Clinic', 'Notified', _chwName],
-        ['PAT-00261', 'Tendo Kevin', 9, 'M', 'Nansana, Wakiso', '6/9', '6/9', '6/6', 'Pass', '24 Mar 2026', '+256707890123', '', '', _chwName],
-        ['PAT-00254', 'Apio Norah', 8, 'F', 'Kira, Wakiso', '6/18', '6/12', '6/12', 'Refer', '23 Mar 2026', '+256708901234', 'Mulago National Referral Hospital', 'Attended', _chwName],
+        [
+          'Patient ID',
+          'Name',
+          'Age',
+          'Gender',
+          'Village',
+          'OD',
+          'OS',
+          'OU',
+          'Outcome',
+          'Date',
+          'Phone',
+          'Facility',
+          'Referral Status',
+          'CHW',
+        ],
+        [
+          'PAT-00312',
+          'Akello Mercy',
+          34,
+          'F',
+          'Nakawa, Kampala',
+          '6/6',
+          '6/9',
+          '6/6',
+          'Pass',
+          '28 Mar 2026',
+          '+256701234567',
+          '',
+          '',
+          _chwName,
+        ],
+        [
+          'PAT-00298',
+          'Okello James',
+          58,
+          'M',
+          'Bwaise, Kampala',
+          '6/12',
+          '6/18',
+          '6/12',
+          'Refer',
+          '28 Mar 2026',
+          '+256702345678',
+          'Mulago National Referral Hospital',
+          'Overdue',
+          _chwName,
+        ],
+        [
+          'PAT-00301',
+          'Nakato Aisha',
+          27,
+          'F',
+          'Ntinda, Kampala',
+          '6/9',
+          '6/9',
+          '6/6',
+          'Pass',
+          '28 Mar 2026',
+          '+256703456789',
+          '',
+          '',
+          _chwName,
+        ],
+        [
+          'PAT-00315',
+          'Mugisha Wilson',
+          45,
+          'M',
+          'Kireka, Wakiso',
+          '6/12',
+          '6/18',
+          '6/12',
+          'Refer',
+          '28 Mar 2026',
+          '+256704567890',
+          'Mengo Hospital',
+          'Cancelled',
+          _chwName,
+        ],
+        [
+          'PAT-00289',
+          'Kyomuhendo Rose',
+          19,
+          'F',
+          'Rubaga, Kampala',
+          '6/9',
+          '6/9',
+          '6/6',
+          'Refer',
+          '26 Mar 2026',
+          '+256705678901',
+          'Makerere University Hospital',
+          'Completed',
+          _chwName,
+        ],
+        [
+          'PAT-00276',
+          'Byaruhanga Sam',
+          62,
+          'M',
+          'Kawempe, Kampala',
+          '6/24',
+          '6/36',
+          '6/24',
+          'Refer',
+          '25 Mar 2026',
+          '+256706789012',
+          'Kampala Eye Clinic',
+          'Notified',
+          _chwName,
+        ],
+        [
+          'PAT-00261',
+          'Tendo Kevin',
+          9,
+          'M',
+          'Nansana, Wakiso',
+          '6/9',
+          '6/9',
+          '6/6',
+          'Pass',
+          '24 Mar 2026',
+          '+256707890123',
+          '',
+          '',
+          _chwName,
+        ],
+        [
+          'PAT-00254',
+          'Apio Norah',
+          8,
+          'F',
+          'Kira, Wakiso',
+          '6/18',
+          '6/12',
+          '6/12',
+          'Refer',
+          '23 Mar 2026',
+          '+256708901234',
+          'Mulago National Referral Hospital',
+          'Attended',
+          _chwName,
+        ],
       ];
       final csv = const ListToCsvConverter().convert(rows);
       final dir = await getApplicationDocumentsDirectory();
@@ -1794,41 +2264,56 @@ String _language = 'English Only';
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (_) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             margin: const EdgeInsets.only(top: 12, bottom: 8),
-            width: 40, height: 4,
+            width: 40,
+            height: 4,
             decoration: BoxDecoration(
-                color: _C.g200, borderRadius: BorderRadius.circular(99)),
+              color: _C.g200,
+              borderRadius: BorderRadius.circular(99),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-            child: Text('Test Eye Order',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 17, fontWeight: FontWeight.w700,
-                  color: const Color(0xFF1C1C1E))),
+            child: Text(
+              'Test Eye Order',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF1C1C1E),
+              ),
+            ),
           ),
           ...['Right → Left', 'Left → Right'].map((order) {
             final active = _eyeOrder == order;
             return ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 20),
               leading: Container(
-                width: 36, height: 36,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   color: active ? _C.teal : _C.g100,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(Icons.remove_red_eye_outlined, size: 18,
-                    color: active ? Colors.white : _C.g400),
+                child: Icon(
+                  Icons.remove_red_eye_outlined,
+                  size: 18,
+                  color: active ? Colors.white : _C.g400,
+                ),
               ),
-              title: Text(order,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-                    color: active ? _C.teal : const Color(0xFF1C1C1E))),
+              title: Text(
+                order,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 15,
+                  fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+                  color: active ? _C.teal : const Color(0xFF1C1C1E),
+                ),
+              ),
               trailing: active
                   ? Icon(Icons.check_circle_rounded, color: _C.teal, size: 22)
                   : null,
@@ -1846,27 +2331,37 @@ String _language = 'English Only';
     );
   }
 
-    void _showClearDataDialog() {
+  void _showClearDataDialog() {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(children: [
-          Container(
-            width: 40, height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFFEF4444).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+        title: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.delete_outline_rounded,
+                color: Color(0xFFEF4444),
+                size: 20,
+              ),
             ),
-            child: const Icon(Icons.delete_outline_rounded,
-                color: Color(0xFFEF4444), size: 20),
-          ),
-          const SizedBox(width: 12),
-          Text('Clear All Data',
+            const SizedBox(width: 12),
+            Text(
+              'Clear All Data',
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 17, fontWeight: FontWeight.w700,
-                color: const Color(0xFF1C1C1E))),
-        ]),
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF1C1C1E),
+              ),
+            ),
+          ],
+        ),
         content: Text(
           'This will permanently delete all patient records, campaigns, and referral history. This cannot be undone.',
           style: GoogleFonts.inter(fontSize: 14, color: _C.g500, height: 1.6),
@@ -1874,8 +2369,13 @@ String _language = 'English Only';
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: _C.g400)),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+                color: _C.g400,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -1883,25 +2383,33 @@ String _language = 'English Only';
               final prefs = await SharedPreferences.getInstance();
               await prefs.clear();
               await _loadProfile();
-              if (mounted) _showSnack('All data cleared', const Color(0xFFEF4444));
+              if (mounted)
+                _showSnack('All data cleared', const Color(0xFFEF4444));
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFEF4444),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               elevation: 0,
             ),
-            child: Text('Clear All',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: Colors.white)),
+            child: Text(
+              'Clear All',
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-    Widget _buildDivider() => const Padding(
-        padding: EdgeInsets.only(left: 57),
-        child: Divider(height: 1, color: _C.g100),
-      );
+  Widget _buildDivider() => const Padding(
+    padding: EdgeInsets.only(left: 57),
+    child: Divider(height: 1, color: _C.g100),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1943,16 +2451,20 @@ class _LegalSheet extends StatelessWidget {
           children: [
             Container(
               margin: const EdgeInsets.only(top: 12),
-              width: 40, height: 4,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
-                  color: _C.g200, borderRadius: BorderRadius.circular(99)),
+                color: _C.g200,
+                borderRadius: BorderRadius.circular(99),
+              ),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
               child: Row(
                 children: [
                   Container(
-                    width: 40, height: 40,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
                       color: iconColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
@@ -1965,21 +2477,35 @@ class _LegalSheet extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(title,
-                            style: GoogleFonts.sora(
-                                fontSize: 18, fontWeight: FontWeight.w800, color: _C.g800)),
-                        Text('VisionScreen · Uganda MOH',
-                            style: GoogleFonts.sora(fontSize: 11, color: _C.g400)),
+                        Text(
+                          title,
+                          style: GoogleFonts.sora(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: _C.g800,
+                          ),
+                        ),
+                        Text(
+                          'VisionScreen · Uganda MOH',
+                          style: GoogleFonts.sora(fontSize: 11, color: _C.g400),
+                        ),
                       ],
                     ),
                   ),
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
                     child: Container(
-                      width: 32, height: 32,
+                      width: 32,
+                      height: 32,
                       decoration: BoxDecoration(
-                          color: _C.g100, borderRadius: BorderRadius.circular(8)),
-                      child: const Icon(Icons.close_rounded, size: 16, color: _C.g500),
+                        color: _C.g100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.close_rounded,
+                        size: 16,
+                        color: _C.g500,
+                      ),
                     ),
                   ),
                 ],
@@ -1997,19 +2523,32 @@ class _LegalSheet extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
                       decoration: BoxDecoration(
                         color: _C.teal.withOpacity(0.07),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Text(sections[i].heading,
-                          style: GoogleFonts.sora(
-                              fontSize: 12, fontWeight: FontWeight.w700, color: _C.teal)),
+                      child: Text(
+                        sections[i].heading,
+                        style: GoogleFonts.sora(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: _C.teal,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 8),
-                    Text(sections[i].body,
-                        style: GoogleFonts.sora(
-                            fontSize: 12, color: _C.g500, height: 1.75)),
+                    Text(
+                      sections[i].body,
+                      style: GoogleFonts.sora(
+                        fontSize: 12,
+                        color: _C.g500,
+                        height: 1.75,
+                      ),
+                    ),
                   ],
                 ),
               ),
