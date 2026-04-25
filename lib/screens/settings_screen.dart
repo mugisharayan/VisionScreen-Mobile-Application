@@ -160,16 +160,41 @@ String _language = 'English Only';
                   ),
                   const SizedBox(height: 11),
                   _buildSection(
-                    title: 'Account & Security',
+                    title: 'Account',
                     children: [
-                      _buildArrowRow(
-                        emoji: '🔑',
-                        emojiBg: const Color(0xFFEDE9FE),
-                        label: 'Change Password',
-                        onTap: () => _showChangePasswordSheet(),
+                      _buildRow(
+                        badgeColor: const Color(0xFF8B5CF6),
+                        badgeIcon: Icons.mail_outline_rounded,
+                        label: _chwEmail.isNotEmpty ? _chwEmail : 'No email set',
+                        subtitle: 'Account email',
+                        showChevron: false,
+                        isFirst: true,
                       ),
-                      _buildDivider(),
-                      _buildLastLoginRow(),
+                      _buildRow(
+                        badgeColor: const Color(0xFF22C55E),
+                        badgeIcon: Icons.access_time_rounded,
+                        label: _lastLoginTime.isNotEmpty ? _lastLoginTime : 'Not recorded yet',
+                        subtitle: 'Last login',
+                        showChevron: false,
+                        trailing: _lastLoginRole.isNotEmpty
+                            ? Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: _C.teal.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(99),
+                                ),
+                                child: Text(
+                                  _lastLoginRole == 'Administrator' ? 'Admin' : 'CHW',
+                                  style: GoogleFonts.ibmPlexSans(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: _C.teal,
+                                  ),
+                                ),
+                              )
+                            : null,
+                        isLast: true,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 11),
@@ -469,37 +494,149 @@ String _language = 'English Only';
   }
 
   // ── SECTION CARD ─────────────────────────────────────────
+  // Renders a labelled group: uppercase label above + white card with rows
   Widget _buildSection({
     required String title,
     required List<Widget> children,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _C.g200),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section title
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(14, 11, 14, 7),
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: _C.g100)),
-            ),
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 6),
             child: Text(
               title.toUpperCase(),
-              style: GoogleFonts.sora(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: _C.g400,
-                  letterSpacing: 1.0),
+              style: GoogleFonts.ibmPlexSans(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: _C.g400,
+                letterSpacing: 1.4,
+              ),
             ),
           ),
-          ...children,
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              children: _intersperse(children),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  // Inserts a thin divider between rows
+  List<Widget> _intersperse(List<Widget> rows) {
+    if (rows.isEmpty) return rows;
+    final result = <Widget>[];
+    for (int i = 0; i < rows.length; i++) {
+      result.add(rows[i]);
+      if (i < rows.length - 1) {
+        result.add(const Divider(
+          height: 1,
+          thickness: 1,
+          color: Color(0xFFF2F4F7),
+          indent: 16,
+          endIndent: 0,
+        ));
+      }
+    }
+    return result;
+  }
+
+  // ── UNIFIED ROW BUILDER ───────────────────────────────────────
+  Widget _buildRow({
+    required Color badgeColor,
+    required IconData badgeIcon,
+    required String label,
+    String? subtitle,
+    Widget? trailing,
+    bool showChevron = true,
+    Color? labelColor,
+    VoidCallback? onTap,
+    bool isFirst = false,
+    bool isLast = false,
+  }) {
+    final radius = BorderRadius.only(
+      topLeft:     isFirst ? const Radius.circular(16) : Radius.zero,
+      topRight:    isFirst ? const Radius.circular(16) : Radius.zero,
+      bottomLeft:  isLast  ? const Radius.circular(16) : Radius.zero,
+      bottomRight: isLast  ? const Radius.circular(16) : Radius.zero,
+    );
+    return Material(
+      color: Colors.white,
+      borderRadius: radius,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: radius,
+        splashColor: _C.teal.withOpacity(0.06),
+        highlightColor: _C.g100.withOpacity(0.5),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+          child: Row(
+            children: [
+              // Icon badge
+              Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  color: badgeColor,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(badgeIcon, size: 18, color: Colors.white),
+              ),
+              const SizedBox(width: 14),
+              // Label + optional subtitle
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: labelColor ?? const Color(0xFF1C1C1E),
+                      ),
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: _C.g400,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              // Trailing widget
+              if (trailing != null) trailing,
+              // Chevron
+              if (showChevron) ...[
+                const SizedBox(width: 6),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: Color(0xFFC7C7CC),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1212,53 +1349,6 @@ String _language = 'English Only';
     );
   }
 
-  Widget _buildLastLoginRow() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: Row(
-        children: [
-          Container(
-            width: 32, height: 32,
-            decoration: BoxDecoration(
-              color: _C.gbg,
-              borderRadius: BorderRadius.circular(9),
-            ),
-            child: const Icon(Icons.access_time_rounded, size: 16, color: _C.green),
-          ),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Last Login',
-                    style: GoogleFonts.sora(
-                        fontSize: 13, fontWeight: FontWeight.w600, color: _C.g800)),
-                const SizedBox(height: 2),
-                Text(
-                  _lastLoginTime.isNotEmpty ? _lastLoginTime : 'Not recorded yet',
-                  style: GoogleFonts.sora(fontSize: 11, color: _C.g400),
-                ),
-              ],
-            ),
-          ),
-          if (_lastLoginRole.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: _C.teal.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(99),
-                border: Border.all(color: _C.teal.withOpacity(0.25)),
-              ),
-              child: Text(
-                _lastLoginRole == 'Administrator' ? 'Admin' : 'CHW',
-                style: GoogleFonts.sora(
-                    fontSize: 10, fontWeight: FontWeight.w700, color: _C.teal),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
 
   void _showChangePasswordSheet() {
     final currentCtrl = TextEditingController();
