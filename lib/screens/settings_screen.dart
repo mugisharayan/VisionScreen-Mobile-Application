@@ -72,10 +72,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _brightnessLock = p.getBool('brightness_lock') ?? true;
       _batterySaver = p.getBool('battery_saver') ?? false;
       _eyeOrder = p.getString('eye_order') ?? 'Right → Left';
+      _hapticFeedback = p.getBool('haptic_feedback') ?? true;
+      _language = p.getString('referral_language') ?? 'English Only';
     });
   }
 
-  Future<void> _setBatterySaver(bool value) async {
+  Future<void> _setHapticFeedback(bool value) async {
+    setState(() => _hapticFeedback = value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('haptic_feedback', value);
+    if (value) HapticFeedback.selectionClick();
+  }
+
+    Future<void> _setBatterySaver(bool value) async {
     setState(() => _batterySaver = value);
     final p = await SharedPreferences.getInstance();
     await p.setBool('battery_saver', value);
@@ -102,6 +111,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   // ── Toggles ──────────────────────────────────────────────
+  bool _hapticFeedback = true;
   bool _offlineMode  = true;
   bool _smsNotifs    = false;
   bool _batterySaver = true;
@@ -201,71 +211,120 @@ String _language = 'English Only';
                   _buildSection(
                     title: 'Preferences',
                     children: [
-                      _buildLanguageRow(),
-                      _buildDivider(),
-                      _buildToggleRow(
-                        emoji: '📴',
-                        emojiBg: _C.abg,
-                        label: 'Offline Mode',
-                        sub: 'Store data locally on device (SQLite)',
-                        value: _offlineMode,
-                        onChanged: (v) => setState(() => _offlineMode = v),
+                      _buildRow(
+                        badgeColor: const Color(0xFF3B82F6),
+                        badgeIcon: Icons.language_rounded,
+                        label: 'Referral Language',
+                        subtitle: _language,
+                        isFirst: true,
+                        onTap: () => _showLanguagePicker(),
                       ),
-                      _buildDivider(),
-                      _buildToggleRow(
-                        emoji: '💬',
-                        emojiBg: _C.gbg,
-                        label: 'SMS Notifications',
-                        sub: 'Send appointment reminders',
-                        value: _smsNotifs,
-                        onChanged: (v) => setState(() => _smsNotifs = v),
+                      _buildRow(
+                        badgeColor: const Color(0xFFF59E0B),
+                        badgeIcon: Icons.vibration_rounded,
+                        label: 'Haptic Feedback',
+                        subtitle: 'Vibrate on actions',
+                        showChevron: false,
+                        trailing: _buildToggle(
+                          value: _hapticFeedback,
+                          onChanged: _setHapticFeedback,
+                        ),
                       ),
-                      _buildDivider(),
-                      _buildToggleRow(
-                        emoji: '🔋',
-                        emojiBg: _C.rbg,
-                        label: 'Battery Saver Mode',
-                        sub: 'Reduce brightness during test',
-                        value: _batterySaver,
-                        onChanged: (v) => _setBatterySaver(v),
+                      _buildRow(
+                        badgeColor: const Color(0xFFEF4444),
+                        badgeIcon: Icons.battery_saver_rounded,
+                        label: 'Battery Saver',
+                        subtitle: 'Reduce brightness during screening',
+                        showChevron: false,
                         isLast: true,
+                        trailing: _buildToggle(
+                          value: _batterySaver,
+                          onChanged: _setBatterySaver,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 11),
                   _buildSection(
-                    title: 'Screening Preferences',
+                    title: 'Screening',
                     children: [
-                      _buildEyeOrderRow(),
-                      _buildDivider(),
-                      _buildToggleRow(
-                        emoji: '☀️',
-                        emojiBg: const Color(0xFFFEF9C3),
+                      _buildRow(
+                        badgeColor: _C.teal,
+                        badgeIcon: Icons.remove_red_eye_outlined,
+                        label: 'Test Eye Order',
+                        subtitle: _eyeOrder,
+                        isFirst: true,
+                        onTap: () => _showEyeOrderPicker(),
+                      ),
+                      _buildRow(
+                        badgeColor: const Color(0xFFEAB308),
+                        badgeIcon: Icons.wb_sunny_rounded,
                         label: 'Brightness Lock',
-                        sub: 'Auto full brightness during test',
-                        value: _brightnessLock,
-                        onChanged: (v) => _setBrightnessLock(v),
+                        subtitle: 'Auto full brightness during test',
+                        showChevron: false,
                         isLast: true,
+                        trailing: _buildToggle(
+                          value: _brightnessLock,
+                          onChanged: _setBrightnessLock,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 11),
                   _buildSection(
-                    title: 'Data Sync — MongoDB Atlas',
+                    title: 'Data & Sync',
                     children: [
-                      _buildSyncRow(),
-                      _buildDivider(),
-                      _buildArrowRow(emoji: '📤', emojiBg: _C.ice, label: 'Export All Data', onTap: () => _showExportSheet()),
+                      _buildRow(
+                        badgeColor: const Color(0xFF22C55E),
+                        badgeIcon: Icons.cloud_outlined,
+                        label: 'Sync Status',
+                        subtitle: '0 records pending sync',
+                        showChevron: false,
+                        isFirst: true,
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _C.g100,
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          child: Text(
+                            'Coming Soon',
+                            style: GoogleFonts.ibmPlexSans(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: _C.g400,
+                            ),
+                          ),
+                        ),
+                      ),
+                      _buildRow(
+                        badgeColor: const Color(0xFF3B82F6),
+                        badgeIcon: Icons.download_rounded,
+                        label: 'Export as CSV',
+                        subtitle: 'Spreadsheet · Excel / Google Sheets',
+                        isLast: true,
+                        onTap: () => _showExportSheet(),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 11),
                   _buildSection(
                     title: 'Danger Zone',
                     children: [
-                      _buildArrowRow(
-                        emoji: '🚪',
-                        emojiBg: _C.g100,
+                      _buildRow(
+                        badgeColor: const Color(0xFFEF4444),
+                        badgeIcon: Icons.delete_outline_rounded,
+                        label: 'Clear All Data',
+                        labelColor: const Color(0xFFEF4444),
+                        subtitle: 'Permanently wipe all local records',
+                        isFirst: true,
+                        onTap: () => _showClearDataDialog(),
+                      ),
+                      _buildRow(
+                        badgeColor: const Color(0xFFEF4444),
+                        badgeIcon: Icons.logout_rounded,
                         label: 'Logout',
+                        labelColor: const Color(0xFFEF4444),
                         isLast: true,
                         onTap: () => Navigator.of(context)
                             .pushNamedAndRemoveUntil('/login', (_) => false),
@@ -276,28 +335,69 @@ String _language = 'English Only';
                   _buildSection(
                     title: 'App Info',
                     children: [
-                      _buildArrowRow(
-                        emoji: 'ℹ️',
-                        emojiBg: _C.ice,
+                      _buildRow(
+                        badgeColor: _C.teal,
+                        badgeIcon: Icons.info_outline_rounded,
                         label: 'About VisionScreen',
+                        isFirst: true,
                         onTap: () => _showAboutDialog(),
                       ),
-                      _buildDivider(),
-                      _buildArrowRow(
-                        emoji: '📋',
-                        emojiBg: const Color(0xFFEDE9FE),
+                      _buildRow(
+                        badgeColor: const Color(0xFF8B5CF6),
+                        badgeIcon: Icons.auto_awesome_rounded,
+                        label: "What's New",
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: _C.amber.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          child: Text(
+                            'NEW',
+                            style: GoogleFonts.ibmPlexSans(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              color: _C.amber,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ),
+                        onTap: () => _showChangelogSheet(),
+                      ),
+                      _buildRow(
+                        badgeColor: const Color(0xFF1A2A3D),
+                        badgeIcon: Icons.gavel_rounded,
                         label: 'Terms of Service',
                         onTap: () => _showTermsOfService(),
                       ),
-                      _buildDivider(),
-                      _buildArrowRow(
-                        emoji: '🔒',
-                        emojiBg: _C.ice,
+                      _buildRow(
+                        badgeColor: const Color(0xFF1A2A3D),
+                        badgeIcon: Icons.lock_outline_rounded,
                         label: 'Privacy Policy',
                         onTap: () => _showPrivacyPolicy(),
                       ),
-                      _buildDivider(),
-                      _buildVersionRow(),
+                      _buildRow(
+                        badgeColor: _C.teal,
+                        badgeIcon: Icons.tag_rounded,
+                        label: 'Version',
+                        showChevron: false,
+                        isLast: true,
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _C.teal.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          child: Text(
+                            'v1.0.0',
+                            style: GoogleFonts.ibmPlexSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: _C.teal,
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -1689,7 +1789,116 @@ String _language = 'English Only';
     }
   }
 
-  Widget _buildDivider() => const Padding(
+  void _showEyeOrderPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (_) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 12, bottom: 8),
+            width: 40, height: 4,
+            decoration: BoxDecoration(
+                color: _C.g200, borderRadius: BorderRadius.circular(99)),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+            child: Text('Test Eye Order',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 17, fontWeight: FontWeight.w700,
+                  color: const Color(0xFF1C1C1E))),
+          ),
+          ...['Right → Left', 'Left → Right'].map((order) {
+            final active = _eyeOrder == order;
+            return ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+              leading: Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  color: active ? _C.teal : _C.g100,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.remove_red_eye_outlined, size: 18,
+                    color: active ? Colors.white : _C.g400),
+              ),
+              title: Text(order,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+                    color: active ? _C.teal : const Color(0xFF1C1C1E))),
+              trailing: active
+                  ? Icon(Icons.check_circle_rounded, color: _C.teal, size: 22)
+                  : null,
+              onTap: () async {
+                setState(() => _eyeOrder = order);
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setString('eye_order', order);
+                if (context.mounted) Navigator.pop(context);
+              },
+            );
+          }),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+    void _showClearDataDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(children: [
+          Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEF4444).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.delete_outline_rounded,
+                color: Color(0xFFEF4444), size: 20),
+          ),
+          const SizedBox(width: 12),
+          Text('Clear All Data',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 17, fontWeight: FontWeight.w700,
+                color: const Color(0xFF1C1C1E))),
+        ]),
+        content: Text(
+          'This will permanently delete all patient records, campaigns, and referral history. This cannot be undone.',
+          style: GoogleFonts.inter(fontSize: 14, color: _C.g500, height: 1.6),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: _C.g400)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.clear();
+              await _loadProfile();
+              if (mounted) _showSnack('All data cleared', const Color(0xFFEF4444));
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+            child: Text('Clear All',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+    Widget _buildDivider() => const Padding(
         padding: EdgeInsets.only(left: 57),
         child: Divider(height: 1, color: _C.g100),
       );
