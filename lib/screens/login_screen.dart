@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'splash_screen.dart' show AppColors;
+import '../db/database_helper.dart';
 
 // ─────────────────────────────────────────────────────────────
 // Login Screen — Login + Sign Up tabs
@@ -89,13 +90,27 @@ class _LoginScreenState extends State<LoginScreen>
     });
     if (_loginEmailError != null || _loginPasswordError != null) return;
     setState(() => _loginLoading = true);
-    await Future.delayed(const Duration(milliseconds: 1400));
+    final profile = await DatabaseHelper.instance
+        .getChwProfileByEmail(_loginEmailCtrl.text.trim());
     if (!mounted) return;
+    if (profile == null || profile['password'] != _loginPasswordCtrl.text) {
+      setState(() {
+        _loginLoading = false;
+        _loginPasswordError = 'Invalid email or password';
+      });
+      return;
+    }
     final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('chw_name',     profile['name']     as String);
+    await prefs.setString('chw_center',   profile['center']   as String);
+    await prefs.setString('chw_district', profile['district'] as String);
+    await prefs.setString('chw_email',    profile['email']    as String);
+    await prefs.setString('chw_phone',    profile['phone']    as String);
     await prefs.setString('last_login_time',
         DateTime.now().toLocal().toString().substring(0, 16));
     await prefs.setString('last_login_role',
-        _selectedRole == 'chw' ? 'Community Health Worker' : 'Administrator');
+        (profile['role'] as String) == 'admin' ? 'Administrator' : 'Community Health Worker');
+    if (!mounted) return;
     Navigator.of(context).pushReplacementNamed('/home');
   }
 
@@ -147,6 +162,39 @@ class _LoginScreenState extends State<LoginScreen>
         _signUpConfirmPasswordError != null) {
       return;
     }
+    _saveSignUp();
+  }
+
+  Future<void> _saveSignUp() async {
+    final phone = _signUpPhoneCtrl.text.replaceAll(RegExp(r'\s'), '');
+    final profile = {
+      'name':       _signUpNameCtrl.text.trim(),
+      'center':     _signUpCentreCtrl.text.trim(),
+      'district':   _signUpDistrictCtrl.text.trim(),
+      'email':      _signUpEmailCtrl.text.trim().toLowerCase(),
+      'phone':      phone,
+      'password':   _signUpPasswordCtrl.text,
+      'role':       _selectedRole,
+      'created_at': DateTime.now().toIso8601String(),
+    };
+    await DatabaseHelper.instance.insertChwProfile(profile);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('chw_name',     profile['name']!);
+    await prefs.setString('chw_center',   profile['center']!);
+    await prefs.setString('chw_district', profile['district']!);
+    await prefs.setString('chw_email',    profile['email']!);
+    await prefs.setString('chw_phone',    profile['phone']!);
+    // Generate CHW ID: CHW-XXXXXX (6 random digits)
+    final existing = prefs.getString('chw_id') ?? '';
+    if (existing.isEmpty) {
+      final id = 'CHW-${(100000 + DateTime.now().millisecondsSinceEpoch % 900000).toString()}';
+      await prefs.setString('chw_id', id);
+    }
+    await prefs.setString('last_login_time',
+        DateTime.now().toLocal().toString().substring(0, 16));
+    await prefs.setString('last_login_role',
+        _selectedRole == 'admin' ? 'Administrator' : 'Community Health Worker');
+    if (!mounted) return;
     Navigator.of(context).pushReplacementNamed('/home');
   }
 
@@ -159,8 +207,7 @@ class _LoginScreenState extends State<LoginScreen>
   String? _validateEmail(String value) {
     if (value.trim().isEmpty) return 'Email address is required';
     final emailRegex = RegExp(r'^[\w.+-]+@[\w-]+\.[\w.]+$');
-    if (!emailRegex.hasMatch(value.trim()))
-      return 'Enter a valid email address';
+    if (!emailRegex.hasMatch(value.trim())) { return 'Enter a valid email address'; }
     const allowedDomains = [
       'gmail.com',
       'yahoo.com',

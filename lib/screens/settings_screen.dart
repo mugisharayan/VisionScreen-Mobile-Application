@@ -7,6 +7,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
+import '../db/database_helper.dart';
 
 // ── Colours ──────────────────────────────────────────────────
 class _C {
@@ -15,8 +17,6 @@ class _C {
   static const teal = Color(0xFF0D9488);
   static const teal2 = Color(0xFF14B8A6);
   static const teal3 = Color(0xFF5EEAD4);
-  static const ice = Color(0xFFE0F2FE);
-  static const g50 = Color(0xFFF8FAFB);
   static const g100 = Color(0xFFF0F4F7);
   static const g200 = Color(0xFFDDE4EC);
   static const g300 = Color(0xFFC4CFDB);
@@ -24,12 +24,8 @@ class _C {
   static const g500 = Color(0xFF5E7291);
   static const g800 = Color(0xFF1A2A3D);
   static const green = Color(0xFF22C55E);
-  static const gbg = Color(0xFFDCFCE7);
   static const amber = Color(0xFFF59E0B);
-  static const abg = Color(0xFFFEF3C7);
   static const red = Color(0xFFEF4444);
-  static const rbg = Color(0xFFFEE2E2);
-  static const rtext = Color(0xFF991B1B);
 }
 
 class SettingsScreen extends StatefulWidget {
@@ -49,6 +45,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _chwId = '';
   String _lastLoginTime = '';
   String _lastLoginRole = '';
+  String _chwPhoto = '';
+  int _unsyncedCount = 0;
 
   @override
   void initState() {
@@ -73,7 +71,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _eyeOrder = p.getString('eye_order') ?? 'Right → Left';
       _hapticFeedback = p.getBool('haptic_feedback') ?? true;
       _language = p.getString('referral_language') ?? 'English Only';
+      _chwPhoto = p.getString('chw_photo') ?? '';
     });
+    final count = await DatabaseHelper.instance.getUnsyncedCount();
+    if (!mounted) return;
+    setState(() => _unsyncedCount = count);
   }
 
   Future<void> _setHapticFeedback(bool value) async {
@@ -111,8 +113,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // ── Toggles ──────────────────────────────────────────────
   bool _hapticFeedback = true;
-  bool _offlineMode = true;
-  bool _smsNotifs = false;
   bool _batterySaver = true;
   bool _brightnessLock = true;
   String _eyeOrder = 'Right → Left';
@@ -130,40 +130,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     'Swahili',
   ];
 
-  // ── Sync state ───────────────────────────────────────────
-  bool _isSyncing = false;
-  bool _synced = false;
 
   @override
   void dispose() {
     super.dispose();
-  }
-
-  void _doSync() async {
-    setState(() => _isSyncing = true);
-    await Future.delayed(const Duration(seconds: 2));
-    if (mounted)
-      setState(() {
-        _isSyncing = false;
-        _synced = true;
-      });
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Sync complete! 3 records uploaded to MongoDB Atlas',
-            style: GoogleFonts.sora(fontSize: 12, color: Colors.white),
-          ),
-          backgroundColor: _C.teal,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          duration: const Duration(seconds: 2),
-          margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        ),
-      );
-    }
   }
 
   @override
@@ -175,29 +145,71 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           children: [
             _buildHeader(),
+            // Teal separator line
+            Container(
+              height: 1,
+              margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    _C.teal.withValues(alpha: 0.0),
+                    _C.teal.withValues(alpha: 0.35),
+                    _C.teal.withValues(alpha: 0.0),
+                  ],
+                ),
+              ),
+            ),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(0, 12, 0, 24),
                 child: Column(
                   children: [
                     _buildSection(
-                      title: 'Profile Information',
-                      children: [_buildProfileFields()],
+                      title: 'Profile',
+                      children: [
+                        _buildRow(
+                          badgeColor: const Color(0xFF6366F1),
+                          badgeIcon: Icons.person_outline_rounded,
+                          label: _chwName.isNotEmpty ? _chwName : 'Not set',
+                          subtitle: 'Full name',
+                          showChevron: false,
+                          isFirst: true,
+                        ),
+                        _buildRow(
+                          badgeColor: _C.teal,
+                          badgeIcon: Icons.local_hospital_outlined,
+                          label: _chwCenter.isNotEmpty ? _chwCenter : 'Not set',
+                          subtitle: 'Health center',
+                          showChevron: false,
+                        ),
+                        _buildRow(
+                          badgeColor: const Color(0xFF3B82F6),
+                          badgeIcon: Icons.location_on_outlined,
+                          label: _chwDistrict.isNotEmpty ? _chwDistrict : 'Not set',
+                          subtitle: 'District',
+                          showChevron: false,
+                        ),
+                        _buildRow(
+                          badgeColor: const Color(0xFFF59E0B),
+                          badgeIcon: Icons.mail_outline_rounded,
+                          label: _chwEmail.isNotEmpty ? _chwEmail : 'Not set',
+                          subtitle: 'Email address',
+                          showChevron: false,
+                        ),
+                        _buildRow(
+                          badgeColor: const Color(0xFF22C55E),
+                          badgeIcon: Icons.phone_outlined,
+                          label: _chwPhone.isNotEmpty ? '+256 $_chwPhone' : 'Not set',
+                          subtitle: 'Phone number',
+                          showChevron: false,
+                        ),
+                        _buildChwIdRow(),
+                      ],
                     ),
                     const SizedBox(height: 11),
                     _buildSection(
                       title: 'Account',
                       children: [
-                        _buildRow(
-                          badgeColor: const Color(0xFF8B5CF6),
-                          badgeIcon: Icons.mail_outline_rounded,
-                          label: _chwEmail.isNotEmpty
-                              ? _chwEmail
-                              : 'No email set',
-                          subtitle: 'Account email',
-                          showChevron: false,
-                          isFirst: true,
-                        ),
                         _buildRow(
                           badgeColor: const Color(0xFF22C55E),
                           badgeIcon: Icons.access_time_rounded,
@@ -206,14 +218,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               : 'Not recorded yet',
                           subtitle: 'Last login',
                           showChevron: false,
+                          isFirst: true,
                           trailing: _lastLoginRole.isNotEmpty
                               ? Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 3,
-                                  ),
+                                    horizontal: 8, vertical: 3),
                                   decoration: BoxDecoration(
-                                    color: _C.teal.withOpacity(0.1),
+                                    color: _C.teal.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(99),
                                   ),
                                   child: Text(
@@ -228,7 +239,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   ),
                                 )
                               : null,
+                        ),
+                        _buildRow(
+                          badgeColor: const Color(0xFF6366F1),
+                          badgeIcon: Icons.lock_outline_rounded,
+                          label: 'Change Password',
+                          subtitle: 'Update your account password',
                           isLast: true,
+                          onTap: () => _showChangePasswordSheet(),
                         ),
                       ],
                     ),
@@ -303,7 +321,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           badgeColor: const Color(0xFF22C55E),
                           badgeIcon: Icons.cloud_outlined,
                           label: 'Sync Status',
-                          subtitle: '0 records pending sync',
+                          subtitle: _unsyncedCount == 0 ? 'All records synced' : '$_unsyncedCount record${_unsyncedCount == 1 ? '' : 's'} pending sync',
                           showChevron: false,
                           isFirst: true,
                           trailing: Container(
@@ -312,15 +330,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: _C.g100,
+                              color: _unsyncedCount == 0
+                                  ? _C.green.withValues(alpha: 0.1)
+                                  : _C.amber.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(99),
                             ),
                             child: Text(
-                              'Coming Soon',
+                              _unsyncedCount == 0 ? 'Synced' : 'Pending',
                               style: GoogleFonts.ibmPlexSans(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
-                                color: _C.g400,
+                                color: _unsyncedCount == 0 ? _C.green : _C.amber,
                               ),
                             ),
                           ),
@@ -381,7 +401,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: _C.amber.withOpacity(0.15),
+                              color: _C.amber.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(99),
                             ),
                             child: Text(
@@ -420,7 +440,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: _C.teal.withOpacity(0.08),
+                              color: _C.teal.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(99),
                             ),
                             child: Text(
@@ -463,13 +483,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ── HEADER — Profile Card ──────────────────────────────
   Widget _buildHeader() {
     final initials = _chwName.trim().isNotEmpty
-        ? _chwName
-              .trim()
-              .split(' ')
-              .map((w) => w.isEmpty ? '' : w[0])
-              .take(2)
-              .join()
-              .toUpperCase()
+        ? _chwName.trim().split(' ').map((w) => w.isEmpty ? '' : w[0]).take(2).join().toUpperCase()
         : 'VS';
     final roleLabel = _lastLoginRole == 'Administrator' ? 'Admin' : 'CHW';
 
@@ -484,9 +498,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: _C.ink.withOpacity(0.35),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: _C.ink.withValues(alpha: 0.4),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -495,150 +509,540 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           // Decorative blob top-right
           Positioned(
-            top: -30,
-            right: -30,
+            top: -40, right: -40,
             child: Container(
-              width: 160,
-              height: 160,
+              width: 180, height: 180,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: _C.teal.withOpacity(0.12),
+                gradient: RadialGradient(colors: [
+                  _C.teal.withValues(alpha: 0.22),
+                  Colors.transparent,
+                ]),
               ),
             ),
           ),
+          // Decorative blob bottom-left
           Positioned(
-            bottom: -20,
-            left: 60,
+            bottom: -30, left: 40,
             child: Container(
-              width: 100,
-              height: 100,
+              width: 120, height: 120,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: _C.teal2.withOpacity(0.08),
+                gradient: RadialGradient(colors: [
+                  _C.teal2.withValues(alpha: 0.15),
+                  Colors.transparent,
+                ]),
               ),
             ),
           ),
           // Content
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
-            child: Row(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Avatar
-                Container(
-                  width: 58,
-                  height: 58,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: const LinearGradient(
-                      colors: [_C.teal, _C.teal2],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
-                      width: 2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _C.teal.withOpacity(0.5),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      initials,
-                      style: GoogleFonts.barlow(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                // Info
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _chwName.isNotEmpty ? _chwName : 'VisionScreen User',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Avatar — 64x64
+                    Container(
+                      width: 64, height: 64,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          colors: [_C.teal, _C.teal2],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        _chwCenter.isNotEmpty
-                            ? '$_chwCenter · $_chwDistrict'
-                            : 'Community Health Worker',
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.ibmPlexSans(
-                          fontSize: 12,
-                          color: Colors.white.withOpacity(0.55),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3),
+                          width: 2.5,
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          // Role chip
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _C.teal.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(99),
-                              border: Border.all(
-                                color: _C.teal3.withOpacity(0.4),
-                              ),
-                            ),
-                            child: Text(
-                              roleLabel,
-                              style: GoogleFonts.ibmPlexSans(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: _C.teal3,
-                              ),
-                            ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _C.teal.withValues(alpha: 0.55),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
                           ),
-                          if (_chwId.isNotEmpty) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
+                        ],
+                      ),
+                      child: _chwPhoto.isNotEmpty
+                          ? ClipOval(
+                              child: Image.file(
+                                File(_chwPhoto),
+                                width: 64,
+                                height: 64,
+                                fit: BoxFit.cover,
+                                errorBuilder: (ctx, err, stack) => Center(
+                                  child: Text(
+                                    initials,
+                                    style: GoogleFonts.barlow(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
                               ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.08),
-                                borderRadius: BorderRadius.circular(99),
-                              ),
+                            )
+                          : Center(
                               child: Text(
-                                _chwId,
-                                style: GoogleFonts.ibmPlexSans(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white.withOpacity(0.6),
-                                  letterSpacing: 0.5,
+                                initials,
+                                style: GoogleFonts.barlow(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
                                 ),
                               ),
                             ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Info
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _chwName.isNotEmpty ? _chwName : 'VisionScreen User',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            _chwCenter.isNotEmpty
+                                ? '$_chwCenter · $_chwDistrict'
+                                : 'Community Health Worker',
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.ibmPlexSans(
+                              fontSize: 12,
+                              color: Colors.white.withValues(alpha: 0.55),
+                            ),
+                          ),
+                          // Phone number
+                          if (_chwPhone.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              '+256 $_chwPhone',
+                              style: GoogleFonts.ibmPlexSans(
+                                fontSize: 12,
+                                color: Colors.white.withValues(alpha: 0.45),
+                              ),
+                            ),
                           ],
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              // Role chip
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: _C.teal.withValues(alpha: 0.3),
+                                  borderRadius: BorderRadius.circular(99),
+                                  border: Border.all(
+                                      color: _C.teal3.withValues(alpha: 0.4)),
+                                ),
+                                child: Text(
+                                  roleLabel,
+                                  style: GoogleFonts.ibmPlexSans(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: _C.teal3,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              // CHW ID chip — always visible
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(99),
+                                ),
+                                child: Text(
+                                  _chwId.isNotEmpty ? _chwId : 'No ID assigned',
+                                  style: GoogleFonts.ibmPlexSans(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: _chwId.isNotEmpty
+                                        ? Colors.white.withValues(alpha: 0.6)
+                                        : Colors.white.withValues(alpha: 0.3),
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
-                    ],
-                  ),
+                    ),
+                    // Edit button
+                    GestureDetector(
+                      onTap: _showEditProfileSheet,
+                      child: Container(
+                        width: 34, height: 34,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.2)),
+                        ),
+                        child: const Icon(
+                          Icons.edit_rounded,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  // ── EDIT PROFILE SHEET ─────────────────────────────────────────
+  void _showEditProfileSheet() {
+    final nameCtrl     = TextEditingController(text: _chwName);
+    final centerCtrl   = TextEditingController(text: _chwCenter);
+    final districtCtrl = TextEditingController(text: _chwDistrict);
+    final emailCtrl    = TextEditingController(text: _chwEmail);
+    final phoneCtrl    = TextEditingController(text: _chwPhone);
+    String photoPath   = _chwPhoto;
+    bool saving = false;
+    final picker = ImagePicker();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setSheet) {
+          return Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                20, 16, 20,
+                32 + MediaQuery.of(ctx).viewInsets.bottom,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Handle
+                  Center(
+                    child: Container(
+                      width: 40, height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: _C.g200,
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    ),
+                  ),
+                  // Header row
+                  Row(
+                    children: [
+                      Container(
+                        width: 40, height: 40,
+                        decoration: BoxDecoration(
+                          color: _C.teal.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.edit_rounded, color: _C.teal, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Edit Profile',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w700,
+                                  color: _C.g800,
+                                )),
+                            Text('Changes saved to this device',
+                                style: GoogleFonts.inter(fontSize: 11, color: _C.g400)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // ── Profile photo picker ──
+                  Center(
+                    child: StatefulBuilder(
+                      builder: (_, setPhoto) => GestureDetector(
+                        onTap: () async {
+                          final source = await showModalBottomSheet<ImageSource>(
+                            context: ctx,
+                            backgroundColor: Colors.white,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                            ),
+                            builder: (sheetCtx) => SafeArea(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    margin: const EdgeInsets.only(top: 12, bottom: 8),
+                                    width: 40, height: 4,
+                                    decoration: BoxDecoration(
+                                      color: _C.g200,
+                                      borderRadius: BorderRadius.circular(99),
+                                    ),
+                                  ),
+                                  ListTile(
+                                    leading: Container(
+                                      width: 36, height: 36,
+                                      decoration: BoxDecoration(
+                                        color: _C.teal.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: const Icon(Icons.camera_alt_rounded, color: _C.teal, size: 18),
+                                    ),
+                                    title: Text('Take a photo', style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w600, color: _C.g800)),
+                                    onTap: () => Navigator.pop(sheetCtx, ImageSource.camera),
+                                  ),
+                                  ListTile(
+                                    leading: Container(
+                                      width: 36, height: 36,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: const Icon(Icons.photo_library_rounded, color: Color(0xFF3B82F6), size: 18),
+                                    ),
+                                    title: Text('Choose from gallery', style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w600, color: _C.g800)),
+                                    onTap: () => Navigator.pop(sheetCtx, ImageSource.gallery),
+                                  ),
+                                  if (photoPath.isNotEmpty)
+                                    ListTile(
+                                      leading: Container(
+                                        width: 36, height: 36,
+                                        decoration: BoxDecoration(
+                                          color: _C.red.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: const Icon(Icons.delete_outline_rounded, color: _C.red, size: 18),
+                                      ),
+                                      title: Text('Remove photo', style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w600, color: _C.red)),
+                                      onTap: () => Navigator.pop(sheetCtx, null),
+                                    ),
+                                  const SizedBox(height: 8),
+                                ],
+                              ),
+                            ),
+                          );
+                          if (source == null && photoPath.isNotEmpty) {
+                            setPhoto(() => photoPath = '');
+                            setSheet(() {});
+                            return;
+                          }
+                          if (source == null) return;
+                          final picked = await picker.pickImage(
+                            source: source,
+                            imageQuality: 80,
+                            maxWidth: 400,
+                          );
+                          if (picked != null) {
+                            setPhoto(() => photoPath = picked.path);
+                            setSheet(() {});
+                          }
+                        },
+                        child: Stack(
+                          children: [
+                            Container(
+                              width: 80, height: 80,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: const LinearGradient(
+                                  colors: [_C.teal, _C.teal2],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                border: Border.all(color: _C.g200, width: 2),
+                              ),
+                              child: photoPath.isNotEmpty
+                                  ? ClipOval(
+                                      child: Image.file(
+                                        File(photoPath),
+                                        width: 80, height: 80,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (ctx, err, stack) => Center(
+                                          child: Text(
+                                            nameCtrl.text.trim().isEmpty ? 'VS'
+                                                : nameCtrl.text.trim().split(' ').map((w) => w.isEmpty ? '' : w[0]).take(2).join().toUpperCase(),
+                                            style: GoogleFonts.barlow(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white),
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                  : Center(
+                                      child: Text(
+                                        nameCtrl.text.trim().isEmpty ? 'VS'
+                                            : nameCtrl.text.trim().split(' ').map((w) => w.isEmpty ? '' : w[0]).take(2).join().toUpperCase(),
+                                        style: GoogleFonts.barlow(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white),
+                                      ),
+                                    ),
+                            ),
+                            Positioned(
+                              bottom: 0, right: 0,
+                              child: Container(
+                                width: 26, height: 26,
+                                decoration: BoxDecoration(
+                                  color: _C.teal,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white, width: 2),
+                                ),
+                                child: const Icon(Icons.camera_alt_rounded, size: 13, color: Colors.white),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _editField(nameCtrl, 'Full Name', Icons.person_outline_rounded),
+                  const SizedBox(height: 12),
+                  _editField(centerCtrl, 'Health Center', Icons.local_hospital_outlined),
+                  const SizedBox(height: 12),
+                  _editField(districtCtrl, 'District', Icons.location_on_outlined),
+                  const SizedBox(height: 12),
+                  _editField(emailCtrl, 'Email', Icons.mail_outline_rounded,
+                      keyboard: TextInputType.emailAddress),
+                  const SizedBox(height: 12),
+                  _editField(phoneCtrl, 'Phone (9 digits)', Icons.phone_outlined,
+                      keyboard: TextInputType.phone),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: saving
+                          ? null
+                          : () async {
+                              setSheet(() => saving = true);
+                              final prefs = await SharedPreferences.getInstance();
+                              await prefs.setString('chw_name', nameCtrl.text.trim());
+                              await prefs.setString('chw_center', centerCtrl.text.trim());
+                              await prefs.setString('chw_district', districtCtrl.text.trim());
+                              await prefs.setString('chw_email', emailCtrl.text.trim());
+                              await prefs.setString('chw_phone', phoneCtrl.text.trim());
+                              await prefs.setString('chw_photo', photoPath);
+                              if (_chwEmail.isNotEmpty) {
+                                final db = await DatabaseHelper.instance.db;
+                                await db.update(
+                                  'chw_profiles',
+                                  {
+                                    'name':     nameCtrl.text.trim(),
+                                    'center':   centerCtrl.text.trim(),
+                                    'district': districtCtrl.text.trim(),
+                                    'email':    emailCtrl.text.trim().toLowerCase(),
+                                    'phone':    phoneCtrl.text.trim(),
+                                  },
+                                  where: 'email = ?',
+                                  whereArgs: [_chwEmail.toLowerCase()],
+                                );
+                              }
+                              await _loadProfile();
+                              if (ctx.mounted) Navigator.pop(ctx);
+                              if (mounted) { _showSnack('Profile updated', _C.teal); }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _C.teal,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      child: saving
+                          ? const SizedBox(
+                              width: 18, height: 18,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white))
+                          : Text('Save Changes',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              )),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    ).whenComplete(() {
+      nameCtrl.dispose();
+      centerCtrl.dispose();
+      districtCtrl.dispose();
+      emailCtrl.dispose();
+      phoneCtrl.dispose();
+    });
+  }
+
+  Widget _editField(
+    TextEditingController ctrl,
+    String label,
+    IconData icon, {
+    TextInputType keyboard = TextInputType.text,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label.toUpperCase(),
+          style: GoogleFonts.ibmPlexSans(
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            color: _C.g400,
+            letterSpacing: 1.2,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          decoration: BoxDecoration(
+            color: _C.g100,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: _C.g200, width: 1.5),
+          ),
+          child: TextField(
+            controller: ctrl,
+            keyboardType: keyboard,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: _C.g800,
+            ),
+            decoration: InputDecoration(
+              prefixIcon: Padding(
+                padding: const EdgeInsets.only(left: 12, right: 8),
+                child: Icon(icon, size: 16, color: _C.g400),
+              ),
+              prefixIconConstraints:
+                  const BoxConstraints(minWidth: 0, minHeight: 0),
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 4, vertical: 13),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -671,7 +1075,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
+                  color: Colors.black.withValues(alpha: 0.06),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -730,8 +1134,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: InkWell(
         onTap: onTap,
         borderRadius: radius,
-        splashColor: _C.teal.withOpacity(0.06),
-        highlightColor: _C.g100.withOpacity(0.5),
+        splashColor: _C.teal.withValues(alpha: 0.06),
+        highlightColor: _C.g100.withValues(alpha: 0.5),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
           child: Row(
@@ -771,6 +1175,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               // Trailing widget
+              // ignore: use_null_aware_elements
               if (trailing != null) trailing,
               // Chevron
               if (showChevron) ...[
@@ -788,304 +1193,67 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // ── PROFILE FIELDS ───────────────────────────────────────
-  Widget _buildProfileFields() {
-    return Padding(
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        children: [
-          _profileRow(Icons.person_outline_rounded, 'Full Name', _chwName),
-          _profileDivider(),
-          _profileRow(
-            Icons.local_hospital_outlined,
-            'Health Center',
-            _chwCenter,
-          ),
-          _profileDivider(),
-          _profileRow(Icons.location_on_outlined, 'District', _chwDistrict),
-          _profileDivider(),
-          _profileRow(Icons.mail_outline_rounded, 'Email', _chwEmail),
-          _profileDivider(),
-          _profileRow(
-            Icons.phone_outlined,
-            'Phone',
-            _chwPhone.isNotEmpty ? '+256 $_chwPhone' : '',
-          ),
-          _profileDivider(),
-          const SizedBox(height: 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: _C.teal.withOpacity(0.06),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: _C.teal.withOpacity(0.2)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: _C.teal.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(9),
-                  ),
-                  child: const Icon(
-                    Icons.badge_outlined,
-                    size: 16,
-                    color: _C.teal,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'CHW Badge ID',
-                        style: GoogleFonts.sora(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: _C.g400,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _chwId.isNotEmpty ? _chwId : '—',
-                        style: GoogleFonts.sora(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: _C.teal,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _C.teal.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(99),
-                    border: Border.all(color: _C.teal.withOpacity(0.25)),
-                  ),
-                  child: Text(
-                    'Prints on referrals',
-                    style: GoogleFonts.sora(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
-                      color: _C.teal,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+  // ── CHW BADGE ID ROW ───────────────────────────────────────────
+  Widget _buildChwIdRow() {
+    return ClipRRect(
+      borderRadius: const BorderRadius.only(
+        bottomLeft: Radius.circular(16),
+        bottomRight: Radius.circular(16),
       ),
-    );
-  }
-
-  Widget _profileRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 9),
+      child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: 36, height: 36,
             decoration: BoxDecoration(
-              color: _C.g100,
-              borderRadius: BorderRadius.circular(9),
+              color: _C.teal,
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, size: 15, color: _C.g500),
+            child: const Icon(Icons.badge_outlined, size: 18, color: Colors.white),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  label,
-                  style: GoogleFonts.sora(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: _C.g400,
-                    letterSpacing: 0.5,
+                  _chwId.isNotEmpty ? _chwId : 'No ID assigned',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: _chwId.isNotEmpty
+                        ? const Color(0xFF1C1C1E)
+                        : _C.g400,
                   ),
                 ),
-                const SizedBox(height: 1),
+                const SizedBox(height: 2),
                 Text(
-                  value.isNotEmpty ? value : '—',
-                  style: GoogleFonts.sora(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: _C.g800,
-                  ),
+                  'CHW Badge ID · Prints on referrals',
+                  style: GoogleFonts.inter(fontSize: 12, color: _C.g400),
                 ),
               ],
             ),
           ),
-          const Icon(Icons.lock_outline_rounded, size: 13, color: _C.g300),
+          if (_chwId.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: _C.teal.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(99),
+              ),
+              child: Text(
+                'Active',
+                style: GoogleFonts.ibmPlexSans(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: _C.teal,
+                ),
+              ),
+            ),
         ],
       ),
-    );
-  }
-
-  Widget _profileDivider() => const Divider(height: 1, color: _C.g100);
-
-  // ── DEFAULT AGE GROUP ─────────────────────────────────────
-  Widget _buildEyeOrderRow() {
-    return InkWell(
-      onTap: () {
-        showModalBottomSheet(
-          context: context,
-          backgroundColor: Colors.white,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          builder: (_) => Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                margin: const EdgeInsets.only(top: 12, bottom: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: _C.g200,
-                  borderRadius: BorderRadius.circular(99),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-                child: Text(
-                  'Test Eye Order',
-                  style: GoogleFonts.sora(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: _C.g800,
-                  ),
-                ),
-              ),
-              ...['Right → Left', 'Left → Right'].map(
-                (order) => ListTile(
-                  leading: Icon(
-                    Icons.remove_red_eye_outlined,
-                    color: _eyeOrder == order ? _C.teal : _C.g400,
-                    size: 20,
-                  ),
-                  title: Text(
-                    order,
-                    style: GoogleFonts.sora(
-                      fontSize: 13,
-                      fontWeight: _eyeOrder == order
-                          ? FontWeight.w700
-                          : FontWeight.w500,
-                      color: _eyeOrder == order ? _C.teal : _C.g800,
-                    ),
-                  ),
-                  trailing: _eyeOrder == order
-                      ? const Icon(
-                          Icons.check_rounded,
-                          color: _C.teal,
-                          size: 18,
-                        )
-                      : null,
-                  onTap: () async {
-                    setState(() => _eyeOrder = order);
-                    final p = await SharedPreferences.getInstance();
-                    await p.setString('eye_order', order);
-                    if (context.mounted) Navigator.pop(context);
-                  },
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        );
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-          children: [
-            _emojiBox('👁️', _C.ice),
-            const SizedBox(width: 11),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Test Eye Order',
-                    style: GoogleFonts.sora(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: _C.g800,
-                    ),
-                  ),
-                  Text(
-                    'Which eye is tested first',
-                    style: GoogleFonts.sora(fontSize: 11, color: _C.g400),
-                  ),
-                ],
-              ),
-            ),
-            Text(
-              _eyeOrder,
-              style: GoogleFonts.sora(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: _C.teal,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── LANGUAGE ROW ─────────────────────────────────────────
-  Widget _buildLanguageRow() {
-    return InkWell(
-      onTap: () => _showLanguagePicker(),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-          children: [
-            _emojiBox('🌐', _C.ice),
-            const SizedBox(width: 11),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Referral Language',
-                    style: GoogleFonts.sora(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: _C.g800,
-                    ),
-                  ),
-                  Text(
-                    "Olulimi lw'okuweereza",
-                    style: GoogleFonts.sora(fontSize: 11, color: _C.g400),
-                  ),
-                ],
-              ),
-            ),
-            Text(
-              _language,
-              style: GoogleFonts.sora(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: _C.teal,
-              ),
-            ),
-          ],
-        ),
-      ),
+    ),
     );
   }
 
@@ -1093,219 +1261,111 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            margin: const EdgeInsets.only(top: 12, bottom: 8),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: _C.g200,
-              borderRadius: BorderRadius.circular(99),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-            child: Text(
-              'Referral Language',
-              style: GoogleFonts.sora(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: _C.g800,
-              ),
-            ),
-          ),
-          ..._languages.map(
-            (lang) => ListTile(
-              title: Text(
-                lang,
-                style: GoogleFonts.sora(
-                  fontSize: 13,
-                  fontWeight: _language == lang
-                      ? FontWeight.w700
-                      : FontWeight.w500,
-                  color: _language == lang ? _C.teal : _C.g800,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setSheet) => DraggableScrollableSheet(
+          initialChildSize: 0.55,
+          minChildSize: 0.4,
+          maxChildSize: 0.85,
+          expand: false,
+          builder: (_, ctrl) => Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 4),
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: _C.g200,
+                  borderRadius: BorderRadius.circular(99),
                 ),
               ),
-              trailing: _language == lang
-                  ? const Icon(Icons.check_rounded, color: _C.teal, size: 18)
-                  : null,
-              onTap: () {
-                setState(() => _language = lang);
-                Navigator.pop(context);
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
-  }
-
-  // ── TOGGLE ROW ───────────────────────────────────────────
-  Widget _buildToggleRow({
-    required String emoji,
-    required Color emojiBg,
-    required String label,
-    required String sub,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-    bool isLast = false,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: Row(
-        children: [
-          _emojiBox(emoji, emojiBg),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: GoogleFonts.sora(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: _C.g800,
-                  ),
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  sub,
-                  style: GoogleFonts.sora(fontSize: 11, color: _C.g400),
-                ),
-              ],
-            ),
-          ),
-          _buildToggle(value: value, onChanged: onChanged),
-        ],
-      ),
-    );
-  }
-
-  // ── SYNC ROW ─────────────────────────────────────────────
-  Widget _buildSyncRow() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: Row(
-        children: [
-          _emojiBox('☁️', _C.gbg),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Sync Status',
-                  style: GoogleFonts.sora(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: _C.g800,
-                  ),
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  _synced
-                      ? 'All records synced ✓'
-                      : '3 records pending · 244 synced',
-                  style: GoogleFonts.sora(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: _synced ? _C.green : _C.amber,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          GestureDetector(
-            onTap: _isSyncing ? null : _doSync,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-              decoration: BoxDecoration(
-                color: _C.ice,
-                borderRadius: BorderRadius.circular(99),
-                border: Border.all(color: _C.teal, width: 1.5),
-              ),
-              child: _isSyncing
-                  ? const SizedBox(
-                      width: 12,
-                      height: 12,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 1.5,
-                        color: _C.teal,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36, height: 36,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF3B82F6),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                    )
-                  : Text(
-                      'Sync Now',
-                      style: GoogleFonts.sora(
-                        fontSize: 10,
+                      child: const Icon(Icons.language_rounded,
+                          size: 18, color: Colors.white),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Referral Language',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 17,
                         fontWeight: FontWeight.w700,
-                        color: _C.teal,
+                        color: const Color(0xFF1C1C1E),
                       ),
                     ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── ARROW ROW ────────────────────────────────────────────
-  Widget _buildArrowRow({
-    required String emoji,
-    required Color emojiBg,
-    required String label,
-    Color? labelColor,
-    bool isLast = false,
-    VoidCallback? onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-          children: [
-            _emojiBox(emoji, emojiBg),
-            const SizedBox(width: 11),
-            Expanded(
-              child: Text(
-                label,
-                style: GoogleFonts.sora(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: labelColor ?? _C.g800,
+                  ],
                 ),
               ),
-            ),
-            Text(
-              '›',
-              style: TextStyle(
-                fontSize: 18,
-                color: _C.g300,
-                fontWeight: FontWeight.w300,
+              const Divider(height: 1, color: Color(0xFFF2F4F7)),
+              Expanded(
+                child: ListView(
+                  controller: ctrl,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  children: _languages.map((lang) {
+                    final active = _language == lang;
+                    return ListTile(
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 20),
+                      leading: Container(
+                        width: 36, height: 36,
+                        decoration: BoxDecoration(
+                          color: active ? _C.teal : _C.g100,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Center(
+                          child: Text(
+                            lang.substring(0, 1),
+                            style: GoogleFonts.barlow(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                              color: active ? Colors.white : _C.g400,
+                            ),
+                          ),
+                        ),
+                      ),
+                      title: Text(
+                        lang,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 15,
+                          fontWeight:
+                              active ? FontWeight.w600 : FontWeight.w400,
+                          color: active
+                              ? _C.teal
+                              : const Color(0xFF1C1C1E),
+                        ),
+                      ),
+                      trailing: active
+                          ? Icon(Icons.check_circle_rounded,
+                              color: _C.teal, size: 22)
+                          : null,
+                      onTap: () async {
+                        setState(() => _language = lang);
+                        setSheet(() {});
+                        final nav = Navigator.of(context);
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.setString('referral_language', lang);
+                        if (context.mounted) nav.pop();
+                      },
+                    );
+                  }).toList(),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
-
-  // ── EMOJI BOX ────────────────────────────────────────────
-  Widget _emojiBox(String emoji, Color bg) => Container(
-    width: 32,
-    height: 32,
-    decoration: BoxDecoration(
-      color: bg,
-      borderRadius: BorderRadius.circular(9),
-    ),
-    child: Center(child: Text(emoji, style: const TextStyle(fontSize: 16))),
-  );
 
   // ── CUSTOM TOGGLE ────────────────────────────────────────
   Widget _buildToggle({
@@ -1337,7 +1397,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                   blurRadius: 4,
                   offset: const Offset(0, 1),
                 ),
@@ -1362,56 +1422,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         duration: const Duration(seconds: 2),
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      ),
-    );
-  }
-
-  Widget _buildVersionRow() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: _C.teal.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(9),
-            ),
-            child: const Icon(
-              Icons.info_outline_rounded,
-              size: 15,
-              color: _C.teal,
-            ),
-          ),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Text(
-              'Version',
-              style: GoogleFonts.sora(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: _C.g800,
-              ),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: _C.teal.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(99),
-              border: Border.all(color: _C.teal.withOpacity(0.2)),
-            ),
-            child: Text(
-              'v1.0.0',
-              style: GoogleFonts.sora(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: _C.teal,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -1544,7 +1554,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       'Version 1.0.0',
                       style: GoogleFonts.sora(
                         fontSize: 12,
-                        color: _C.teal3.withOpacity(0.7),
+                        color: _C.teal3.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -1816,29 +1826,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ? null
                           : () async {
                               String? ce, ne, co;
-                              if (currentCtrl.text.isEmpty)
-                                ce = 'Current password is required';
-                              if (newCtrl.text.length < 8)
-                                ne = 'Must be at least 8 characters';
-                              if (confirmCtrl.text != newCtrl.text)
-                                co = 'Passwords do not match';
+                              if (currentCtrl.text.isEmpty) { ce = 'Current password is required'; }
+                              if (newCtrl.text.length < 8) { ne = 'Must be at least 8 characters'; }
+                              if (confirmCtrl.text != newCtrl.text) { co = 'Passwords do not match'; }
                               setSheet(() {
                                 currentError = ce;
                                 newError = ne;
                                 confirmError = co;
                               });
-                              if (ce != null || ne != null || co != null)
-                                return;
+                              if (ce != null || ne != null || co != null) { return; }
                               setSheet(() => loading = true);
-                              await Future.delayed(
-                                const Duration(milliseconds: 1200),
+                              // Verify current password against DB
+                              final profile = await DatabaseHelper.instance
+                                  .getChwProfileByEmail(_chwEmail);
+                              if (profile == null ||
+                                  profile['password'] != currentCtrl.text) {
+                                setSheet(() {
+                                  loading = false;
+                                  currentError = 'Incorrect current password';
+                                });
+                                return;
+                              }
+                              // Update password in DB
+                              final db = await DatabaseHelper.instance.db;
+                              await db.update(
+                                'chw_profiles',
+                                {'password': newCtrl.text},
+                                where: 'email = ?',
+                                whereArgs: [_chwEmail.toLowerCase()],
                               );
                               if (ctx.mounted) Navigator.pop(ctx);
-                              if (mounted)
-                                _showSnack(
-                                  'Password updated successfully!',
-                                  _C.teal,
-                                );
+                              if (mounted) {
+                                _showSnack('Password updated successfully!', _C.teal);
+                              }
                             },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _C.teal,
@@ -2058,7 +2078,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: color, size: 18),
@@ -2098,164 +2118,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _exportCSV() async {
     try {
       _showSnack('Generating CSV...', _C.teal);
+      final screenings = await DatabaseHelper.instance.getRecentScreeningsWithPatient(limit: 10000);
       final rows = <List<dynamic>>[
-        [
-          'Patient ID',
-          'Name',
-          'Age',
-          'Gender',
-          'Village',
-          'OD',
-          'OS',
-          'OU',
-          'Outcome',
-          'Date',
-          'Phone',
-          'Facility',
-          'Referral Status',
-          'CHW',
-        ],
-        [
-          'PAT-00312',
-          'Akello Mercy',
-          34,
-          'F',
-          'Nakawa, Kampala',
-          '6/6',
-          '6/9',
-          '6/6',
-          'Pass',
-          '28 Mar 2026',
-          '+256701234567',
-          '',
-          '',
-          _chwName,
-        ],
-        [
-          'PAT-00298',
-          'Okello James',
-          58,
-          'M',
-          'Bwaise, Kampala',
-          '6/12',
-          '6/18',
-          '6/12',
-          'Refer',
-          '28 Mar 2026',
-          '+256702345678',
-          'Mulago National Referral Hospital',
-          'Overdue',
-          _chwName,
-        ],
-        [
-          'PAT-00301',
-          'Nakato Aisha',
-          27,
-          'F',
-          'Ntinda, Kampala',
-          '6/9',
-          '6/9',
-          '6/6',
-          'Pass',
-          '28 Mar 2026',
-          '+256703456789',
-          '',
-          '',
-          _chwName,
-        ],
-        [
-          'PAT-00315',
-          'Mugisha Wilson',
-          45,
-          'M',
-          'Kireka, Wakiso',
-          '6/12',
-          '6/18',
-          '6/12',
-          'Refer',
-          '28 Mar 2026',
-          '+256704567890',
-          'Mengo Hospital',
-          'Cancelled',
-          _chwName,
-        ],
-        [
-          'PAT-00289',
-          'Kyomuhendo Rose',
-          19,
-          'F',
-          'Rubaga, Kampala',
-          '6/9',
-          '6/9',
-          '6/6',
-          'Refer',
-          '26 Mar 2026',
-          '+256705678901',
-          'Makerere University Hospital',
-          'Completed',
-          _chwName,
-        ],
-        [
-          'PAT-00276',
-          'Byaruhanga Sam',
-          62,
-          'M',
-          'Kawempe, Kampala',
-          '6/24',
-          '6/36',
-          '6/24',
-          'Refer',
-          '25 Mar 2026',
-          '+256706789012',
-          'Kampala Eye Clinic',
-          'Notified',
-          _chwName,
-        ],
-        [
-          'PAT-00261',
-          'Tendo Kevin',
-          9,
-          'M',
-          'Nansana, Wakiso',
-          '6/9',
-          '6/9',
-          '6/6',
-          'Pass',
-          '24 Mar 2026',
-          '+256707890123',
-          '',
-          '',
-          _chwName,
-        ],
-        [
-          'PAT-00254',
-          'Apio Norah',
-          8,
-          'F',
-          'Kira, Wakiso',
-          '6/18',
-          '6/12',
-          '6/12',
-          'Refer',
-          '23 Mar 2026',
-          '+256708901234',
-          'Mulago National Referral Hospital',
-          'Attended',
-          _chwName,
-        ],
+        ['Patient ID', 'Name', 'Age', 'Gender', 'Village', 'Phone',
+         'OD', 'OS', 'OU (Near)', 'Outcome', 'Date',
+         'Referral Facility', 'Referral Status', 'Appointment', 'CHW'],
       ];
+      for (final r in screenings) {
+        rows.add([
+          r['patient_id'] ?? '',
+          r['name'] ?? '',
+          r['age'] ?? '',
+          r['gender'] ?? '',
+          r['village'] ?? '',
+          r['phone'] ?? '',
+          r['od_snellen'] ?? '',
+          r['os_snellen'] ?? '',
+          r['ou_near_snellen'] ?? '',
+          (r['outcome'] as String? ?? '').toUpperCase(),
+          r['screening_date'] ?? '',
+          r['referral_facility'] ?? '',
+          r['referral_status'] ?? '',
+          r['appointment_date'] ?? '',
+          r['chw_name'] ?? _chwName,
+        ]);
+      }
+      if (rows.length == 1) {
+        if (mounted) _showSnack('No screening records to export', _C.amber);
+        return;
+      }
       final csv = const ListToCsvConverter().convert(rows);
       final dir = await getApplicationDocumentsDirectory();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final file = File('${dir.path}/visionscreen_export_$timestamp.csv');
       await file.writeAsString(csv);
       if (mounted) {
-        _showSnack('CSV saved: ${file.path.split('/').last}', _C.green);
-        await Future.delayed(const Duration(milliseconds: 800));
+        _showSnack('Exported ${rows.length - 1} records', _C.green);
+        await Future.delayed(const Duration(milliseconds: 600));
         await OpenFilex.open(file.path);
       }
     } catch (e) {
-      if (mounted) _showSnack('Export failed. Please try again.', _C.red);
+      if (mounted) { _showSnack('Export failed. Please try again.', _C.red); }
     }
   }
 
@@ -2266,67 +2169,87 @@ class _SettingsScreenState extends State<SettingsScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            margin: const EdgeInsets.only(top: 12, bottom: 8),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: _C.g200,
-              borderRadius: BorderRadius.circular(99),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-            child: Text(
-              'Test Eye Order',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF1C1C1E),
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setSheet) => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 4),
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: _C.g200,
+                borderRadius: BorderRadius.circular(99),
               ),
             ),
-          ),
-          ...['Right → Left', 'Left → Right'].map((order) {
-            final active = _eyeOrder == order;
-            return ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-              leading: Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: active ? _C.teal : _C.g100,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  Icons.remove_red_eye_outlined,
-                  size: 18,
-                  color: active ? Colors.white : _C.g400,
-                ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(
+                      color: _C.teal,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.remove_red_eye_outlined,
+                        size: 18, color: Colors.white),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Test Eye Order',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1C1C1E),
+                    ),
+                  ),
+                ],
               ),
-              title: Text(
-                order,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 15,
-                  fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-                  color: active ? _C.teal : const Color(0xFF1C1C1E),
+            ),
+            const Divider(height: 1, color: Color(0xFFF2F4F7)),
+            ...['Right → Left', 'Left → Right'].map((order) {
+              final active = _eyeOrder == order;
+              return ListTile(
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                leading: Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                    color: active ? _C.teal : _C.g100,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.remove_red_eye_outlined,
+                    size: 18,
+                    color: active ? Colors.white : _C.g400,
+                  ),
                 ),
-              ),
-              trailing: active
-                  ? Icon(Icons.check_circle_rounded, color: _C.teal, size: 22)
-                  : null,
-              onTap: () async {
-                setState(() => _eyeOrder = order);
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.setString('eye_order', order);
-                if (context.mounted) Navigator.pop(context);
-              },
-            );
-          }),
-          const SizedBox(height: 20),
-        ],
+                title: Text(
+                  order,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    fontWeight:
+                        active ? FontWeight.w600 : FontWeight.w400,
+                    color: active ? _C.teal : const Color(0xFF1C1C1E),
+                  ),
+                ),
+                trailing: active
+                    ? Icon(Icons.check_circle_rounded,
+                        color: _C.teal, size: 22)
+                    : null,
+                onTap: () async {
+                  setState(() => _eyeOrder = order);
+                  setSheet(() {});
+                  final nav = Navigator.of(context);
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setString('eye_order', order);
+                  if (context.mounted) nav.pop();
+                },
+              );
+            }),
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }
@@ -2342,7 +2265,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFFEF4444).withOpacity(0.1),
+                color: const Color(0xFFEF4444).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
@@ -2380,11 +2303,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
+              final db = await DatabaseHelper.instance.db;
+              await db.delete('screenings');
+              await db.delete('patients');
+              await db.delete('campaigns');
               final prefs = await SharedPreferences.getInstance();
               await prefs.clear();
               await _loadProfile();
-              if (mounted)
-                _showSnack('All data cleared', const Color(0xFFEF4444));
+              if (mounted) { _showSnack('All data cleared', const Color(0xFFEF4444)); }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFEF4444),
@@ -2406,10 +2332,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildDivider() => const Padding(
-    padding: EdgeInsets.only(left: 57),
-    child: Divider(height: 1, color: _C.g100),
-  );
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -2466,9 +2388,9 @@ class _LegalSheet extends StatelessWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: iconColor.withOpacity(0.1),
+                      color: iconColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: iconColor.withOpacity(0.25)),
+                      border: Border.all(color: iconColor.withValues(alpha: 0.25)),
                     ),
                     child: Icon(icon, size: 20, color: iconColor),
                   ),
@@ -2518,7 +2440,7 @@ class _LegalSheet extends StatelessWidget {
                 controller: ctrl,
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
                 itemCount: sections.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 18),
+                separatorBuilder: (context, index) => const SizedBox(height: 18),
                 itemBuilder: (_, i) => Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -2528,7 +2450,7 @@ class _LegalSheet extends StatelessWidget {
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: _C.teal.withOpacity(0.07),
+                        color: _C.teal.withValues(alpha: 0.07),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(

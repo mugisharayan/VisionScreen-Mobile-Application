@@ -1908,13 +1908,14 @@ class _PatientsScreenState extends State<PatientsScreen> {
           patient: patientMap, eyeResults: eyeResults, screeningDate: date,
           facility: p.facility ?? 'Nearest Eye Clinic',
           chwName: chwName, chwTitle: chwTitle,
+          chwId: prefs.getString('chw_id') ?? '',
           appointmentDate: latest?['appointment_date'] as String?,
           conditions: p.safeConditions,
         );
       } else {
         filePath = await PdfService.generatePassResultPdf(
           patient: patientMap, eyeResults: eyeResults, screeningDate: date,
-          chwName: chwName, chwTitle: chwTitle, conditions: p.safeConditions,
+          chwName: chwName, chwTitle: chwTitle, chwId: prefs.getString('chw_id') ?? '', conditions: p.safeConditions,
         );
       }
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -2905,13 +2906,14 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
           patient: patientMap, eyeResults: eyeResults, screeningDate: date,
           facility: p.facility ?? 'Nearest Eye Clinic',
           chwName: chwName, chwTitle: chwTitle,
+          chwId: prefs.getString('chw_id') ?? '',
           appointmentDate: latest?['appointment_date'] as String?,
           conditions: p.safeConditions,
         );
       } else {
         filePath = await PdfService.generatePassResultPdf(
           patient: patientMap, eyeResults: eyeResults, screeningDate: date,
-          chwName: chwName, chwTitle: chwTitle, conditions: p.safeConditions,
+          chwName: chwName, chwTitle: chwTitle, chwId: prefs.getString('chw_id') ?? '', conditions: p.safeConditions,
         );
       }
       ScaffoldMessenger.of(context).hideCurrentSnackBar();

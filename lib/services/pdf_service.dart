@@ -18,6 +18,7 @@ class PdfService {
     required String facility,
     required String chwName,
     required String chwTitle,
+    required String chwId,
     required String? appointmentDate,
     required List<String> conditions,
   }) async {
@@ -77,7 +78,7 @@ class PdfService {
                     fontBold)),
             pw.SizedBox(width: 10),
             pw.Expanded(
-                child: _box('FROM', '$chw\n$chwTitle', font, fontBold)),
+                child: _box('FROM', chwId.isNotEmpty ? '$chw\n$chwTitle\nBadge ID: $chwId' : '$chw\n$chwTitle', font, fontBold)),
           ]),
           pw.SizedBox(height: 14),
           pw.Text('PATIENT DETAILS',
@@ -142,6 +143,9 @@ class PdfService {
               style: pw.TextStyle(font: fontBold, fontSize: 11)),
           pw.Text(chwTitle,
               style: pw.TextStyle(font: font, fontSize: 9)),
+          if (chwId.isNotEmpty)
+            pw.Text('Badge ID: $chwId',
+                style: pw.TextStyle(font: font, fontSize: 9)),
           pw.Text('Date: $screeningDate',
               style: pw.TextStyle(font: font, fontSize: 9)),
         ],
@@ -157,6 +161,7 @@ class PdfService {
     required String screeningDate,
     required String chwName,
     required String chwTitle,
+    required String chwId,
     required List<String> conditions,
   }) async {
     final font     = await PdfGoogleFonts.nunitoRegular();
@@ -280,6 +285,9 @@ class PdfService {
               style: pw.TextStyle(font: fontBold, fontSize: 11)),
           pw.Text(chwTitle,
               style: pw.TextStyle(font: font, fontSize: 9)),
+          if (chwId.isNotEmpty)
+            pw.Text('Badge ID: $chwId',
+                style: pw.TextStyle(font: font, fontSize: 9)),
           pw.Text('Date: $screeningDate',
               style: pw.TextStyle(font: font, fontSize: 9)),
         ],
@@ -297,13 +305,14 @@ class PdfService {
     required String facility,
     required String chwName,
     required String chwTitle,
+    required String chwId,
     required String? appointmentDate,
     required List<String> conditions,
   }) async {
     final doc = await _buildReferralDoc(
       patient: patient, eyeResults: eyeResults,
       screeningDate: screeningDate, facility: facility,
-      chwName: chwName, chwTitle: chwTitle,
+      chwName: chwName, chwTitle: chwTitle, chwId: chwId,
       appointmentDate: appointmentDate, conditions: conditions,
     );
     return _save(doc,
@@ -316,12 +325,13 @@ class PdfService {
     required String screeningDate,
     required String chwName,
     required String chwTitle,
+    required String chwId,
     required List<String> conditions,
   }) async {
     final doc = await _buildPassDoc(
       patient: patient, eyeResults: eyeResults,
       screeningDate: screeningDate,
-      chwName: chwName, chwTitle: chwTitle,
+      chwName: chwName, chwTitle: chwTitle, chwId: chwId,
       conditions: conditions,
     );
     return _save(doc,

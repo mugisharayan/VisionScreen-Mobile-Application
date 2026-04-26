@@ -39,6 +39,11 @@ class _HomeScreenState extends State<HomeScreen>
   String _locationLabel = 'Detecting location...';
   bool _showClinicalTipDialog = false;
 
+  String _chwName = '';
+  String _chwCenter = '';
+  String _chwDistrict = '';
+  String _chwPhoto = '';
+
   int _totalScreened = 0;
   int _totalReferred = 0;
   int _unsyncedCount = 0;
@@ -70,6 +75,7 @@ class _HomeScreenState extends State<HomeScreen>
         if (mounted) setState(() => _now = DateTime.now());
       },
     );
+    _loadChwProfile();
     _loadDbStats();
     
     // Check initial connectivity
@@ -121,6 +127,17 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
+  Future<void> _loadChwProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _chwName     = prefs.getString('chw_name')    ?? '';
+      _chwCenter   = prefs.getString('chw_center')  ?? '';
+      _chwDistrict = prefs.getString('chw_district') ?? '';
+      _chwPhoto    = prefs.getString('chw_photo')    ?? '';
+    });
+  }
+
   Future<void> _loadDbStats() async {
     final outcomes = await DatabaseHelper.instance.getOutcomeCounts();
     final unsynced = await DatabaseHelper.instance.getUnsyncedCount();
@@ -140,6 +157,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _onRefresh() async {
+    await _loadChwProfile();
     await _loadDbStats();
   }
 
@@ -537,42 +555,46 @@ class _HomeScreenState extends State<HomeScreen>
           height: 42,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(13),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF0D9488), Color(0xFF14B8A6)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
             border: Border.all(
                 color: const Color(0xFF0D9488).withOpacity(0.4), width: 2),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(11),
-            child: Image.network(
-              'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=150&q=80',
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stack) => Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(11),
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF0D9488), Color(0xFF14B8A6)],
-                  ),
-                ),
-                child: Center(
-                  child: Text('NM',
+            child: _chwPhoto.isNotEmpty && File(_chwPhoto).existsSync()
+                ? Image.file(
+                    File(_chwPhoto),
+                    width: 42, height: 42,
+                    fit: BoxFit.cover,
+                  )
+                : Center(
+                    child: Text(
+                      _chwName.trim().isEmpty
+                          ? 'VS'
+                          : _chwName.trim().split(' ').map((w) => w.isEmpty ? '' : w[0]).take(2).join().toUpperCase(),
                       style: GoogleFonts.ibmPlexSans(
                           color: Colors.white,
                           fontWeight: FontWeight.w800,
-                          fontSize: 14)),
-                ),
-              ),
-            ),
+                          fontSize: 14),
+                    ),
+                  ),
           ),
         ),
         const SizedBox(width: 11),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Nakato Mary',
+            Text(_chwName.isNotEmpty ? _chwName : 'VisionScreen User',
                 style: GoogleFonts.plusJakartaSans(
                     color: Colors.white,
                     fontSize: 14,
                     fontWeight: FontWeight.w700)),
-            Text('CHW Â· Nakawa HC III',
+            Text(
+                _chwCenter.isNotEmpty ? 'CHW · $_chwCenter' : 'Community Health Worker',
                 style: GoogleFonts.inter(
                     color: const Color(0x995EEAD4),
                     fontSize: 11,

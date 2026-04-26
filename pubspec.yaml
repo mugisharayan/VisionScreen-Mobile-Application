@@ -49,6 +49,7 @@ dependencies:
   permission_handler: ^11.3.1
   sqflite: ^2.3.3+1
   path: ^1.9.0
+  image_picker: ^1.2.1
 
 
 dev_dependencies:

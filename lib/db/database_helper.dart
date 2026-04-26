@@ -16,8 +16,21 @@ class DatabaseHelper {
     final path = join(await getDatabasesPath(), 'visionscreen.db');
     return openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: (db, _) async {
+        await db.execute('''
+          CREATE TABLE chw_profiles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            center TEXT NOT NULL,
+            district TEXT NOT NULL,
+            email TEXT NOT NULL UNIQUE,
+            phone TEXT NOT NULL,
+            password TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'chw',
+            created_at TEXT NOT NULL
+          )
+        ''');
         await db.execute('''
           CREATE TABLE campaigns (
             id TEXT PRIMARY KEY,
@@ -76,6 +89,21 @@ class DatabaseHelper {
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
           await db.execute('ALTER TABLE screenings ADD COLUMN appointment_date TEXT');
+        }
+        if (oldVersion < 4) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS chw_profiles (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              name TEXT NOT NULL,
+              center TEXT NOT NULL,
+              district TEXT NOT NULL,
+              email TEXT NOT NULL UNIQUE,
+              phone TEXT NOT NULL,
+              password TEXT NOT NULL,
+              role TEXT NOT NULL DEFAULT 'chw',
+              created_at TEXT NOT NULL
+            )
+          ''');
         }
         if (oldVersion < 3) {
           await db.execute('''
@@ -705,6 +733,24 @@ class DatabaseHelper {
   }
 
   // ── NOTIFICATIONS ─────────────────────────────────────────
+
+  // ── CHW PROFILES ──────────────────────────────────────────
+
+  Future<void> insertChwProfile(Map<String, dynamic> profile) async {
+    final database = await db;
+    await database.insert('chw_profiles', profile, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<Map<String, dynamic>?> getChwProfileByEmail(String email) async {
+    final database = await db;
+    final rows = await database.query(
+      'chw_profiles',
+      where: 'email = ?',
+      whereArgs: [email.trim().toLowerCase()],
+      limit: 1,
+    );
+    return rows.isEmpty ? null : rows.first;
+  }
 
   Future<List<Map<String, dynamic>>> getNotifications() async {
     final List<Map<String, dynamic>> notifications = [];

@@ -53,6 +53,7 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
   final _chwTitleCtrl      = TextEditingController(text: 'Community Health Worker');
   final _facilityOtherCtrl = TextEditingController();
   String _selectedFacility = _facilities[0];
+  String _chwId = '';
   DateTime? _appointmentDate;
   bool _showLetter = false;
   bool _saved = false;
@@ -68,9 +69,11 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
     if (!mounted) return;
     final name   = p.getString('chw_name')   ?? '';
     final center = p.getString('chw_center') ?? '';
+    final chwId  = p.getString('chw_id')     ?? '';
     setState(() {
       if (name.isNotEmpty)   _chwNameCtrl.text  = name;
       if (center.isNotEmpty) _chwTitleCtrl.text = 'Community Health Worker · $center';
+      _chwId = chwId;
       final match = _facilities.where((f) =>
         center.isNotEmpty &&
         (f.toLowerCase().contains(center.toLowerCase()) ||
@@ -139,6 +142,7 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
     buf.writeln('');
     buf.writeln('FROM: ${_chwNameCtrl.text.trim().isEmpty ? '[CHW Name]' : _chwNameCtrl.text.trim()}');
     buf.writeln('      ${_chwTitleCtrl.text.trim()}');
+    if (_chwId.isNotEmpty) buf.writeln('      Badge ID: $_chwId');
     buf.writeln('');
     buf.writeln('RE: VISION SCREENING REFERRAL');
     buf.writeln('-' * 50);
@@ -196,6 +200,7 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
     buf.writeln('_' * 30);
     buf.writeln('${_chwNameCtrl.text.trim().isEmpty ? '[CHW Name]' : _chwNameCtrl.text.trim()}');
     buf.writeln('${_chwTitleCtrl.text.trim()}');
+    if (_chwId.isNotEmpty) buf.writeln('Badge ID: $_chwId');
     buf.writeln('Date: ${widget.screeningDate}');
     return buf.toString();
   }
@@ -831,6 +836,10 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                 Text(_chwTitleCtrl.text.trim(),
                     style: GoogleFonts.inter(
                         fontSize: 11, color: const Color(0xFF8FA0B4))),
+                if (_chwId.isNotEmpty)
+                  Text('Badge ID: $_chwId',
+                      style: GoogleFonts.inter(
+                          fontSize: 11, color: const Color(0xFF8FA0B4))),
                 Text('Date: ${widget.screeningDate}',
                     style: GoogleFonts.inter(
                         fontSize: 11, color: const Color(0xFF8FA0B4))),
