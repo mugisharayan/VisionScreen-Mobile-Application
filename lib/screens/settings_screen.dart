@@ -374,9 +374,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           label: 'Logout',
                           labelColor: const Color(0xFFEF4444),
                           isLast: true,
-                          onTap: () => Navigator.of(
-                            context,
-                          ).pushNamedAndRemoveUntil('/login', (_) => false),
+                          onTap: () => _showLogoutDialog(),
                         ),
                       ],
                     ),
@@ -1422,6 +1420,84 @@ class _SettingsScreenState extends State<SettingsScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         duration: const Duration(seconds: 2),
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      ),
+    );
+  }
+
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.6),
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 52, height: 52,
+                decoration: BoxDecoration(
+                  color: _C.teal.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.logout_rounded, color: _C.teal, size: 24),
+              ),
+              const SizedBox(height: 14),
+              Text('Logout',
+                  style: GoogleFonts.sora(
+                      fontSize: 17, fontWeight: FontWeight.w800, color: _C.g800)),
+              const SizedBox(height: 6),
+              Text('Are you sure you want to logout?',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.sora(fontSize: 12, color: _C.g400, height: 1.5)),
+              const SizedBox(height: 22),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        side: const BorderSide(color: _C.g200, width: 1.5),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: Text('Cancel',
+                          style: GoogleFonts.sora(
+                              fontSize: 13, fontWeight: FontWeight.w700, color: _C.g500)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.of(context)
+                            .pushNamedAndRemoveUntil('/login', (_) => false);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _C.teal,
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        elevation: 0,
+                      ),
+                      child: Text('Logout',
+                          style: GoogleFonts.sora(
+                              fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
