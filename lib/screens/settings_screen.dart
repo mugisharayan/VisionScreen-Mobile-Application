@@ -2,6 +2,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
@@ -2120,37 +2124,108 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _showExportSheet() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 36),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Handle
             Center(
               child: Container(
                 width: 40, height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
+                margin: const EdgeInsets.only(bottom: 20),
                 decoration: BoxDecoration(
-                  color: _C.g200, borderRadius: BorderRadius.circular(99)),
+                    color: _C.g200, borderRadius: BorderRadius.circular(99)),
               ),
             ),
-            Text('Export All Data',
-                style: GoogleFonts.sora(
-                    fontSize: 17, fontWeight: FontWeight.w800, color: _C.g800)),
-            const SizedBox(height: 4),
-            Text('Export all patient screening records as a PDF report.',
-                style: GoogleFonts.sora(fontSize: 12, color: _C.g400, height: 1.5)),
+            // Title row
+            Row(
+              children: [
+                Container(
+                  width: 40, height: 40,
+                  decoration: BoxDecoration(
+                    color: _C.teal.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.picture_as_pdf_outlined,
+                      color: _C.teal, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Export as PDF',
+                        style: GoogleFonts.sora(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: _C.g800)),
+                    Text('Choose a report to generate',
+                        style: GoogleFonts.sora(
+                            fontSize: 12, color: _C.g400)),
+                  ],
+                ),
+              ],
+            ),
             const SizedBox(height: 20),
+            const Divider(height: 1, color: Color(0xFFF0F4F7)),
+            const SizedBox(height: 16),
+            // Option 1
             _exportOption(
-              icon: Icons.picture_as_pdf_outlined,
-              color: _C.red,
-              title: 'Export as PDF',
-              subtitle: 'Printable report · MOH audit format',
+              icon: Icons.people_outline_rounded,
+              color: _C.teal,
+              title: 'Patient Records',
+              subtitle: 'All individual screenings, VA results & referrals',
               onTap: () { Navigator.pop(context); _exportPDF(); },
+            ),
+            const SizedBox(height: 10),
+            // Option 2
+            _exportOption(
+              icon: Icons.campaign_outlined,
+              color: const Color(0xFF8B5CF6),
+              title: 'Campaign Records',
+              subtitle: 'All campaigns with patient summaries & stats',
+              onTap: () { Navigator.pop(context); _exportCampaignPDF(); },
+            ),
+            const SizedBox(height: 10),
+            // Option 3
+            _exportOption(
+              icon: Icons.bar_chart_rounded,
+              color: const Color(0xFFF59E0B),
+              title: 'Analytics Report',
+              subtitle: 'Outcomes, age groups, acuity & village breakdown',
+              onTap: () { Navigator.pop(context); _exportAnalyticsPDF(); },
+            ),
+            const SizedBox(height: 16),
+            // Export all button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await _exportPDF();
+                  await _exportCampaignPDF();
+                  await _exportAnalyticsPDF();
+                },
+                icon: const Icon(Icons.download_rounded, size: 18, color: Colors.white),
+                label: Text('Export All Reports',
+                    style: GoogleFonts.sora(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _C.teal,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+              ),
             ),
           ],
         ),
@@ -2160,12 +2235,772 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _exportPDF() async {
     try {
-      _showSnack('Generating PDF report...', _C.teal);
-      await Future.delayed(const Duration(seconds: 2));
-      if (mounted) _showSnack('PDF saved to Downloads.', _C.green);
+      _showSnack('Generating patient records PDF...', _C.teal);
+
+      // Fetch all patients with their latest screening
+      final database = await DatabaseHelper.instance.db;
+      final patients = await database.rawQuery('''
+        SELECT p.*,
+               s.od_snellen, s.os_snellen, s.ou_near_snellen,
+               s.od_logmar, s.os_logmar,
+               s.outcome, s.referral_facility, s.referral_status,
+               s.appointment_date, s.screening_date, s.chw_name
+        FROM patients p
+        LEFT JOIN screenings s ON s.id = (
+          SELECT id FROM screenings WHERE patient_id = p.id
+          ORDER BY screening_date DESC LIMIT 1
+        )
+        ORDER BY p.created_at DESC
+      ''');
+
+      final pdf = pw.Document();
+
+      // ── Colours ──
+      final teal    = PdfColor.fromHex('#0D9488');
+      final teal2   = PdfColor.fromHex('#14B8A6');
+      final ink     = PdfColor.fromHex('#04091A');
+      final g400    = PdfColor.fromHex('#8FA0B4');
+      final g800    = PdfColor.fromHex('#1A2A3D');
+      final green   = PdfColor.fromHex('#22C55E');
+      final red     = PdfColor.fromHex('#EF4444');
+      final amber   = PdfColor.fromHex('#F59E0B');
+      final white   = PdfColors.white;
+      final g100    = PdfColor.fromHex('#F0F4F7');
+
+      // ── Cover page ──
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(0),
+          build: (ctx) => pw.Container(
+            color: ink,
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                // Header band
+                pw.Container(
+                  width: double.infinity,
+                  padding: const pw.EdgeInsets.fromLTRB(40, 48, 40, 36),
+                  decoration: pw.BoxDecoration(
+                    gradient: pw.LinearGradient(
+                      colors: [teal, teal2],
+                      begin: pw.Alignment.centerLeft,
+                      end: pw.Alignment.centerRight,
+                    ),
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('VisionScreen',
+                          style: pw.TextStyle(
+                              fontSize: 32,
+                              fontWeight: pw.FontWeight.bold,
+                              color: white)),
+                      pw.SizedBox(height: 6),
+                      pw.Text('Patient Records Export',
+                          style: pw.TextStyle(
+                              fontSize: 16, color: white)),
+                    ],
+                  ),
+                ),
+                pw.Padding(
+                  padding: const pw.EdgeInsets.fromLTRB(40, 32, 40, 0),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      _pdfInfoRow('CHW Name', _chwName.isNotEmpty ? _chwName : '—', g400, white),
+                      _pdfInfoRow('Health Center', _chwCenter.isNotEmpty ? _chwCenter : '—', g400, white),
+                      _pdfInfoRow('District', _chwDistrict.isNotEmpty ? _chwDistrict : '—', g400, white),
+                      _pdfInfoRow('Badge ID', _chwId.isNotEmpty ? _chwId : '—', g400, white),
+                      _pdfInfoRow('Export Date', DateTime.now().toString().substring(0, 16), g400, white),
+                      _pdfInfoRow('Total Patients', '${patients.length}', g400, white),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      // ── Patient pages ──
+      for (final p in patients) {
+        final outcome = (p['outcome'] as String?) ?? 'pending';
+        final outcomeColor = outcome == 'pass' ? green : outcome == 'refer' ? red : amber;
+        final outcomeLabel = outcome == 'pass' ? 'PASS' : outcome == 'refer' ? 'REFER' : 'PENDING';
+
+        pdf.addPage(
+          pw.Page(
+            pageFormat: PdfPageFormat.a4,
+            margin: const pw.EdgeInsets.fromLTRB(32, 32, 32, 32),
+            build: (ctx) => pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                // Patient header
+                pw.Container(
+                  width: double.infinity,
+                  padding: const pw.EdgeInsets.all(16),
+                  decoration: pw.BoxDecoration(
+                    color: g100,
+                    borderRadius: pw.BorderRadius.circular(8),
+                  ),
+                  child: pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text(p['name'] as String? ?? '—',
+                              style: pw.TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: pw.FontWeight.bold,
+                                  color: g800)),
+                          pw.SizedBox(height: 4),
+                          pw.Text(
+                            '${p['age']} yrs · ${p['gender']} · ${p['village']}',
+                            style: pw.TextStyle(fontSize: 11, color: g400),
+                          ),
+                          pw.Text(
+                            'ID: ${p['id']}  ·  Phone: ${p['phone'] ?? '—'}',
+                            style: pw.TextStyle(fontSize: 11, color: g400),
+                          ),
+                        ],
+                      ),
+                      pw.Container(
+                        padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                        decoration: pw.BoxDecoration(
+                          color: outcomeColor,
+                          borderRadius: pw.BorderRadius.circular(99),
+                        ),
+                        child: pw.Text(outcomeLabel,
+                            style: pw.TextStyle(
+                                fontSize: 12,
+                                fontWeight: pw.FontWeight.bold,
+                                color: white)),
+                      ),
+                    ],
+                  ),
+                ),
+                pw.SizedBox(height: 16),
+
+                // Visual Acuity
+                pw.Text('Visual Acuity',
+                    style: pw.TextStyle(
+                        fontSize: 13,
+                        fontWeight: pw.FontWeight.bold,
+                        color: teal)),
+                pw.SizedBox(height: 8),
+                pw.Row(
+                  children: [
+                    _pdfVaBox('OD (Right)', p['od_snellen'] as String? ?? '—', p['od_logmar'] as String? ?? '—', teal, white, g100),
+                    pw.SizedBox(width: 8),
+                    _pdfVaBox('OS (Left)', p['os_snellen'] as String? ?? '—', p['os_logmar'] as String? ?? '—', teal, white, g100),
+                    pw.SizedBox(width: 8),
+                    _pdfVaBox('OU (Near)', p['ou_near_snellen'] as String? ?? '—', '—', teal, white, g100),
+                  ],
+                ),
+                pw.SizedBox(height: 16),
+
+                // Screening details
+                pw.Text('Screening Details',
+                    style: pw.TextStyle(
+                        fontSize: 13,
+                        fontWeight: pw.FontWeight.bold,
+                        color: teal)),
+                pw.SizedBox(height: 8),
+                pw.Container(
+                  width: double.infinity,
+                  padding: const pw.EdgeInsets.all(12),
+                  decoration: pw.BoxDecoration(
+                    color: g100,
+                    borderRadius: pw.BorderRadius.circular(8),
+                  ),
+                  child: pw.Column(
+                    children: [
+                      _pdfDetailRow('Screening Date', p['screening_date'] as String? ?? '—', g800, g400),
+                      _pdfDetailRow('CHW', p['chw_name'] as String? ?? _chwName, g800, g400),
+                      if ((p['conditions'] as String? ?? '').isNotEmpty)
+                        _pdfDetailRow('Conditions', p['conditions'] as String, g800, g400),
+                      if (outcome == 'refer') ...[
+                        _pdfDetailRow('Referral Facility', p['referral_facility'] as String? ?? '—', g800, g400),
+                        _pdfDetailRow('Appointment Date', p['appointment_date'] as String? ?? '—', g800, g400),
+                        _pdfDetailRow('Referral Status', (p['referral_status'] as String? ?? 'Pending').toUpperCase(), g800, g400),
+                      ],
+                    ],
+                  ),
+                ),
+
+                pw.Spacer(),
+                // Footer
+                pw.Divider(color: g400),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('VisionScreen · Uganda MOH',
+                        style: pw.TextStyle(fontSize: 9, color: g400)),
+                    pw.Text('Page ${ctx.pageNumber} of ${ctx.pagesCount}',
+                        style: pw.TextStyle(fontSize: 9, color: g400)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      // Save and open
+      final dir = await getApplicationDocumentsDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final file = File('${dir.path}/visionscreen_patients_$timestamp.pdf');
+      await file.writeAsBytes(await pdf.save());
+
+      if (mounted) {
+        _showSnack('PDF saved: ${file.path.split('/').last}', _C.green);
+        await OpenFilex.open(file.path);
+      }
     } catch (e) {
       if (mounted) _showSnack('Export failed. Please try again.', _C.red);
     }
+  }
+
+  Future<void> _exportCampaignPDF() async {
+    try {
+      _showSnack('Generating campaign records PDF...', _C.teal);
+
+      final database = await DatabaseHelper.instance.db;
+      final campaigns = await database.query('campaigns', orderBy: 'created_at DESC');
+
+      if (campaigns.isEmpty) {
+        if (mounted) _showSnack('No campaigns found to export.', _C.amber);
+        return;
+      }
+
+      final pdf = pw.Document();
+
+      final teal  = PdfColor.fromHex('#0D9488');
+      final teal2 = PdfColor.fromHex('#14B8A6');
+      final ink   = PdfColor.fromHex('#04091A');
+      final g400  = PdfColor.fromHex('#8FA0B4');
+      final g800  = PdfColor.fromHex('#1A2A3D');
+      final green = PdfColor.fromHex('#22C55E');
+      final red   = PdfColor.fromHex('#EF4444');
+      final amber = PdfColor.fromHex('#F59E0B');
+      final white = PdfColors.white;
+      final g100  = PdfColor.fromHex('#F0F4F7');
+      final purple = PdfColor.fromHex('#8B5CF6');
+
+      // ── Cover page ──
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(0),
+          build: (ctx) => pw.Container(
+            color: ink,
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Container(
+                  width: double.infinity,
+                  padding: const pw.EdgeInsets.fromLTRB(40, 48, 40, 36),
+                  decoration: pw.BoxDecoration(
+                    gradient: pw.LinearGradient(
+                      colors: [purple, teal],
+                      begin: pw.Alignment.centerLeft,
+                      end: pw.Alignment.centerRight,
+                    ),
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('VisionScreen',
+                          style: pw.TextStyle(
+                              fontSize: 32, fontWeight: pw.FontWeight.bold, color: white)),
+                      pw.SizedBox(height: 6),
+                      pw.Text('Campaign Records Export',
+                          style: pw.TextStyle(fontSize: 16, color: white)),
+                    ],
+                  ),
+                ),
+                pw.Padding(
+                  padding: const pw.EdgeInsets.fromLTRB(40, 32, 40, 0),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      _pdfInfoRow('CHW Name', _chwName.isNotEmpty ? _chwName : '—', g400, white),
+                      _pdfInfoRow('Health Center', _chwCenter.isNotEmpty ? _chwCenter : '—', g400, white),
+                      _pdfInfoRow('District', _chwDistrict.isNotEmpty ? _chwDistrict : '—', g400, white),
+                      _pdfInfoRow('Badge ID', _chwId.isNotEmpty ? _chwId : '—', g400, white),
+                      _pdfInfoRow('Export Date', DateTime.now().toString().substring(0, 16), g400, white),
+                      _pdfInfoRow('Total Campaigns', '${campaigns.length}', g400, white),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      // ── One page per campaign ──
+      for (final c in campaigns) {
+        final campaignId = c['id'] as String;
+        final total    = (c['total']    as int?) ?? 0;
+        final passed   = (c['passed']   as int?) ?? 0;
+        final referred = (c['referred'] as int?) ?? 0;
+        final passRate = total > 0 ? (passed / total * 100).toStringAsFixed(1) : '0.0';
+
+        // Fetch patients for this campaign
+        final patients = await DatabaseHelper.instance.getPatientsForCampaign(campaignId);
+
+        pdf.addPage(
+          pw.Page(
+            pageFormat: PdfPageFormat.a4,
+            margin: const pw.EdgeInsets.fromLTRB(32, 32, 32, 32),
+            build: (ctx) => pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                // Campaign header
+                pw.Container(
+                  width: double.infinity,
+                  padding: const pw.EdgeInsets.all(16),
+                  decoration: pw.BoxDecoration(
+                    color: purple,
+                    borderRadius: pw.BorderRadius.circular(8),
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(c['name'] as String? ?? '—',
+                          style: pw.TextStyle(
+                              fontSize: 18, fontWeight: pw.FontWeight.bold, color: white)),
+                      pw.SizedBox(height: 4),
+                      pw.Text(
+                        '${c['location']} · ${c['target_group']} · ${c['created_at'].toString().substring(0, 10)}',
+                        style: pw.TextStyle(fontSize: 11, color: white),
+                      ),
+                    ],
+                  ),
+                ),
+                pw.SizedBox(height: 12),
+
+                // Stats row
+                pw.Row(
+                  children: [
+                    _pdfStatBox('Total', '$total', teal, white, g100),
+                    pw.SizedBox(width: 8),
+                    _pdfStatBox('Passed', '$passed', green, white, g100),
+                    pw.SizedBox(width: 8),
+                    _pdfStatBox('Referred', '$referred', red, white, g100),
+                    pw.SizedBox(width: 8),
+                    _pdfStatBox('Pass Rate', '$passRate%', amber, white, g100),
+                  ],
+                ),
+                pw.SizedBox(height: 16),
+
+                // Patient table
+                pw.Text('Patients',
+                    style: pw.TextStyle(
+                        fontSize: 13, fontWeight: pw.FontWeight.bold, color: teal)),
+                pw.SizedBox(height: 8),
+                // Table header
+                pw.Container(
+                  color: teal,
+                  padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  child: pw.Row(
+                    children: [
+                      pw.Expanded(flex: 3, child: pw.Text('Name', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: white))),
+                      pw.Expanded(flex: 1, child: pw.Text('Age', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: white))),
+                      pw.Expanded(flex: 1, child: pw.Text('OD', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: white))),
+                      pw.Expanded(flex: 1, child: pw.Text('OS', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: white))),
+                      pw.Expanded(flex: 2, child: pw.Text('Outcome', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: white))),
+                    ],
+                  ),
+                ),
+                // Table rows
+                ...patients.asMap().entries.map((e) {
+                  final i = e.key;
+                  final p = e.value;
+                  final outcome = (p['outcome'] as String?) ?? 'pending';
+                  final outcomeColor = outcome == 'pass' ? green : outcome == 'refer' ? red : amber;
+                  final bg = i.isEven ? g100 : white;
+                  return pw.Container(
+                    color: bg,
+                    padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    child: pw.Row(
+                      children: [
+                        pw.Expanded(flex: 3, child: pw.Text(p['name'] as String? ?? '—', style: pw.TextStyle(fontSize: 10, color: g800))),
+                        pw.Expanded(flex: 1, child: pw.Text('${p['age']}', style: pw.TextStyle(fontSize: 10, color: g800))),
+                        pw.Expanded(flex: 1, child: pw.Text(p['od_snellen'] as String? ?? '—', style: pw.TextStyle(fontSize: 10, color: g800))),
+                        pw.Expanded(flex: 1, child: pw.Text(p['os_snellen'] as String? ?? '—', style: pw.TextStyle(fontSize: 10, color: g800))),
+                        pw.Expanded(flex: 2, child: pw.Text(outcome.toUpperCase(), style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: outcomeColor))),
+                      ],
+                    ),
+                  );
+                }),
+
+                pw.Spacer(),
+                pw.Divider(color: g400),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('VisionScreen · Uganda MOH', style: pw.TextStyle(fontSize: 9, color: g400)),
+                    pw.Text('Page ${ctx.pageNumber} of ${ctx.pagesCount}', style: pw.TextStyle(fontSize: 9, color: g400)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      final dir = await getApplicationDocumentsDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final file = File('${dir.path}/visionscreen_campaigns_$timestamp.pdf');
+      await file.writeAsBytes(await pdf.save());
+
+      if (mounted) {
+        _showSnack('Campaign PDF saved: ${file.path.split('/').last}', _C.green);
+        await OpenFilex.open(file.path);
+      }
+    } catch (e) {
+      if (mounted) _showSnack('Export failed. Please try again.', _C.red);
+    }
+  }
+
+  pw.Widget _pdfStatBox(String label, String value,
+      PdfColor color, PdfColor white, PdfColor bg) {
+    return pw.Expanded(
+      child: pw.Container(
+        padding: const pw.EdgeInsets.all(10),
+        decoration: pw.BoxDecoration(
+          color: bg,
+          borderRadius: pw.BorderRadius.circular(8),
+          border: pw.Border.all(color: color),
+        ),
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.center,
+          children: [
+            pw.Text(value,
+                style: pw.TextStyle(
+                    fontSize: 18, fontWeight: pw.FontWeight.bold, color: color)),
+            pw.SizedBox(height: 2),
+            pw.Text(label,
+                style: pw.TextStyle(fontSize: 9, color: color)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _exportAnalyticsPDF() async {
+    try {
+      _showSnack('Generating analytics report...', _C.teal);
+
+      // Fetch all analytics data
+      final outcomes    = await DatabaseHelper.instance.getOutcomeCounts();
+      final ageGroups   = await DatabaseHelper.instance.getAgeGroupCounts();
+      final genders     = await DatabaseHelper.instance.getGenderCounts();
+      final acuity      = await DatabaseHelper.instance.getVisualAcuityDistribution();
+      final referrals   = await DatabaseHelper.instance.getReferralStatusCounts();
+      final conditions  = await DatabaseHelper.instance.getConditionCounts();
+      final villages    = await DatabaseHelper.instance.getVillageBreakdown();
+
+      final total    = (outcomes['pass'] ?? 0) + (outcomes['refer'] ?? 0) + (outcomes['pending'] ?? 0);
+      final passed   = outcomes['pass']    ?? 0;
+      final referred = outcomes['refer']   ?? 0;
+      final pending  = outcomes['pending'] ?? 0;
+      final passRate = total > 0 ? (passed / total * 100).toStringAsFixed(1) : '0.0';
+
+      final pdf = pw.Document();
+
+      final teal   = PdfColor.fromHex('#0D9488');
+                  final g400   = PdfColor.fromHex('#8FA0B4');
+      final g800   = PdfColor.fromHex('#1A2A3D');
+      final green  = PdfColor.fromHex('#22C55E');
+      final red    = PdfColor.fromHex('#EF4444');
+      final amber  = PdfColor.fromHex('#F59E0B');
+      final blue   = PdfColor.fromHex('#3B82F6');
+      final white  = PdfColors.white;
+      final g100   = PdfColor.fromHex('#F0F4F7');
+
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.fromLTRB(32, 32, 32, 32),
+          header: (ctx) => pw.Container(
+            width: double.infinity,
+            padding: const pw.EdgeInsets.fromLTRB(0, 0, 0, 12),
+            decoration: pw.BoxDecoration(
+              border: pw.Border(bottom: pw.BorderSide(color: teal, width: 2)),
+            ),
+            child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('VisionScreen Analytics Report',
+                        style: pw.TextStyle(
+                            fontSize: 18, fontWeight: pw.FontWeight.bold, color: teal)),
+                    pw.Text(
+                      '${_chwName.isNotEmpty ? _chwName : 'CHW'} · ${_chwCenter.isNotEmpty ? _chwCenter : ''} · ${DateTime.now().toString().substring(0, 10)}',
+                      style: pw.TextStyle(fontSize: 10, color: g400),
+                    ),
+                  ],
+                ),
+                pw.Text('Page ${ctx.pageNumber}',
+                    style: pw.TextStyle(fontSize: 9, color: g400)),
+              ],
+            ),
+          ),
+          build: (ctx) => [
+            pw.SizedBox(height: 16),
+
+            // ── Summary stats ──
+            pw.Text('Summary', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: g800)),
+            pw.SizedBox(height: 8),
+            pw.Row(
+              children: [
+                _pdfStatBox('Total', '$total', teal, white, g100),
+                pw.SizedBox(width: 8),
+                _pdfStatBox('Passed', '$passed', green, white, g100),
+                pw.SizedBox(width: 8),
+                _pdfStatBox('Referred', '$referred', red, white, g100),
+                pw.SizedBox(width: 8),
+                _pdfStatBox('Pending', '$pending', amber, white, g100),
+                pw.SizedBox(width: 8),
+                _pdfStatBox('Pass Rate', '$passRate%', teal, white, g100),
+              ],
+            ),
+            pw.SizedBox(height: 20),
+
+            // ── Age groups ──
+            _pdfSectionTitle('Age Group Breakdown', blue),
+            pw.SizedBox(height: 8),
+            _pdfBarTable(ageGroups, total, blue, g100, g800, g400, white),
+            pw.SizedBox(height: 20),
+
+            // ── Gender ──
+            _pdfSectionTitle('Gender Distribution', teal),
+            pw.SizedBox(height: 8),
+            _pdfBarTable(genders, total, teal, g100, g800, g400, white),
+            pw.SizedBox(height: 20),
+
+            // ── Visual acuity ──
+            _pdfSectionTitle('Visual Acuity Distribution', amber),
+            pw.SizedBox(height: 8),
+            _pdfBarTable(acuity, total, amber, g100, g800, g400, white),
+            pw.SizedBox(height: 20),
+
+            // ── Referral status ──
+            _pdfSectionTitle('Referral Status', red),
+            pw.SizedBox(height: 8),
+            _pdfBarTable(referrals, referred, red, g100, g800, g400, white),
+            pw.SizedBox(height: 20),
+
+            // ── Top conditions ──
+            if (conditions.isNotEmpty) ...[
+              _pdfSectionTitle('Top Eye Conditions', red),
+              pw.SizedBox(height: 8),
+              _pdfBarTable(
+                Map.fromEntries(
+                  conditions.entries.toList()
+                    ..sort((a, b) => b.value.compareTo(a.value))
+                    ..take(6),
+                ),
+                total, red, g100, g800, g400, white,
+              ),
+              pw.SizedBox(height: 20),
+            ],
+
+            // ── Village breakdown ──
+            if (villages.isNotEmpty) ...[
+              _pdfSectionTitle('Village Breakdown', blue),
+              pw.SizedBox(height: 8),
+              pw.Container(
+                color: teal,
+                padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                child: pw.Row(
+                  children: [
+                    pw.Expanded(flex: 4, child: pw.Text('Village', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: white))),
+                    pw.Expanded(flex: 2, child: pw.Text('Total', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: white))),
+                    pw.Expanded(flex: 2, child: pw.Text('Referred', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: white))),
+                    pw.Expanded(flex: 2, child: pw.Text('Pass Rate', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: white))),
+                  ],
+                ),
+              ),
+              ...villages.asMap().entries.map((e) {
+                final i = e.key;
+                final v = e.value;
+                final vTotal    = (v['total']    as int?) ?? 0;
+                final vReferred = (v['referred'] as int?) ?? 0;
+                final vPassed   = vTotal - vReferred;
+                final vRate     = vTotal > 0 ? '${(vPassed / vTotal * 100).toStringAsFixed(0)}%' : '0%';
+                return pw.Container(
+                  color: i.isEven ? g100 : white,
+                  padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  child: pw.Row(
+                    children: [
+                      pw.Expanded(flex: 4, child: pw.Text(v['village'] as String, style: pw.TextStyle(fontSize: 10, color: g800))),
+                      pw.Expanded(flex: 2, child: pw.Text('$vTotal', style: pw.TextStyle(fontSize: 10, color: g800))),
+                      pw.Expanded(flex: 2, child: pw.Text('$vReferred', style: pw.TextStyle(fontSize: 10, color: red))),
+                      pw.Expanded(flex: 2, child: pw.Text(vRate, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: teal))),
+                    ],
+                  ),
+                );
+              }),
+            ],
+
+            pw.SizedBox(height: 24),
+            pw.Divider(color: g400),
+            pw.Text(
+              'Generated by VisionScreen · Uganda MOH · WHO Compliant · ${DateTime.now().toString().substring(0, 16)}',
+              style: pw.TextStyle(fontSize: 9, color: g400),
+            ),
+          ],
+        ),
+      );
+
+      final dir = await getApplicationDocumentsDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final file = File('${dir.path}/visionscreen_analytics_$timestamp.pdf');
+      await file.writeAsBytes(await pdf.save());
+
+      if (mounted) {
+        _showSnack('Analytics PDF saved: ${file.path.split('/').last}', _C.green);
+        await OpenFilex.open(file.path);
+      }
+    } catch (e) {
+      if (mounted) _showSnack('Export failed. Please try again.', _C.red);
+    }
+  }
+
+  pw.Widget _pdfSectionTitle(String title, PdfColor color) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: pw.BoxDecoration(
+        color: color,
+        borderRadius: pw.BorderRadius.circular(6),
+      ),
+      child: pw.Text(title,
+          style: pw.TextStyle(
+              fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
+    );
+  }
+
+  pw.Widget _pdfBarTable(Map<String, int> data, int total,
+      PdfColor color, PdfColor bg, PdfColor textColor, PdfColor labelColor, PdfColor white) {
+    if (data.isEmpty) {
+      return pw.Text('No data available.',
+          style: pw.TextStyle(fontSize: 11, color: labelColor));
+    }
+    return pw.Column(
+      children: data.entries.map((e) {
+        final pct = total > 0 ? e.value / total : 0.0;
+        return pw.Padding(
+          padding: const pw.EdgeInsets.only(bottom: 6),
+          child: pw.Row(
+            children: [
+              pw.SizedBox(
+                width: 110,
+                child: pw.Text(e.key,
+                    style: pw.TextStyle(fontSize: 10, color: textColor)),
+              ),
+              pw.Expanded(
+                child: pw.Stack(
+                  children: [
+                    pw.Container(height: 14, color: bg),
+                    pw.Container(
+                      height: 14,
+                      width: pct * 300,
+                      color: color,
+                    ),
+                  ],
+                ),
+              ),
+              pw.SizedBox(width: 8),
+              pw.Text('${e.value} (${(pct * 100).toStringAsFixed(0)}%)',
+                  style: pw.TextStyle(
+                      fontSize: 10,
+                      fontWeight: pw.FontWeight.bold,
+                      color: textColor)),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  pw.Widget _pdfInfoRow(String label, String value, PdfColor labelColor, PdfColor valueColor) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 8),
+      child: pw.Row(
+        children: [
+          pw.SizedBox(
+            width: 120,
+            child: pw.Text(label,
+                style: pw.TextStyle(fontSize: 11, color: labelColor)),
+          ),
+          pw.Text(value,
+              style: pw.TextStyle(
+                  fontSize: 11,
+                  fontWeight: pw.FontWeight.bold,
+                  color: valueColor)),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _pdfVaBox(String eye, String snellen, String logmar,
+      PdfColor teal, PdfColor white, PdfColor bg) {
+    return pw.Expanded(
+      child: pw.Container(
+        padding: const pw.EdgeInsets.all(10),
+        decoration: pw.BoxDecoration(
+          color: bg,
+          borderRadius: pw.BorderRadius.circular(8),
+        ),
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.center,
+          children: [
+            pw.Text(eye,
+                style: pw.TextStyle(fontSize: 9, color: teal)),
+            pw.SizedBox(height: 4),
+            pw.Text(snellen,
+                style: pw.TextStyle(
+                    fontSize: 16,
+                    fontWeight: pw.FontWeight.bold,
+                    color: teal)),
+            pw.Text('LogMAR: $logmar',
+                style: pw.TextStyle(fontSize: 9, color: teal)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  pw.Widget _pdfDetailRow(String label, String value,
+      PdfColor valueColor, PdfColor labelColor) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 6),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.SizedBox(
+            width: 130,
+            child: pw.Text(label,
+                style: pw.TextStyle(fontSize: 11, color: labelColor)),
+          ),
+          pw.Expanded(
+            child: pw.Text(value,
+                style: pw.TextStyle(
+                    fontSize: 11,
+                    fontWeight: pw.FontWeight.bold,
+                    color: valueColor)),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _exportOption({
@@ -2178,49 +3013,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _C.g200, width: 1.5),
+          color: color.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withValues(alpha: 0.25), width: 1.5),
         ),
         child: Row(
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: 46,
+              height: 46,
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: color, size: 18),
+              child: Icon(icon, color: color, size: 22),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.sora(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: _C.g800,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.sora(fontSize: 11, color: _C.g400),
-                  ),
+                  Text(title,
+                      style: GoogleFonts.sora(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: _C.g800)),
+                  const SizedBox(height: 3),
+                  Text(subtitle,
+                      style: GoogleFonts.sora(
+                          fontSize: 12, color: _C.g400, height: 1.4)),
                 ],
               ),
             ),
-            const Icon(
-              Icons.arrow_forward_ios_rounded,
-              size: 14,
-              color: _C.g300,
-            ),
+            const SizedBox(width: 8),
+            Icon(Icons.arrow_forward_ios_rounded,
+                size: 15, color: color.withValues(alpha: 0.5)),
           ],
         ),
       ),
