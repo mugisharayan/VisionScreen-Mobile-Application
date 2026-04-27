@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -6,6 +6,7 @@ import '../db/database_helper.dart';
 import '../services/pdf_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bulk_mode_screen.dart';
+import 'new_screening_screen.dart';
 
 // ── Colours (shared with the rest of the app) ──
 const _ink = Color(0xFF04091A);
@@ -52,6 +53,7 @@ class _Patient {
   final String? facility;
   final String? dueDate;
   final String? referralStatus;
+  final String? campaignId;
   final List<_ScreeningEntry> history;
   final List<String> conditions;
 
@@ -74,6 +76,7 @@ class _Patient {
     this.facility,
     this.dueDate,
     this.referralStatus,
+    this.campaignId,
     List<_ScreeningEntry>? history,
     List<String>? conditions,
   })  : history = history ?? const <_ScreeningEntry>[],
@@ -158,6 +161,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
             ?.let((f) => f.isEmpty ? null : f),
         referralStatus: (latest?['referral_status'] as String?)
             ?.let((s) => s.isEmpty ? null : s),
+        campaignId: null,
         conditions: conditions,
       ));
     }
@@ -188,6 +192,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
         phone: (r['phone'] as String?) ?? '',
         facility: (latest?['referral_facility'] as String?)?.let((f) => f.isEmpty ? null : f),
         referralStatus: (latest?['referral_status'] as String?)?.let((s) => s.isEmpty ? null : s),
+        campaignId: (r['campaign_id'] as String?)?.let((c) => c.isEmpty ? null : c),
         conditions: ((r['conditions'] as String?) ?? '').split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
       ));
     }
@@ -257,19 +262,21 @@ class _PatientsScreenState extends State<PatientsScreen> {
   Widget build(BuildContext context) {
     final list = _filtered;
     // Individual patient stats
-    final indivTotal   = _patients.length;
-    final indivPassed  = _patients.where((p) => p.outcome == 'pass').length;
+    final indivTotal    = _patients.length;
+    final indivPassed   = _patients.where((p) => p.outcome == 'pass').length;
     final indivReferred = _patients.where((p) => p.outcome == 'refer').length;
     final indivPending  = _patients.where((p) => p.outcome == 'pending').length;
     // Campaign stats
     final campTotal    = _campaigns.fold<int>(0, (sum, c) => sum + ((c['total'] as int?) ?? 0));
     final campPassed   = _campaigns.fold<int>(0, (sum, c) => sum + ((c['passed'] as int?) ?? 0));
     final campReferred = _campaigns.fold<int>(0, (sum, c) => sum + ((c['referred'] as int?) ?? 0));
+    // Campaign pending = patients in campaigns with no screening yet
+    final campPending  = _allCampaignPatients.where((p) => p.outcome == 'pending').length;
     // Combined
     final total    = indivTotal + campTotal;
     final passed   = indivPassed + campPassed;
     final referred = indivReferred + campReferred;
-    final pending  = indivPending;
+    final pending  = indivPending + campPending;
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFB),
       body: Column(
@@ -1252,12 +1259,22 @@ class _PatientsScreenState extends State<PatientsScreen> {
                             ),
                           ),
                           const SizedBox(width: 10),
-                          Text(
-                            'View →',
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: accentColor,
+                          // Screen Now button for pending patients
+                          GestureDetector(
+                            onTap: () => _screenPatientNow(p),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: _teal.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: _teal.withOpacity(0.3)),
+                              ),
+                              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                const Icon(Icons.remove_red_eye_rounded, size: 13, color: _teal),
+                                const SizedBox(width: 4),
+                                Text('Screen Now',
+                                    style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: _teal)),
+                              ]),
                             ),
                           ),
                         ],
@@ -1902,6 +1919,18 @@ class _PatientsScreenState extends State<PatientsScreen> {
       final chwName   = prefs.getString('chw_name')   ?? '';
       final chwCenter = prefs.getString('chw_center') ?? '';
       final chwTitle  = chwCenter.isNotEmpty ? 'Community Health Worker · $chwCenter' : 'Community Health Worker';
+      final language  = prefs.getString('referral_language') ?? 'English Only';
+      if (p.outcome == 'pending') {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('No screening results yet for ${p.name}.',
+              style: GoogleFonts.inter(fontSize: 12, color: Colors.white)),
+          backgroundColor: _amber, behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          duration: const Duration(seconds: 2),
+        ));
+        return;
+      }
       String filePath;
       if (p.outcome == 'refer') {
         filePath = await PdfService.generateReferralPdf(
@@ -1911,11 +1940,13 @@ class _PatientsScreenState extends State<PatientsScreen> {
           chwId: prefs.getString('chw_id') ?? '',
           appointmentDate: latest?['appointment_date'] as String?,
           conditions: p.safeConditions,
+          language: language,
         );
       } else {
         filePath = await PdfService.generatePassResultPdf(
           patient: patientMap, eyeResults: eyeResults, screeningDate: date,
-          chwName: chwName, chwTitle: chwTitle, chwId: prefs.getString('chw_id') ?? '', conditions: p.safeConditions,
+          chwName: chwName, chwTitle: chwTitle, chwId: prefs.getString('chw_id') ?? '',
+          conditions: p.safeConditions, language: language,
         );
       }
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -1940,6 +1971,30 @@ class _PatientsScreenState extends State<PatientsScreen> {
 
 
   
+
+  Future<void> _screenPatientNow(_Patient p) async {
+    if (p.campaignId != null) {
+      final campaigns = await DatabaseHelper.instance.getAllCampaigns();
+      final campaign = campaigns.firstWhere(
+        (c) => c['id'] == p.campaignId,
+        orElse: () => <String, dynamic>{},
+      );
+      if (!mounted) return;
+      await Navigator.push(context, MaterialPageRoute(
+        builder: (_) => BulkModeScreen(
+          existingCampaignId: p.campaignId,
+          existingCampaignName: campaign['name'] as String? ?? '',
+          existingCampaignLocation: campaign['location'] as String? ?? '',
+        ),
+      ));
+    } else {
+      if (!mounted) return;
+      await Navigator.push(context, MaterialPageRoute(
+        builder: (_) => NewScreeningScreen(existingPatientId: p.id),
+      ));
+    }
+    _loadPatients();
+  }
 
   Future<void> _shareToWhatsApp(_Patient p) async {
     final message =
@@ -2346,6 +2401,7 @@ class _CampaignDetailScreenState extends State<_CampaignDetailScreen> {
         phone: (r['phone'] as String?) ?? '',
         facility: (r['referral_facility'] as String?)?.let((f) => f.isEmpty ? null : f),
         referralStatus: (r['referral_status'] as String?)?.let((s) => s.isEmpty ? null : s),
+        campaignId: widget.campaign['id'] as String,
         conditions: conditions,
       ));
     }
@@ -2365,6 +2421,24 @@ class _CampaignDetailScreenState extends State<_CampaignDetailScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFB),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          await Navigator.push(context, MaterialPageRoute(
+            builder: (_) => BulkModeScreen(
+              existingCampaignId: widget.campaign['id'] as String,
+              existingCampaignName: widget.campaign['name'] as String,
+              existingCampaignLocation: widget.campaign['location'] as String,
+            ),
+          ));
+          _load();
+        },
+        backgroundColor: _teal,
+        icon: const Icon(Icons.person_add_rounded, color: Colors.white, size: 20),
+        label: Text('Add Patient',
+            style: GoogleFonts.plusJakartaSans(
+                fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+        elevation: 4,
+      ),
       body: Column(children: [
         // Header
         Container(
@@ -2454,7 +2528,7 @@ class _CampaignDetailScreenState extends State<_CampaignDetailScreen> {
                           );
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 9),
-                            child: _CampaignPatientCard(patient: _patients[i - 1], onRefresh: _load),
+                            child: _CampaignPatientCardState(key: ValueKey(_patients[i - 1].id), patient: _patients[i - 1], onRefresh: _load),
                           );
                         },
                       ),
@@ -2464,7 +2538,7 @@ class _CampaignDetailScreenState extends State<_CampaignDetailScreen> {
     );
   }
 
-  Widget _hStat(String value, String label, Color color) => Expanded(
+    Widget _hStat(String value, String label, Color color) => Expanded(
     child: Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
       decoration: BoxDecoration(
@@ -2489,23 +2563,11 @@ class _CampaignDetailScreenState extends State<_CampaignDetailScreen> {
   }
 }
 
-// ── Campaign Patient Card — full featured, same as individual patient card ────
-class _CampaignPatientCard extends StatelessWidget {
-  final _Patient patient;
-  final VoidCallback onRefresh;
-  const _CampaignPatientCard({required this.patient, required this.onRefresh});
-
-  @override
-  Widget build(BuildContext context) {
-    // Reuse the full patient card by wrapping in a temporary state holder
-    return _CampaignPatientCardState(patient: patient, onRefresh: onRefresh);
-  }
-}
-
+// ── Campaign Patient Card ────────────────────────────────────────────────────
 class _CampaignPatientCardState extends StatefulWidget {
   final _Patient patient;
   final VoidCallback onRefresh;
-  const _CampaignPatientCardState({required this.patient, required this.onRefresh});
+  const _CampaignPatientCardState({super.key, required this.patient, required this.onRefresh});
   @override
   State<_CampaignPatientCardState> createState() => __CampaignPatientCardStateState();
 }
@@ -2753,7 +2815,25 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
                   ),
                 ),
                 const SizedBox(width: 6),
-                Text('View →', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: accentColor)),
+                if (p.outcome == 'pending') ...[
+                  GestureDetector(
+                    onTap: () => _screenCampaignPatientNow(p),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: _teal.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(7),
+                        border: Border.all(color: _teal.withOpacity(0.3)),
+                      ),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        const Icon(Icons.remove_red_eye_rounded, size: 12, color: _teal),
+                        const SizedBox(width: 4),
+                        Text('Screen', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: _teal)),
+                      ]),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                ],
               ]),
             ),
           ]),
@@ -2900,6 +2980,18 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
       final chwName   = prefs.getString('chw_name')   ?? '';
       final chwCenter = prefs.getString('chw_center') ?? '';
       final chwTitle  = chwCenter.isNotEmpty ? 'Community Health Worker · $chwCenter' : 'Community Health Worker';
+      final language  = prefs.getString('referral_language') ?? 'English Only';
+      if (p.outcome == 'pending') {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('No screening results yet for ${p.name}.',
+              style: GoogleFonts.inter(fontSize: 12, color: Colors.white)),
+          backgroundColor: _amber, behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          duration: const Duration(seconds: 2),
+        ));
+        return;
+      }
       String filePath;
       if (p.outcome == 'refer') {
         filePath = await PdfService.generateReferralPdf(
@@ -2909,11 +3001,13 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
           chwId: prefs.getString('chw_id') ?? '',
           appointmentDate: latest?['appointment_date'] as String?,
           conditions: p.safeConditions,
+          language: language,
         );
       } else {
         filePath = await PdfService.generatePassResultPdf(
           patient: patientMap, eyeResults: eyeResults, screeningDate: date,
-          chwName: chwName, chwTitle: chwTitle, chwId: prefs.getString('chw_id') ?? '', conditions: p.safeConditions,
+          chwName: chwName, chwTitle: chwTitle, chwId: prefs.getString('chw_id') ?? '',
+          conditions: p.safeConditions, language: language,
         );
       }
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -2964,9 +3058,27 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
     return digits;
   }
 
+  Future<void> _screenCampaignPatientNow(_Patient p) async {
+    final campaigns = await DatabaseHelper.instance.getAllCampaigns();
+    final campaign = campaigns.firstWhere(
+      (c) => c['id'] == p.campaignId,
+      orElse: () => <String, dynamic>{},
+    );
+    if (!mounted) return;
+    await Navigator.push(context, MaterialPageRoute(
+      builder: (_) => BulkModeScreen(
+        existingCampaignId: p.campaignId,
+        existingCampaignName: campaign['name'] as String? ?? '',
+        existingCampaignLocation: campaign['location'] as String? ?? '',
+      ),
+    ));
+    widget.onRefresh();
+  }
+
   String _snellenToLogmar(String s) {
     const m = {'6/6':'0.0','6/9':'0.2','6/12':'0.3','6/18':'0.5',
                '6/24':'0.6','6/36':'0.8','6/48':'0.9','6/60':'1.0'};
     return m[s] ?? '0.5';
   }
 }
+

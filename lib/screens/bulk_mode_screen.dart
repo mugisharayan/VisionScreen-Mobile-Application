@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../db/database_helper.dart';
@@ -16,7 +17,15 @@ const _red   = Color(0xFFEF4444);
 const _green = Color(0xFF22C55E);
 
 class BulkModeScreen extends StatefulWidget {
-  const BulkModeScreen({super.key});
+  final String? existingCampaignId;
+  final String? existingCampaignName;
+  final String? existingCampaignLocation;
+  const BulkModeScreen({
+    super.key,
+    this.existingCampaignId,
+    this.existingCampaignName,
+    this.existingCampaignLocation,
+  });
 
   @override
   State<BulkModeScreen> createState() => _BulkModeScreenState();
@@ -65,6 +74,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
 
   // ── Section 2 state ─────────────────────────────────────
   int    _patientCount    = 0;
+  int    _totalInCampaign = 0;
   final  _nameCtrl        = TextEditingController();
   int    _quickAge        = 10;
   String _quickGender     = 'M';
@@ -301,6 +311,27 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
     {'label': 'Elderly',   'icon': Icons.elderly_rounded,       'sub': 'Over 60'},
     {'label': 'Mixed',     'icon': Icons.groups_rounded,        'sub': 'All ages'},
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.existingCampaignId != null) {
+      _campaignId = widget.existingCampaignId;
+      if (widget.existingCampaignName != null) _campaignNameCtrl.text = widget.existingCampaignName!;
+      if (widget.existingCampaignLocation != null) _locationCtrl.text = widget.existingCampaignLocation!;
+      DatabaseHelper.instance.getPatientsForCampaign(widget.existingCampaignId!).then((rows) {
+        if (!mounted) return;
+        final screened = rows.where((r) => r['outcome'] != null && r['outcome'] != 'pending').length;
+        setState(() {
+          _totalInCampaign = rows.length;
+          _patientCount    = screened;
+        });
+      });
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _section = 1);
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -869,6 +900,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
     });
     setState(() {
       _patientCount++;
+      _totalInCampaign++;
       _currentPatientId = pid;
       _registering = false;
       _section = 2;
@@ -907,9 +939,9 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Patient ${_patientCount + 1}',
+                    Text('Patient ${_totalInCampaign + 1}',
                         style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w800, color: const Color(0xFF1A2A3D))),
-                    Text('$_patientCount screened so far · ${_campaignNameCtrl.text}',
+                    Text('$_patientCount screened · $_totalInCampaign registered · ${_campaignNameCtrl.text}',
                         style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8FA0B4))),
                   ],
                 ),

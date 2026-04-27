@@ -326,6 +326,18 @@ class DatabaseHelper {
     ''');
   }
 
+  /// Patients registered but not yet screened (no row in screenings table)
+  Future<int> getPendingCount() async {
+    final database = await this.db;
+    final result = await database.rawQuery('''
+      SELECT COUNT(*) as count FROM patients p
+      WHERE NOT EXISTS (
+        SELECT 1 FROM screenings s WHERE s.patient_id = p.id
+      )
+    ''');
+    return (result.first['count'] as int?) ?? 0;
+  }
+
   Future<int> getUnsyncedCount() async {
     final database = await db;
     final result = await database.rawQuery(
@@ -356,6 +368,12 @@ class DatabaseHelper {
     for (final row in rows) {
       map[row['outcome'] as String] = (row['count'] as int?) ?? 0;
     }
+    // Add pending: patients with no screening record at all
+    final pendingResult = await database.rawQuery('''
+      SELECT COUNT(*) as count FROM patients p
+      WHERE NOT EXISTS (SELECT 1 FROM screenings s WHERE s.patient_id = p.id)
+    ''');
+    map['pending'] = (pendingResult.first['count'] as int?) ?? 0;
     return map;
   }
 

@@ -17,6 +17,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   int _totalScreened = 0;
   int _totalPassed = 0;
   int _totalReferred = 0;
+  int _totalPending = 0;
 
   // ── Demographics
   Map<String, int> _ageGroups = {};
@@ -80,8 +81,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       if (!mounted) return;
       setState(() {
         final outcomes = results[0] as Map<String, int>;
-        _totalPassed = outcomes['pass'] ?? 0;
-        _totalReferred = outcomes['refer'] ?? 0;
+        _totalPassed   = outcomes['pass']    ?? 0;
+        _totalReferred = outcomes['refer']   ?? 0;
+        _totalPending  = outcomes['pending'] ?? 0;
         _totalScreened = _totalPassed + _totalReferred;
         _ageGroups = results[1] as Map<String, int>;
         _genderCounts = results[2] as Map<String, int>;
@@ -261,37 +263,54 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Widget _buildStatsCards() {
-    final passRate = _totalScreened > 0 ? (_totalPassed / _totalScreened) : 0.0;
-    final referRate = _totalScreened > 0
-        ? (_totalReferred / _totalScreened)
-        : 0.0;
-    return Row(
+    final passRate  = _totalScreened > 0 ? (_totalPassed   / _totalScreened) : 0.0;
+    final referRate = _totalScreened > 0 ? (_totalReferred / _totalScreened) : 0.0;
+    final totalAll  = _totalScreened + _totalPending;
+    final pendRate  = totalAll > 0 ? (_totalPending / totalAll) : 0.0;
+    return Column(
       children: [
-        _buildStatCard(
-          '$_totalScreened',
-          'Screened',
-          'All time',
-          const Color(0xFF0D9488),
-          Icons.visibility_rounded,
-          1.0,
+        Row(
+          children: [
+            _buildStatCard(
+              '$_totalScreened',
+              'Screened',
+              'All time',
+              const Color(0xFF0D9488),
+              Icons.visibility_rounded,
+              1.0,
+            ),
+            const SizedBox(width: 8),
+            _buildStatCard(
+              '$_totalPassed',
+              'Passed',
+              '${(passRate * 100).toStringAsFixed(0)}%',
+              const Color(0xFF22C55E),
+              Icons.check_circle_rounded,
+              passRate,
+            ),
+          ],
         ),
-        const SizedBox(width: 8),
-        _buildStatCard(
-          '$_totalPassed',
-          'Passed',
-          '${(passRate * 100).toStringAsFixed(0)}%',
-          const Color(0xFF22C55E),
-          Icons.check_circle_rounded,
-          passRate,
-        ),
-        const SizedBox(width: 8),
-        _buildStatCard(
-          '$_totalReferred',
-          'Referred',
-          '${(referRate * 100).toStringAsFixed(0)}%',
-          const Color(0xFFF59E0B),
-          Icons.assignment_rounded,
-          referRate,
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            _buildStatCard(
+              '$_totalReferred',
+              'Referred',
+              '${(referRate * 100).toStringAsFixed(0)}%',
+              const Color(0xFFF59E0B),
+              Icons.assignment_rounded,
+              referRate,
+            ),
+            const SizedBox(width: 8),
+            _buildStatCard(
+              '$_totalPending',
+              'Pending',
+              'Awaiting test',
+              const Color(0xFF8B5CF6),
+              Icons.hourglass_top_rounded,
+              pendRate,
+            ),
+          ],
         ),
       ],
     );

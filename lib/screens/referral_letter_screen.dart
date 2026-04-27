@@ -13,6 +13,226 @@ const _red  = Color(0xFFEF4444);
 const _green = Color(0xFF22C55E);
 const _amber = Color(0xFFF59E0B);
 
+// ── Referral letter translations ─────────────────────────────────────────
+const _translations = <String, Map<String, String>>{
+  'Luganda': {
+    'referral_letter': 'EBBALUWA EYA OKUKEBERA AMAASO / REFERRAL LETTER',
+    'vision_screening': 'Pulogulaamu ya Okukebera Amaaso / Vision Screening Programme',
+    'to': 'Eri / To',
+    'from': 'Okuva / From',
+    'eye_specialist': 'Omusawo wa Maaso / Eye Specialist',
+    'patient_details': 'EBIMU KU MULWADDE / PATIENT DETAILS',
+    'name': 'Erinnya / Name',
+    'patient_id': 'Namba ya Mulwadde / Patient ID',
+    'age_sex': 'Emyaka / Ekkono / Age / Sex',
+    'village': 'Kyalo / Village',
+    'conditions': 'Endwadde / Conditions',
+    'appointment': 'Olunaku lw\'okujja / Appointment',
+    'va_results': 'EBIPIMO BY\'OKULABA / VISUAL ACUITY RESULTS',
+    'distance_vision': 'Okulaba Wala (Monocular) / Distance Vision',
+    'near_vision': 'Okulaba Kumpi (Binocular — 40cm) / Near Vision',
+    'both_eyes': 'Amaaso Abibili (OU) / Both Eyes',
+    'right_eye': 'Jjelo Ddyo (OD) / Right Eye',
+    'left_eye': 'Jjelo Kkono (OS) / Left Eye',
+    'reason': 'ENSONGA Y\'OKUKEBERA / REASON FOR REFERRAL',
+    'reason_body': 'Okulaba okw\'omulwadde kuli wansi wa 6/12 mu jjelo emu oba zombi. Okukebera nate n\'okulabirirwa bikwatagana. / Visual acuity below 6/12 detected. Further examination recommended.',
+    'male': 'Musajja / Male',
+    'female': 'Mukazi / Female',
+    'years': 'emyaka / years',
+    'badge_id': 'Namba ya Mulimu / Badge ID',
+    'date': 'Olunaku / Date',
+  },
+  'Runyankole/Rukiga': {
+    'referral_letter': 'EBBARUWA Y\'OKWEGYEREKA / REFERRAL LETTER',
+    'vision_screening': 'Pulogulaamu y\'Okwegyereka Amaisho / Vision Screening Programme',
+    'to': 'Kuri / To',
+    'from': 'Kuva / From',
+    'eye_specialist': 'Omushaija w\'Amaisho / Eye Specialist',
+    'patient_details': 'AMAKURU G\'OMURWAIRE / PATIENT DETAILS',
+    'name': 'Eizina / Name',
+    'patient_id': 'Namba y\'Omurwaire / Patient ID',
+    'age_sex': 'Emyaka / Orugendo / Age / Sex',
+    'village': 'Kyaro / Village',
+    'conditions': 'Endwara / Conditions',
+    'appointment': 'Eizooba ry\'okuza / Appointment',
+    'va_results': 'EBIPIMO BY\'AMAISHO / VISUAL ACUITY RESULTS',
+    'distance_vision': 'Kurora Kure (Monocular) / Distance Vision',
+    'near_vision': 'Kurora Hafi (Binocular — 40cm) / Near Vision',
+    'both_eyes': 'Amaisho Abiri (OU) / Both Eyes',
+    'right_eye': 'Iisho Ry\'Ekuruumi (OD) / Right Eye',
+    'left_eye': 'Iisho Ry\'Eibumba (OS) / Left Eye',
+    'reason': 'EMPANDURA Y\'OKWEGYEREKA / REASON FOR REFERRAL',
+    'reason_body': 'Kurora kw\'omurwaire kuri hasi ya 6/12 mu isho rimwe oba abiri. Okwegyereka nate n\'okulabirirwa bikweterana. / Visual acuity below 6/12 detected. Further examination recommended.',
+    'male': 'Omushaija / Male',
+    'female': 'Omukazi / Female',
+    'years': 'emyaka / years',
+    'badge_id': 'Namba ya Mulimu / Badge ID',
+    'date': 'Eizooba / Date',
+  },
+  'Acholi': {
+    'referral_letter': 'WARAGA ME CWINYA / REFERRAL LETTER',
+    'vision_screening': 'Purogram me Nen Wan / Vision Screening Programme',
+    'to': 'Bot / To',
+    'from': 'Ki / From',
+    'eye_specialist': 'Lakwena me Wan / Eye Specialist',
+    'patient_details': 'NGEC PA LACEN / PATIENT DETAILS',
+    'name': 'Nying / Name',
+    'patient_id': 'Namba pa Lacen / Patient ID',
+    'age_sex': 'Mwaka / Dano / Age / Sex',
+    'village': 'Gang / Village',
+    'conditions': 'Two / Conditions',
+    'appointment': 'Nino me Bino / Appointment',
+    'va_results': 'KITE ME NEN WAN / VISUAL ACUITY RESULTS',
+    'distance_vision': 'Neno Mabor (Monocular) / Distance Vision',
+    'near_vision': 'Neno Macok (Binocular — 40cm) / Near Vision',
+    'both_eyes': 'Wan Aryo (OU) / Both Eyes',
+    'right_eye': 'Wan Acuc (OD) / Right Eye',
+    'left_eye': 'Wan Acam (OS) / Left Eye',
+    'reason': 'POKO ME CWINYA / REASON FOR REFERRAL',
+    'reason_body': 'Neno pa lacen tye piny 6/12 i wan acel onyo aryo. Neno odoco ki jami me tic mite. / Visual acuity below 6/12 detected. Further examination recommended.',
+    'male': 'Laco / Male',
+    'female': 'Dako / Female',
+    'years': 'mwaka / years',
+    'badge_id': 'Namba me Tic / Badge ID',
+    'date': 'Nino / Date',
+  },
+  'Ateso': {
+    'referral_letter': 'AKWAP KA ILOSIT / REFERRAL LETTER',
+    'vision_screening': 'Aprogramu ka Ilosit Aimaran / Vision Screening Programme',
+    'to': 'Kos / To',
+    'from': 'Ijo / From',
+    'eye_specialist': 'Adokon ka Aimaran / Eye Specialist',
+    'patient_details': 'AKWAP KA AIPEAN / PATIENT DETAILS',
+    'name': 'Aran / Name',
+    'patient_id': 'Namba ka Aipean / Patient ID',
+    'age_sex': 'Iboit / Itunga / Age / Sex',
+    'village': 'Ekitela / Village',
+    'conditions': 'Aipean / Conditions',
+    'appointment': 'Akwap ka Ilosit / Appointment',
+    'va_results': 'ILOSIT KA AIMARAN / VISUAL ACUITY RESULTS',
+    'distance_vision': 'Ilosit Abwor (Monocular) / Distance Vision',
+    'near_vision': 'Ilosit Akwap (Binocular — 40cm) / Near Vision',
+    'both_eyes': 'Aimaran Eare (OU) / Both Eyes',
+    'right_eye': 'Aimaran Akuret (OD) / Right Eye',
+    'left_eye': 'Aimaran Abwor (OS) / Left Eye',
+    'reason': 'AKWAP KA ILOSIT / REASON FOR REFERRAL',
+    'reason_body': 'Ilosit ka aipean tun piny 6/12 i aimaran aone o eare. Ilosit noi ki aprogramu mite. / Visual acuity below 6/12 detected. Further examination recommended.',
+    'male': 'Ekimat / Male',
+    'female': 'Ekimat / Female',
+    'years': 'iboit / years',
+    'badge_id': 'Namba ka Tic / Badge ID',
+    'date': 'Akwap / Date',
+  },
+  'Lugbara': {
+    'referral_letter': 'WARAGA RI OKURU / REFERRAL LETTER',
+    'vision_screening': 'Pulogulaamu ri Oku Azi / Vision Screening Programme',
+    'to': 'Kua / To',
+    'from': 'Ri / From',
+    'eye_specialist': 'Onzi ri Azi / Eye Specialist',
+    'patient_details': 'AMAKURU RI ONZI / PATIENT DETAILS',
+    'name': 'Iri / Name',
+    'patient_id': 'Namba ri Onzi / Patient ID',
+    'age_sex': 'Ovu / Oku / Age / Sex',
+    'village': 'Oku / Village',
+    'conditions': 'Adria / Conditions',
+    'appointment': 'Oku ri Oku / Appointment',
+    'va_results': 'OKU AZI / VISUAL ACUITY RESULTS',
+    'distance_vision': 'Oku Azi Kua (Monocular) / Distance Vision',
+    'near_vision': 'Oku Azi Ri (Binocular — 40cm) / Near Vision',
+    'both_eyes': 'Azi Arua (OU) / Both Eyes',
+    'right_eye': 'Azi Ri Kua (OD) / Right Eye',
+    'left_eye': 'Azi Ri Oku (OS) / Left Eye',
+    'reason': 'ENSONGA RI OKURU / REASON FOR REFERRAL',
+    'reason_body': 'Oku azi ri onzi kua piny 6/12 i azi ama arua. Oku nate ki okulabirirwa bikweterana. / Visual acuity below 6/12 detected. Further examination recommended.',
+    'male': 'Oku / Male',
+    'female': 'Oku / Female',
+    'years': 'ovu / years',
+    'badge_id': 'Namba ri Tic / Badge ID',
+    'date': 'Oku / Date',
+  },
+  'Luo': {
+    'referral_letter': 'WARAGA MAR REFERRAL / REFERRAL LETTER',
+    'vision_screening': 'Purogram mar Neno / Vision Screening Programme',
+    'to': 'Ir / To',
+    'from': 'Oa / From',
+    'eye_specialist': 'Lakwena mar Wang / Eye Specialist',
+    'patient_details': 'WECHE MAR JATUO / PATIENT DETAILS',
+    'name': 'Nying / Name',
+    'patient_id': 'Namba mar Jatuo / Patient ID',
+    'age_sex': 'Higni / Dichuo / Age / Sex',
+    'village': 'Gweng / Village',
+    'conditions': 'Tuo / Conditions',
+    'appointment': 'Chieng mar Biro / Appointment',
+    'va_results': 'KITE MAR NENO / VISUAL ACUITY RESULTS',
+    'distance_vision': 'Neno Mabor (Monocular) / Distance Vision',
+    'near_vision': 'Neno Machiegni (Binocular — 40cm) / Near Vision',
+    'both_eyes': 'Wang Ariyo (OU) / Both Eyes',
+    'right_eye': 'Wang Korachwich (OD) / Right Eye',
+    'left_eye': 'Wang Korachiel (OS) / Left Eye',
+    'reason': 'POKO MAR REFERRAL / REASON FOR REFERRAL',
+    'reason_body': 'Neno mar jatuo ni piny 6/12 e wang achiel kata ariyo. Neno odoco ki tich mite. / Visual acuity below 6/12 detected. Further examination recommended.',
+    'male': 'Dichuo / Male',
+    'female': 'Dhako / Female',
+    'years': 'higni / years',
+    'badge_id': 'Namba mar Tich / Badge ID',
+    'date': 'Chieng / Date',
+  },
+  'Runyoro': {
+    'referral_letter': 'EBBARUWA Y\'OKWEGYEREKA / REFERRAL LETTER',
+    'vision_screening': 'Pulogulaamu y\'Okwegyereka Amaisho / Vision Screening Programme',
+    'to': 'Kuri / To',
+    'from': 'Kuva / From',
+    'eye_specialist': 'Omusawo w\'Amaisho / Eye Specialist',
+    'patient_details': 'AMAKURU G\'OMURWAIRE / PATIENT DETAILS',
+    'name': 'Eizina / Name',
+    'patient_id': 'Namba y\'Omurwaire / Patient ID',
+    'age_sex': 'Emyaka / Orugendo / Age / Sex',
+    'village': 'Kyaro / Village',
+    'conditions': 'Endwara / Conditions',
+    'appointment': 'Eizooba ry\'okuza / Appointment',
+    'va_results': 'EBIPIMO BY\'AMAISHO / VISUAL ACUITY RESULTS',
+    'distance_vision': 'Kurora Kure (Monocular) / Distance Vision',
+    'near_vision': 'Kurora Hafi (Binocular — 40cm) / Near Vision',
+    'both_eyes': 'Amaisho Abiri (OU) / Both Eyes',
+    'right_eye': 'Iisho Ry\'Ekuruumi (OD) / Right Eye',
+    'left_eye': 'Iisho Ry\'Eibumba (OS) / Left Eye',
+    'reason': 'EMPANDURA Y\'OKWEGYEREKA / REASON FOR REFERRAL',
+    'reason_body': 'Kurora kw\'omurwaire kuri hasi ya 6/12 mu isho rimwe oba abiri. Okwegyereka nate n\'okulabirirwa bikweterana. / Visual acuity below 6/12 detected. Further examination recommended.',
+    'male': 'Omushaija / Male',
+    'female': 'Omukazi / Female',
+    'years': 'emyaka / years',
+    'badge_id': 'Namba ya Mulimu / Badge ID',
+    'date': 'Eizooba / Date',
+  },
+  'Swahili': {
+    'referral_letter': 'BARUA YA RUFAA / REFERRAL LETTER',
+    'vision_screening': 'Mpango wa Uchunguzi wa Macho / Vision Screening Programme',
+    'to': 'Kwa / To',
+    'from': 'Kutoka / From',
+    'eye_specialist': 'Daktari wa Macho / Eye Specialist',
+    'patient_details': 'MAELEZO YA MGONJWA / PATIENT DETAILS',
+    'name': 'Jina / Name',
+    'patient_id': 'Nambari ya Mgonjwa / Patient ID',
+    'age_sex': 'Umri / Jinsia / Age / Sex',
+    'village': 'Kijiji / Village',
+    'conditions': 'Magonjwa / Conditions',
+    'appointment': 'Tarehe ya Miadi / Appointment',
+    'va_results': 'MATOKEO YA UONI / VISUAL ACUITY RESULTS',
+    'distance_vision': 'Uoni wa Mbali (Monocular) / Distance Vision',
+    'near_vision': 'Uoni wa Karibu (Binocular — 40cm) / Near Vision',
+    'both_eyes': 'Macho Yote Mawili (OU) / Both Eyes',
+    'right_eye': 'Jicho la Kulia (OD) / Right Eye',
+    'left_eye': 'Jicho la Kushoto (OS) / Left Eye',
+    'reason': 'SABABU YA RUFAA / REASON FOR REFERRAL',
+    'reason_body': 'Uoni wa mgonjwa uko chini ya 6/12 katika jicho moja au mawili. Uchunguzi zaidi unapendekezwa. / Visual acuity below 6/12 detected. Further examination recommended.',
+    'male': 'Mwanaume / Male',
+    'female': 'Mwanamke / Female',
+    'years': 'miaka / years',
+    'badge_id': 'Nambari ya Kitambulisho / Badge ID',
+    'date': 'Tarehe / Date',
+  },
+};
+
 // Uganda eye clinics / referral facilities
 const _facilities = [
   'Mulago National Referral Hospital Eye Clinic',
@@ -54,9 +274,11 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
   final _facilityOtherCtrl = TextEditingController();
   String _selectedFacility = _facilities[0];
   String _chwId = '';
+  String _language = 'English Only';
   DateTime? _appointmentDate;
   bool _showLetter = false;
   bool _saved = false;
+  bool _profileLoaded = false;
 
   @override
   void initState() {
@@ -64,16 +286,25 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
     _loadChwProfile();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadChwProfile();
+  }
+
   Future<void> _loadChwProfile() async {
     final p = await SharedPreferences.getInstance();
     if (!mounted) return;
-    final name   = p.getString('chw_name')   ?? '';
-    final center = p.getString('chw_center') ?? '';
-    final chwId  = p.getString('chw_id')     ?? '';
+    final name     = p.getString('chw_name')        ?? '';
+    final center   = p.getString('chw_center')       ?? '';
+    final chwId    = p.getString('chw_id')            ?? '';
+    final language = p.getString('referral_language') ?? 'English Only';
     setState(() {
       if (name.isNotEmpty)   _chwNameCtrl.text  = name;
       if (center.isNotEmpty) _chwTitleCtrl.text = 'Community Health Worker · $center';
-      _chwId = chwId;
+      _chwId         = chwId;
+      _language      = language;
+      _profileLoaded = true;
       final match = _facilities.where((f) =>
         center.isNotEmpty &&
         (f.toLowerCase().contains(center.toLowerCase()) ||
@@ -124,6 +355,10 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
     return 'Blind';
   }
 
+  // Returns translated string for key, falls back to English fallback value.
+  String _t(String key, String fallback) =>
+      _translations[_language]?[key] ?? fallback;
+
   String get _facilityName => _selectedFacility == 'Other (specify below)'
       ? (_facilityOtherCtrl.text.trim().isEmpty
           ? 'Nearest Eye Clinic'
@@ -131,42 +366,44 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
       : _selectedFacility;
 
   String get _letterText {
-    final p = widget.patient;
+    final p   = widget.patient;
     final buf = StringBuffer();
-    buf.writeln('REFERRAL LETTER');
+    final chwName = _chwNameCtrl.text.trim().isEmpty ? '[CHW Name]' : _chwNameCtrl.text.trim();
+    buf.writeln(_t('referral_letter', 'REFERRAL LETTER'));
     buf.writeln('=' * 50);
-    buf.writeln('Date: ${widget.screeningDate}');
+    buf.writeln('${_t('date', 'Date')}: ${widget.screeningDate}');
     buf.writeln('');
-    buf.writeln('TO: The Eye Specialist');
+    buf.writeln('${_t('to', 'TO')}: ${_t('eye_specialist', 'The Eye Specialist')}');
     buf.writeln('    $_facilityName');
     buf.writeln('');
-    buf.writeln('FROM: ${_chwNameCtrl.text.trim().isEmpty ? '[CHW Name]' : _chwNameCtrl.text.trim()}');
+    buf.writeln('${_t('from', 'FROM')}: $chwName');
     buf.writeln('      ${_chwTitleCtrl.text.trim()}');
-    if (_chwId.isNotEmpty) buf.writeln('      Badge ID: $_chwId');
+    if (_chwId.isNotEmpty) buf.writeln('      ${_t('badge_id', 'Badge ID')}: $_chwId');
     buf.writeln('');
-    buf.writeln('RE: VISION SCREENING REFERRAL');
+    buf.writeln('RE: ${_t('referral_letter', 'VISION SCREENING REFERRAL')}');
     buf.writeln('-' * 50);
     buf.writeln('');
-    buf.writeln('PATIENT DETAILS');
-    buf.writeln('Name   : ${p['name']}');
+    buf.writeln(_t('patient_details', 'PATIENT DETAILS'));
+    buf.writeln('${_t('name', 'Name')}   : ${p['name']}');
     buf.writeln('ID     : ${p['id']}');
-    buf.writeln('Age    : ${p['age']} years');
-    buf.writeln('Gender : ${p['gender'] == 'M' ? 'Male' : 'Female'}');
-    buf.writeln('Village: ${p['village']}');
+    buf.writeln('${_t('age_sex', 'Age / Sex')} : ${p['age']} ${_t('years', 'years')} · ${p['gender'] == 'M' ? _t('male', 'Male') : _t('female', 'Female')}');
+    buf.writeln('${_t('village', 'Village')}: ${p['village']}');
     if (widget.conditions.isNotEmpty) {
-      buf.writeln('Conditions: ${widget.conditions.join(', ')}');
+      buf.writeln('${_t('conditions', 'Conditions')}: ${widget.conditions.join(', ')}');
     }
     if (_appointmentDate != null) {
-      buf.writeln('Appointment: $_appointmentDateStr');
+      buf.writeln('${_t('appointment', 'Appointment')}: $_appointmentDateStr');
     }
     buf.writeln('');
-    buf.writeln('VISUAL ACUITY RESULTS (Tumbling E, LogMAR Scale)');
+    buf.writeln(_t('va_results', 'VISUAL ACUITY RESULTS (Tumbling E, LogMAR Scale)'));
     buf.writeln('-' * 50);
-    buf.writeln('Distance Vision (Monocular):');
+    buf.writeln('${_t('distance_vision', 'Distance Vision (Monocular)')}:');
     for (final r in widget.eyeResults) {
-      final eye    = r['eye'] as String;
-      final logmar = r['logmar'] as String;
-      final eyeFull = eye == 'OD' ? 'Right Eye (OD)' : 'Left Eye (OS)';
+      final eye     = r['eye'] as String;
+      final logmar  = r['logmar'] as String;
+      final eyeFull = eye == 'OD'
+          ? _t('right_eye', 'Right Eye (OD)')
+          : _t('left_eye', 'Left Eye (OS)');
       buf.writeln('$eyeFull:');
       buf.writeln('  Snellen : ${_toSnellen(logmar)}');
       buf.writeln('  LogMAR  : $logmar');
@@ -178,8 +415,8 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
     }
     if (widget.nearResult != null) {
       final logmar = widget.nearResult!['logmar'] as String;
-      buf.writeln('Near Vision (Binocular — 40cm):');
-      buf.writeln('Both Eyes (OU):');
+      buf.writeln('${_t('near_vision', 'Near Vision (Binocular — 40cm)')}:');
+      buf.writeln('${_t('both_eyes', 'Both Eyes (OU)')}:');
       buf.writeln('  Snellen : ${_toSnellen(logmar)}');
       buf.writeln('  LogMAR  : $logmar');
       buf.writeln('  Class   : ${_vaClass(logmar)}');
@@ -188,20 +425,15 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
       }
       buf.writeln('');
     }
-    buf.writeln('REASON FOR REFERRAL');
+    buf.writeln(_t('reason', 'REASON FOR REFERRAL'));
     buf.writeln('-' * 50);
-    buf.writeln('Visual acuity below 6/12 detected in one or more eyes.');
-    buf.writeln('Further examination and management recommended.');
-    buf.writeln('');
-    buf.writeln('Please assess and manage as appropriate.');
-    buf.writeln('');
-    buf.writeln('Thank you.');
+    buf.writeln(_t('reason_body', 'Visual acuity below 6/12 detected in one or more eyes. Further examination and management recommended.'));
     buf.writeln('');
     buf.writeln('_' * 30);
-    buf.writeln('${_chwNameCtrl.text.trim().isEmpty ? '[CHW Name]' : _chwNameCtrl.text.trim()}');
-    buf.writeln('${_chwTitleCtrl.text.trim()}');
-    if (_chwId.isNotEmpty) buf.writeln('Badge ID: $_chwId');
-    buf.writeln('Date: ${widget.screeningDate}');
+    buf.writeln(chwName);
+    buf.writeln(_chwTitleCtrl.text.trim());
+    if (_chwId.isNotEmpty) buf.writeln('${_t('badge_id', 'Badge ID')}: $_chwId');
+    buf.writeln('${_t('date', 'Date')}: ${widget.screeningDate}');
     return buf.toString();
   }
 
@@ -572,7 +804,13 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => setState(() => _showLetter = true),
+              onPressed: _profileLoaded ? () async {
+                final p = await SharedPreferences.getInstance();
+                if (mounted) setState(() {
+                  _language = p.getString('referral_language') ?? 'English Only';
+                  _showLetter = true;
+                });
+              } : null,
               icon: const Icon(Icons.description_rounded,
                   size: 18, color: Colors.white),
               label: Text('Preview Referral Letter',
@@ -636,12 +874,12 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('REFERRAL LETTER',
+                          Text(_t('referral_letter', 'REFERRAL LETTER'),
                               style: GoogleFonts.plusJakartaSans(
                                   fontSize: 14, fontWeight: FontWeight.w900,
                                   color: const Color(0xFF1A2A3D),
                                   letterSpacing: 1.2)),
-                          Text('Vision Screening Programme',
+                          Text(_t('vision_screening', 'Vision Screening Programme'),
                               style: GoogleFonts.inter(
                                   fontSize: 11,
                                   color: const Color(0xFF8FA0B4))),
@@ -657,47 +895,47 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                 _divider(),
                 const SizedBox(height: 16),
                 // To / From
-                _letterRow('To', _facilityName),
+                _letterRow(_t('to', 'To'), _facilityName),
                 const SizedBox(height: 8),
-                _letterRow('From',
+                _letterRow(_t('from', 'From'),
                     '${_chwNameCtrl.text.trim().isEmpty ? '[CHW Name]' : _chwNameCtrl.text.trim()}\n${_chwTitleCtrl.text.trim()}'),
                 const SizedBox(height: 16),
                 _divider(),
                 const SizedBox(height: 16),
                 // Patient
-                Text('PATIENT DETAILS',
+                Text(_t('patient_details', 'PATIENT DETAILS'),
                     style: GoogleFonts.inter(
                         fontSize: 10, fontWeight: FontWeight.w700,
                         color: const Color(0xFF8FA0B4),
                         letterSpacing: 1.0)),
                 const SizedBox(height: 10),
-                _letterRow('Name', p['name']!),
+                _letterRow(_t('name', 'Name'), p['name']!),
                 const SizedBox(height: 6),
-                _letterRow('Patient ID', p['id']!),
+                _letterRow(_t('patient_id', 'Patient ID'), p['id']!),
                 const SizedBox(height: 6),
-                _letterRow('Age / Sex',
-                    '${p['age']} years · ${p['gender'] == 'M' ? 'Male' : 'Female'}'),
+                _letterRow(_t('age_sex', 'Age / Sex'),
+                    '${p['age']} ${_t('years', 'years')} · ${p['gender'] == 'M' ? _t('male', 'Male') : _t('female', 'Female')}'),
                 const SizedBox(height: 6),
-                _letterRow('Village', p['village']!),
+                _letterRow(_t('village', 'Village'), p['village']!),
                 if (widget.conditions.isNotEmpty) ...[
                   const SizedBox(height: 6),
-                  _letterRow('Conditions', widget.conditions.join(', ')),
+                  _letterRow(_t('conditions', 'Conditions'), widget.conditions.join(', ')),
                 ],
                 if (_appointmentDate != null) ...[
                   const SizedBox(height: 6),
-                  _letterRow('Appointment', _appointmentDateStr),
+                  _letterRow(_t('appointment', 'Appointment'), _appointmentDateStr),
                 ],
                 const SizedBox(height: 16),
                 _divider(),
                 const SizedBox(height: 16),
                 // VA results
-                Text('VISUAL ACUITY RESULTS',
+                Text(_t('va_results', 'VISUAL ACUITY RESULTS'),
                     style: GoogleFonts.inter(
                         fontSize: 10, fontWeight: FontWeight.w700,
                         color: const Color(0xFF8FA0B4),
                         letterSpacing: 1.0)),
                 const SizedBox(height: 6),
-                Text('Distance Vision (Monocular)',
+                Text(_t('distance_vision', 'Distance Vision (Monocular)'),
                     style: GoogleFonts.inter(
                         fontSize: 10, color: const Color(0xFF8FA0B4))),
                 const SizedBox(height: 8),
@@ -707,7 +945,9 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                   final v      = double.tryParse(logmar);
                   final col    = v == null ? _red
                       : v <= 0.3 ? _green : v <= 0.5 ? _amber : _red;
-                  final eyeFull = eye == 'OD' ? 'Right Eye (OD)' : 'Left Eye (OS)';
+                  final eyeFull = eye == 'OD'
+                      ? _t('right_eye', 'Right Eye (OD)')
+                      : _t('left_eye', 'Left Eye (OS)');
                   return Container(
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(12),
@@ -751,7 +991,7 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                 }),
                 if (widget.nearResult != null) ...[
                   const SizedBox(height: 8),
-                  Text('Near Vision (Binocular — 40cm)',
+                  Text(_t('near_vision', 'Near Vision (Binocular — 40cm)'),
                       style: GoogleFonts.inter(
                           fontSize: 10, color: const Color(0xFF8FA0B4))),
                   const SizedBox(height: 8),
@@ -773,7 +1013,7 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Both Eyes (OU)',
+                                Text(_t('both_eyes', 'Both Eyes (OU)'),
                                     style: GoogleFonts.inter(
                                         fontSize: 11, fontWeight: FontWeight.w700,
                                         color: const Color(0xFF1A2A3D))),
@@ -805,16 +1045,17 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                 _divider(),
                 const SizedBox(height: 16),
                 // Reason
-                Text('REASON FOR REFERRAL',
+                Text(_t('reason', 'REASON FOR REFERRAL'),
                     style: GoogleFonts.inter(
                         fontSize: 10, fontWeight: FontWeight.w700,
                         color: const Color(0xFF8FA0B4),
                         letterSpacing: 1.0)),
                 const SizedBox(height: 8),
                 Text(
-                  'Visual acuity below 6/12 detected in one or more eyes during '
-                  'community vision screening. Further examination and management '
-                  'is recommended.',
+                  _t('reason_body',
+                    'Visual acuity below 6/12 detected in one or more eyes during '
+                    'community vision screening. Further examination and management '
+                    'is recommended.'),
                   style: GoogleFonts.inter(
                       fontSize: 12, color: const Color(0xFF5E7291), height: 1.6),
                 ),
@@ -837,10 +1078,10 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                     style: GoogleFonts.inter(
                         fontSize: 11, color: const Color(0xFF8FA0B4))),
                 if (_chwId.isNotEmpty)
-                  Text('Badge ID: $_chwId',
+                  Text('${_t('badge_id', 'Badge ID')}: $_chwId',
                       style: GoogleFonts.inter(
                           fontSize: 11, color: const Color(0xFF8FA0B4))),
-                Text('Date: ${widget.screeningDate}',
+                Text('${_t('date', 'Date')}: ${widget.screeningDate}',
                     style: GoogleFonts.inter(
                         fontSize: 11, color: const Color(0xFF8FA0B4))),
               ],

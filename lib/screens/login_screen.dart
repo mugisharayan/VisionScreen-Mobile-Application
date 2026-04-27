@@ -106,6 +106,12 @@ class _LoginScreenState extends State<LoginScreen>
     await prefs.setString('chw_district', profile['district'] as String);
     await prefs.setString('chw_email',    profile['email']    as String);
     await prefs.setString('chw_phone',    profile['phone']    as String);
+    // Restore or generate CHW ID on login
+    final existingId = prefs.getString('chw_id') ?? '';
+    if (existingId.isEmpty) {
+      final id = 'CHW-${(100000 + DateTime.now().millisecondsSinceEpoch % 900000).toString()}';
+      await prefs.setString('chw_id', id);
+    }
     await prefs.setString('last_login_time',
         DateTime.now().toLocal().toString().substring(0, 16));
     await prefs.setString('last_login_role',

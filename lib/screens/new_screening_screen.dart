@@ -76,7 +76,8 @@ double _mmToPx(double mm, BuildContext context) {
 
 class NewScreeningScreen extends StatefulWidget {
   final bool startWithNewPatient;
-  const NewScreeningScreen({super.key, this.startWithNewPatient = false});
+  final String? existingPatientId;
+  const NewScreeningScreen({super.key, this.startWithNewPatient = false, this.existingPatientId});
   @override
   State<NewScreeningScreen> createState() => _NewScreeningScreenState();
 }
@@ -166,7 +167,15 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     );
     _showNewPatientForm = widget.startWithNewPatient;
     _loadUnsyncedCount();
-    _loadPatients();
+    _loadPatients().then((_) {
+      if (widget.existingPatientId != null && mounted) {
+        setState(() {
+          _selectedPatientId = widget.existingPatientId;
+          _step = 1;
+        });
+        _runChecklist();
+      }
+    });
     _connectivitySub = Connectivity().onConnectivityChanged.listen((r) {
       if (!mounted) return;
       setState(() => _isOffline = r.every((x) => x == ConnectivityResult.none));
