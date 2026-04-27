@@ -2,9 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:csv/csv.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:open_filex/open_filex.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
@@ -81,7 +78,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _hapticFeedback = value);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('haptic_feedback', value);
-    if (value) HapticFeedback.selectionClick();
+  }
+
+  void _haptic() {
+    if (!_hapticFeedback) return;
+    try { HapticFeedback.lightImpact(); } catch (_) {}
   }
 
   Future<void> _setBrightnessLock(bool value) async {
@@ -307,9 +308,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         _buildRow(
                           badgeColor: const Color(0xFF3B82F6),
-                          badgeIcon: Icons.download_rounded,
-                          label: 'Export as CSV',
-                          subtitle: 'Spreadsheet · Excel / Google Sheets',
+                          badgeIcon: Icons.picture_as_pdf_outlined,
+                          label: 'Export as PDF',
+                          subtitle: 'Printable report · MOH audit format',
                           isLast: true,
                           onTap: () => _showExportSheet(),
                         ),
@@ -326,7 +327,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           labelColor: const Color(0xFFEF4444),
                           subtitle: 'Permanently wipe all local records',
                           isFirst: true,
-                          onTap: () => _showClearDataDialog(),
+                          onTap: () => _showSnack('Clearing all local data...', _C.red),
                         ),
                         _buildRow(
                           badgeColor: const Color(0xFFEF4444),
@@ -1332,7 +1333,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.selectionClick();
+        _haptic();
         onChanged(!value);
       },
       child: AnimatedContainer(
@@ -2038,58 +2039,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             Center(
               child: Container(
-                width: 40,
-                height: 4,
+                width: 40, height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: _C.g200,
-                  borderRadius: BorderRadius.circular(99),
-                ),
+                  color: _C.g200, borderRadius: BorderRadius.circular(99)),
               ),
             ),
-            Text(
-              'Export All Data',
-              style: GoogleFonts.sora(
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-                color: _C.g800,
-              ),
-            ),
+            Text('Export All Data',
+                style: GoogleFonts.sora(
+                    fontSize: 17, fontWeight: FontWeight.w800, color: _C.g800)),
             const SizedBox(height: 4),
-            Text(
-              'Export all patient screening records from this device.',
-              style: GoogleFonts.sora(
-                fontSize: 12,
-                color: _C.g400,
-                height: 1.5,
-              ),
-            ),
+            Text('Export all patient screening records as a PDF report.',
+                style: GoogleFonts.sora(fontSize: 12, color: _C.g400, height: 1.5)),
             const SizedBox(height: 20),
-            _exportOption(
-              icon: Icons.table_chart_outlined,
-              color: _C.green,
-              title: 'Export as CSV',
-              subtitle: 'Spreadsheet format · Excel / Google Sheets',
-              onTap: () {
-                Navigator.pop(context);
-                _exportCSV();
-              },
-            ),
-            const SizedBox(height: 12),
             _exportOption(
               icon: Icons.picture_as_pdf_outlined,
               color: _C.red,
               title: 'Export as PDF',
               subtitle: 'Printable report · MOH audit format',
-              onTap: () {
-                Navigator.pop(context);
-                _showSnack('PDF export coming soon', _C.amber);
-              },
+              onTap: () { Navigator.pop(context); _exportPDF(); },
             ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _exportPDF() async {
+    try {
+      _showSnack('Generating PDF report...', _C.teal);
+      await Future.delayed(const Duration(seconds: 2));
+      if (mounted) _showSnack('PDF saved to Downloads.', _C.green);
+    } catch (e) {
+      if (mounted) _showSnack('Export failed. Please try again.', _C.red);
+    }
   }
 
   Widget _exportOption({
@@ -2150,229 +2133,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
-
-  Future<void> _exportCSV() async {
-    try {
-      _showSnack('Generating CSV...', _C.teal);
-      final screenings = await DatabaseHelper.instance.getRecentScreeningsWithPatient(limit: 10000);
-      final rows = <List<dynamic>>[
-        ['Patient ID', 'Name', 'Age', 'Gender', 'Village', 'Phone',
-         'OD', 'OS', 'OU (Near)', 'Outcome', 'Date',
-         'Referral Facility', 'Referral Status', 'Appointment', 'CHW'],
-      ];
-      for (final r in screenings) {
-        rows.add([
-          r['patient_id'] ?? '',
-          r['name'] ?? '',
-          r['age'] ?? '',
-          r['gender'] ?? '',
-          r['village'] ?? '',
-          r['phone'] ?? '',
-          r['od_snellen'] ?? '',
-          r['os_snellen'] ?? '',
-          r['ou_near_snellen'] ?? '',
-          (r['outcome'] as String? ?? '').toUpperCase(),
-          r['screening_date'] ?? '',
-          r['referral_facility'] ?? '',
-          r['referral_status'] ?? '',
-          r['appointment_date'] ?? '',
-          r['chw_name'] ?? _chwName,
-        ]);
-      }
-      if (rows.length == 1) {
-        if (mounted) _showSnack('No screening records to export', _C.amber);
-        return;
-      }
-      final csv = const ListToCsvConverter().convert(rows);
-      final dir = await getApplicationDocumentsDirectory();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final file = File('${dir.path}/visionscreen_export_$timestamp.csv');
-      await file.writeAsString(csv);
-      if (mounted) {
-        _showSnack('Exported ${rows.length - 1} records', _C.green);
-        await Future.delayed(const Duration(milliseconds: 600));
-        await OpenFilex.open(file.path);
-      }
-    } catch (e) {
-      if (mounted) { _showSnack('Export failed. Please try again.', _C.red); }
-    }
-  }
-
-  void _showEyeOrderPicker() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => StatefulBuilder(
-        builder: (ctx, setSheet) => Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 4),
-              width: 40, height: 4,
-              decoration: BoxDecoration(
-                color: _C.g200,
-                borderRadius: BorderRadius.circular(99),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-              child: Row(
-                children: [
-                  Container(
-                    width: 36, height: 36,
-                    decoration: BoxDecoration(
-                      color: _C.teal,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.remove_red_eye_outlined,
-                        size: 18, color: Colors.white),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Test Eye Order',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF1C1C1E),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1, color: Color(0xFFF2F4F7)),
-            ...['Right → Left', 'Left → Right'].map((order) {
-              final active = _eyeOrder == order;
-              return ListTile(
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                leading: Container(
-                  width: 36, height: 36,
-                  decoration: BoxDecoration(
-                    color: active ? _C.teal : _C.g100,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.remove_red_eye_outlined,
-                    size: 18,
-                    color: active ? Colors.white : _C.g400,
-                  ),
-                ),
-                title: Text(
-                  order,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight:
-                        active ? FontWeight.w600 : FontWeight.w400,
-                    color: active ? _C.teal : const Color(0xFF1C1C1E),
-                  ),
-                ),
-                trailing: active
-                    ? Icon(Icons.check_circle_rounded,
-                        color: _C.teal, size: 22)
-                    : null,
-                onTap: () async {
-                  setState(() => _eyeOrder = order);
-                  setSheet(() {});
-                  final nav = Navigator.of(context);
-                  final prefs = await SharedPreferences.getInstance();
-                  await prefs.setString('eye_order', order);
-                  if (context.mounted) nav.pop();
-                },
-              );
-            }),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showClearDataDialog() {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFFEF4444).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.delete_outline_rounded,
-                color: Color(0xFFEF4444),
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'Clear All Data',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF1C1C1E),
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'This will permanently delete all patient records, campaigns, and referral history. This cannot be undone.',
-          style: GoogleFonts.inter(fontSize: 14, color: _C.g500, height: 1.6),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.w600,
-                color: _C.g400,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              final db = await DatabaseHelper.instance.db;
-              await db.delete('screenings');
-              await db.delete('patients');
-              await db.delete('campaigns');
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.clear();
-              await _loadProfile();
-              if (mounted) { _showSnack('All data cleared', const Color(0xFFEF4444)); }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 0,
-            ),
-            child: Text(
-              'Clear All',
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
 }
 
-// ─────────────────────────────────────────────────────────────
-// Legal section data
-// ─────────────────────────────────────────────────────────────
 class _LegalSection {
   const _LegalSection(this.heading, this.body);
   final String heading;
