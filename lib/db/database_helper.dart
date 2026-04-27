@@ -771,6 +771,13 @@ class DatabaseHelper {
     return rows.isEmpty ? null : rows.first;
   }
 
+  Future<void> clearAllData() async {
+    final database = await db;
+    await database.delete('screenings');
+    await database.delete('patients');
+    await database.delete('campaigns');
+  }
+
   Future<List<Map<String, dynamic>>> getNotifications() async {
     final List<Map<String, dynamic>> notifications = [];
 
