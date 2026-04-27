@@ -67,7 +67,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _lastLoginTime = p.getString('last_login_time') ?? '';
       _lastLoginRole = p.getString('last_login_role') ?? '';
       _brightnessLock = p.getBool('brightness_lock') ?? true;
-      _batterySaver = p.getBool('battery_saver') ?? false;
       _eyeOrder = p.getString('eye_order') ?? 'Right → Left';
       _hapticFeedback = p.getBool('haptic_feedback') ?? true;
       _language = p.getString('referral_language') ?? 'English Only';
@@ -85,19 +84,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (value) HapticFeedback.selectionClick();
   }
 
-  Future<void> _setBatterySaver(bool value) async {
-    setState(() => _batterySaver = value);
-    final p = await SharedPreferences.getInstance();
-    await p.setBool('battery_saver', value);
-    try {
-      if (value) {
-        await ScreenBrightness().setScreenBrightness(0.3);
-      } else {
-        await ScreenBrightness().resetScreenBrightness();
-      }
-    } catch (_) {}
-  }
-
   Future<void> _setBrightnessLock(bool value) async {
     setState(() => _brightnessLock = value);
     final p = await SharedPreferences.getInstance();
@@ -113,7 +99,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // ── Toggles ──────────────────────────────────────────────
   bool _hapticFeedback = true;
-  bool _batterySaver = true;
   bool _brightnessLock = true;
   String _eyeOrder = 'Right → Left';
 
@@ -167,14 +152,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _buildSection(
                       title: 'Profile',
                       children: [
-                        _buildRow(
-                          badgeColor: const Color(0xFF6366F1),
-                          badgeIcon: Icons.person_outline_rounded,
-                          label: _chwName.isNotEmpty ? _chwName : 'Not set',
-                          subtitle: 'Full name',
-                          showChevron: false,
-                          isFirst: true,
-                        ),
+                        
                         _buildRow(
                           badgeColor: _C.teal,
                           badgeIcon: Icons.local_hospital_outlined,
@@ -273,32 +251,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             onChanged: _setHapticFeedback,
                           ),
                         ),
-                        _buildRow(
-                          badgeColor: const Color(0xFFEF4444),
-                          badgeIcon: Icons.battery_saver_rounded,
-                          label: 'Battery Saver',
-                          subtitle: 'Reduce brightness during screening',
-                          showChevron: false,
-                          isLast: true,
-                          trailing: _buildToggle(
-                            value: _batterySaver,
-                            onChanged: _setBatterySaver,
-                          ),
-                        ),
+                        
                       ],
                     ),
                     const SizedBox(height: 11),
                     _buildSection(
                       title: 'Screening',
                       children: [
-                        _buildRow(
-                          badgeColor: _C.teal,
-                          badgeIcon: Icons.remove_red_eye_outlined,
-                          label: 'Test Eye Order',
-                          subtitle: _eyeOrder,
-                          isFirst: true,
-                          onTap: () => _showEyeOrderPicker(),
-                        ),
+                        
                         _buildRow(
                           badgeColor: const Color(0xFFEAB308),
                           badgeIcon: Icons.wb_sunny_rounded,
