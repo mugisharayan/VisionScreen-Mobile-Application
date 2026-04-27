@@ -1532,6 +1532,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.pop(context);
+                        SharedPreferences.getInstance().then((prefs) {
+                          prefs.setBool('remember_me', false);
+                          prefs.remove('remembered_email');
+                          prefs.remove('remembered_password');
+                          prefs.remove('remembered_role');
+                        });
                         Navigator.of(context)
                             .pushNamedAndRemoveUntil('/login', (_) => false);
                       },

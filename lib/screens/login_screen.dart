@@ -17,10 +17,18 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final TabController _tabCtrl;
   final _scrollCtrl = ScrollController();
   bool _heroVisible = true;
+
+  // ── Orb drift animations ──
+  AnimationController? _orb1Ctrl;
+  AnimationController? _orb2Ctrl;
+  AnimationController? _orb3Ctrl;
+  Animation<Offset>? _orb1Pos;
+  Animation<Offset>? _orb2Pos;
+  Animation<Offset>? _orb3Pos;
 
   // Login form
   final _loginEmailCtrl = TextEditingController();
@@ -65,12 +73,24 @@ class _LoginScreenState extends State<LoginScreen>
         setState(() => _heroVisible = !shouldHide);
       }
     });
+    _orb1Ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 8))..repeat(reverse: true);
+    _orb1Pos = Tween<Offset>(begin: const Offset(-60, -80), end: const Offset(-20, -40))
+        .animate(CurvedAnimation(parent: _orb1Ctrl!, curve: Curves.easeInOut));
+    _orb2Ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 11))..repeat(reverse: true);
+    _orb2Pos = Tween<Offset>(begin: const Offset(-80, 80), end: const Offset(-30, 120))
+        .animate(CurvedAnimation(parent: _orb2Ctrl!, curve: Curves.easeInOut));
+    _orb3Ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 7))..repeat(reverse: true);
+    _orb3Pos = Tween<Offset>(begin: const Offset(-40, 300), end: const Offset(10, 260))
+        .animate(CurvedAnimation(parent: _orb3Ctrl!, curve: Curves.easeInOut));
   }
 
   @override
   void dispose() {
     _tabCtrl.dispose();
     _scrollCtrl.dispose();
+    _orb1Ctrl?.dispose();
+    _orb2Ctrl?.dispose();
+    _orb3Ctrl?.dispose();
     _loginEmailCtrl.dispose();
     _loginPasswordCtrl.dispose();
     _signUpNameCtrl.dispose();
@@ -344,148 +364,199 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
+    final screenH = MediaQuery.of(context).size.height;
     return Scaffold(
       backgroundColor: AppColors.ink,
       resizeToAvoidBottomInset: true,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // ── Grid + mesh background ──
+          // ── Grid + animated mesh background ──
           CustomPaint(painter: _LoginGridPainter()),
-          CustomPaint(painter: _LoginMeshPainter()),
-          // ── Floating glowing orbs ──
-          Positioned(
-            top: -80,
-            left: -60,
-            child: _GlowOrb(color: AppColors.teal, size: 260),
+          AnimatedBuilder(
+            animation: _orb1Ctrl ?? const AlwaysStoppedAnimation(0),
+            builder: (_, __) => CustomPaint(
+              painter: _LoginMeshPainter(shift: _orb1Ctrl?.value ?? 0.0),
+            ),
           ),
+          // ── Animated drifting orbs ──
+          if (_orb1Pos != null)
+            AnimatedBuilder(
+              animation: _orb1Pos!,
+              builder: (_, __) => Positioned(
+                top: _orb1Pos!.value.dy, left: _orb1Pos!.value.dx,
+                child: _GlowOrb(color: AppColors.teal, size: 280),
+              ),
+            ),
+          if (_orb2Pos != null)
+            AnimatedBuilder(
+              animation: _orb2Pos!,
+              builder: (_, __) => Positioned(
+                bottom: _orb2Pos!.value.dy, right: _orb2Pos!.value.dx,
+                child: _GlowOrb(color: AppColors.sky, size: 220),
+              ),
+            ),
+          if (_orb3Pos != null)
+            AnimatedBuilder(
+              animation: _orb3Pos!,
+              builder: (_, __) => Positioned(
+                top: _orb3Pos!.value.dy, right: _orb3Pos!.value.dx,
+                child: _GlowOrb(color: AppColors.teal2, size: 160),
+              ),
+            ),
+
+          // ── Hero top section ──
           Positioned(
-            bottom: 80,
-            right: -80,
-            child: _GlowOrb(color: AppColors.sky, size: 200),
-          ),
-          Positioned(
-            top: 300,
-            right: -40,
-            child: _GlowOrb(color: AppColors.teal2, size: 140),
+            top: 0, left: 0, right: 0,
+            height: screenH * 0.38,
+            child: const _HeroSection(),
           ),
 
-          SafeArea(
+          // ── Bottom docked glass card ──
+          Positioned(
+            bottom: 0, left: 0, right: 0,
+            height: screenH * 0.70,
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.ink.withValues(alpha: 0.92),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(36),
+                  topRight: Radius.circular(36),
+                ),
+                border: Border.all(
+                  color: AppColors.teal.withValues(alpha: 0.18),
+                  width: 1.2,
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(36),
+                  topRight: Radius.circular(36),
+                ),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                  child: SingleChildScrollView(
+                    controller: _scrollCtrl,
+                    padding: const EdgeInsets.fromLTRB(22, 68, 22, 32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 22),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 260),
+                          switchInCurve: Curves.easeOut,
+                          switchOutCurve: Curves.easeIn,
+                          transitionBuilder: (child, anim) => FadeTransition(
+                            opacity: anim,
+                            child: SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(0.04, 0),
+                                end: Offset.zero,
+                              ).animate(anim),
+                              child: child,
+                            ),
+                          ),
+                          child: _tabCtrl.index == 0
+                              ? _LoginForm(
+                                  key: const ValueKey('login'),
+                                  emailCtrl: _loginEmailCtrl,
+                                  passwordCtrl: _loginPasswordCtrl,
+                                  passwordVisible: _loginPasswordVisible,
+                                  selectedRole: _selectedRole,
+                                  emailError: _loginEmailError,
+                                  passwordError: _loginPasswordError,
+                                  rememberMe: _rememberMe,
+                                  loading: _loginLoading,
+                                  onRoleChanged: (r) => setState(() => _selectedRole = r),
+                                  onTogglePassword: () => setState(() => _loginPasswordVisible = !_loginPasswordVisible),
+                                  onEmailChanged: (_) => setState(() => _loginEmailError = null),
+                                  onPasswordChanged: (_) => setState(() => _loginPasswordError = null),
+                                  onRememberMeChanged: (v) => setState(() => _rememberMe = v),
+                                  onLogin: _login,
+                                )
+                              : _SignUpForm(
+                                  key: const ValueKey('signup'),
+                                  nameCtrl: _signUpNameCtrl,
+                                  centreCtrl: _signUpCentreCtrl,
+                                  districtCtrl: _signUpDistrictCtrl,
+                                  emailCtrl: _signUpEmailCtrl,
+                                  phoneCtrl: _signUpPhoneCtrl,
+                                  passwordCtrl: _signUpPasswordCtrl,
+                                  confirmPasswordCtrl: _signUpConfirmPasswordCtrl,
+                                  passwordVisible: _signUpPasswordVisible,
+                                  confirmPasswordVisible: _signUpConfirmPasswordVisible,
+                                  passwordValue: _signUpPasswordValue,
+                                  nameError: _signUpNameError,
+                                  centreError: _signUpCentreError,
+                                  districtError: _signUpDistrictError,
+                                  emailError: _signUpEmailError,
+                                  phoneError: _signUpPhoneError,
+                                  passwordError: _signUpPasswordError,
+                                  confirmPasswordError: _signUpConfirmPasswordError,
+                                  onTogglePassword: () => setState(() => _signUpPasswordVisible = !_signUpPasswordVisible),
+                                  onToggleConfirmPassword: () => setState(() => _signUpConfirmPasswordVisible = !_signUpConfirmPasswordVisible),
+                                  termsAgreed: _termsAgreed,
+                                  onTermsAgreedChanged: (v) => setState(() => _termsAgreed = v),
+                                  onNameChanged: (_) => setState(() => _signUpNameError = null),
+                                  onCentreChanged: (_) => setState(() => _signUpCentreError = null),
+                                  onDistrictChanged: (_) => setState(() => _signUpDistrictError = null),
+                                  onEmailChanged: (_) => setState(() => _signUpEmailError = null),
+                                  onPhoneChanged: (_) => setState(() => _signUpPhoneError = null),
+                                  onPasswordChanged: (v) => setState(() { _signUpPasswordError = null; _signUpPasswordValue = v; }),
+                                  onConfirmPasswordChanged: (_) => setState(() => _signUpConfirmPasswordError = null),
+                                  onSignUp: _signUp,
+                                ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // ── Floating pill tab — overlaps hero + card edge ──
+          Positioned(
+            top: screenH * 0.38 - 28,
+            left: 32, right: 32,
             child: Column(
               children: [
-                // ── Header ──
-                _AuthHeader(),
-                // ── Scrollable body ──
-                Expanded(
-                  child: _GlassCard(
-                    child: SingleChildScrollView(
-                      controller: _scrollCtrl,
-                      padding: const EdgeInsets.fromLTRB(22, 8, 22, 32),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _TabSwitcher(controller: _tabCtrl),
-                          const SizedBox(height: 22),
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 260),
-                            switchInCurve: Curves.easeOut,
-                            switchOutCurve: Curves.easeIn,
-                            transitionBuilder: (child, anim) => FadeTransition(
-                              opacity: anim,
-                              child: SlideTransition(
-                                position: Tween<Offset>(
-                                  begin: const Offset(0.04, 0),
-                                  end: Offset.zero,
-                                ).animate(anim),
-                                child: child,
-                              ),
-                            ),
-                            child: _tabCtrl.index == 0
-                                ? _LoginForm(
-                                    key: const ValueKey('login'),
-                                    emailCtrl: _loginEmailCtrl,
-                                    passwordCtrl: _loginPasswordCtrl,
-                                    passwordVisible: _loginPasswordVisible,
-                                    selectedRole: _selectedRole,
-                                    emailError: _loginEmailError,
-                                    passwordError: _loginPasswordError,
-                                    rememberMe: _rememberMe,
-                                    loading: _loginLoading,
-                                    onRoleChanged: (r) =>
-                                        setState(() => _selectedRole = r),
-                                    onTogglePassword: () => setState(
-                                      () => _loginPasswordVisible =
-                                          !_loginPasswordVisible,
-                                    ),
-                                    onEmailChanged: (_) =>
-                                        setState(() => _loginEmailError = null),
-                                    onPasswordChanged: (_) => setState(
-                                      () => _loginPasswordError = null,
-                                    ),
-                                    onRememberMeChanged: (v) =>
-                                        setState(() => _rememberMe = v),
-                                    onLogin: _login,
-                                  )
-                                : _SignUpForm(
-                                    key: const ValueKey('signup'),
-                                    nameCtrl: _signUpNameCtrl,
-                                    centreCtrl: _signUpCentreCtrl,
-                                    districtCtrl: _signUpDistrictCtrl,
-                                    emailCtrl: _signUpEmailCtrl,
-                                    phoneCtrl: _signUpPhoneCtrl,
-                                    passwordCtrl: _signUpPasswordCtrl,
-                                    confirmPasswordCtrl:
-                                        _signUpConfirmPasswordCtrl,
-                                    passwordVisible: _signUpPasswordVisible,
-                                    confirmPasswordVisible:
-                                        _signUpConfirmPasswordVisible,
-                                    passwordValue: _signUpPasswordValue,
-                                    nameError: _signUpNameError,
-                                    centreError: _signUpCentreError,
-                                    districtError: _signUpDistrictError,
-                                    emailError: _signUpEmailError,
-                                    phoneError: _signUpPhoneError,
-                                    passwordError: _signUpPasswordError,
-                                    confirmPasswordError:
-                                        _signUpConfirmPasswordError,
-                                    onTogglePassword: () => setState(
-                                      () => _signUpPasswordVisible =
-                                          !_signUpPasswordVisible,
-                                    ),
-                                    onToggleConfirmPassword: () => setState(
-                                      () => _signUpConfirmPasswordVisible =
-                                          !_signUpConfirmPasswordVisible,
-                                    ),
-                                    termsAgreed: _termsAgreed,
-                                    onTermsAgreedChanged: (v) =>
-                                        setState(() => _termsAgreed = v),
-                                    onNameChanged: (_) =>
-                                        setState(() => _signUpNameError = null),
-                                    onCentreChanged: (_) => setState(
-                                      () => _signUpCentreError = null,
-                                    ),
-                                    onDistrictChanged: (_) => setState(
-                                      () => _signUpDistrictError = null,
-                                    ),
-                                    onEmailChanged: (_) => setState(
-                                      () => _signUpEmailError = null,
-                                    ),
-                                    onPhoneChanged: (_) => setState(
-                                      () => _signUpPhoneError = null,
-                                    ),
-                                    onPasswordChanged: (v) => setState(() {
-                                      _signUpPasswordError = null;
-                                      _signUpPasswordValue = v;
-                                    }),
-                                    onConfirmPasswordChanged: (_) => setState(
-                                      () => _signUpConfirmPasswordError = null,
-                                    ),
-                                    onSignUp: _signUp,
-                                  ),
-                          ),
-                        ],
-                      ),
+                Center(
+                  child: Container(
+                    width: 40, height: 4,
+                    margin: const EdgeInsets.only(bottom: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.teal.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(99),
                     ),
+                  ),
+                ),
+                Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.ink2,
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(color: AppColors.teal.withValues(alpha: 0.35), width: 1.5),
+                    boxShadow: [
+                      BoxShadow(color: AppColors.teal.withValues(alpha: 0.2), blurRadius: 20, spreadRadius: 2, offset: const Offset(0, 4)),
+                      BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 16, offset: const Offset(0, 6)),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(4),
+                  child: TabBar(
+                    controller: _tabCtrl,
+                    indicator: BoxDecoration(
+                      gradient: const LinearGradient(colors: [AppColors.teal, AppColors.teal2]),
+                      borderRadius: BorderRadius.circular(99),
+                      boxShadow: [BoxShadow(color: AppColors.teal.withValues(alpha: 0.5), blurRadius: 12)],
+                    ),
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    dividerColor: Colors.transparent,
+                    labelPadding: EdgeInsets.zero,
+                    tabs: [
+                      _pillTab('Login', _tabCtrl.index == 0),
+                      _pillTab('Sign Up', _tabCtrl.index == 1),
+                    ],
                   ),
                 ),
               ],
@@ -495,71 +566,162 @@ class _LoginScreenState extends State<LoginScreen>
       ),
     );
   }
+
+  Widget _pillTab(String label, bool active) => Tab(
+    child: Text(label, style: GoogleFonts.sora(
+      fontSize: 13, fontWeight: FontWeight.w700,
+      color: active ? Colors.white : AppColors.teal3.withValues(alpha: 0.5),
+    )),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────
-// Dark hero header — logo + app name only, top-left aligned
-// Smoothly disappears when Sign Up tab is active or keyboard opens
+// Hero section — top half with eye logo + typing tagline
 // ─────────────────────────────────────────────────────────────
-class _AuthHeader extends StatelessWidget {
-  const _AuthHeader();
+class _HeroSection extends StatefulWidget {
+  const _HeroSection();
+  @override
+  State<_HeroSection> createState() => _HeroSectionState();
+}
+
+class _HeroSectionState extends State<_HeroSection> with TickerProviderStateMixin {
+  AnimationController? _blinkCtrl;
+  Animation<double>? _blinkAnim;
+  AnimationController? _entryCtrl;
+  Animation<double>? _entryOpacity;
+  Animation<Offset>? _entrySlide;
+  AnimationController? _shimmerCtrl;
+  Animation<double>? _shimmerAnim;
+  AnimationController? _badgeCtrl;
+  Animation<double>? _badgeOpacity;
+  final String _fullTagline = 'Offline-first · Tumbling E · Uganda MOH';
+  int _typedChars = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _entryCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 800))..forward();
+    _entryOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _entryCtrl!, curve: const Interval(0.0, 0.7, curve: Curves.easeOut)));
+    _entrySlide = Tween<Offset>(begin: const Offset(0, -0.3), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _entryCtrl!, curve: Curves.easeOutCubic));
+    _blinkCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400));
+    _blinkAnim = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0).chain(CurveTween(curve: Curves.easeInOut)), weight: 10),
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: Curves.easeInOut)), weight: 10),
+      TweenSequenceItem(tween: ConstantTween(1.0), weight: 20),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0).chain(CurveTween(curve: Curves.easeInOut)), weight: 10),
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: Curves.easeInOut)), weight: 10),
+      TweenSequenceItem(tween: ConstantTween(1.0), weight: 40),
+    ]).animate(_blinkCtrl!);
+    Future.delayed(const Duration(milliseconds: 400), () { if (mounted) _blinkCtrl!.forward(); });
+    _shimmerCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 3))..repeat();
+    _shimmerAnim = Tween<double>(begin: -1.0, end: 2.0)
+        .animate(CurvedAnimation(parent: _shimmerCtrl!, curve: Curves.easeInOut));
+    _badgeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _badgeOpacity = CurvedAnimation(parent: _badgeCtrl!, curve: Curves.easeOut);
+    Future.delayed(const Duration(milliseconds: 900), _startTyping);
+  }
+
+  void _startTyping() {
+    if (!mounted) return;
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(milliseconds: 38));
+      if (!mounted) return false;
+      setState(() => _typedChars++);
+      if (_typedChars >= _fullTagline.length) { _badgeCtrl?.forward(); return false; }
+      return true;
+    });
+  }
+
+  @override
+  void dispose() {
+    _blinkCtrl?.dispose(); _entryCtrl?.dispose();
+    _shimmerCtrl?.dispose(); _badgeCtrl?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(22, 18, 22, 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Logo row ──
-          Row(
+    final tagline = _fullTagline.substring(0, _typedChars);
+    return SafeArea(
+      bottom: false,
+      child: SlideTransition(
+        position: _entrySlide ?? const AlwaysStoppedAnimation(Offset.zero),
+        child: FadeTransition(
+          opacity: _entryOpacity ?? const AlwaysStoppedAnimation(1.0),
+          child: Stack(
+            alignment: Alignment.center,
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppColors.ink2, AppColors.ink3],
-                  ),
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(
-                    color: AppColors.teal.withValues(alpha: 0.5),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.teal.withValues(alpha: 0.35),
-                      blurRadius: 20,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-                child: Center(
+              AnimatedBuilder(
+                animation: _shimmerCtrl ?? const AlwaysStoppedAnimation(0),
+                builder: (_, __) => Positioned.fill(
                   child: CustomPaint(
-                    size: const Size(26, 26),
-                    painter: _HeaderEyePainter(),
+                    painter: _ShimmerPainter(progress: _shimmerAnim?.value ?? 0.0),
                   ),
                 ),
               ),
-              const SizedBox(width: 13),
+              Container(
+                width: 160, height: 160,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(colors: [
+                    AppColors.teal.withValues(alpha: 0.22), Colors.transparent,
+                  ]),
+                ),
+              ),
               Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  const SizedBox(height: 8),
+                  AnimatedBuilder(
+                    animation: _blinkCtrl ?? const AlwaysStoppedAnimation(1),
+                    builder: (_, __) => Container(
+                      width: 72, height: 72,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(colors: [AppColors.ink2, AppColors.ink3], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(color: AppColors.teal.withValues(alpha: 0.55), width: 1.5),
+                        boxShadow: [BoxShadow(color: AppColors.teal.withValues(alpha: 0.4), blurRadius: 28, spreadRadius: 2)],
+                      ),
+                      child: Opacity(
+                        opacity: _blinkAnim?.value ?? 1.0,
+                        child: Center(child: CustomPaint(size: const Size(38, 38), painter: _HeaderEyePainter())),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
                   RichText(
                     text: TextSpan(
-                      style: GoogleFonts.dmSerifDisplay(
-                        fontSize: 26,
-                        color: Colors.white,
-                        letterSpacing: -0.8,
-                      ),
+                      style: GoogleFonts.dmSerifDisplay(fontSize: 32, letterSpacing: -1.0),
                       children: const [
-                        TextSpan(text: 'Vision'),
-                        TextSpan(
-                          text: 'Screen',
-                          style: TextStyle(color: AppColors.teal3),
-                        ),
+                        TextSpan(text: 'Vision', style: TextStyle(color: Colors.white)),
+                        TextSpan(text: 'Screen', style: TextStyle(color: AppColors.teal3)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(tagline, style: GoogleFonts.sora(
+                        fontSize: 10, color: AppColors.teal3.withValues(alpha: 0.65),
+                        letterSpacing: 1.8, fontWeight: FontWeight.w400,
+                      )),
+                      if (_typedChars < _fullTagline.length) const _BlinkingCursor(),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  FadeTransition(
+                    opacity: _badgeOpacity ?? const AlwaysStoppedAnimation(0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        _HeroBadge(Icons.verified_outlined, 'WHO'),
+                        SizedBox(width: 8),
+                        _HeroBadge(Icons.local_hospital_outlined, 'MOH'),
+                        SizedBox(width: 8),
+                        _HeroBadge(Icons.lock_outline_rounded, 'AES-256'),
                       ],
                     ),
                   ),
@@ -567,24 +729,71 @@ class _AuthHeader extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          // ── Teal divider ──
-          Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.teal.withValues(alpha: 0.6),
-                  AppColors.teal.withValues(alpha: 0.0),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 6),
-        ],
+        ),
       ),
     );
   }
+}
+
+class _BlinkingCursor extends StatefulWidget {
+  const _BlinkingCursor();
+  @override
+  State<_BlinkingCursor> createState() => _BlinkingCursorState();
+}
+class _BlinkingCursorState extends State<_BlinkingCursor> with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 500))..repeat(reverse: true);
+  }
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: _ctrl,
+    builder: (_, __) => Opacity(opacity: _ctrl.value,
+      child: Text('|', style: GoogleFonts.sora(fontSize: 10, color: AppColors.teal2, fontWeight: FontWeight.w700))),
+  );
+}
+
+class _HeroBadge extends StatelessWidget {
+  const _HeroBadge(this.icon, this.label);
+  final IconData icon;
+  final String label;
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+    decoration: BoxDecoration(
+      color: AppColors.teal.withValues(alpha: 0.1),
+      borderRadius: BorderRadius.circular(99),
+      border: Border.all(color: AppColors.teal.withValues(alpha: 0.3)),
+    ),
+    child: Row(mainAxisSize: MainAxisSize.min, children: [
+      Icon(icon, size: 10, color: AppColors.teal2),
+      const SizedBox(width: 4),
+      Text(label, style: GoogleFonts.sora(fontSize: 9, fontWeight: FontWeight.w700,
+          color: AppColors.teal3.withValues(alpha: 0.8), letterSpacing: 0.5)),
+    ]),
+  );
+}
+
+class _ShimmerPainter extends CustomPainter {
+  const _ShimmerPainter({required this.progress});
+  final double progress;
+  @override
+  void paint(Canvas canvas, Size size) {
+    final x = size.width * progress;
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
+    canvas.drawRect(rect, Paint()..shader = LinearGradient(
+      begin: Alignment.centerLeft, end: Alignment.centerRight,
+      colors: [Colors.transparent, AppColors.teal.withValues(alpha: 0.06),
+        AppColors.teal3.withValues(alpha: 0.12), AppColors.teal.withValues(alpha: 0.06), Colors.transparent],
+      stops: const [0.0, 0.35, 0.5, 0.65, 1.0],
+    ).createShader(Rect.fromLTWH(x - size.width * 0.5, 0, size.width, size.height)));
+  }
+  @override
+  bool shouldRepaint(_ShimmerPainter old) => old.progress != progress;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -2582,31 +2791,34 @@ class _LoginGridPainter extends CustomPainter {
 // Radial mesh gradient overlay — matches splash screen
 // ─────────────────────────────────────────────────────────────
 class _LoginMeshPainter extends CustomPainter {
+  const _LoginMeshPainter({this.shift = 0.0});
+  final double shift;
+
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Rect.fromLTWH(0, 0, size.width, size.height);
-    canvas.drawRect(
-      rect,
-      Paint()
-        ..shader = RadialGradient(
-          center: const Alignment(-0.4, -0.6),
-          radius: 0.7,
-          colors: [AppColors.teal.withValues(alpha: 0.18), Colors.transparent],
-        ).createShader(rect),
-    );
-    canvas.drawRect(
-      rect,
-      Paint()
-        ..shader = RadialGradient(
-          center: const Alignment(0.6, 0.5),
-          radius: 0.55,
-          colors: [AppColors.sky.withValues(alpha: 0.10), Colors.transparent],
-        ).createShader(rect),
-    );
+    canvas.drawRect(rect, Paint()
+      ..shader = RadialGradient(
+        center: Alignment(-0.4 + shift * 0.15, -0.6 + shift * 0.1),
+        radius: 0.75,
+        colors: [AppColors.teal.withValues(alpha: 0.22), Colors.transparent],
+      ).createShader(rect));
+    canvas.drawRect(rect, Paint()
+      ..shader = RadialGradient(
+        center: Alignment(0.6 - shift * 0.12, 0.5 + shift * 0.08),
+        radius: 0.6,
+        colors: [AppColors.sky.withValues(alpha: 0.12), Colors.transparent],
+      ).createShader(rect));
+    canvas.drawRect(rect, Paint()
+      ..shader = RadialGradient(
+        center: Alignment(shift * 0.2, 0.8 - shift * 0.1),
+        radius: 0.45,
+        colors: [const Color(0xFF8B5CF6).withValues(alpha: 0.07), Colors.transparent],
+      ).createShader(rect));
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter old) => false;
+  bool shouldRepaint(_LoginMeshPainter old) => old.shift != shift;
 }
 
 // ─────────────────────────────────────────────────────────────
