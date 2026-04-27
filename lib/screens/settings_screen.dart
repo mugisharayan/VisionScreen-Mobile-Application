@@ -327,7 +327,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           labelColor: const Color(0xFFEF4444),
                           subtitle: 'Permanently wipe all local records',
                           isFirst: true,
-                          onTap: () => _showSnack('Clearing all local data...', _C.red),
+                          onTap: () => _showClearDataDialog(),
                         ),
                         _buildRow(
                           badgeColor: const Color(0xFFEF4444),
@@ -1383,6 +1383,97 @@ class _SettingsScreenState extends State<SettingsScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         duration: const Duration(seconds: 2),
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      ),
+    );
+  }
+
+  void _showClearDataDialog() {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.6),
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 52, height: 52,
+                decoration: BoxDecoration(
+                  color: _C.teal.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.delete_outline_rounded,
+                    color: _C.teal, size: 24),
+              ),
+              const SizedBox(height: 14),
+              Text('Clear All Data',
+                  style: GoogleFonts.sora(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: _C.g800)),
+              const SizedBox(height: 6),
+              Text(
+                'This will permanently delete all patient records, screenings and referrals from this device. This cannot be undone.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.sora(
+                    fontSize: 12, color: _C.g400, height: 1.6),
+              ),
+              const SizedBox(height: 22),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        side: const BorderSide(color: _C.g200, width: 1.5),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: Text('Cancel',
+                          style: GoogleFonts.sora(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: _C.g500)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        Navigator.pop(context);
+                        await DatabaseHelper.instance.clearAllData();
+                        if (mounted) {
+                          _showSnack('All local data cleared.', _C.teal);
+                          await _loadProfile();
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _C.teal,
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        elevation: 0,
+                      ),
+                      child: Text('Clear',
+                          style: GoogleFonts.sora(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
