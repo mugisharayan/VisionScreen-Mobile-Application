@@ -799,25 +799,25 @@ class _PatientsScreenState extends State<PatientsScreen> {
             children: [
               // ── Top body ──
               Padding(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Left accent bar
                     Container(
-                      width: 4,
-                      height: 72,
+                      width: 3,
+                      height: 64,
                       decoration: BoxDecoration(
                         color: accentColor,
                         borderRadius: BorderRadius.circular(99),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
 
                     // Avatar with photo
                     Container(
-                      width: 50,
-                      height: 50,
+                      width: 42,
+                      height: 42,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
@@ -831,7 +831,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(14),
                         child: p.photoUrl.isNotEmpty && File(p.photoUrl).existsSync()
-                            ? Image.file(File(p.photoUrl), fit: BoxFit.cover, width: 50, height: 50)
+                            ? Image.file(File(p.photoUrl), fit: BoxFit.cover, width: 42, height: 42)
                             : Container(
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
@@ -839,13 +839,13 @@ class _PatientsScreenState extends State<PatientsScreen> {
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
-                                  borderRadius: BorderRadius.circular(14),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Center(
                                   child: Text(
                                     p.initials,
                                     style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 15,
+                                      fontSize: 13,
                                       fontWeight: FontWeight.w800,
                                       color: Colors.white,
                                     ),
@@ -854,7 +854,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                               ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
 
                     // Info
                     Expanded(
@@ -929,11 +929,12 @@ class _PatientsScreenState extends State<PatientsScreen> {
                           // VA chips row
                           if (p.outcome != 'pending')
                             Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 _vaPill('OD', p.od, p.outcome),
-                                const SizedBox(width: 5),
+                                const SizedBox(width: 4),
                                 _vaPill('OS', p.os, p.outcome),
-                                const SizedBox(width: 5),
+                                const SizedBox(width: 4),
                                 _vaPill('OU', p.ou, p.outcome),
                               ],
                             )
@@ -997,39 +998,21 @@ class _PatientsScreenState extends State<PatientsScreen> {
                     ),
 
                     // Outcome badge
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: badgeBg,
-                            borderRadius: BorderRadius.circular(99),
-                            border: Border.all(
-                              color: accentColor.withOpacity(0.25),
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(badgeIcon, size: 11, color: accentColor),
-                              const SizedBox(width: 4),
-                              Text(
-                                badgeLabel,
-                                style: GoogleFonts.inter(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: badgeText,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: badgeBg,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: accentColor.withOpacity(0.25)),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(badgeIcon, size: 12, color: accentColor),
+                          const SizedBox(height: 2),
+                          Text(badgeLabel, style: GoogleFonts.inter(fontSize: 8, fontWeight: FontWeight.w700, color: badgeText)),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -1061,219 +1044,75 @@ class _PatientsScreenState extends State<PatientsScreen> {
                             child: p.outcome == 'refer' && p.facility != null
                                 ? Row(
                                     children: [
-                                      const Icon(
-                                        Icons.local_hospital_rounded,
-                                        size: 12,
-                                        color: Color(0xFF8FA0B4),
-                                      ),
-                                      const SizedBox(width: 5),
+                                      const Icon(Icons.local_hospital_rounded, size: 11, color: Color(0xFF8FA0B4)),
+                                      const SizedBox(width: 4),
                                       Expanded(
                                         child: Text(
                                           '${p.facility}',
                                           overflow: TextOverflow.ellipsis,
-                                          style: GoogleFonts.inter(
-                                            fontSize: 11,
-                                            color: const Color(0xFF5E7291),
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      GestureDetector(
-                                        onTap: () => _showUpdateStatusSheet(p),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                          decoration: BoxDecoration(
-                                            color: _referralStatusColor(p.referralStatus).withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(99),
-                                            border: Border.all(color: _referralStatusColor(p.referralStatus).withOpacity(0.3), width: 1),
-                                          ),
-                                          child: Row(mainAxisSize: MainAxisSize.min, children: [
-                                            Text(p.referralStatus?.toUpperCase() ?? '',
-                                                style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700,
-                                                    color: _referralStatusColor(p.referralStatus))),
-                                            const SizedBox(width: 4),
-                                            Icon(Icons.edit_rounded, size: 9, color: _referralStatusColor(p.referralStatus)),
-                                          ]),
+                                          maxLines: 1,
+                                          style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF5E7291), fontWeight: FontWeight.w500),
                                         ),
                                       ),
                                     ],
                                   )
                                 : Row(
                                     children: [
-                                      const Icon(
-                                        Icons.badge_outlined,
-                                        size: 12,
-                                        color: Color(0xFF8FA0B4),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Flexible(
-                                        child: Text(
-                                          p.id,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: GoogleFonts.inter(
-                                            fontSize: 11,
-                                            color: const Color(0xFF8FA0B4),
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ),
-                                      const Spacer(),
-                                      const Icon(
-                                        Icons.access_time_rounded,
-                                        size: 11,
-                                        color: Color(0xFF8FA0B4),
-                                      ),
+                                      const Icon(Icons.badge_outlined, size: 11, color: Color(0xFF8FA0B4)),
                                       const SizedBox(width: 4),
                                       Flexible(
-                                        child: Text(
-                                          p.date,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: GoogleFonts.inter(
-                                            fontSize: 11,
-                                            color: const Color(0xFF8FA0B4),
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
+                                        child: Text(p.id, overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF8FA0B4), fontWeight: FontWeight.w500)),
                                       ),
                                     ],
                                   ),
                           ),
-                          const SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: () => _exportPatientData(p),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.9),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: const Color(0xFFEEF2F6),
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.picture_as_pdf_outlined,
-                                size: 14,
-                                color: Color(0xFF0D9488),
-                              ),
-                            ),
-                          ),
                           const SizedBox(width: 6),
-                          GestureDetector(
-                            onTap: () => _shareToWhatsApp(p),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF25D366).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: const Color(
-                                    0xFF25D366,
-                                  ).withOpacity(0.3),
+                          if (p.outcome == 'refer')
+                            GestureDetector(
+                              onTap: () => _showUpdateStatusSheet(p),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: _referralStatusColor(p.referralStatus).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: _referralStatusColor(p.referralStatus).withOpacity(0.3)),
                                 ),
-                              ),
-                              child: const Icon(
-                                Icons.send_rounded,
-                                size: 14,
-                                color: Color(0xFF25D366),
+                                child: Icon(Icons.edit_rounded, size: 12, color: _referralStatusColor(p.referralStatus)),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 6),
-                          GestureDetector(
-                            onTap: () => _callPatient(p),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF3B82F6).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: const Color(
-                                    0xFF3B82F6,
-                                  ).withOpacity(0.3),
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.phone_rounded,
-                                size: 14,
-                                color: Color(0xFF3B82F6),
-                              ),
-                            ),
-                          ),
+                          if (p.outcome == 'refer') const SizedBox(width: 5),
+                          _actionBtn(Icons.picture_as_pdf_outlined, const Color(0xFF0D9488), () => _exportPatientData(p)),
+                          const SizedBox(width: 5),
+                          _actionBtn(Icons.send_rounded, const Color(0xFF25D366), () => _shareToWhatsApp(p)),
+                          const SizedBox(width: 5),
+                          _actionBtn(Icons.phone_rounded, const Color(0xFF3B82F6), () => _callPatient(p)),
                         ],
                       )
                     : Row(
                         children: [
-                          const Icon(
-                            Icons.badge_outlined,
-                            size: 12,
-                            color: Color(0xFF8FA0B4),
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            p.id,
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              color: const Color(0xFF8FA0B4),
-                              fontWeight: FontWeight.w500,
-                            ),
+                          const Icon(Icons.badge_outlined, size: 11, color: Color(0xFF8FA0B4)),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(p.id, overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF8FA0B4), fontWeight: FontWeight.w500)),
                           ),
                           const Spacer(),
-                          const Icon(
-                            Icons.access_time_rounded,
-                            size: 11,
-                            color: Color(0xFF8FA0B4),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            p.date,
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              color: const Color(0xFF8FA0B4),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          GestureDetector(
-                            onTap: () => _callPatient(p),
-                            child: Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF3B82F6).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.phone_rounded,
-                                size: 14,
-                                color: Color(0xFF3B82F6),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          // Screen Now button for pending patients
+                          _actionBtn(Icons.phone_rounded, const Color(0xFF3B82F6), () => _callPatient(p)),
+                          const SizedBox(width: 5),
                           GestureDetector(
                             onTap: () => _screenPatientNow(p),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
                               decoration: BoxDecoration(
                                 color: _teal.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(7),
                                 border: Border.all(color: _teal.withOpacity(0.3)),
                               ),
                               child: Row(mainAxisSize: MainAxisSize.min, children: [
-                                const Icon(Icons.remove_red_eye_rounded, size: 13, color: _teal),
-                                const SizedBox(width: 4),
-                                Text('Screen Now',
-                                    style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: _teal)),
+                                const Icon(Icons.remove_red_eye_rounded, size: 11, color: _teal),
+                                const SizedBox(width: 3),
+                                Text('Screen', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: _teal)),
                               ]),
                             ),
                           ),
@@ -1287,6 +1126,21 @@ class _PatientsScreenState extends State<PatientsScreen> {
     );
   }
 
+  Widget _actionBtn(IconData icon, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(7),
+          border: Border.all(color: color.withOpacity(0.25)),
+        ),
+        child: Icon(icon, size: 14, color: color),
+      ),
+    );
+  }
+
   Widget _vaPill(String eye, String value, String outcome) {
     final isBad =
         outcome == 'refer' &&
@@ -1296,7 +1150,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
     final bg = isBad ? _red.withOpacity(0.08) : _teal.withOpacity(0.08);
     final fg = isBad ? _red : _teal;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(7),
@@ -2764,76 +2618,25 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
               ),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
               child: Row(children: [
-                const Icon(Icons.badge_outlined, size: 12, color: Color(0xFF8FA0B4)),
-                const SizedBox(width: 5),
-                Flexible(child: Text(p.id, overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8FA0B4), fontWeight: FontWeight.w500))),
-                const Spacer(),
-                const Icon(Icons.access_time_rounded, size: 11, color: Color(0xFF8FA0B4)),
+                const Icon(Icons.badge_outlined, size: 11, color: Color(0xFF8FA0B4)),
                 const SizedBox(width: 4),
-                Flexible(child: Text(p.date, overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8FA0B4), fontWeight: FontWeight.w500))),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: _callPatient,
-                  child: Container(
-                    padding: const EdgeInsets.all(5),
-                    decoration: BoxDecoration(
-                      color: p.phone.isNotEmpty ? _blue.withOpacity(0.1) : const Color(0xFFF0F4F7),
-                      borderRadius: BorderRadius.circular(7),
-                      border: Border.all(color: p.phone.isNotEmpty ? _blue.withOpacity(0.3) : const Color(0xFFEEF2F6)),
-                    ),
-                    child: Icon(Icons.phone_rounded, size: 13, color: p.phone.isNotEmpty ? _blue : const Color(0xFFB0BEC5)),
-                  ),
+                Expanded(
+                  child: Text(p.id, overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF8FA0B4), fontWeight: FontWeight.w500)),
                 ),
-                const SizedBox(width: 6),
-                GestureDetector(
-                  onTap: () => _shareToWhatsAppCampaign(p),
-                  child: Container(
-                    padding: const EdgeInsets.all(5),
-                    decoration: BoxDecoration(color: const Color(0xFF25D366).withOpacity(0.1), borderRadius: BorderRadius.circular(7), border: Border.all(color: const Color(0xFF25D366).withOpacity(0.3))),
-                    child: const Icon(Icons.send_rounded, size: 13, color: Color(0xFF25D366)),
-                  ),
-                ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 5),
+                _campBtn(Icons.phone_rounded, p.phone.isNotEmpty ? _blue : const Color(0xFFB0BEC5), _callPatient),
+                const SizedBox(width: 4),
+                _campBtn(Icons.send_rounded, const Color(0xFF25D366), () => _shareToWhatsAppCampaign(p)),
                 if (p.outcome == 'refer') ...[
-                  GestureDetector(
-                    onTap: () => _showUpdateStatusSheetCampaign(p),
-                    child: Container(
-                      padding: const EdgeInsets.all(5),
-                      decoration: BoxDecoration(color: _amber.withOpacity(0.1), borderRadius: BorderRadius.circular(7), border: Border.all(color: _amber.withOpacity(0.3))),
-                      child: const Icon(Icons.update_rounded, size: 13, color: _amber),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 4),
+                  _campBtn(Icons.update_rounded, _amber, () => _showUpdateStatusSheetCampaign(p)),
                 ],
-                GestureDetector(
-                  onTap: () => _exportPatientDataCampaign(p),
-                  child: Container(
-                    padding: const EdgeInsets.all(5),
-                    decoration: BoxDecoration(color: _teal.withOpacity(0.1), borderRadius: BorderRadius.circular(7)),
-                    child: const Icon(Icons.picture_as_pdf_outlined, size: 13, color: _teal),
-                  ),
-                ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 4),
+                _campBtn(Icons.picture_as_pdf_outlined, _teal, () => _exportPatientDataCampaign(p)),
                 if (p.outcome == 'pending') ...[
-                  GestureDetector(
-                    onTap: () => _screenCampaignPatientNow(p),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: _teal.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(7),
-                        border: Border.all(color: _teal.withOpacity(0.3)),
-                      ),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        const Icon(Icons.remove_red_eye_rounded, size: 12, color: _teal),
-                        const SizedBox(width: 4),
-                        Text('Screen', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: _teal)),
-                      ]),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 4),
+                  _campBtn(Icons.remove_red_eye_rounded, _teal, () => _screenCampaignPatientNow(p)),
                 ],
               ]),
             ),
@@ -3081,6 +2884,21 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
     const m = {'6/6':'0.0','6/9':'0.2','6/12':'0.3','6/18':'0.5',
                '6/24':'0.6','6/36':'0.8','6/48':'0.9','6/60':'1.0'};
     return m[s] ?? '0.5';
+  }
+
+  Widget _campBtn(IconData icon, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(5),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(7),
+          border: Border.all(color: color.withOpacity(0.25)),
+        ),
+        child: Icon(icon, size: 13, color: color),
+      ),
+    );
   }
 }
 

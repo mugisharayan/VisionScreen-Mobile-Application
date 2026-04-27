@@ -1518,16 +1518,16 @@ class _HomeScreenState extends State<HomeScreen>
                             children: [
                               const Icon(Icons.person_outline_rounded, size: 11, color: Color(0xFF8FA0B4)),
                               const SizedBox(width: 4),
-                              Text(demographic, style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8FA0B4))),
+                              Flexible(child: Text(demographic, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8FA0B4)))),
                             ],
                           ),
                           const SizedBox(height: 8),
                           if (outcome != 'pending')
-                            Row(children: [
+                            Row(mainAxisSize: MainAxisSize.min, children: [
                               _homeVaPill(od, outcome),
-                              const SizedBox(width: 5),
+                              const SizedBox(width: 4),
                               _homeVaPill(os, outcome),
-                              const SizedBox(width: 5),
+                              const SizedBox(width: 4),
                               _homeVaPill(ou, outcome),
                             ])
                           else
@@ -1545,12 +1545,12 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
                     // Badge
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(color: badgeBg, borderRadius: BorderRadius.circular(99), border: Border.all(color: accentColor.withOpacity(0.25))),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(badgeIcon, size: 11, color: accentColor),
-                        const SizedBox(width: 4),
-                        Text(badgeLabel, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: accentColor)),
+                        Icon(badgeIcon, size: 10, color: accentColor),
+                        const SizedBox(width: 3),
+                        Text(badgeLabel, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: accentColor)),
                       ]),
                     ),
                   ],
@@ -1566,15 +1566,17 @@ class _HomeScreenState extends State<HomeScreen>
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                 child: Row(
                   children: [
-                    const Icon(Icons.badge_outlined, size: 12, color: Color(0xFF8FA0B4)),
-                    const SizedBox(width: 5),
-                    Text(id, style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8FA0B4), fontWeight: FontWeight.w500)),
-                    const Spacer(),
+                    const Icon(Icons.badge_outlined, size: 11, color: Color(0xFF8FA0B4)),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(id, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF8FA0B4), fontWeight: FontWeight.w500)),
+                    ),
+                    const SizedBox(width: 6),
                     const Icon(Icons.access_time_rounded, size: 11, color: Color(0xFF8FA0B4)),
                     const SizedBox(width: 4),
-                    Text(time, style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8FA0B4), fontWeight: FontWeight.w500)),
-                    const SizedBox(width: 10),
-                    Text('View →', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: accentColor)),
+                    Text(time, style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF8FA0B4), fontWeight: FontWeight.w500)),
+                    const SizedBox(width: 8),
+                    Text('View →', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: accentColor)),
                   ],
                 ),
               ),
@@ -1589,13 +1591,13 @@ class _HomeScreenState extends State<HomeScreen>
     final isBad = outcome == 'refer' && value != '6/6' && value != '6/9' && value != '6/12';
     final fg = isBad ? const Color(0xFFEF4444) : const Color(0xFF0D9488);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
       decoration: BoxDecoration(
         color: fg.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(7),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(color: fg.withOpacity(0.2)),
       ),
-      child: Text(value, style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.w700, color: fg)),
+      child: Text(value, style: GoogleFonts.spaceGrotesk(fontSize: 10, fontWeight: FontWeight.w700, color: fg)),
     );
   }
 
