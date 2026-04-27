@@ -915,8 +915,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 );
                               }
                               await _loadProfile();
-                              if (ctx.mounted) Navigator.pop(ctx);
-                              if (mounted) { _showSnack('Profile updated', _C.teal); }
+                              if (mounted) {
+                                Navigator.pop(context);
+                                _showSnack('Profile updated', _C.teal);
+                              }
                             },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _C.teal,
