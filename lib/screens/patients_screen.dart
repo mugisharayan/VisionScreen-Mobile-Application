@@ -1973,6 +1973,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
   
 
   Future<void> _screenPatientNow(_Patient p) async {
+    if (!mounted) return;
     if (p.campaignId != null) {
       final campaigns = await DatabaseHelper.instance.getAllCampaigns();
       final campaign = campaigns.firstWhere(
@@ -1985,10 +1986,10 @@ class _PatientsScreenState extends State<PatientsScreen> {
           existingCampaignId: p.campaignId,
           existingCampaignName: campaign['name'] as String? ?? '',
           existingCampaignLocation: campaign['location'] as String? ?? '',
+          existingPatientId: p.id,
         ),
       ));
     } else {
-      if (!mounted) return;
       await Navigator.push(context, MaterialPageRoute(
         builder: (_) => NewScreeningScreen(existingPatientId: p.id),
       ));
@@ -3070,6 +3071,7 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
         existingCampaignId: p.campaignId,
         existingCampaignName: campaign['name'] as String? ?? '',
         existingCampaignLocation: campaign['location'] as String? ?? '',
+        existingPatientId: p.id,
       ),
     ));
     widget.onRefresh();

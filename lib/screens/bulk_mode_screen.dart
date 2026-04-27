@@ -20,11 +20,13 @@ class BulkModeScreen extends StatefulWidget {
   final String? existingCampaignId;
   final String? existingCampaignName;
   final String? existingCampaignLocation;
+  final String? existingPatientId;
   const BulkModeScreen({
     super.key,
     this.existingCampaignId,
     this.existingCampaignName,
     this.existingCampaignLocation,
+    this.existingPatientId,
   });
 
   @override
@@ -327,9 +329,20 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
           _patientCount    = screened;
         });
       });
-      SchedulerBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() => _section = 1);
-      });
+      if (widget.existingPatientId != null) {
+        _currentPatientId = widget.existingPatientId;
+        _section = 2;
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _resetEyeTest();
+            _startTestTimer();
+          }
+        });
+      } else {
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() => _section = 1);
+        });
+      }
     }
   }
 

@@ -166,13 +166,13 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
     );
     _showNewPatientForm = widget.startWithNewPatient;
+    if (widget.existingPatientId != null) {
+      _selectedPatientId = widget.existingPatientId;
+      _step = 1;
+    }
     _loadUnsyncedCount();
     _loadPatients().then((_) {
       if (widget.existingPatientId != null && mounted) {
-        setState(() {
-          _selectedPatientId = widget.existingPatientId;
-          _step = 1;
-        });
         _runChecklist();
       }
     });
