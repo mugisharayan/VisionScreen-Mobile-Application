@@ -683,7 +683,7 @@ class _HomeScreenState extends State<HomeScreen>
             children: [
               // Bell button
               TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0, end: _notificationCount > 0 ? 1.0 : 0.0),
+                tween: Tween(begin: 0.0, end: _notificationCount > 0 ? 1.0 : 0.0),
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.easeOutBack,
                 builder: (context, val, child) => Container(
@@ -717,7 +717,7 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFF59E0B).withOpacity(0.28 * val),
+                        color: const Color(0xFFF59E0B).withOpacity((0.28 * val).clamp(0.0, 1.0)),
                         blurRadius: 14,
                         offset: const Offset(0, 4),
                       )
