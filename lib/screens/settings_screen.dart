@@ -2245,7 +2245,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       _showSnack('Generating patient records PDF...', _C.teal);
 
-      // Fetch all patients with their latest screening
       final database = await DatabaseHelper.instance.db;
       final patients = await database.rawQuery('''
         SELECT p.*,
@@ -2261,217 +2260,271 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ORDER BY p.created_at DESC
       ''');
 
-      final pdf = pw.Document();
+      if (patients.isEmpty) {
+        _showSnack('No patients to export.', _C.amber);
+        return;
+      }
 
       // â”€â”€ Colours â”€â”€
-      final teal    = PdfColor.fromHex('#0D9488');
-      final teal2   = PdfColor.fromHex('#14B8A6');
-      final ink     = PdfColor.fromHex('#04091A');
-      final g400    = PdfColor.fromHex('#8FA0B4');
-      final g800    = PdfColor.fromHex('#1A2A3D');
-      final green   = PdfColor.fromHex('#22C55E');
-      final red     = PdfColor.fromHex('#EF4444');
-      final amber   = PdfColor.fromHex('#F59E0B');
-      final white   = PdfColors.white;
-      final g100    = PdfColor.fromHex('#F0F4F7');
+      final teal  = PdfColor.fromHex('#0D9488');
+      final teal2 = PdfColor.fromHex('#CCFBF1');
+      final g900  = PdfColor.fromHex('#0F172A');
+      final g700  = PdfColor.fromHex('#334155');
+      final g500  = PdfColor.fromHex('#64748B');
+      final g200  = PdfColor.fromHex('#E2E8F0');
+      final g50   = PdfColor.fromHex('#F8FAFC');
+      final green = PdfColor.fromHex('#16A34A');
+      final greenL= PdfColor.fromHex('#DCFCE7');
+      final red   = PdfColor.fromHex('#DC2626');
+      final redL  = PdfColor.fromHex('#FEE2E2');
+      final amber = PdfColor.fromHex('#D97706');
+      final amberL= PdfColor.fromHex('#FEF3C7');
+      final blue  = PdfColor.fromHex('#2563EB');
+      final white = PdfColors.white;
 
-      // â”€â”€ Cover page â”€â”€
-      pdf.addPage(
-        pw.Page(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(0),
-          build: (ctx) => pw.Container(
-            color: ink,
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                // Header band
-                pw.Container(
-                  width: double.infinity,
-                  padding: const pw.EdgeInsets.fromLTRB(40, 48, 40, 36),
-                  decoration: pw.BoxDecoration(
-                    gradient: pw.LinearGradient(
-                      colors: [teal, teal2],
-                      begin: pw.Alignment.centerLeft,
-                      end: pw.Alignment.centerRight,
-                    ),
-                  ),
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text('VisionScreen',
-                          style: pw.TextStyle(
-                              fontSize: 32,
-                              fontWeight: pw.FontWeight.bold,
-                              color: white)),
-                      pw.SizedBox(height: 6),
-                      pw.Text('Patient Records Export',
-                          style: pw.TextStyle(
-                              fontSize: 16, color: white)),
-                    ],
-                  ),
-                ),
-                pw.Padding(
-                  padding: const pw.EdgeInsets.fromLTRB(40, 32, 40, 0),
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      _pdfInfoRow('CHW Name', _chwName.isNotEmpty ? _chwName : 'â€”', g400, white),
-                      _pdfInfoRow('Health Center', _chwCenter.isNotEmpty ? _chwCenter : 'â€”', g400, white),
-                      _pdfInfoRow('District', _chwDistrict.isNotEmpty ? _chwDistrict : 'â€”', g400, white),
-                      _pdfInfoRow('Badge ID', _chwId.isNotEmpty ? _chwId : 'â€”', g400, white),
-                      _pdfInfoRow('Export Date', DateTime.now().toString().substring(0, 16), g400, white),
-                      _pdfInfoRow('Total Patients', '${patients.length}', g400, white),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+      // â”€â”€ Embedded fonts â”€â”€
+      final fontR = await PdfGoogleFonts.nunitoRegular();
+      final fontB = await PdfGoogleFonts.nunitoBold();
+
+      pw.TextStyle ts(double size, PdfColor color, {bool bold = false}) =>
+          pw.TextStyle(font: bold ? fontB : fontR, fontSize: size, color: color);
+
+      final now     = DateTime.now();
+      final dateStr = '${now.day.toString().padLeft(2,'0')}/${now.month.toString().padLeft(2,'0')}/${now.year}';
+      final timeStr = '${now.hour.toString().padLeft(2,'0')}:${now.minute.toString().padLeft(2,'0')}';
+
+      // â”€â”€ Helper: single info cell â”€â”€
+      pw.Widget infoCell(String label, String value, PdfColor bg) => pw.Expanded(
+        child: pw.Container(
+          margin: const pw.EdgeInsets.only(right: 4),
+          padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: pw.BoxDecoration(color: bg),
+          child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+            pw.Text(label, style: ts(8, g500)),
+            pw.SizedBox(height: 2),
+            pw.Text(value.isNotEmpty ? value : 'N/A', style: ts(10, g900, bold: true)),
+          ]),
         ),
       );
 
-      // â”€â”€ Patient pages â”€â”€
-      for (final p in patients) {
-        final outcome = (p['outcome'] as String?) ?? 'pending';
-        final outcomeColor = outcome == 'pass' ? green : outcome == 'refer' ? red : amber;
-        final outcomeLabel = outcome == 'pass' ? 'PASS' : outcome == 'refer' ? 'REFER' : 'PENDING';
-
-        pdf.addPage(
-          pw.Page(
-            pageFormat: PdfPageFormat.a4,
-            margin: const pw.EdgeInsets.fromLTRB(32, 32, 32, 32),
-            build: (ctx) => pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                // Patient header
-                pw.Container(
-                  width: double.infinity,
-                  padding: const pw.EdgeInsets.all(16),
-                  decoration: pw.BoxDecoration(
-                    color: g100,
-                    borderRadius: pw.BorderRadius.circular(8),
-                  ),
-                  child: pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                        children: [
-                          pw.Text(p['name'] as String? ?? 'â€”',
-                              style: pw.TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: pw.FontWeight.bold,
-                                  color: g800)),
-                          pw.SizedBox(height: 4),
-                          pw.Text(
-                            '${p['age']} yrs Â· ${p['gender']} Â· ${p['village']}',
-                            style: pw.TextStyle(fontSize: 11, color: g400),
-                          ),
-                          pw.Text(
-                            'ID: ${p['id']}  Â·  Phone: ${p['phone'] ?? 'â€”'}',
-                            style: pw.TextStyle(fontSize: 11, color: g400),
-                          ),
-                        ],
-                      ),
-                      pw.Container(
-                        padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                        decoration: pw.BoxDecoration(
-                          color: outcomeColor,
-                          borderRadius: pw.BorderRadius.circular(99),
-                        ),
-                        child: pw.Text(outcomeLabel,
-                            style: pw.TextStyle(
-                                fontSize: 12,
-                                fontWeight: pw.FontWeight.bold,
-                                color: white)),
-                      ),
-                    ],
-                  ),
-                ),
-                pw.SizedBox(height: 16),
-
-                // Visual Acuity
-                pw.Text('Visual Acuity',
-                    style: pw.TextStyle(
-                        fontSize: 13,
-                        fontWeight: pw.FontWeight.bold,
-                        color: teal)),
-                pw.SizedBox(height: 8),
-                pw.Row(
-                  children: [
-                    _pdfVaBox('OD (Right)', p['od_snellen'] as String? ?? 'â€”', p['od_logmar'] as String? ?? 'â€”', teal, white, g100),
-                    pw.SizedBox(width: 8),
-                    _pdfVaBox('OS (Left)', p['os_snellen'] as String? ?? 'â€”', p['os_logmar'] as String? ?? 'â€”', teal, white, g100),
-                    pw.SizedBox(width: 8),
-                    _pdfVaBox('OU (Near)', p['ou_near_snellen'] as String? ?? 'â€”', 'â€”', teal, white, g100),
-                  ],
-                ),
-                pw.SizedBox(height: 16),
-
-                // Screening details
-                pw.Text('Screening Details',
-                    style: pw.TextStyle(
-                        fontSize: 13,
-                        fontWeight: pw.FontWeight.bold,
-                        color: teal)),
-                pw.SizedBox(height: 8),
-                pw.Container(
-                  width: double.infinity,
-                  padding: const pw.EdgeInsets.all(12),
-                  decoration: pw.BoxDecoration(
-                    color: g100,
-                    borderRadius: pw.BorderRadius.circular(8),
-                  ),
-                  child: pw.Column(
-                    children: [
-                      _pdfDetailRow('Screening Date', p['screening_date'] as String? ?? 'â€”', g800, g400),
-                      _pdfDetailRow('CHW', p['chw_name'] as String? ?? _chwName, g800, g400),
-                      if ((p['conditions'] as String? ?? '').isNotEmpty)
-                        _pdfDetailRow('Conditions', p['conditions'] as String, g800, g400),
-                      if (outcome == 'refer') ...[
-                        _pdfDetailRow('Referral Facility', p['referral_facility'] as String? ?? 'â€”', g800, g400),
-                        _pdfDetailRow('Appointment Date', p['appointment_date'] as String? ?? 'â€”', g800, g400),
-                        _pdfDetailRow('Referral Status', (p['referral_status'] as String? ?? 'Pending').toUpperCase(), g800, g400),
-                      ],
-                    ],
-                  ),
-                ),
-
-                pw.Spacer(),
-                // Footer
-                pw.Divider(color: g400),
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Text('VisionScreen Â· Uganda MOH',
-                        style: pw.TextStyle(fontSize: 9, color: g400)),
-                    pw.Text('Page ${ctx.pageNumber} of ${ctx.pagesCount}',
-                        style: pw.TextStyle(fontSize: 9, color: g400)),
-                  ],
-                ),
-              ],
-            ),
-          ),
+      // â”€â”€ Helper: outcome badge â”€â”€
+      pw.Widget outcomeBadge(String outcome) {
+        final label = outcome == 'pass' ? 'PASS' : outcome == 'refer' ? 'REFER' : 'PENDING';
+        final color = outcome == 'pass' ? green : outcome == 'refer' ? red : amber;
+        final bg    = outcome == 'pass' ? greenL : outcome == 'refer' ? redL : amberL;
+        return pw.Container(
+          padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          decoration: pw.BoxDecoration(color: bg),
+          child: pw.Text(label, style: ts(10, color, bold: true)),
         );
       }
 
-      // Save and open
+      // â”€â”€ Helper: VA box â”€â”€
+      pw.Widget vaBox(String eye, String? snellen, String? logmar) => pw.Expanded(
+        child: pw.Container(
+          padding: const pw.EdgeInsets.all(8),
+          decoration: pw.BoxDecoration(color: g50),
+          child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+            pw.Text(eye, style: ts(8, g500, bold: true)),
+            pw.SizedBox(height: 3),
+            pw.Text(snellen?.isNotEmpty == true ? snellen! : 'N/A', style: ts(13, teal, bold: true)),
+            if (logmar?.isNotEmpty == true)
+              pw.Text('logMAR: $logmar', style: ts(8, g500)),
+          ]),
+        ),
+      );
+
+      // â”€â”€ Build one patient card widget â”€â”€
+      pw.Widget patientCard(Map<String, dynamic> p, int index) {
+        final name      = (p['name']    as String?) ?? 'Unknown';
+        final age       = (p['age']     as int?)    ?? 0;
+        final gender    = (p['gender']  as String?) ?? '';
+        final village   = (p['village'] as String?) ?? '';
+        final phone     = (p['phone']   as String?) ?? '';
+        final pid       = (p['id']      as String?) ?? '';
+        final outcome   = (p['outcome'] as String?) ?? 'pending';
+        final odS       = (p['od_snellen']      as String?) ?? '';
+        final osS       = (p['os_snellen']      as String?) ?? '';
+        final ouS       = (p['ou_near_snellen'] as String?) ?? '';
+        final odL       = (p['od_logmar']       as String?) ?? '';
+        final osL       = (p['os_logmar']       as String?) ?? '';
+        final scrDate   = (p['screening_date']  as String?) ?? '';
+        final chwN      = (p['chw_name']        as String?) ?? _chwName;
+        final facility  = (p['referral_facility'] as String?) ?? '';
+        final apptDate  = (p['appointment_date']  as String?) ?? '';
+        final refStatus = (p['referral_status']   as String?) ?? '';
+        final conditions= (p['conditions']        as String?) ?? '';
+        final isRefer   = outcome == 'refer';
+        final accentColor = outcome == 'pass' ? green : outcome == 'refer' ? red : amber;
+        final cardBg    = outcome == 'pass' ? greenL : outcome == 'refer' ? redL : amberL;
+
+        return pw.Container(
+          margin: const pw.EdgeInsets.only(bottom: 14),
+          decoration: pw.BoxDecoration(
+            color: white,
+            border: pw.Border.all(color: accentColor, width: 1.5),
+          ),
+          child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+
+            // â”€â”€ Card header â”€â”€
+            pw.Container(
+              color: cardBg,
+              padding: const pw.EdgeInsets.fromLTRB(10, 10, 10, 10),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Row(children: [
+                    pw.Container(
+                      width: 4,
+                      height: 40,
+                      decoration: pw.BoxDecoration(color: accentColor),
+                    ),
+                    pw.SizedBox(width: 10),
+                    pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+                      pw.Text(name, style: ts(14, g900, bold: true)),
+                      pw.SizedBox(height: 3),
+                      pw.Text('$age yrs  |  $gender  |  $village', style: ts(10, g700)),
+                    ]),
+                  ]),
+                  pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
+                    outcomeBadge(outcome),
+                    pw.SizedBox(height: 4),
+                    pw.Text('ID: $pid', style: ts(8, g500)),
+                  ]),
+                ],
+              ),
+            ),
+
+            // â”€â”€ Info row: phone + screening date + CHW â”€â”€
+            pw.Container(
+              color: g50,
+              padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              child: pw.Row(children: [
+                infoCell('Phone', phone, g50),
+                infoCell('Screened', scrDate.length >= 10 ? scrDate.substring(0, 10) : (scrDate.isNotEmpty ? scrDate : 'Not screened'), g50),
+                infoCell('CHW', chwN, g50),
+                if (conditions.isNotEmpty)
+                  infoCell('Conditions', conditions, g50),
+              ]),
+            ),
+
+            // â”€â”€ Visual Acuity â”€â”€
+            pw.Container(
+              padding: const pw.EdgeInsets.fromLTRB(10, 8, 10, 8),
+              child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+                pw.Text('Visual Acuity', style: ts(10, teal, bold: true)),
+                pw.SizedBox(height: 5),
+                pw.Row(children: [
+                  vaBox('OD (Right Eye)', odS, odL),
+                  pw.SizedBox(width: 6),
+                  vaBox('OS (Left Eye)', osS, osL),
+                  pw.SizedBox(width: 6),
+                  vaBox('OU (Near)', ouS, null),
+                ]),
+              ]),
+            ),
+
+            // â”€â”€ Referral details (only if referred) â”€â”€
+            if (isRefer) pw.Container(
+              color: redL,
+              padding: const pw.EdgeInsets.fromLTRB(10, 8, 10, 8),
+              child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+                pw.Text('Referral Details', style: ts(10, red, bold: true)),
+                pw.SizedBox(height: 5),
+                pw.Row(children: [
+                  infoCell('Referral Facility', facility, redL),
+                  infoCell('Appointment', apptDate.length >= 10 ? apptDate.substring(0, 10) : (apptDate.isNotEmpty ? apptDate : 'Not set'), redL),
+                  infoCell('Referral Status', refStatus.isNotEmpty ? refStatus.toUpperCase() : 'PENDING', redL),
+                ]),
+              ]),
+            ),
+          ]),
+        );
+      }
+
+      // â”€â”€ Build PDF â”€â”€
+      final pdf = pw.Document();
+
+      pdf.addPage(pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.fromLTRB(32, 32, 32, 28),
+
+        header: (ctx) => pw.Column(children: [
+          pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+            pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+              pw.Text('VisionScreen Patient Records', style: ts(18, teal, bold: true)),
+              pw.SizedBox(height: 3),
+              pw.Text(
+                '${_chwName.isNotEmpty ? _chwName : 'CHW'}  |  ${_chwCenter.isNotEmpty ? _chwCenter : _chwDistrict}  |  $dateStr  $timeStr',
+                style: ts(10, g700),
+              ),
+            ]),
+            pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
+              pw.Text('Page ${ctx.pageNumber} / ${ctx.pagesCount}', style: ts(10, g500)),
+              pw.Text('${patients.length} patients  |  CHW ID: ${_chwId.isNotEmpty ? _chwId : 'N/A'}', style: ts(10, g500)),
+            ]),
+          ]),
+          pw.SizedBox(height: 6),
+          pw.Divider(color: teal, thickness: 2),
+          pw.SizedBox(height: 8),
+        ]),
+
+        footer: (ctx) => pw.Column(children: [
+          pw.Divider(color: g200, thickness: 1),
+          pw.SizedBox(height: 3),
+          pw.Text(
+            'VisionScreen  |  Uganda MOH  |  WHO Compliant  |  Generated $dateStr at $timeStr',
+            style: ts(8, g500),
+            textAlign: pw.TextAlign.center,
+          ),
+        ]),
+
+        build: (ctx) => [
+          // Summary strip
+          pw.Container(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: pw.BoxDecoration(color: teal2),
+            child: pw.Row(children: [
+              pw.Expanded(child: pw.Column(children: [
+                pw.Text('${patients.length}', style: ts(20, teal, bold: true)),
+                pw.Text('Total Patients', style: ts(9, g700, bold: true)),
+              ])),
+              pw.Expanded(child: pw.Column(children: [
+                pw.Text('${patients.where((p) => p['outcome'] == 'pass').length}', style: ts(20, green, bold: true)),
+                pw.Text('Passed', style: ts(9, g700, bold: true)),
+              ])),
+              pw.Expanded(child: pw.Column(children: [
+                pw.Text('${patients.where((p) => p['outcome'] == 'refer').length}', style: ts(20, red, bold: true)),
+                pw.Text('Referred', style: ts(9, g700, bold: true)),
+              ])),
+              pw.Expanded(child: pw.Column(children: [
+                pw.Text('${patients.where((p) => p['outcome'] == null || p['outcome'] == 'pending').length}', style: ts(20, amber, bold: true)),
+                pw.Text('Pending', style: ts(9, g700, bold: true)),
+              ])),
+            ]),
+          ),
+          pw.SizedBox(height: 16),
+
+          // All patient cards â€” flow naturally across pages
+          ...patients.asMap().entries.map((e) => patientCard(e.value, e.key)),
+        ],
+      ));
+
       final dir = await getApplicationDocumentsDirectory();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final file = File('${dir.path}/visionscreen_patients_$timestamp.pdf');
       await file.writeAsBytes(await pdf.save());
 
       if (mounted) {
-        _showSnack('PDF saved: ${file.path.split('/').last}', _C.green);
+        _showSnack('Patient records PDF saved: ${file.path.split('/').last}', _C.green);
         await OpenFilex.open(file.path);
       }
     } catch (e) {
-      if (mounted) _showSnack('Export failed. Please try again.', _C.red);
+      if (mounted) _showSnack('Export failed: ${e.toString()}', _C.red);
     }
   }
 
-  Future<void> _exportCampaignPDF() async {
+    Future<void> _exportCampaignPDF() async {
     try {
       _showSnack('Generating campaign records PDF...', _C.teal);
 
