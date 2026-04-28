@@ -454,23 +454,23 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                         ),
                         Container(
-                          height: 48,
+                          height: 36,
                           decoration: BoxDecoration(
                             color: AppColors.ink2,
                             borderRadius: BorderRadius.circular(99),
-                            border: Border.all(color: AppColors.teal.withValues(alpha: 0.35), width: 1.5),
+                            border: Border.all(color: AppColors.teal.withValues(alpha: 0.35), width: 1.2),
                             boxShadow: [
-                              BoxShadow(color: AppColors.teal.withValues(alpha: 0.2), blurRadius: 20, spreadRadius: 2, offset: const Offset(0, 4)),
-                              BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 16, offset: const Offset(0, 6)),
+                              BoxShadow(color: AppColors.teal.withValues(alpha: 0.2), blurRadius: 12, spreadRadius: 1, offset: const Offset(0, 2)),
+                              BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 8, offset: const Offset(0, 3)),
                             ],
                           ),
-                          padding: const EdgeInsets.all(4),
+                          padding: const EdgeInsets.all(3),
                           child: TabBar(
                             controller: _tabCtrl,
                             indicator: BoxDecoration(
                               gradient: const LinearGradient(colors: [AppColors.teal, AppColors.teal2]),
                               borderRadius: BorderRadius.circular(99),
-                              boxShadow: [BoxShadow(color: AppColors.teal.withValues(alpha: 0.5), blurRadius: 12)],
+                              boxShadow: [BoxShadow(color: AppColors.teal.withValues(alpha: 0.5), blurRadius: 8)],
                             ),
                             indicatorSize: TabBarIndicatorSize.tab,
                             dividerColor: Colors.transparent,
@@ -562,8 +562,9 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Widget _pillTab(String label, bool active) => Tab(
+    height: 30,
     child: Text(label, style: GoogleFonts.sora(
-      fontSize: 13, fontWeight: FontWeight.w700,
+      fontSize: 11, fontWeight: FontWeight.w700,
       color: active ? Colors.white : AppColors.teal3.withValues(alpha: 0.5),
     )),
   );
@@ -1022,10 +1023,6 @@ class _LoginForm extends StatelessWidget {
           loading: loading,
           onTap: onLogin,
         ),
-        const SizedBox(height: 16),
-        _OfflineNote(),
-        const SizedBox(height: 14),
-        _VersionFooter(),
       ],
     );
   }
@@ -1228,8 +1225,6 @@ class _SignUpForm extends StatelessWidget {
           loading: false,
           onTap: onSignUp,
         ),
-        const SizedBox(height: 12),
-        _VersionFooter(),
       ],
     );
   }
@@ -1260,17 +1255,17 @@ class _RoleButton extends StatelessWidget {
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
         decoration: BoxDecoration(
           color: active
               ? AppColors.teal.withValues(alpha: 0.18)
               : Colors.white.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: active
                 ? AppColors.teal
                 : AppColors.teal.withValues(alpha: 0.15),
-            width: 1.5,
+            width: 1.2,
           ),
           boxShadow: active
               ? [
@@ -1289,17 +1284,17 @@ class _RoleButton extends StatelessWidget {
               children: [
                 Icon(
                   icon,
-                  size: 20,
+                  size: 16,
                   color: active
                       ? AppColors.teal2
                       : AppColors.teal3.withValues(alpha: 0.4),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
                   label,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.sora(
-                    fontSize: 11,
+                    fontSize: 10,
                     fontWeight: FontWeight.w700,
                     color: active
                         ? AppColors.teal2
@@ -1424,7 +1419,7 @@ class _InputFieldState extends State<_InputField> {
             textInputAction: widget.inputAction,
             onChanged: widget.onChanged,
             style: GoogleFonts.sora(
-              fontSize: 14,
+              fontSize: 12,
               fontWeight: FontWeight.w500,
               color: Colors.white,
             ),
@@ -1432,7 +1427,7 @@ class _InputFieldState extends State<_InputField> {
             decoration: InputDecoration(
               hintText: widget.hint,
               hintStyle: GoogleFonts.sora(
-                fontSize: 14,
+                fontSize: 12,
                 color: AppColors.teal3.withValues(alpha: 0.3),
               ),
               prefixIcon: widget.prefix != null
@@ -1472,7 +1467,7 @@ class _InputFieldState extends State<_InputField> {
               ),
               contentPadding: EdgeInsets.symmetric(
                 horizontal: widget.prefix != null ? 4 : 14,
-                vertical: 10,
+                vertical: 6,
               ),
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
@@ -1733,7 +1728,7 @@ class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
                         focusedBorder: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 10,
-                          vertical: 10,
+                          vertical: 6,
                         ),
                       ),
                     ),
@@ -1992,7 +1987,7 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
         duration: const Duration(milliseconds: 100),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 15),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -2033,7 +2028,7 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
                     Text(
                       widget.label,
                       style: GoogleFonts.sora(
-                        fontSize: 15,
+                        fontSize: 13,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
                         letterSpacing: 0.5,
