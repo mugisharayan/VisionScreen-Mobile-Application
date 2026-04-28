@@ -367,7 +367,7 @@ class _LoginScreenState extends State<LoginScreen>
     final screenH = MediaQuery.of(context).size.height;
     return Scaffold(
       backgroundColor: AppColors.ink,
-      resizeToAvoidBottomInset: true,
+      resizeToAvoidBottomInset: false,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -437,10 +437,50 @@ class _LoginScreenState extends State<LoginScreen>
                   filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
                   child: SingleChildScrollView(
                     controller: _scrollCtrl,
-                    padding: const EdgeInsets.fromLTRB(22, 68, 22, 32),
+                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: EdgeInsets.fromLTRB(22, 0, 22, MediaQuery.of(context).viewInsets.bottom + 32),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        const SizedBox(height: 20),
+                        Center(
+                          child: Container(
+                            width: 40, height: 4,
+                            margin: const EdgeInsets.only(bottom: 10),
+                            decoration: BoxDecoration(
+                              color: AppColors.teal.withValues(alpha: 0.4),
+                              borderRadius: BorderRadius.circular(99),
+                            ),
+                          ),
+                        ),
+                        Container(
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: AppColors.ink2,
+                            borderRadius: BorderRadius.circular(99),
+                            border: Border.all(color: AppColors.teal.withValues(alpha: 0.35), width: 1.5),
+                            boxShadow: [
+                              BoxShadow(color: AppColors.teal.withValues(alpha: 0.2), blurRadius: 20, spreadRadius: 2, offset: const Offset(0, 4)),
+                              BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 16, offset: const Offset(0, 6)),
+                            ],
+                          ),
+                          padding: const EdgeInsets.all(4),
+                          child: TabBar(
+                            controller: _tabCtrl,
+                            indicator: BoxDecoration(
+                              gradient: const LinearGradient(colors: [AppColors.teal, AppColors.teal2]),
+                              borderRadius: BorderRadius.circular(99),
+                              boxShadow: [BoxShadow(color: AppColors.teal.withValues(alpha: 0.5), blurRadius: 12)],
+                            ),
+                            indicatorSize: TabBarIndicatorSize.tab,
+                            dividerColor: Colors.transparent,
+                            labelPadding: EdgeInsets.zero,
+                            tabs: [
+                              _pillTab('Login', _tabCtrl.index == 0),
+                              _pillTab('Sign Up', _tabCtrl.index == 1),
+                            ],
+                          ),
+                        ),
                         const SizedBox(height: 22),
                         AnimatedSwitcher(
                           duration: const Duration(milliseconds: 260),
@@ -515,53 +555,7 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
 
-          // ── Floating pill tab — overlaps hero + card edge ──
-          Positioned(
-            top: screenH * 0.38 - 28,
-            left: 32, right: 32,
-            child: Column(
-              children: [
-                Center(
-                  child: Container(
-                    width: 40, height: 4,
-                    margin: const EdgeInsets.only(bottom: 10),
-                    decoration: BoxDecoration(
-                      color: AppColors.teal.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                  ),
-                ),
-                Container(
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppColors.ink2,
-                    borderRadius: BorderRadius.circular(99),
-                    border: Border.all(color: AppColors.teal.withValues(alpha: 0.35), width: 1.5),
-                    boxShadow: [
-                      BoxShadow(color: AppColors.teal.withValues(alpha: 0.2), blurRadius: 20, spreadRadius: 2, offset: const Offset(0, 4)),
-                      BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 16, offset: const Offset(0, 6)),
-                    ],
-                  ),
-                  padding: const EdgeInsets.all(4),
-                  child: TabBar(
-                    controller: _tabCtrl,
-                    indicator: BoxDecoration(
-                      gradient: const LinearGradient(colors: [AppColors.teal, AppColors.teal2]),
-                      borderRadius: BorderRadius.circular(99),
-                      boxShadow: [BoxShadow(color: AppColors.teal.withValues(alpha: 0.5), blurRadius: 12)],
-                    ),
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    dividerColor: Colors.transparent,
-                    labelPadding: EdgeInsets.zero,
-                    tabs: [
-                      _pillTab('Login', _tabCtrl.index == 0),
-                      _pillTab('Sign Up', _tabCtrl.index == 1),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+
         ],
       ),
     );
