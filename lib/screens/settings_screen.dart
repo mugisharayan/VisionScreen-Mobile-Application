@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -6,12 +6,14 @@ import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:printing/printing.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import '../db/database_helper.dart';
 
-// ── Colours ──────────────────────────────────────────────────
+// â”€â”€ Colours â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _C {
   static const ink = Color(0xFF04091A);
   static const ink2 = Color(0xFF0B1530);
@@ -37,7 +39,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // ── Profile (read-only, from registration) ──────────────
+  // â”€â”€ Profile (read-only, from registration) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   String _chwName = '';
   String _chwCenter = '';
   String _chwDistrict = '';
@@ -68,7 +70,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _lastLoginTime = p.getString('last_login_time') ?? '';
       _lastLoginRole = p.getString('last_login_role') ?? '';
       _brightnessLock = p.getBool('brightness_lock') ?? true;
-      _eyeOrder = p.getString('eye_order') ?? 'Right → Left';
+      _eyeOrder = p.getString('eye_order') ?? 'Right â†’ Left';
       _hapticFeedback = p.getBool('haptic_feedback') ?? true;
       _language = p.getString('referral_language') ?? 'English Only';
       _chwPhoto = p.getString('chw_photo') ?? '';
@@ -102,10 +104,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (_) {}
   }
 
-  // ── Toggles ──────────────────────────────────────────────
+  // â”€â”€ Toggles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   bool _hapticFeedback = true;
   bool _brightnessLock = true;
-  String _eyeOrder = 'Right → Left';
+  String _eyeOrder = 'Right â†’ Left';
 
   String _language = 'English Only';
   static const _languages = [
@@ -314,7 +316,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           badgeColor: const Color(0xFF3B82F6),
                           badgeIcon: Icons.picture_as_pdf_outlined,
                           label: 'Export as PDF',
-                          subtitle: 'Printable report · MOH audit format',
+                          subtitle: 'Printable report Â· MOH audit format',
                           isLast: true,
                           onTap: () => _showExportSheet(),
                         ),
@@ -419,7 +421,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ],
                     ),
                     const SizedBox(height: 14),
-                    // ── Footer ──
+                    // â”€â”€ Footer â”€â”€
                     Text(
                       'VisionScreen v1.0',
                       textAlign: TextAlign.center,
@@ -427,7 +429,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Made for Community Health Workers · Uganda',
+                      'Made for Community Health Workers Â· Uganda',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.sora(fontSize: 10, color: _C.g400),
                     ),
@@ -443,7 +445,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // ── HEADER — Profile Card ──────────────────────────────
+  // â”€â”€ HEADER â€” Profile Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildHeader() {
     final initials = _chwName.trim().isNotEmpty
         ? _chwName.trim().split(' ').map((w) => w.isEmpty ? '' : w[0]).take(2).join().toUpperCase()
@@ -507,7 +509,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Avatar — 64x64
+                    // Avatar â€” 64x64
                     Container(
                       width: 64, height: 64,
                       decoration: BoxDecoration(
@@ -576,7 +578,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           const SizedBox(height: 3),
                           Text(
                             _chwCenter.isNotEmpty
-                                ? '$_chwCenter · $_chwDistrict'
+                                ? '$_chwCenter Â· $_chwDistrict'
                                 : 'Community Health Worker',
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.ibmPlexSans(
@@ -618,7 +620,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              // CHW ID chip — always visible
+                              // CHW ID chip â€” always visible
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 8, vertical: 3),
@@ -671,7 +673,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // ── EDIT PROFILE SHEET ─────────────────────────────────────────
+  // â”€â”€ EDIT PROFILE SHEET â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   void _showEditProfileSheet() {
     final nameCtrl     = TextEditingController(text: _chwName);
     final centerCtrl   = TextEditingController(text: _chwCenter);
@@ -742,7 +744,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  // ── Profile photo picker ──
+                  // â”€â”€ Profile photo picker â”€â”€
                   Center(
                     child: StatefulBuilder(
                       builder: (_, setPhoto) => GestureDetector(
@@ -1011,7 +1013,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // ── SECTION CARD ─────────────────────────────────────────
+  // â”€â”€ SECTION CARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Renders a labelled group: uppercase label above + white card with rows
   Widget _buildSection({
     required String title,
@@ -1074,7 +1076,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return result;
   }
 
-  // ── UNIFIED ROW BUILDER ───────────────────────────────────────
+  // â”€â”€ UNIFIED ROW BUILDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildRow({
     required Color badgeColor,
     required IconData badgeIcon,
@@ -1158,7 +1160,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // ── CHW BADGE ID ROW ───────────────────────────────────────────
+  // â”€â”€ CHW BADGE ID ROW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildChwIdRow() {
     return ClipRRect(
       borderRadius: const BorderRadius.only(
@@ -1194,7 +1196,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'CHW Badge ID · Prints on referrals',
+                  'CHW Badge ID Â· Prints on referrals',
                   style: GoogleFonts.inter(fontSize: 12, color: _C.g400),
                 ),
               ],
@@ -1332,7 +1334,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // ── CUSTOM TOGGLE ────────────────────────────────────────
+  // â”€â”€ CUSTOM TOGGLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildToggle({
     required bool value,
     required ValueChanged<bool> onChanged,
@@ -1374,7 +1376,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // ── ABOUT & HELP HELPERS ─────────────────────────────────
+  // â”€â”€ ABOUT & HELP HELPERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   void _showSnack(String msg, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1582,7 +1584,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           _LegalSection(
             '2. Authorised Use',
-            'This application is authorised only for registered CHWs under a recognised Ugandan Health Centre (HC II–HC IV) and health administrators with valid MOH credentials.',
+            'This application is authorised only for registered CHWs under a recognised Ugandan Health Centre (HC IIâ€“HC IV) and health administrators with valid MOH credentials.',
           ),
           _LegalSection(
             '3. Patient Data',
@@ -1705,18 +1707,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Column(
                   children: [
                     _aboutRow(
-                      '🏥',
+                      'ðŸ¥',
                       'Built for',
-                      'Community Health Workers · Uganda',
+                      'Community Health Workers Â· Uganda',
                     ),
                     _aboutRow(
-                      '👁️',
+                      'ðŸ‘ï¸',
                       'Test Method',
-                      'Tumbling E · LogMAR Scale',
+                      'Tumbling E Â· LogMAR Scale',
                     ),
-                    _aboutRow('📱', 'Storage', 'SQLite (offline-first)'),
-                    _aboutRow('☁️', 'Cloud Sync', 'MongoDB Atlas'),
-                    _aboutRow('📞', 'Support', 'support@visionscreen.ug'),
+                    _aboutRow('ðŸ“±', 'Storage', 'SQLite (offline-first)'),
+                    _aboutRow('â˜ï¸', 'Cloud Sync', 'MongoDB Atlas'),
+                    _aboutRow('ðŸ“ž', 'Support', 'support@visionscreen.ug'),
                     const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
@@ -1806,7 +1808,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Initial release · March 2026',
+              'Initial release Â· March 2026',
               style: GoogleFonts.sora(fontSize: 11, color: _C.g400),
             ),
             const SizedBox(height: 16),
@@ -2261,7 +2263,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       final pdf = pw.Document();
 
-      // ── Colours ──
+      // â”€â”€ Colours â”€â”€
       final teal    = PdfColor.fromHex('#0D9488');
       final teal2   = PdfColor.fromHex('#14B8A6');
       final ink     = PdfColor.fromHex('#04091A');
@@ -2273,7 +2275,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final white   = PdfColors.white;
       final g100    = PdfColor.fromHex('#F0F4F7');
 
-      // ── Cover page ──
+      // â”€â”€ Cover page â”€â”€
       pdf.addPage(
         pw.Page(
           pageFormat: PdfPageFormat.a4,
@@ -2314,10 +2316,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      _pdfInfoRow('CHW Name', _chwName.isNotEmpty ? _chwName : '—', g400, white),
-                      _pdfInfoRow('Health Center', _chwCenter.isNotEmpty ? _chwCenter : '—', g400, white),
-                      _pdfInfoRow('District', _chwDistrict.isNotEmpty ? _chwDistrict : '—', g400, white),
-                      _pdfInfoRow('Badge ID', _chwId.isNotEmpty ? _chwId : '—', g400, white),
+                      _pdfInfoRow('CHW Name', _chwName.isNotEmpty ? _chwName : 'â€”', g400, white),
+                      _pdfInfoRow('Health Center', _chwCenter.isNotEmpty ? _chwCenter : 'â€”', g400, white),
+                      _pdfInfoRow('District', _chwDistrict.isNotEmpty ? _chwDistrict : 'â€”', g400, white),
+                      _pdfInfoRow('Badge ID', _chwId.isNotEmpty ? _chwId : 'â€”', g400, white),
                       _pdfInfoRow('Export Date', DateTime.now().toString().substring(0, 16), g400, white),
                       _pdfInfoRow('Total Patients', '${patients.length}', g400, white),
                     ],
@@ -2329,7 +2331,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       );
 
-      // ── Patient pages ──
+      // â”€â”€ Patient pages â”€â”€
       for (final p in patients) {
         final outcome = (p['outcome'] as String?) ?? 'pending';
         final outcomeColor = outcome == 'pass' ? green : outcome == 'refer' ? red : amber;
@@ -2356,18 +2358,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       pw.Column(
                         crossAxisAlignment: pw.CrossAxisAlignment.start,
                         children: [
-                          pw.Text(p['name'] as String? ?? '—',
+                          pw.Text(p['name'] as String? ?? 'â€”',
                               style: pw.TextStyle(
                                   fontSize: 18,
                                   fontWeight: pw.FontWeight.bold,
                                   color: g800)),
                           pw.SizedBox(height: 4),
                           pw.Text(
-                            '${p['age']} yrs · ${p['gender']} · ${p['village']}',
+                            '${p['age']} yrs Â· ${p['gender']} Â· ${p['village']}',
                             style: pw.TextStyle(fontSize: 11, color: g400),
                           ),
                           pw.Text(
-                            'ID: ${p['id']}  ·  Phone: ${p['phone'] ?? '—'}',
+                            'ID: ${p['id']}  Â·  Phone: ${p['phone'] ?? 'â€”'}',
                             style: pw.TextStyle(fontSize: 11, color: g400),
                           ),
                         ],
@@ -2398,11 +2400,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 pw.SizedBox(height: 8),
                 pw.Row(
                   children: [
-                    _pdfVaBox('OD (Right)', p['od_snellen'] as String? ?? '—', p['od_logmar'] as String? ?? '—', teal, white, g100),
+                    _pdfVaBox('OD (Right)', p['od_snellen'] as String? ?? 'â€”', p['od_logmar'] as String? ?? 'â€”', teal, white, g100),
                     pw.SizedBox(width: 8),
-                    _pdfVaBox('OS (Left)', p['os_snellen'] as String? ?? '—', p['os_logmar'] as String? ?? '—', teal, white, g100),
+                    _pdfVaBox('OS (Left)', p['os_snellen'] as String? ?? 'â€”', p['os_logmar'] as String? ?? 'â€”', teal, white, g100),
                     pw.SizedBox(width: 8),
-                    _pdfVaBox('OU (Near)', p['ou_near_snellen'] as String? ?? '—', '—', teal, white, g100),
+                    _pdfVaBox('OU (Near)', p['ou_near_snellen'] as String? ?? 'â€”', 'â€”', teal, white, g100),
                   ],
                 ),
                 pw.SizedBox(height: 16),
@@ -2423,13 +2425,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   child: pw.Column(
                     children: [
-                      _pdfDetailRow('Screening Date', p['screening_date'] as String? ?? '—', g800, g400),
+                      _pdfDetailRow('Screening Date', p['screening_date'] as String? ?? 'â€”', g800, g400),
                       _pdfDetailRow('CHW', p['chw_name'] as String? ?? _chwName, g800, g400),
                       if ((p['conditions'] as String? ?? '').isNotEmpty)
                         _pdfDetailRow('Conditions', p['conditions'] as String, g800, g400),
                       if (outcome == 'refer') ...[
-                        _pdfDetailRow('Referral Facility', p['referral_facility'] as String? ?? '—', g800, g400),
-                        _pdfDetailRow('Appointment Date', p['appointment_date'] as String? ?? '—', g800, g400),
+                        _pdfDetailRow('Referral Facility', p['referral_facility'] as String? ?? 'â€”', g800, g400),
+                        _pdfDetailRow('Appointment Date', p['appointment_date'] as String? ?? 'â€”', g800, g400),
                         _pdfDetailRow('Referral Status', (p['referral_status'] as String? ?? 'Pending').toUpperCase(), g800, g400),
                       ],
                     ],
@@ -2442,7 +2444,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Text('VisionScreen · Uganda MOH',
+                    pw.Text('VisionScreen Â· Uganda MOH',
                         style: pw.TextStyle(fontSize: 9, color: g400)),
                     pw.Text('Page ${ctx.pageNumber} of ${ctx.pagesCount}',
                         style: pw.TextStyle(fontSize: 9, color: g400)),
@@ -2495,7 +2497,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final g100  = PdfColor.fromHex('#F0F4F7');
       final purple = PdfColor.fromHex('#8B5CF6');
 
-      // ── Cover page ──
+      // â”€â”€ Cover page â”€â”€
       pdf.addPage(
         pw.Page(
           pageFormat: PdfPageFormat.a4,
@@ -2532,10 +2534,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      _pdfInfoRow('CHW Name', _chwName.isNotEmpty ? _chwName : '—', g400, white),
-                      _pdfInfoRow('Health Center', _chwCenter.isNotEmpty ? _chwCenter : '—', g400, white),
-                      _pdfInfoRow('District', _chwDistrict.isNotEmpty ? _chwDistrict : '—', g400, white),
-                      _pdfInfoRow('Badge ID', _chwId.isNotEmpty ? _chwId : '—', g400, white),
+                      _pdfInfoRow('CHW Name', _chwName.isNotEmpty ? _chwName : 'â€”', g400, white),
+                      _pdfInfoRow('Health Center', _chwCenter.isNotEmpty ? _chwCenter : 'â€”', g400, white),
+                      _pdfInfoRow('District', _chwDistrict.isNotEmpty ? _chwDistrict : 'â€”', g400, white),
+                      _pdfInfoRow('Badge ID', _chwId.isNotEmpty ? _chwId : 'â€”', g400, white),
                       _pdfInfoRow('Export Date', DateTime.now().toString().substring(0, 16), g400, white),
                       _pdfInfoRow('Total Campaigns', '${campaigns.length}', g400, white),
                     ],
@@ -2547,7 +2549,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       );
 
-      // ── One page per campaign ──
+      // â”€â”€ One page per campaign â”€â”€
       for (final c in campaigns) {
         final campaignId = c['id'] as String;
         final total    = (c['total']    as int?) ?? 0;
@@ -2576,12 +2578,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Text(c['name'] as String? ?? '—',
+                      pw.Text(c['name'] as String? ?? 'â€”',
                           style: pw.TextStyle(
                               fontSize: 18, fontWeight: pw.FontWeight.bold, color: white)),
                       pw.SizedBox(height: 4),
                       pw.Text(
-                        '${c['location']} · ${c['target_group']} · ${c['created_at'].toString().substring(0, 10)}',
+                        '${c['location']} Â· ${c['target_group']} Â· ${c['created_at'].toString().substring(0, 10)}',
                         style: pw.TextStyle(fontSize: 11, color: white),
                       ),
                     ],
@@ -2634,10 +2636,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     child: pw.Row(
                       children: [
-                        pw.Expanded(flex: 3, child: pw.Text(p['name'] as String? ?? '—', style: pw.TextStyle(fontSize: 10, color: g800))),
+                        pw.Expanded(flex: 3, child: pw.Text(p['name'] as String? ?? 'â€”', style: pw.TextStyle(fontSize: 10, color: g800))),
                         pw.Expanded(flex: 1, child: pw.Text('${p['age']}', style: pw.TextStyle(fontSize: 10, color: g800))),
-                        pw.Expanded(flex: 1, child: pw.Text(p['od_snellen'] as String? ?? '—', style: pw.TextStyle(fontSize: 10, color: g800))),
-                        pw.Expanded(flex: 1, child: pw.Text(p['os_snellen'] as String? ?? '—', style: pw.TextStyle(fontSize: 10, color: g800))),
+                        pw.Expanded(flex: 1, child: pw.Text(p['od_snellen'] as String? ?? 'â€”', style: pw.TextStyle(fontSize: 10, color: g800))),
+                        pw.Expanded(flex: 1, child: pw.Text(p['os_snellen'] as String? ?? 'â€”', style: pw.TextStyle(fontSize: 10, color: g800))),
                         pw.Expanded(flex: 2, child: pw.Text(outcome.toUpperCase(), style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: outcomeColor))),
                       ],
                     ),
@@ -2649,7 +2651,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Text('VisionScreen · Uganda MOH', style: pw.TextStyle(fontSize: 9, color: g400)),
+                    pw.Text('VisionScreen Â· Uganda MOH', style: pw.TextStyle(fontSize: 9, color: g400)),
                     pw.Text('Page ${ctx.pageNumber} of ${ctx.pagesCount}', style: pw.TextStyle(fontSize: 9, color: g400)),
                   ],
                 ),
@@ -2702,170 +2704,408 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       _showSnack('Generating analytics report...', _C.teal);
 
-      // Fetch all analytics data
-      final outcomes    = await DatabaseHelper.instance.getOutcomeCounts();
-      final ageGroups   = await DatabaseHelper.instance.getAgeGroupCounts();
-      final genders     = await DatabaseHelper.instance.getGenderCounts();
-      final acuity      = await DatabaseHelper.instance.getVisualAcuityDistribution();
-      final referrals   = await DatabaseHelper.instance.getReferralStatusCounts();
-      final conditions  = await DatabaseHelper.instance.getConditionCounts();
-      final villages    = await DatabaseHelper.instance.getVillageBreakdown();
+      final outcomes   = await DatabaseHelper.instance.getOutcomeCounts();
+      final ageGroups  = await DatabaseHelper.instance.getAgeGroupCounts();
+      final genders    = await DatabaseHelper.instance.getGenderCounts();
+      final acuity     = await DatabaseHelper.instance.getVisualAcuityDistribution();
+      final referrals  = await DatabaseHelper.instance.getReferralStatusCounts();
+      final conditions = await DatabaseHelper.instance.getConditionCounts();
+      final villages   = await DatabaseHelper.instance.getVillageBreakdown();
+      final severity   = await DatabaseHelper.instance.getSeverityClassification();
+      final campaigns  = await DatabaseHelper.instance.getAllCampaigns();
+      final condByAge  = await DatabaseHelper.instance.getConditionsByAgeGroup();
 
-      final total    = (outcomes['pass'] ?? 0) + (outcomes['refer'] ?? 0) + (outcomes['pending'] ?? 0);
       final passed   = outcomes['pass']    ?? 0;
       final referred = outcomes['refer']   ?? 0;
       final pending  = outcomes['pending'] ?? 0;
-      final passRate = total > 0 ? (passed / total * 100).toStringAsFixed(1) : '0.0';
+      final screened = passed + referred;
+      final total    = screened + pending;
+      final passRate  = screened > 0 ? (passed  / screened * 100).toStringAsFixed(1) : '0.0';
+      final referRate = screened > 0 ? (referred / screened * 100).toStringAsFixed(1) : '0.0';
 
-      final pdf = pw.Document();
+      final now     = DateTime.now();
+      final dateStr = '${now.day.toString().padLeft(2,'0')}/${now.month.toString().padLeft(2,'0')}/${now.year}';
+      final timeStr = '${now.hour.toString().padLeft(2,'0')}:${now.minute.toString().padLeft(2,'0')}';
 
-      final teal   = PdfColor.fromHex('#0D9488');
-                  final g400   = PdfColor.fromHex('#8FA0B4');
-      final g800   = PdfColor.fromHex('#1A2A3D');
-      final green  = PdfColor.fromHex('#22C55E');
-      final red    = PdfColor.fromHex('#EF4444');
-      final amber  = PdfColor.fromHex('#F59E0B');
-      final blue   = PdfColor.fromHex('#3B82F6');
-      final white  = PdfColors.white;
-      final g100   = PdfColor.fromHex('#F0F4F7');
+      final male   = genders['M'] ?? 0;
+      final female = genders['F'] ?? 0;
+      final gTotal = male + female;
 
-      pdf.addPage(
-        pw.MultiPage(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.fromLTRB(32, 32, 32, 32),
-          header: (ctx) => pw.Container(
-            width: double.infinity,
-            padding: const pw.EdgeInsets.fromLTRB(0, 0, 0, 12),
-            decoration: pw.BoxDecoration(
-              border: pw.Border(bottom: pw.BorderSide(color: teal, width: 2)),
-            ),
-            child: pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text('VisionScreen Analytics Report',
-                        style: pw.TextStyle(
-                            fontSize: 18, fontWeight: pw.FontWeight.bold, color: teal)),
-                    pw.Text(
-                      '${_chwName.isNotEmpty ? _chwName : 'CHW'} · ${_chwCenter.isNotEmpty ? _chwCenter : ''} · ${DateTime.now().toString().substring(0, 10)}',
-                      style: pw.TextStyle(fontSize: 10, color: g400),
-                    ),
-                  ],
-                ),
-                pw.Text('Page ${ctx.pageNumber}',
-                    style: pw.TextStyle(fontSize: 9, color: g400)),
-              ],
-            ),
-          ),
-          build: (ctx) => [
-            pw.SizedBox(height: 16),
+      final campTotal    = campaigns.fold<int>(0, (s, c) => s + ((c['total']    as int?) ?? 0));
+      final campPassed   = campaigns.fold<int>(0, (s, c) => s + ((c['passed']   as int?) ?? 0));
+      final campReferred = campaigns.fold<int>(0, (s, c) => s + ((c['referred'] as int?) ?? 0));
+      final overdue   = referrals['overdue']   ?? 0;
+      final completed = referrals['completed'] ?? 0;
+      final topCond    = conditions.isEmpty ? null : conditions.entries.reduce((a, b) => a.value > b.value ? a : b);
+      final topVillage = villages.isEmpty ? null : villages.first;
 
-            // ── Summary stats ──
-            pw.Text('Summary', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: g800)),
-            pw.SizedBox(height: 8),
-            pw.Row(
-              children: [
-                _pdfStatBox('Total', '$total', teal, white, g100),
-                pw.SizedBox(width: 8),
-                _pdfStatBox('Passed', '$passed', green, white, g100),
-                pw.SizedBox(width: 8),
-                _pdfStatBox('Referred', '$referred', red, white, g100),
-                pw.SizedBox(width: 8),
-                _pdfStatBox('Pending', '$pending', amber, white, g100),
-                pw.SizedBox(width: 8),
-                _pdfStatBox('Pass Rate', '$passRate%', teal, white, g100),
-              ],
-            ),
-            pw.SizedBox(height: 20),
+      // ── Colours ──
+      final teal  = PdfColor.fromHex('#0D9488');
+      final teal2 = PdfColor.fromHex('#CCFBF1');
+      final g900  = PdfColor.fromHex('#0F172A');
+      final g700  = PdfColor.fromHex('#334155');
+      final g500  = PdfColor.fromHex('#64748B');
+      final g200  = PdfColor.fromHex('#E2E8F0');
+      final g50   = PdfColor.fromHex('#F8FAFC');
+      final green = PdfColor.fromHex('#16A34A');
+      final greenL= PdfColor.fromHex('#DCFCE7');
+      final red   = PdfColor.fromHex('#DC2626');
+      final redL  = PdfColor.fromHex('#FEE2E2');
+      final amber = PdfColor.fromHex('#D97706');
+      final amberL= PdfColor.fromHex('#FEF3C7');
+      final blue  = PdfColor.fromHex('#2563EB');
+      final blueL = PdfColor.fromHex('#DBEAFE');
+      final purp  = PdfColor.fromHex('#7C3AED');
+      final purpL = PdfColor.fromHex('#EDE9FE');
+      final white = PdfColors.white;
 
-            // ── Age groups ──
-            _pdfSectionTitle('Age Group Breakdown', blue),
-            pw.SizedBox(height: 8),
-            _pdfBarTable(ageGroups, total, blue, g100, g800, g400, white),
-            pw.SizedBox(height: 20),
+      // ── Fonts (embedded - fixes tofu boxes on all PDF viewers) ──
+      final fontRegular = await PdfGoogleFonts.nunitoRegular();
+      final fontBold    = await PdfGoogleFonts.nunitoBold();
 
-            // ── Gender ──
-            _pdfSectionTitle('Gender Distribution', teal),
-            pw.SizedBox(height: 8),
-            _pdfBarTable(genders, total, teal, g100, g800, g400, white),
-            pw.SizedBox(height: 20),
+      pw.TextStyle ts(double size, PdfColor color, {bool bold = false}) =>
+          pw.TextStyle(font: bold ? fontBold : fontRegular, fontSize: size, color: color);
 
-            // ── Visual acuity ──
-            _pdfSectionTitle('Visual Acuity Distribution', amber),
-            pw.SizedBox(height: 8),
-            _pdfBarTable(acuity, total, amber, g100, g800, g400, white),
-            pw.SizedBox(height: 20),
+      // ── HELPERS ──
 
-            // ── Referral status ──
-            _pdfSectionTitle('Referral Status', red),
-            pw.SizedBox(height: 8),
-            _pdfBarTable(referrals, referred, red, g100, g800, g400, white),
-            pw.SizedBox(height: 20),
+      // Section header
+      pw.Widget secHeader(String title, PdfColor bg) => pw.Container(
+        width: double.infinity,
+        margin: const pw.EdgeInsets.only(top: 18, bottom: 10),
+        padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: pw.BoxDecoration(color: bg),
+        child: pw.Text(title, style: ts(13, white, bold: true)),
+      );
 
-            // ── Top conditions ──
-            if (conditions.isNotEmpty) ...[
-              _pdfSectionTitle('Top Eye Conditions', red),
-              pw.SizedBox(height: 8),
-              _pdfBarTable(
-                Map.fromEntries(
-                  conditions.entries.toList()
-                    ..sort((a, b) => b.value.compareTo(a.value))
-                    ..take(6),
-                ),
-                total, red, g100, g800, g400, white,
-              ),
-              pw.SizedBox(height: 20),
-            ],
-
-            // ── Village breakdown ──
-            if (villages.isNotEmpty) ...[
-              _pdfSectionTitle('Village Breakdown', blue),
-              pw.SizedBox(height: 8),
-              pw.Container(
-                color: teal,
-                padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                child: pw.Row(
-                  children: [
-                    pw.Expanded(flex: 4, child: pw.Text('Village', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: white))),
-                    pw.Expanded(flex: 2, child: pw.Text('Total', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: white))),
-                    pw.Expanded(flex: 2, child: pw.Text('Referred', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: white))),
-                    pw.Expanded(flex: 2, child: pw.Text('Pass Rate', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: white))),
-                  ],
-                ),
-              ),
-              ...villages.asMap().entries.map((e) {
-                final i = e.key;
-                final v = e.value;
-                final vTotal    = (v['total']    as int?) ?? 0;
-                final vReferred = (v['referred'] as int?) ?? 0;
-                final vPassed   = vTotal - vReferred;
-                final vRate     = vTotal > 0 ? '${(vPassed / vTotal * 100).toStringAsFixed(0)}%' : '0%';
-                return pw.Container(
-                  color: i.isEven ? g100 : white,
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  child: pw.Row(
-                    children: [
-                      pw.Expanded(flex: 4, child: pw.Text(v['village'] as String, style: pw.TextStyle(fontSize: 10, color: g800))),
-                      pw.Expanded(flex: 2, child: pw.Text('$vTotal', style: pw.TextStyle(fontSize: 10, color: g800))),
-                      pw.Expanded(flex: 2, child: pw.Text('$vReferred', style: pw.TextStyle(fontSize: 10, color: red))),
-                      pw.Expanded(flex: 2, child: pw.Text(vRate, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: teal))),
-                    ],
-                  ),
-                );
-              }),
-            ],
-
-            pw.SizedBox(height: 24),
-            pw.Divider(color: g400),
-            pw.Text(
-              'Generated by VisionScreen · Uganda MOH · WHO Compliant · ${DateTime.now().toString().substring(0, 16)}',
-              style: pw.TextStyle(fontSize: 9, color: g400),
-            ),
-          ],
+      // Stat card
+      pw.Widget statCard(String label, String value, PdfColor accent, PdfColor bg) => pw.Expanded(
+        child: pw.Container(
+          margin: const pw.EdgeInsets.only(right: 8),
+          decoration: pw.BoxDecoration(color: bg),
+          child: pw.Row(children: [
+            pw.Container(width: 4, height: 52, decoration: pw.BoxDecoration(color: accent)),
+            pw.SizedBox(width: 8),
+            pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+              pw.Text(value, style: ts(20, accent, bold: true)),
+              pw.Text(label, style: ts(9, g500)),
+            ]),
+          ]),
         ),
       );
+
+      // Bar row
+      pw.Widget barRow(String label, int count, int denom, PdfColor barColor, PdfColor barBg) {
+        final pct = denom > 0 ? (count / denom).clamp(0.0, 1.0) : 0.0;
+        const barW = 180.0;
+        return pw.Padding(
+          padding: const pw.EdgeInsets.only(bottom: 7),
+          child: pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.center, children: [
+            pw.SizedBox(width: 130, child: pw.Text(label, style: ts(10, g700))),
+            pw.SizedBox(width: 8),
+            pw.Stack(children: [
+              pw.Container(width: barW, height: 14, decoration: pw.BoxDecoration(color: barBg)),
+              pw.Container(width: (pct * barW).clamp(2.0, barW), height: 14, decoration: pw.BoxDecoration(color: barColor)),
+            ]),
+            pw.SizedBox(width: 8),
+            pw.Text('$count  (${(pct * 100).toStringAsFixed(0)}%)', style: ts(10, g900, bold: true)),
+          ]),
+        );
+      }
+
+      // Table header row
+      pw.Widget tableHeader(List<(String, int)> cols, PdfColor bg) => pw.Container(
+        color: bg,
+        padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        child: pw.Row(children: cols.map((c) => pw.Expanded(
+          flex: c.$2,
+          child: pw.Text(c.$1, style: ts(10, white, bold: true)),
+        )).toList()),
+      );
+
+      // Table data row
+      pw.Widget tableRow(List<(String, int, PdfColor)> cells, PdfColor bg) => pw.Container(
+        color: bg,
+        padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: pw.Row(children: cells.map((c) => pw.Expanded(
+          flex: c.$2,
+          child: pw.Text(c.$1, style: ts(10, c.$3)),
+        )).toList()),
+      );
+
+      // Insight row
+      pw.Widget insightRow(String tag, String text, PdfColor accent, PdfColor bg) => pw.Container(
+        margin: const pw.EdgeInsets.only(bottom: 8),
+        decoration: pw.BoxDecoration(color: bg),
+        child: pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+          pw.Container(width: 4, decoration: pw.BoxDecoration(color: accent)),
+          pw.SizedBox(width: 8),
+          pw.Padding(
+            padding: const pw.EdgeInsets.symmetric(vertical: 8),
+            child: pw.Container(
+              padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+              decoration: pw.BoxDecoration(color: accent),
+              child: pw.Text(tag, style: ts(8, white, bold: true)),
+            ),
+          ),
+          pw.SizedBox(width: 8),
+          pw.Expanded(
+            child: pw.Padding(
+              padding: const pw.EdgeInsets.symmetric(vertical: 8),
+              child: pw.Text(text, style: ts(10, g700)),
+            ),
+          ),
+        ]),
+      );
+
+      // ── BUILD PDF ──
+      final pdf = pw.Document();
+
+      pdf.addPage(pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.fromLTRB(36, 36, 36, 32),
+
+        header: (ctx) => pw.Column(children: [
+          pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+            pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+              pw.Text('VisionScreen Analytics Report', style: ts(18, teal, bold: true)),
+              pw.SizedBox(height: 2),
+              pw.Text(
+                '${_chwName.isNotEmpty ? _chwName : 'CHW'}   |   ${_chwCenter.isNotEmpty ? _chwCenter : _chwDistrict}   |   $dateStr  $timeStr',
+                style: ts(10, g500),
+              ),
+            ]),
+            pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
+              pw.Text('Page ${ctx.pageNumber} / ${ctx.pagesCount}', style: ts(9, g500)),
+              pw.SizedBox(height: 2),
+              pw.Text('CHW ID: ${_chwId.isNotEmpty ? _chwId : 'N/A'}', style: ts(9, g500)),
+            ]),
+          ]),
+          pw.SizedBox(height: 6),
+          pw.Divider(color: teal, thickness: 2),
+        ]),
+
+        footer: (ctx) => pw.Column(children: [
+          pw.Divider(color: g200, thickness: 1),
+          pw.SizedBox(height: 4),
+          pw.Text(
+            'VisionScreen  |  Uganda MOH  |  WHO Compliant  |  Generated $dateStr at $timeStr',
+            style: ts(8, g500),
+            textAlign: pw.TextAlign.center,
+          ),
+        ]),
+
+        build: (ctx) => [
+
+          // ══════════════════════════════════════
+          // 1. SCREENING SUMMARY
+          // ══════════════════════════════════════
+          secHeader('1.  Screening Summary', teal),
+          pw.Row(children: [
+            statCard('Total Patients',  '$total',    g900,  g50),
+            statCard('Screened',        '$screened', teal,  teal2),
+            statCard('Passed',          '$passed',   green, greenL),
+            statCard('Referred',        '$referred', red,   redL),
+            statCard('Pending',         '$pending',  amber, amberL),
+          ]),
+          pw.SizedBox(height: 8),
+          pw.Row(children: [
+            statCard('Pass Rate',       '$passRate%',  green, greenL),
+            statCard('Referral Rate',   '$referRate%', red,   redL),
+            statCard('Campaigns',       '${campaigns.length}', purp, purpL),
+            statCard('Camp. Screened',  '$campTotal',  teal,  teal2),
+            statCard('Overdue Refs',    '$overdue',    overdue > 0 ? red : g500, overdue > 0 ? redL : g50),
+          ]),
+
+          // ══════════════════════════════════════
+          // 2. DEMOGRAPHICS
+          // ══════════════════════════════════════
+          secHeader('2.  Demographics', blue),
+          pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+            pw.Expanded(child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+              pw.Text('Age Groups', style: ts(11, g900, bold: true)),
+              pw.SizedBox(height: 8),
+              barRow('0 - 17  (Children)', ageGroups['0-17']  ?? 0, total, blue,  blueL),
+              barRow('18 - 40  (Youth)',   ageGroups['18-40'] ?? 0, total, teal,  teal2),
+              barRow('41 - 60  (Adults)',  ageGroups['41-60'] ?? 0, total, amber, amberL),
+              barRow('60+  (Elderly)',     ageGroups['60+']   ?? 0, total, red,   redL),
+            ])),
+            pw.SizedBox(width: 20),
+            pw.Expanded(child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+              pw.Text('Gender', style: ts(11, g900, bold: true)),
+              pw.SizedBox(height: 8),
+              barRow('Male',   male,   gTotal > 0 ? gTotal : 1, blue,  blueL),
+              barRow('Female', female, gTotal > 0 ? gTotal : 1, PdfColor.fromHex('#DB2777'), PdfColor.fromHex('#FCE7F3')),
+              pw.SizedBox(height: 6),
+              pw.Text('Total: $gTotal patients', style: ts(9, g500)),
+            ])),
+          ]),
+
+          // ══════════════════════════════════════
+          // 3. VISUAL ACUITY
+          // ══════════════════════════════════════
+          secHeader('3.  Visual Acuity Distribution', teal),
+          pw.Text('Based on worst-eye Snellen result per patient.', style: ts(10, g500)),
+          pw.SizedBox(height: 8),
+          barRow('Normal  (6/6)',              acuity['Normal']      ?? 0, screened > 0 ? screened : 1, green, greenL),
+          barRow('Near Normal  (6/9 - 6/12)',  acuity['Near Normal'] ?? 0, screened > 0 ? screened : 1, teal,  teal2),
+          barRow('Moderate  (6/18 - 6/24)',    acuity['Moderate']    ?? 0, screened > 0 ? screened : 1, amber, amberL),
+          barRow('Severe  (6/36 - 6/60)',      acuity['Severe']      ?? 0, screened > 0 ? screened : 1, red,   redL),
+          barRow('Blind Range  (<6/60)',        acuity['Blind Range'] ?? 0, screened > 0 ? screened : 1, purp,  purpL),
+
+          // ══════════════════════════════════════
+          // 4. SEVERITY CLASSIFICATION
+          // ══════════════════════════════════════
+          secHeader('4.  Severity Classification', amber),
+          pw.Text('Derived from worst-eye logMAR per patient.', style: ts(10, g500)),
+          pw.SizedBox(height: 8),
+          barRow('Normal',   severity['Normal']   ?? 0, screened > 0 ? screened : 1, green, greenL),
+          barRow('Mild',     severity['Mild']     ?? 0, screened > 0 ? screened : 1, teal,  teal2),
+          barRow('Moderate', severity['Moderate'] ?? 0, screened > 0 ? screened : 1, amber, amberL),
+          barRow('Severe',   severity['Severe']   ?? 0, screened > 0 ? screened : 1, red,   redL),
+          barRow('Critical', severity['Critical'] ?? 0, screened > 0 ? screened : 1, purp,  purpL),
+
+          // ══════════════════════════════════════
+          // 5. EYE CONDITIONS
+          // ══════════════════════════════════════
+          if (conditions.isNotEmpty) ...[
+            secHeader('5.  Eye Conditions Reported', purp),
+            pw.Text('CHW-observed symptoms - top ${conditions.length > 8 ? 8 : conditions.length} conditions.', style: ts(10, g500)),
+            pw.SizedBox(height: 8),
+            ...(conditions.entries.toList()..sort((a, b) => b.value.compareTo(a.value)))
+                .take(8)
+                .map((e) => barRow(e.key, e.value, total > 0 ? total : 1, purp, purpL)),
+          ],
+
+          // ══════════════════════════════════════
+          // 6. REFERRAL STATUS
+          // ══════════════════════════════════════
+          secHeader('6.  Referral Status Breakdown', red),
+          pw.Text('Total referred: $referred patients.', style: ts(10, g500)),
+          pw.SizedBox(height: 8),
+          barRow('Pending',   referrals['pending']   ?? 0, referred > 0 ? referred : 1, amber, amberL),
+          barRow('Notified',  referrals['notified']  ?? 0, referred > 0 ? referred : 1, blue,  blueL),
+          barRow('Attended',  referrals['attended']  ?? 0, referred > 0 ? referred : 1, teal,  teal2),
+          barRow('Completed', referrals['completed'] ?? 0, referred > 0 ? referred : 1, green, greenL),
+          barRow('Overdue',   referrals['overdue']   ?? 0, referred > 0 ? referred : 1, red,   redL),
+          barRow('Cancelled', referrals['cancelled'] ?? 0, referred > 0 ? referred : 1, g500,  g50),
+          pw.SizedBox(height: 6),
+          pw.Row(children: [
+            pw.Text('Completion rate: ', style: ts(10, g500)),
+            pw.Text(referred > 0 ? '${(completed / referred * 100).toStringAsFixed(0)}%' : '0%', style: ts(10, green, bold: true)),
+            pw.SizedBox(width: 20),
+            pw.Text('Overdue rate: ', style: ts(10, g500)),
+            pw.Text(referred > 0 ? '${(overdue / referred * 100).toStringAsFixed(0)}%' : '0%', style: ts(10, overdue > 0 ? red : g500, bold: true)),
+          ]),
+
+          // ══════════════════════════════════════
+          // 7. VILLAGE BREAKDOWN
+          // ══════════════════════════════════════
+          if (villages.isNotEmpty) ...[
+            secHeader('7.  Village / Location Breakdown', teal),
+            tableHeader([('No.', 1), ('Village', 4), ('Total', 2), ('Referred', 2), ('Pass Rate', 2)], teal),
+            ...villages.asMap().entries.map((e) {
+              final i = e.key;
+              final v = e.value;
+              final vT = (v['total']    as int?) ?? 0;
+              final vR = (v['referred'] as int?) ?? 0;
+              final vP = vT - vR;
+              final vRate = vT > 0 ? '${(vP / vT * 100).toStringAsFixed(0)}%' : '-';
+              return tableRow([
+                ('${i + 1}',              1, g500),
+                (v['village'] as String,  4, g900),
+                ('$vT',                   2, g900),
+                ('$vR',                   2, vR > 0 ? red : g500),
+                (vRate,                   2, teal),
+              ], i.isEven ? g50 : white);
+            }),
+          ],
+
+          // ══════════════════════════════════════
+          // 8. CAMPAIGNS
+          // ══════════════════════════════════════
+          if (campaigns.isNotEmpty) ...[
+            secHeader('8.  Campaign Outcomes', purp),
+            tableHeader([('Campaign', 4), ('Screened', 2), ('Passed', 2), ('Referred', 2), ('Pass Rate', 2)], purp),
+            ...campaigns.asMap().entries.map((e) {
+              final i = e.key;
+              final c = e.value;
+              final ct = (c['total']    as int?) ?? 0;
+              final cp = (c['passed']   as int?) ?? 0;
+              final cr = (c['referred'] as int?) ?? 0;
+              final cRate = ct > 0 ? '${(cp / ct * 100).toStringAsFixed(0)}%' : '-';
+              return tableRow([
+                (c['name'] as String, 4, g900),
+                ('$ct',               2, g900),
+                ('$cp',               2, green),
+                ('$cr',               2, cr > 0 ? red : g500),
+                (cRate,               2, teal),
+              ], i.isEven ? g50 : white);
+            }),
+            pw.SizedBox(height: 6),
+            pw.Text('Combined totals - Screened: $campTotal   |   Passed: $campPassed   |   Referred: $campReferred', style: ts(9, g500)),
+          ],
+
+          // ══════════════════════════════════════
+          // 9. CONDITIONS BY AGE GROUP
+          // ══════════════════════════════════════
+          if (condByAge.isNotEmpty) ...[
+            secHeader('9.  Conditions by Age Group', blue),
+            tableHeader([('Condition', 4), ('0-17', 2), ('18-60', 2), ('60+', 2), ('Total', 2)], blue),
+            ...(condByAge.entries.toList()
+                  ..sort((a, b) {
+                    final tA = a.value.values.fold(0, (s, v) => s + v);
+                    final tB = b.value.values.fold(0, (s, v) => s + v);
+                    return tB.compareTo(tA);
+                  }))
+                .take(10)
+                .toList()
+                .asMap()
+                .entries
+                .map((e) {
+              final i  = e.key;
+              final cn = e.value.key;
+              final cv = e.value.value;
+              final c0 = cv['0-17']  ?? 0;
+              final c1 = cv['18-60'] ?? 0;
+              final c2 = cv['60+']   ?? 0;
+              return tableRow([
+                (cn,       4, g900),
+                ('$c0',    2, blue),
+                ('$c1',    2, teal),
+                ('$c2',    2, red),
+                ('${c0+c1+c2}', 2, g900),
+              ], i.isEven ? g50 : white);
+            }),
+          ],
+
+          // ══════════════════════════════════════
+          // 10. KEY INSIGHTS
+          // ══════════════════════════════════════
+          secHeader('10.  Key Insights & Recommendations', g900),
+          pw.SizedBox(height: 4),
+          if (screened == 0)
+            insightRow('INFO', 'No screening data available. Start a new screening session to generate insights.', g500, g50)
+          else ...[
+            if (double.parse(passRate) >= 70)
+              insightRow('POSITIVE', 'Pass rate of $passRate% is strong. Continue current screening protocols.', green, greenL)
+            else
+              insightRow('WARNING', 'Pass rate of $passRate% is below target (70%). Review screening quality and patient follow-up.', red, redL),
+            if (overdue > 0)
+              insightRow('URGENT', '$overdue referral${overdue == 1 ? '' : 's'} overdue - immediate follow-up required with ${overdue == 1 ? 'this patient' : 'these patients'}.', red, redL),
+            if ((ageGroups['0-17'] ?? 0) > 0 && total > 0 && ((ageGroups['0-17']! / total) * 100) >= 20)
+              insightRow('ACTION', 'Children (0-17) make up ${((ageGroups['0-17']! / total) * 100).toStringAsFixed(0)}% of patients - prioritise school and community outreach.', amber, amberL),
+            if ((ageGroups['60+'] ?? 0) > 0 && total > 0 && ((ageGroups['60+']! / total) * 100) >= 15)
+              insightRow('ACTION', 'Elderly (60+) represent ${((ageGroups['60+']! / total) * 100).toStringAsFixed(0)}% of screenings - ensure specialist referral pathways are in place.', amber, amberL),
+            if (topCond != null)
+              insightRow('INFO', '"${topCond.key}" is the most reported condition with ${topCond.value} cases - ensure CHWs are trained to identify and document it.', blue, blueL),
+            if (topVillage != null)
+              insightRow('INSIGHT', '"${topVillage['village']}" leads with ${topVillage['total']} patients screened - replicate this campaign model in lower-coverage locations.', purp, purpL),
+            if (completed > 0 && referred > 0)
+              insightRow('POSITIVE', 'Referral completion rate: ${(completed / referred * 100).toStringAsFixed(0)}% - $completed patient${completed == 1 ? '' : 's'} attended their appointment.', green, greenL),
+          ],
+          pw.SizedBox(height: 16),
+        ],
+      ));
 
       final dir = await getApplicationDocumentsDirectory();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -2877,11 +3117,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         await OpenFilex.open(file.path);
       }
     } catch (e) {
-      if (mounted) _showSnack('Export failed. Please try again.', _C.red);
+      if (mounted) _showSnack('Export failed: ${e.toString()}', _C.red);
     }
   }
 
-  pw.Widget _pdfSectionTitle(String title, PdfColor color) {
+    pw.Widget _pdfSectionTitle(String title, PdfColor color) {
     return pw.Container(
       padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: pw.BoxDecoration(
@@ -3069,9 +3309,9 @@ class _LegalSection {
   final String body;
 }
 
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Reusable legal bottom sheet
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _LegalSheet extends StatelessWidget {
   const _LegalSheet({
     required this.title,
@@ -3134,7 +3374,7 @@ class _LegalSheet extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          'VisionScreen · Uganda MOH',
+                          'VisionScreen Â· Uganda MOH',
                           style: GoogleFonts.sora(fontSize: 11, color: _C.g400),
                         ),
                       ],
