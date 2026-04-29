@@ -8,6 +8,7 @@ import 'screens/analytics_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/patients_screen.dart';
 import 'screens/new_screening_screen.dart';
+import 'screens/forgot_password_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,6 +21,8 @@ void main() async {
       GoogleFonts.plusJakartaSans(),
       GoogleFonts.inter(),
       GoogleFonts.spaceGrotesk(),
+      GoogleFonts.nunito(),
+      GoogleFonts.poppins(),
     ]),
   ]);
   runApp(const VisionScreenApp());
@@ -42,6 +45,7 @@ class VisionScreenApp extends StatelessWidget {
         '/splash': (_) => const SplashScreen(),
         '/onboarding': (_) => const OnboardingScreen(),
         '/login': (_) => const LoginScreen(),
+        '/forgot-password': (_) => const ForgotPasswordScreen(),
         '/home': (_) => const MainShell(),
       },
     );

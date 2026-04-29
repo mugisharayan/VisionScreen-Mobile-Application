@@ -18,17 +18,8 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen>
     with TickerProviderStateMixin {
-  late final TabController _tabCtrl;
   final _scrollCtrl = ScrollController();
-  bool _heroVisible = true;
-
-  // ── Orb drift animations ──
-  AnimationController? _orb1Ctrl;
-  AnimationController? _orb2Ctrl;
-  AnimationController? _orb3Ctrl;
-  Animation<Offset>? _orb1Pos;
-  Animation<Offset>? _orb2Pos;
-  Animation<Offset>? _orb3Pos;
+  bool _showSignUp = false;
 
   // Login form
   final _loginEmailCtrl = TextEditingController();
@@ -65,32 +56,11 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 2, vsync: this);
-    _tabCtrl.addListener(() => setState(() {}));
-    _scrollCtrl.addListener(() {
-      final shouldHide = _scrollCtrl.offset > 10;
-      if (shouldHide != !_heroVisible) {
-        setState(() => _heroVisible = !shouldHide);
-      }
-    });
-    _orb1Ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 8))..repeat(reverse: true);
-    _orb1Pos = Tween<Offset>(begin: const Offset(-60, -80), end: const Offset(-20, -40))
-        .animate(CurvedAnimation(parent: _orb1Ctrl!, curve: Curves.easeInOut));
-    _orb2Ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 11))..repeat(reverse: true);
-    _orb2Pos = Tween<Offset>(begin: const Offset(-80, 80), end: const Offset(-30, 120))
-        .animate(CurvedAnimation(parent: _orb2Ctrl!, curve: Curves.easeInOut));
-    _orb3Ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 7))..repeat(reverse: true);
-    _orb3Pos = Tween<Offset>(begin: const Offset(-40, 300), end: const Offset(10, 260))
-        .animate(CurvedAnimation(parent: _orb3Ctrl!, curve: Curves.easeInOut));
   }
 
   @override
   void dispose() {
-    _tabCtrl.dispose();
     _scrollCtrl.dispose();
-    _orb1Ctrl?.dispose();
-    _orb2Ctrl?.dispose();
-    _orb3Ctrl?.dispose();
     _loginEmailCtrl.dispose();
     _loginPasswordCtrl.dispose();
     _signUpNameCtrl.dispose();
@@ -362,216 +332,1133 @@ class _LoginScreenState extends State<LoginScreen>
     return null;
   }
 
+  void _goSignUp() {
+    _scrollCtrl.jumpTo(0);
+    setState(() => _showSignUp = true);
+  }
+
+  void _goLogin() {
+    _scrollCtrl.jumpTo(0);
+    setState(() => _showSignUp = false);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final screenH = MediaQuery.of(context).size.height;
     return Scaffold(
-      backgroundColor: AppColors.ink,
-      resizeToAvoidBottomInset: false,
-      body: Stack(
-        fit: StackFit.expand,
+      backgroundColor: AppColors.authBg,
+      resizeToAvoidBottomInset: true,
+      body: Column(
         children: [
-          // ── Grid + animated mesh background ──
-          CustomPaint(painter: _LoginGridPainter()),
-          AnimatedBuilder(
-            animation: _orb1Ctrl ?? const AlwaysStoppedAnimation(0),
-            builder: (_, __) => CustomPaint(
-              painter: _LoginMeshPainter(shift: _orb1Ctrl?.value ?? 0.0),
-            ),
-          ),
-          // ── Animated drifting orbs ──
-          if (_orb1Pos != null)
-            AnimatedBuilder(
-              animation: _orb1Pos!,
-              builder: (_, __) => Positioned(
-                top: _orb1Pos!.value.dy, left: _orb1Pos!.value.dx,
-                child: _GlowOrb(color: AppColors.teal, size: 280),
-              ),
-            ),
-          if (_orb2Pos != null)
-            AnimatedBuilder(
-              animation: _orb2Pos!,
-              builder: (_, __) => Positioned(
-                bottom: _orb2Pos!.value.dy, right: _orb2Pos!.value.dx,
-                child: _GlowOrb(color: AppColors.sky, size: 220),
-              ),
-            ),
-          if (_orb3Pos != null)
-            AnimatedBuilder(
-              animation: _orb3Pos!,
-              builder: (_, __) => Positioned(
-                top: _orb3Pos!.value.dy, right: _orb3Pos!.value.dx,
-                child: _GlowOrb(color: AppColors.teal2, size: 160),
-              ),
-            ),
+          // ── Green hero zone (no tab switcher) ──
+          _AuthHeroZone(isSignUp: _showSignUp),
 
-          // ── Hero top section ──
-          Positioned(
-            top: 0, left: 0, right: 0,
-            height: screenH * 0.38,
-            child: const _HeroSection(),
-          ),
-
-          // ── Bottom docked glass card ──
-          Positioned(
-            bottom: 0, left: 0, right: 0,
-            height: screenH * 0.70,
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.ink.withValues(alpha: 0.92),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(36),
-                  topRight: Radius.circular(36),
-                ),
-                border: Border.all(
-                  color: AppColors.teal.withValues(alpha: 0.18),
-                  width: 1.2,
-                ),
-              ),
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(36),
-                  topRight: Radius.circular(36),
-                ),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                  child: SingleChildScrollView(
-                    controller: _scrollCtrl,
-                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                    padding: EdgeInsets.fromLTRB(22, 0, 22, MediaQuery.of(context).viewInsets.bottom + 32),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 20),
-                        Center(
-                          child: Container(
-                            width: 40, height: 4,
-                            margin: const EdgeInsets.only(bottom: 10),
-                            decoration: BoxDecoration(
-                              color: AppColors.teal.withValues(alpha: 0.4),
-                              borderRadius: BorderRadius.circular(99),
-                            ),
-                          ),
-                        ),
-                        Container(
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: AppColors.ink2,
-                            borderRadius: BorderRadius.circular(99),
-                            border: Border.all(color: AppColors.teal.withValues(alpha: 0.35), width: 1.2),
-                            boxShadow: [
-                              BoxShadow(color: AppColors.teal.withValues(alpha: 0.2), blurRadius: 12, spreadRadius: 1, offset: const Offset(0, 2)),
-                              BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 8, offset: const Offset(0, 3)),
-                            ],
-                          ),
-                          padding: const EdgeInsets.all(3),
-                          child: TabBar(
-                            controller: _tabCtrl,
-                            indicator: BoxDecoration(
-                              gradient: const LinearGradient(colors: [AppColors.teal, AppColors.teal2]),
-                              borderRadius: BorderRadius.circular(99),
-                              boxShadow: [BoxShadow(color: AppColors.teal.withValues(alpha: 0.5), blurRadius: 8)],
-                            ),
-                            indicatorSize: TabBarIndicatorSize.tab,
-                            dividerColor: Colors.transparent,
-                            labelPadding: EdgeInsets.zero,
-                            tabs: [
-                              _pillTab('Login', _tabCtrl.index == 0),
-                              _pillTab('Sign Up', _tabCtrl.index == 1),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 22),
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 260),
-                          switchInCurve: Curves.easeOut,
-                          switchOutCurve: Curves.easeIn,
-                          transitionBuilder: (child, anim) => FadeTransition(
-                            opacity: anim,
-                            child: SlideTransition(
-                              position: Tween<Offset>(
-                                begin: const Offset(0.04, 0),
-                                end: Offset.zero,
-                              ).animate(anim),
-                              child: child,
-                            ),
-                          ),
-                          child: _tabCtrl.index == 0
-                              ? _LoginForm(
-                                  key: const ValueKey('login'),
-                                  emailCtrl: _loginEmailCtrl,
-                                  passwordCtrl: _loginPasswordCtrl,
-                                  passwordVisible: _loginPasswordVisible,
-                                  selectedRole: _selectedRole,
-                                  emailError: _loginEmailError,
-                                  passwordError: _loginPasswordError,
-                                  rememberMe: _rememberMe,
-                                  loading: _loginLoading,
-                                  onRoleChanged: (r) => setState(() => _selectedRole = r),
-                                  onTogglePassword: () => setState(() => _loginPasswordVisible = !_loginPasswordVisible),
-                                  onEmailChanged: (_) => setState(() => _loginEmailError = null),
-                                  onPasswordChanged: (_) => setState(() => _loginPasswordError = null),
-                                  onRememberMeChanged: (v) => setState(() => _rememberMe = v),
-                                  onLogin: _login,
-                                )
-                              : _SignUpForm(
-                                  key: const ValueKey('signup'),
-                                  nameCtrl: _signUpNameCtrl,
-                                  centreCtrl: _signUpCentreCtrl,
-                                  districtCtrl: _signUpDistrictCtrl,
-                                  emailCtrl: _signUpEmailCtrl,
-                                  phoneCtrl: _signUpPhoneCtrl,
-                                  passwordCtrl: _signUpPasswordCtrl,
-                                  confirmPasswordCtrl: _signUpConfirmPasswordCtrl,
-                                  passwordVisible: _signUpPasswordVisible,
-                                  confirmPasswordVisible: _signUpConfirmPasswordVisible,
-                                  passwordValue: _signUpPasswordValue,
-                                  nameError: _signUpNameError,
-                                  centreError: _signUpCentreError,
-                                  districtError: _signUpDistrictError,
-                                  emailError: _signUpEmailError,
-                                  phoneError: _signUpPhoneError,
-                                  passwordError: _signUpPasswordError,
-                                  confirmPasswordError: _signUpConfirmPasswordError,
-                                  onTogglePassword: () => setState(() => _signUpPasswordVisible = !_signUpPasswordVisible),
-                                  onToggleConfirmPassword: () => setState(() => _signUpConfirmPasswordVisible = !_signUpConfirmPasswordVisible),
-                                  termsAgreed: _termsAgreed,
-                                  onTermsAgreedChanged: (v) => setState(() => _termsAgreed = v),
-                                  onNameChanged: (_) => setState(() => _signUpNameError = null),
-                                  onCentreChanged: (_) => setState(() => _signUpCentreError = null),
-                                  onDistrictChanged: (_) => setState(() => _signUpDistrictError = null),
-                                  onEmailChanged: (_) => setState(() => _signUpEmailError = null),
-                                  onPhoneChanged: (_) => setState(() => _signUpPhoneError = null),
-                                  onPasswordChanged: (v) => setState(() { _signUpPasswordError = null; _signUpPasswordValue = v; }),
-                                  onConfirmPasswordChanged: (_) => setState(() => _signUpConfirmPasswordError = null),
-                                  onSignUp: _signUp,
-                                ),
-                        ),
-                      ],
-                    ),
+          // ── White scrollable form area ──
+          Expanded(
+            child: SingleChildScrollView(
+              controller: _scrollCtrl,
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.fromLTRB(
+                  24, 20, 24,
+                  MediaQuery.of(context).viewInsets.bottom + 32),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 280),
+                switchInCurve: Curves.easeOut,
+                switchOutCurve: Curves.easeIn,
+                transitionBuilder: (child, anim) => FadeTransition(
+                  opacity: anim,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0.04, 0),
+                      end: Offset.zero,
+                    ).animate(anim),
+                    child: child,
                   ),
                 ),
+                child: !_showSignUp
+                    ? _NewLoginForm(
+                        key: const ValueKey('login'),
+                        emailCtrl: _loginEmailCtrl,
+                        passwordCtrl: _loginPasswordCtrl,
+                        passwordVisible: _loginPasswordVisible,
+                        selectedRole: _selectedRole,
+                        emailError: _loginEmailError,
+                        passwordError: _loginPasswordError,
+                        rememberMe: _rememberMe,
+                        loading: _loginLoading,
+                        onRoleChanged: (r) => setState(() => _selectedRole = r),
+                        onTogglePassword: () => setState(() =>
+                            _loginPasswordVisible = !_loginPasswordVisible),
+                        onEmailChanged: (_) =>
+                            setState(() => _loginEmailError = null),
+                        onPasswordChanged: (_) =>
+                            setState(() => _loginPasswordError = null),
+                        onRememberMeChanged: (v) =>
+                            setState(() => _rememberMe = v),
+                        onLogin: _login,
+                        onGoSignUp: _goSignUp,
+                      )
+                    : _NewSignUpForm(
+                        key: const ValueKey('signup'),
+                        nameCtrl: _signUpNameCtrl,
+                        centreCtrl: _signUpCentreCtrl,
+                        districtCtrl: _signUpDistrictCtrl,
+                        emailCtrl: _signUpEmailCtrl,
+                        phoneCtrl: _signUpPhoneCtrl,
+                        passwordCtrl: _signUpPasswordCtrl,
+                        confirmPasswordCtrl: _signUpConfirmPasswordCtrl,
+                        passwordVisible: _signUpPasswordVisible,
+                        confirmPasswordVisible: _signUpConfirmPasswordVisible,
+                        passwordValue: _signUpPasswordValue,
+                        nameError: _signUpNameError,
+                        centreError: _signUpCentreError,
+                        districtError: _signUpDistrictError,
+                        emailError: _signUpEmailError,
+                        phoneError: _signUpPhoneError,
+                        passwordError: _signUpPasswordError,
+                        confirmPasswordError: _signUpConfirmPasswordError,
+                        onTogglePassword: () => setState(() =>
+                            _signUpPasswordVisible = !_signUpPasswordVisible),
+                        onToggleConfirmPassword: () => setState(() =>
+                            _signUpConfirmPasswordVisible =
+                                !_signUpConfirmPasswordVisible),
+                        termsAgreed: _termsAgreed,
+                        onTermsAgreedChanged: (v) =>
+                            setState(() => _termsAgreed = v),
+                        onNameChanged: (_) =>
+                            setState(() => _signUpNameError = null),
+                        onCentreChanged: (_) =>
+                            setState(() => _signUpCentreError = null),
+                        onDistrictChanged: (_) =>
+                            setState(() => _signUpDistrictError = null),
+                        onEmailChanged: (_) =>
+                            setState(() => _signUpEmailError = null),
+                        onPhoneChanged: (_) =>
+                            setState(() => _signUpPhoneError = null),
+                        onPasswordChanged: (v) => setState(() {
+                          _signUpPasswordError = null;
+                          _signUpPasswordValue = v;
+                        }),
+                        onConfirmPasswordChanged: (_) =>
+                            setState(() => _signUpConfirmPasswordError = null),
+                        onSignUp: _signUp,
+                        onGoLogin: _goLogin,
+                      ),
               ),
             ),
           ),
-
-
         ],
       ),
     );
   }
-
-  Widget _pillTab(String label, bool active) => Tab(
-    height: 30,
-    child: Text(label, style: GoogleFonts.sora(
-      fontSize: 11, fontWeight: FontWeight.w700,
-      color: active ? Colors.white : AppColors.teal3.withValues(alpha: 0.5),
-    )),
-  );
 }
 
 // ─────────────────────────────────────────────────────────────
-// Hero section — top half with eye logo + typing tagline
+// Auth Hero Zone — green top area with eye illustration + tab switcher
+// ─────────────────────────────────────────────────────────────
+class _AuthHeroZone extends StatelessWidget {
+  const _AuthHeroZone({required this.isSignUp});
+  final bool isSignUp;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipPath(
+      clipper: _WaveClipper(),
+      child: Container(
+        width: double.infinity,
+        height: 320,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isSignUp
+                ? [AppColors.greenDark, AppColors.green]
+                : [AppColors.greenDark, AppColors.green],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 90, height: 90,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(26),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.4),
+                    width: 1.5,
+                  ),
+                ),
+                child: Center(
+                  child: CustomPaint(
+                    size: const Size(52, 52),
+                    painter: _AuthEyePainter(color: Colors.white),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              RichText(
+                text: TextSpan(
+                  style: GoogleFonts.nunito(
+                      fontSize: 38, fontWeight: FontWeight.w900),
+                  children: const [
+                    TextSpan(
+                      text: 'Vision',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    TextSpan(
+                      text: 'Screen',
+                      style: TextStyle(color: Colors.black),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Eye painter for hero zone
+class _AuthEyePainter extends CustomPainter {
+  const _AuthEyePainter({required this.color});
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2, cy = size.height / 2;
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+    canvas.drawOval(
+      Rect.fromCenter(center: Offset(cx, cy),
+          width: size.width * 0.9, height: size.height * 0.52),
+      paint,
+    );
+    canvas.drawCircle(Offset(cx, cy), size.width * 0.18, paint);
+    canvas.drawCircle(
+        Offset(cx, cy), size.width * 0.09, Paint()..color = color);
+    canvas.drawCircle(
+        Offset(cx, cy), size.width * 0.04,
+        Paint()..color = Colors.white.withValues(alpha: 0.8));
+  }
+
+  @override
+  bool shouldRepaint(_AuthEyePainter old) => old.color != color;
+}
+
+// ─────────────────────────────────────────────────────────────
+// New Login Form — white card, underline fields, green pill button
+// ─────────────────────────────────────────────────────────────
+class _NewLoginForm extends StatelessWidget {
+  const _NewLoginForm({
+    super.key,
+    required this.emailCtrl,
+    required this.passwordCtrl,
+    required this.passwordVisible,
+    required this.selectedRole,
+    required this.onRoleChanged,
+    required this.onTogglePassword,
+    required this.onLogin,
+    required this.rememberMe,
+    required this.loading,
+    required this.onRememberMeChanged,
+    required this.onGoSignUp,
+    this.emailError,
+    this.passwordError,
+    this.onEmailChanged,
+    this.onPasswordChanged,
+  });
+
+  final TextEditingController emailCtrl;
+  final TextEditingController passwordCtrl;
+  final bool passwordVisible;
+  final String selectedRole;
+  final ValueChanged<String> onRoleChanged;
+  final VoidCallback onTogglePassword;
+  final VoidCallback onLogin;
+  final bool rememberMe;
+  final bool loading;
+  final ValueChanged<bool> onRememberMeChanged;
+  final VoidCallback onGoSignUp;
+  final String? emailError;
+  final String? passwordError;
+  final ValueChanged<String>? onEmailChanged;
+  final ValueChanged<String>? onPasswordChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Heading
+        RichText(
+          text: TextSpan(
+            style: GoogleFonts.nunito(fontSize: 24, fontWeight: FontWeight.w900),
+            children: [
+              const TextSpan(
+                  text: 'Hello ', style: TextStyle(color: AppColors.greenDark)),
+              TextSpan(
+                  text: 'Again!',
+                  style: TextStyle(color: AppColors.textDark)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Sign in to continue to VisionScreen.',
+          style: GoogleFonts.poppins(
+              fontSize: 12, color: AppColors.textMuted),
+        ),
+        const SizedBox(height: 24),
+
+        // Email
+        _UnderlineInputField(
+          controller: emailCtrl,
+          label: 'Email',
+          hint: 'yourname@gmail.com',
+          prefixIcon: Icons.mail_outline_rounded,
+          keyboardType: TextInputType.emailAddress,
+          inputAction: TextInputAction.next,
+          hasError: emailError != null,
+          errorText: emailError,
+          onChanged: onEmailChanged,
+        ),
+        const SizedBox(height: 18),
+
+        // Password
+        _UnderlineInputField(
+          controller: passwordCtrl,
+          label: 'Password',
+          hint: '••••••••',
+          prefixIcon: Icons.lock_outline_rounded,
+          obscure: !passwordVisible,
+          inputAction: TextInputAction.done,
+          hasError: passwordError != null,
+          errorText: passwordError,
+          onChanged: onPasswordChanged,
+          suffixIcon: GestureDetector(
+            onTap: onTogglePassword,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: Icon(
+                passwordVisible
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                size: 18,
+                color: AppColors.textMuted,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        // Remember me + Forgot password
+        Row(
+          children: [
+            GestureDetector(
+              onTap: () => onRememberMeChanged(!rememberMe),
+              child: Row(
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    width: 18, height: 18,
+                    decoration: BoxDecoration(
+                      color: rememberMe ? AppColors.green : Colors.white,
+                      borderRadius: BorderRadius.circular(5),
+                      border: Border.all(
+                        color: rememberMe
+                            ? AppColors.green
+                            : AppColors.borderColor,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: rememberMe
+                        ? const Icon(Icons.check_rounded,
+                            size: 12, color: Colors.white)
+                        : null,
+                  ),
+                  const SizedBox(width: 7),
+                  Text('Remember me',
+                      style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: AppColors.textMuted,
+                          fontWeight: FontWeight.w500)),
+                ],
+              ),
+            ),
+            const Spacer(),
+            GestureDetector(
+              onTap: () =>
+                  Navigator.of(context).pushNamed('/forgot-password'),
+              child: Text(
+                'Forgot Password?',
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textDark,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+
+        // Sign In button
+        _GreenPillButton(
+          label: 'Sign In',
+          icon: Icons.login_rounded,
+          loading: loading,
+          onTap: onLogin,
+        ),
+        const SizedBox(height: 28),
+
+        // Footer link
+        Center(
+          child: GestureDetector(
+            onTap: onGoSignUp,
+            child: RichText(
+              text: TextSpan(
+                style: GoogleFonts.poppins(
+                    fontSize: 12, color: AppColors.textMuted),
+                children: [
+                  const TextSpan(text: 'New User? '),
+                  TextSpan(
+                    text: 'Create Account',
+                    style: TextStyle(
+                      color: AppColors.greenDark,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+}
+
+// Green role chip for login
+class _GreenRoleChip extends StatelessWidget {
+  const _GreenRoleChip({
+    required this.icon,
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+          decoration: BoxDecoration(
+            color: active
+                ? AppColors.green.withValues(alpha: 0.1)
+                : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: active ? AppColors.green : AppColors.borderColor,
+              width: 1.5,
+            ),
+            boxShadow: active
+                ? [BoxShadow(
+                    color: AppColors.green.withValues(alpha: 0.2),
+                    blurRadius: 10)]
+                : [],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon,
+                  size: 15,
+                  color: active ? AppColors.greenDark : AppColors.textMuted),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: active ? AppColors.greenDark : AppColors.textMuted,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+// ─────────────────────────────────────────────────────────────
+// New Sign Up Form — Phase 5 placeholder
+// ─────────────────────────────────────────────────────────────
+class _NewSignUpForm extends StatelessWidget {
+  const _NewSignUpForm({
+    super.key,
+    required this.nameCtrl,
+    required this.centreCtrl,
+    required this.districtCtrl,
+    required this.emailCtrl,
+    required this.phoneCtrl,
+    required this.passwordCtrl,
+    required this.confirmPasswordCtrl,
+    required this.passwordVisible,
+    required this.confirmPasswordVisible,
+    required this.onTogglePassword,
+    required this.onToggleConfirmPassword,
+    required this.onSignUp,
+    required this.passwordValue,
+    required this.termsAgreed,
+    required this.onTermsAgreedChanged,
+    required this.onGoLogin,
+    this.nameError,
+    this.centreError,
+    this.districtError,
+    this.emailError,
+    this.phoneError,
+    this.passwordError,
+    this.confirmPasswordError,
+    this.onNameChanged,
+    this.onCentreChanged,
+    this.onDistrictChanged,
+    this.onEmailChanged,
+    this.onPhoneChanged,
+    this.onPasswordChanged,
+    this.onConfirmPasswordChanged,
+  });
+
+  final TextEditingController nameCtrl;
+  final TextEditingController centreCtrl;
+  final TextEditingController districtCtrl;
+  final TextEditingController emailCtrl;
+  final TextEditingController phoneCtrl;
+  final TextEditingController passwordCtrl;
+  final TextEditingController confirmPasswordCtrl;
+  final bool passwordVisible;
+  final bool confirmPasswordVisible;
+  final String passwordValue;
+  final VoidCallback onTogglePassword;
+  final VoidCallback onToggleConfirmPassword;
+  final VoidCallback onSignUp;
+  final bool termsAgreed;
+  final ValueChanged<bool> onTermsAgreedChanged;
+  final VoidCallback onGoLogin;
+  final String? nameError;
+  final String? centreError;
+  final String? districtError;
+  final String? emailError;
+  final String? phoneError;
+  final String? passwordError;
+  final String? confirmPasswordError;
+  final ValueChanged<String>? onNameChanged;
+  final ValueChanged<String>? onCentreChanged;
+  final ValueChanged<String>? onDistrictChanged;
+  final ValueChanged<String>? onEmailChanged;
+  final ValueChanged<String>? onPhoneChanged;
+  final ValueChanged<String>? onPasswordChanged;
+  final ValueChanged<String>? onConfirmPasswordChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Heading
+        RichText(
+          text: TextSpan(
+            style: GoogleFonts.nunito(fontSize: 24, fontWeight: FontWeight.w900),
+            children: [
+              const TextSpan(
+                  text: 'Create ', style: TextStyle(color: AppColors.greenDark)),
+              TextSpan(
+                  text: 'Account',
+                  style: TextStyle(color: AppColors.textDark)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Fill in your details to get started.',
+          style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textMuted),
+        ),
+        const SizedBox(height: 22),
+
+        // Full Name
+        _UnderlineInputField(
+          controller: nameCtrl,
+          label: 'Full Name',
+          hint: 'Your full name',
+          prefixIcon: Icons.person_outline_rounded,
+          inputAction: TextInputAction.next,
+          hasError: nameError != null,
+          errorText: nameError,
+          onChanged: onNameChanged,
+        ),
+        const SizedBox(height: 18),
+
+        // Health Center
+        _UnderlineInputField(
+          controller: centreCtrl,
+          label: 'Health Center',
+          hint: 'e.g. Nakawa HC III',
+          prefixIcon: Icons.local_hospital_outlined,
+          inputAction: TextInputAction.next,
+          hasError: centreError != null,
+          errorText: centreError,
+          onChanged: onCentreChanged,
+        ),
+        const SizedBox(height: 18),
+
+        // District
+        _UnderlineInputField(
+          controller: districtCtrl,
+          label: 'District',
+          hint: 'e.g. Kampala',
+          prefixIcon: Icons.location_on_outlined,
+          inputAction: TextInputAction.next,
+          hasError: districtError != null,
+          errorText: districtError,
+          onChanged: onDistrictChanged,
+        ),
+        const SizedBox(height: 18),
+
+        // Email
+        _UnderlineInputField(
+          controller: emailCtrl,
+          label: 'Email Address',
+          hint: 'yourname@gmail.com',
+          prefixIcon: Icons.mail_outline_rounded,
+          keyboardType: TextInputType.emailAddress,
+          inputAction: TextInputAction.next,
+          hasError: emailError != null,
+          errorText: emailError,
+          onChanged: onEmailChanged,
+        ),
+        const SizedBox(height: 18),
+
+        // Phone
+        _UnderlinePhoneField(
+          controller: phoneCtrl,
+          hasError: phoneError != null,
+          errorText: phoneError,
+          onChanged: onPhoneChanged,
+        ),
+        const SizedBox(height: 18),
+
+        // Password
+        _UnderlineInputField(
+          controller: passwordCtrl,
+          label: 'Password',
+          hint: 'Create a strong password',
+          prefixIcon: Icons.lock_outline_rounded,
+          obscure: !passwordVisible,
+          inputAction: TextInputAction.next,
+          hasError: passwordError != null,
+          errorText: passwordError,
+          onChanged: onPasswordChanged,
+          suffixIcon: GestureDetector(
+            onTap: onTogglePassword,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: Icon(
+                passwordVisible
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                size: 18,
+                color: AppColors.textMuted,
+              ),
+            ),
+          ),
+        ),
+        if (passwordValue.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          _GreenPasswordStrength(password: passwordValue),
+        ],
+        const SizedBox(height: 18),
+
+        // Confirm Password
+        _UnderlineInputField(
+          controller: confirmPasswordCtrl,
+          label: 'Confirm Password',
+          hint: 'Re-enter your password',
+          prefixIcon: Icons.lock_outline_rounded,
+          obscure: !confirmPasswordVisible,
+          inputAction: TextInputAction.done,
+          hasError: confirmPasswordError != null,
+          errorText: confirmPasswordError,
+          onChanged: onConfirmPasswordChanged,
+          suffixIcon: GestureDetector(
+            onTap: onToggleConfirmPassword,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: Icon(
+                confirmPasswordVisible
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                size: 18,
+                color: AppColors.textMuted,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Terms checkbox
+        _GreenTermsRow(
+          agreed: termsAgreed,
+          onChanged: onTermsAgreedChanged,
+        ),
+        const SizedBox(height: 22),
+
+        // Sign Up button
+        _GreenPillButton(
+          label: 'Create Account',
+          icon: Icons.person_add_outlined,
+          onTap: onSignUp,
+        ),
+        const SizedBox(height: 24),
+
+        // Footer link
+        Center(
+          child: GestureDetector(
+            onTap: onGoLogin,
+            child: RichText(
+              text: TextSpan(
+                style: GoogleFonts.poppins(
+                    fontSize: 12, color: AppColors.textMuted),
+                children: [
+                  const TextSpan(text: 'Already have an account? '),
+                  TextSpan(
+                    text: 'Sign In',
+                    style: TextStyle(
+                      color: AppColors.greenDark,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Phase 5 supporting widgets
+// ─────────────────────────────────────────────────────────────
+
+// Underline phone field with +256 prefix (light theme)
+class _UnderlinePhoneField extends StatefulWidget {
+  const _UnderlinePhoneField({
+    required this.controller,
+    this.hasError = false,
+    this.errorText,
+    this.onChanged,
+  });
+  final TextEditingController controller;
+  final bool hasError;
+  final String? errorText;
+  final ValueChanged<String>? onChanged;
+
+  @override
+  State<_UnderlinePhoneField> createState() => _UnderlinePhoneFieldState();
+}
+
+class _UnderlinePhoneFieldState extends State<_UnderlinePhoneField> {
+  final _focus = FocusNode();
+  bool _focused = false;
+  String _network = '';
+  Color _networkColor = Colors.transparent;
+
+  static const _mtn = [
+    '770','771','772','773','774','775','776','777','778','779',
+    '780','781','782','783','784','785','786','787','788','789',
+    '760','761','762','763','764','790',
+    '310','311','312','313','314','315','316','317','318','319',
+    '390','391','392','393','394','395','396','397','398','399',
+  ];
+  static const _airtel = [
+    '700','701','702','703','704','705','706','707','708','709',
+    '750','751','752','753','754','755','756','757','758','759',
+    '740','200','201','202','203','204','205','206','207','208','209',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(() => setState(() => _focused = _focus.hasFocus));
+  }
+
+  @override
+  void dispose() { _focus.dispose(); super.dispose(); }
+
+  void _onChanged(String value) {
+    final digits = value.replaceAll(RegExp(r'\s'), '');
+    String network = '';
+    Color color = Colors.transparent;
+    if (digits.length >= 3) {
+      final prefix = digits.substring(0, 3);
+      if (_mtn.contains(prefix)) { network = 'MTN'; color = const Color(0xFFFFCC00); }
+      else if (_airtel.contains(prefix)) { network = 'Airtel'; color = const Color(0xFFE4002B); }
+    }
+    setState(() { _network = network; _networkColor = color; });
+    widget.onChanged?.call(value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final lineColor = widget.hasError
+        ? const Color(0xFFEF4444)
+        : _focused ? AppColors.green : AppColors.borderColor;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Phone Number',
+            style: GoogleFonts.poppins(
+                fontSize: 11, fontWeight: FontWeight.w500,
+                color: AppColors.textMuted)),
+        const SizedBox(height: 2),
+        Row(
+          children: [
+            // +256 badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: _focused
+                    ? AppColors.green.withValues(alpha: 0.08)
+                    : AppColors.greenHero,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: _focused
+                      ? AppColors.green.withValues(alpha: 0.4)
+                      : AppColors.borderColor,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('🇺🇬', style: TextStyle(fontSize: 13)),
+                  const SizedBox(width: 4),
+                  Text('+256',
+                      style: GoogleFonts.poppins(
+                          fontSize: 12, fontWeight: FontWeight.w700,
+                          color: _focused
+                              ? AppColors.greenDark
+                              : AppColors.textMuted)),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: TextField(
+                controller: widget.controller,
+                focusNode: _focus,
+                keyboardType: TextInputType.phone,
+                textInputAction: TextInputAction.next,
+                onChanged: _onChanged,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(9),
+                  _UgandaPhoneFormatter(),
+                ],
+                style: GoogleFonts.poppins(
+                    fontSize: 13, fontWeight: FontWeight.w500,
+                    color: AppColors.textDark, letterSpacing: 1.2),
+                cursorColor: AppColors.green,
+                decoration: InputDecoration(
+                  hintText: '7XX XXX XXX',
+                  hintStyle: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: AppColors.textMuted.withValues(alpha: 0.4),
+                      letterSpacing: 0.5),
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 6),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                ),
+              ),
+            ),
+            if (_network.isNotEmpty)
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: _networkColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                      color: _networkColor.withValues(alpha: 0.4), width: 1),
+                ),
+                child: Text(_network,
+                    style: GoogleFonts.poppins(
+                        fontSize: 10, fontWeight: FontWeight.w700,
+                        color: _network == 'MTN'
+                            ? const Color(0xFF92700A)
+                            : const Color(0xFFB0001F))),
+              ),
+          ],
+        ),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          height: 2,
+          decoration: BoxDecoration(
+              color: lineColor, borderRadius: BorderRadius.circular(99)),
+        ),
+        if (widget.hasError && widget.errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 5),
+            child: Row(
+              children: [
+                const Icon(Icons.error_outline_rounded,
+                    size: 12, color: Color(0xFFEF4444)),
+                const SizedBox(width: 4),
+                Text(widget.errorText!,
+                    style: GoogleFonts.poppins(
+                        fontSize: 11, color: const Color(0xFFEF4444),
+                        fontWeight: FontWeight.w500)),
+              ],
+            ),
+          ),
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text('MTN or Airtel Uganda · 9 digits',
+              style: GoogleFonts.poppins(
+                  fontSize: 10, color: AppColors.textMuted.withValues(alpha: 0.6))),
+        ),
+      ],
+    );
+  }
+}
+
+// Green password strength bar
+class _GreenPasswordStrength extends StatelessWidget {
+  const _GreenPasswordStrength({required this.password});
+  final String password;
+
+  int get _score {
+    if (password.isEmpty) return 0;
+    int s = 0;
+    if (password.length >= 8) s++;
+    if (password.length >= 12) s++;
+    if (RegExp(r'[A-Z]').hasMatch(password) && RegExp(r'[0-9]').hasMatch(password)) s++;
+    if (RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(password)) s++;
+    if (s >= 4) return 3;
+    if (s >= 2) return 2;
+    return 1;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final score = _score;
+    final labels = ['', 'Weak', 'Fair', 'Strong'];
+    final colors = [
+      Colors.transparent,
+      const Color(0xFFEF4444),
+      const Color(0xFFF59E0B),
+      AppColors.green,
+    ];
+    final color = colors[score];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: List.generate(3, (i) => Expanded(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              margin: EdgeInsets.only(right: i < 2 ? 4 : 0),
+              height: 3,
+              decoration: BoxDecoration(
+                color: i < score ? color : AppColors.borderColor,
+                borderRadius: BorderRadius.circular(99),
+              ),
+            ),
+          )),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Container(
+              width: 6, height: 6,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 5),
+            Text('Password strength: ${labels[score]}',
+                style: GoogleFonts.poppins(
+                    fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+            if (score < 3) ...[
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  score == 1
+                      ? '· Add uppercase, numbers & symbols'
+                      : '· Add symbols to strengthen',
+                  style: GoogleFonts.poppins(
+                      fontSize: 10, color: AppColors.textMuted),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// Green terms checkbox row
+class _GreenTermsRow extends StatelessWidget {
+  const _GreenTermsRow({required this.agreed, required this.onChanged});
+  final bool agreed;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onChanged(!agreed);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: agreed
+              ? AppColors.green.withValues(alpha: 0.06)
+              : AppColors.greenHero,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: agreed ? AppColors.green : AppColors.borderColor,
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 20, height: 20,
+              decoration: BoxDecoration(
+                color: agreed ? AppColors.green : Colors.white,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: agreed ? AppColors.green : AppColors.borderColor,
+                  width: 1.5,
+                ),
+                boxShadow: agreed
+                    ? [BoxShadow(
+                        color: AppColors.green.withValues(alpha: 0.3),
+                        blurRadius: 6)]
+                    : [],
+              ),
+              child: agreed
+                  ? const Icon(Icons.check_rounded, size: 13, color: Colors.white)
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: RichText(
+                text: TextSpan(
+                  style: GoogleFonts.poppins(
+                      fontSize: 12, fontWeight: FontWeight.w400,
+                      color: AppColors.textMuted, height: 1.6),
+                  children: [
+                    const TextSpan(text: 'I have read and agree to the '),
+                    WidgetSpan(
+                      child: GestureDetector(
+                        onTap: () => showTermsOfService(context),
+                        child: Text('Terms of Service',
+                            style: GoogleFonts.poppins(
+                                fontSize: 12, fontWeight: FontWeight.w700,
+                                color: AppColors.greenDark,
+                                decoration: TextDecoration.underline,
+                                decorationColor: AppColors.greenDark)),
+                      ),
+                    ),
+                    const TextSpan(text: ' and '),
+                    WidgetSpan(
+                      child: GestureDetector(
+                        onTap: () => showPrivacyPolicy(context),
+                        child: Text('Privacy Policy',
+                            style: GoogleFonts.poppins(
+                                fontSize: 12, fontWeight: FontWeight.w700,
+                                color: AppColors.greenDark,
+                                decoration: TextDecoration.underline,
+                                decorationColor: AppColors.greenDark)),
+                      ),
+                    ),
+                    const TextSpan(text: ' of VisionScreen.'),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Decorative eye-chart icon band at bottom of sign up
+class _EyeChartBand extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    const icons = [
+      Icons.remove_red_eye_outlined,
+      Icons.visibility_outlined,
+      Icons.lens_outlined,
+      Icons.radio_button_unchecked,
+      Icons.circle_outlined,
+      Icons.remove_red_eye_outlined,
+      Icons.visibility_outlined,
+    ];
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.greenHero, AppColors.greenHero2],
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderColor),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: icons.asMap().entries.map((e) {
+          final size = 28.0 - (e.key % 3) * 4.0;
+          return Icon(e.value,
+              size: size,
+              color: AppColors.greenDark.withValues(
+                  alpha: 0.3 + (e.key % 3) * 0.2));
+        }).toList(),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// _HeroSectionState (kept for reference, no longer rendered)
 // ─────────────────────────────────────────────────────────────
 class _HeroSection extends StatefulWidget {
   const _HeroSection();
@@ -2851,4 +3738,262 @@ class _HeaderEyePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter old) => false;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Phase 3 — Shared Auth UI Components
+// ─────────────────────────────────────────────────────────────
+
+// Underline-only input field (green focus border)
+class _UnderlineInputField extends StatefulWidget {
+  const _UnderlineInputField({
+    required this.controller,
+    required this.hint,
+    required this.label,
+    this.obscure = false,
+    this.keyboardType,
+    this.inputAction = TextInputAction.next,
+    this.suffixIcon,
+    this.hasError = false,
+    this.errorText,
+    this.onChanged,
+    this.prefixIcon,
+  });
+
+  final TextEditingController controller;
+  final String hint;
+  final String label;
+  final bool obscure;
+  final TextInputType? keyboardType;
+  final TextInputAction inputAction;
+  final Widget? suffixIcon;
+  final bool hasError;
+  final String? errorText;
+  final ValueChanged<String>? onChanged;
+  final IconData? prefixIcon;
+
+  @override
+  State<_UnderlineInputField> createState() => _UnderlineInputFieldState();
+}
+
+class _UnderlineInputFieldState extends State<_UnderlineInputField> {
+  final _focus = FocusNode();
+  bool _focused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(() => setState(() => _focused = _focus.hasFocus));
+  }
+
+  @override
+  void dispose() {
+    _focus.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final lineColor = widget.hasError
+        ? const Color(0xFFEF4444)
+        : _focused
+            ? AppColors.green
+            : AppColors.borderColor;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          widget.label,
+          style: GoogleFonts.poppins(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textMuted,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            if (widget.prefixIcon != null) ...[
+              Icon(widget.prefixIcon, size: 16,
+                  color: _focused ? AppColors.green : AppColors.textMuted),
+              const SizedBox(width: 8),
+            ],
+            Expanded(
+              child: TextField(
+                controller: widget.controller,
+                focusNode: _focus,
+                obscureText: widget.obscure,
+                keyboardType: widget.keyboardType,
+                textInputAction: widget.inputAction,
+                onChanged: widget.onChanged,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textDark,
+                ),
+                cursorColor: AppColors.green,
+                decoration: InputDecoration(
+                  hintText: widget.hint,
+                  hintStyle: GoogleFonts.poppins(
+                    fontSize: 13,
+                    color: AppColors.textMuted.withValues(alpha: 0.5),
+                  ),
+                  suffixIcon: widget.suffixIcon,
+                  suffixIconConstraints:
+                      const BoxConstraints(minWidth: 0, minHeight: 0),
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 6),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                ),
+              ),
+            ),
+          ],
+        ),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          height: 2,
+          decoration: BoxDecoration(
+            color: lineColor,
+            borderRadius: BorderRadius.circular(99),
+          ),
+        ),
+        if (widget.hasError && widget.errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 5),
+            child: Row(
+              children: [
+                const Icon(Icons.error_outline_rounded,
+                    size: 12, color: Color(0xFFEF4444)),
+                const SizedBox(width: 4),
+                Text(
+                  widget.errorText!,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    color: const Color(0xFFEF4444),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// Full-width green pill gradient button
+class _GreenPillButton extends StatefulWidget {
+  const _GreenPillButton({
+    required this.label,
+    required this.onTap,
+    this.loading = false,
+    this.icon,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+  final bool loading;
+  final IconData? icon;
+
+  @override
+  State<_GreenPillButton> createState() => _GreenPillButtonState();
+}
+
+class _GreenPillButtonState extends State<_GreenPillButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) { if (!widget.loading) setState(() => _pressed = true); },
+      onTapUp: (_) {
+        if (widget.loading) return;
+        setState(() => _pressed = false);
+        HapticFeedback.mediumImpact();
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.97 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: widget.loading
+                  ? [AppColors.green.withValues(alpha: 0.5),
+                     AppColors.greenDark.withValues(alpha: 0.5)]
+                  : [AppColors.green, AppColors.greenDark],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(30),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.green.withValues(alpha: 0.4),
+                blurRadius: 20,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: widget.loading
+              ? const Center(
+                  child: SizedBox(
+                    width: 20, height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (widget.icon != null) ...[
+                      Icon(widget.icon, color: Colors.white, size: 16),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(
+                      widget.label,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+// Curved wave clipper — white wave transition from hero to form
+class _WaveClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    path.lineTo(0, size.height - 40);
+    path.quadraticBezierTo(
+      size.width * 0.25, size.height,
+      size.width * 0.5, size.height - 20,
+    );
+    path.quadraticBezierTo(
+      size.width * 0.75, size.height - 40,
+      size.width, size.height - 10,
+    );
+    path.lineTo(size.width, 0);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(_WaveClipper old) => false;
 }

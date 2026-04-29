@@ -224,6 +224,8 @@ class _SplashScreenState extends State<SplashScreen>
 // ─────────────────────────────────────────────────────────────
 class AppColors {
   AppColors._();
+
+  // ── Dark theme (splash / existing screens) ──
   static const Color ink = Color(0xFF04091A);
   static const Color ink2 = Color(0xFF0B1530);
   static const Color ink3 = Color(0xFF162040);
@@ -231,6 +233,21 @@ class AppColors {
   static const Color teal2 = Color(0xFF14B8A6);
   static const Color teal3 = Color(0xFF5EEAD4);
   static const Color sky = Color(0xFF38BDF8);
+
+  // ── Auth screens — green palette ──
+  static const Color green = Color(0xFF2ECC71);
+  static const Color greenDark = Color(0xFF27AE60);
+  static const Color greenDeep = Color(0xFF1A7A3E);
+  static const Color greenHero = Color(0xFFEAFFF3);   // pale mint hero bg
+  static const Color greenHero2 = Color(0xFFC8F5D8);  // deeper mint
+  static const Color greenForgot = Color(0xFF27AE60); // solid hero for forgot pw
+
+  // ── Auth screens — neutral ──
+  static const Color authBg = Color(0xFFFFFFFF);
+  static const Color textDark = Color(0xFF1A1A2E);
+  static const Color textMuted = Color(0xFF7A8394);
+  static const Color borderColor = Color(0xFFD4E9DC);
+  static const Color cardShadow = Color(0x2E2ECC71); // green shadow
 }
 
 // ─────────────────────────────────────────────────────────────
