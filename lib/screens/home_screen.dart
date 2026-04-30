@@ -10,6 +10,7 @@ import 'package:geocoding/geocoding.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'splash_screen.dart' show AppColors;
 import 'training_screen.dart';
+import 'auth_widgets.dart' show AuthEyePainter;
 import 'notifications_screen.dart';
 import 'patients_screen.dart';
 import 'new_screening_screen.dart';
@@ -53,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   final List<Map<String, dynamic>> _tips = [
     {'icon': Icons.wb_sunny_rounded, 'color': Color(0xFFF59E0B), 'text': 'Ensure adequate room lighting before starting a vision test.', 'image': 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&q=80'},
-    {'icon': Icons.straighten_rounded, 'color': Color(0xFF0D9488), 'text': 'Always confirm the patient is exactly 3 metres from the screen.', 'image': 'https://images.unsplash.com/photo-1581595220892-b0739db3ba8c?w=400&q=80'},
+    {'icon': Icons.straighten_rounded, 'color': AppColors.green, 'text': 'Always confirm the patient is exactly 3 metres from the screen.', 'image': 'https://images.unsplash.com/photo-1581595220892-b0739db3ba8c?w=400&q=80'},
     {'icon': Icons.remove_red_eye_rounded, 'color': Color(0xFF3B82F6), 'text': 'Test each eye separately â€” cover one eye completely before testing the other.', 'image': 'https://images.unsplash.com/photo-1559757175-5700dde675bc?w=400&q=80'},
     {'icon': Icons.elderly_rounded, 'color': Color(0xFF10B981), 'text': 'For elderly patients, apply the 6/18 threshold â€” not the adult 6/12 standard.', 'image': 'https://images.unsplash.com/photo-1516307365426-bea591f05011?w=400&q=80'},
     {'icon': Icons.child_care_rounded, 'color': Color(0xFF8B5CF6), 'text': 'Children may need encouragement â€” demonstrate the E direction yourself first.', 'image': 'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=400&q=80'},
@@ -170,8 +171,8 @@ class _HomeScreenState extends State<HomeScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Sync complete! $_unsyncedCount records uploaded.',
-              style: GoogleFonts.ibmPlexSans(fontSize: 12)),
-          backgroundColor: const Color(0xFF0D9488),
+              style: GoogleFonts.poppins(fontSize: 12)),
+          backgroundColor: AppColors.green,
           behavior: SnackBarBehavior.floating,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -324,7 +325,7 @@ class _HomeScreenState extends State<HomeScreen>
                 width: double.infinity,
                 padding: const EdgeInsets.all(22),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0D9488).withOpacity(0.08),
+                  color: AppColors.green.withOpacity(0.08),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(20),
                     topRight: Radius.circular(20),
@@ -336,22 +337,22 @@ class _HomeScreenState extends State<HomeScreen>
                       width: 60,
                       height: 60,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0D9488).withOpacity(0.12),
+                        color: AppColors.green.withOpacity(0.12),
                         shape: BoxShape.circle,
                         border: Border.all(
-                            color: const Color(0xFF0D9488).withOpacity(0.3),
+                            color: AppColors.green.withOpacity(0.3),
                             width: 2),
                       ),
                       child: const Icon(Icons.location_on_rounded,
-                          color: Color(0xFF0D9488), size: 28),
+                          color: AppColors.green, size: 28),
                     ),
                     const SizedBox(height: 12),
                     Text('Location Permission Required',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.barlow(
+                        style: GoogleFonts.nunito(
                             fontSize: 17,
                             fontWeight: FontWeight.w900,
-                            color: const Color(0xFF1A2A3D))),
+                            color: AppColors.textDark)),
                   ],
                 ),
               ),
@@ -365,10 +366,10 @@ class _HomeScreenState extends State<HomeScreen>
                           ? 'Location permission has been permanently denied. Please enable it in your device settings to show your current location.'
                           : 'VisionScreen needs your location to display where screenings are being conducted. Please allow location access.',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.ibmPlexSans(
+                      style: GoogleFonts.poppins(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
-                          color: const Color(0xFF5E7291),
+                          color: AppColors.textMuted,
                           height: 1.6),
                     ),
                     const SizedBox(height: 20),
@@ -393,13 +394,13 @@ class _HomeScreenState extends State<HomeScreen>
                         ),
                         label: Text(
                           openSettings ? 'Open Settings' : 'Allow Location',
-                          style: GoogleFonts.ibmPlexSans(
+                          style: GoogleFonts.poppins(
                               fontSize: 13,
                               fontWeight: FontWeight.w800,
                               color: Colors.white),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0D9488),
+                          backgroundColor: AppColors.green,
                           padding: const EdgeInsets.symmetric(vertical: 13),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
@@ -414,10 +415,10 @@ class _HomeScreenState extends State<HomeScreen>
                       child: TextButton(
                         onPressed: () => Navigator.pop(context),
                         child: Text('Skip for now',
-                            style: GoogleFonts.ibmPlexSans(
+                            style: GoogleFonts.poppins(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
-                                color: const Color(0xFF8FA0B4))),
+                                color: AppColors.textMuted)),
                       ),
                     ),
                   ],
@@ -460,18 +461,58 @@ class _HomeScreenState extends State<HomeScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Brand row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(children: [
+                          Container(
+                            width: 28, height: 28,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
+                            ),
+                            child: const Center(
+                              child: CustomPaint(
+                                 size: const Size(16, 16),
+                                 painter: AuthEyePainter(color: Colors.white),
+                               ),
+                             ),
+                           ),
+                          const SizedBox(width: 8),
+                          RichText(
+                            text: TextSpan(
+                              style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.w900),
+                              children: const [
+                                TextSpan(text: 'Vision', style: TextStyle(color: Colors.white)),
+                                TextSpan(text: 'Screen', style: TextStyle(color: Colors.black)),
+                              ],
+                            ),
+                          ),
+                        ]),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
                     _buildUserRow(),
                     const SizedBox(height: 14),
+
+
+                    Text(
+                      _now.hour < 12 ? 'Good morning,' : _now.hour < 17 ? 'Good afternoon,' : 'Good evening,',
+                      style: GoogleFonts.poppins(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 2),
                     RichText(
                       text: TextSpan(
-                        style: GoogleFonts.nunito(fontSize: 22, fontWeight: FontWeight.w900),
+                        style: GoogleFonts.nunito(fontSize: 24, fontWeight: FontWeight.w900),
                         children: [
-                          const TextSpan(text: 'Ready to screen, ', style: TextStyle(color: Colors.white)),
+                          const TextSpan(text: 'Ready to screen, ', style: TextStyle(color: Colors.black, fontSize: 22)),
                           TextSpan(
                             text: _chwName.isNotEmpty ? _chwName.split(' ').first : 'CHW',
-                            style: const TextStyle(color: Colors.black),
+                            style: const TextStyle(color: Color(0xFFFFD700), fontSize: 22, fontStyle: FontStyle.italic),
                           ),
-                          const TextSpan(text: '!', style: TextStyle(color: Colors.white)),
+                          const TextSpan(text: '!', style: TextStyle(color: Colors.white, fontSize: 22)),
                         ],
                       ),
                     ),
@@ -485,14 +526,14 @@ class _HomeScreenState extends State<HomeScreen>
                               Icon(
                                 _locationLabel.contains('retry') || _locationLabel.contains('timeout')
                                     ? Icons.refresh_rounded : Icons.location_on_rounded,
-                                size: 11, color: Colors.white.withValues(alpha: 0.85),
+                                size: 12, color: Colors.white,
                               ),
                               const SizedBox(width: 4),
                               ConstrainedBox(
                                 constraints: const BoxConstraints(maxWidth: 160),
                                 child: Text(_locationLabel, overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.poppins(fontSize: 11,
-                                    color: Colors.white.withValues(alpha: 0.85), fontWeight: FontWeight.w500)),
+                                    color: Colors.white, fontWeight: FontWeight.w600)),
                               ),
                             ],
                           ),
@@ -506,20 +547,19 @@ class _HomeScreenState extends State<HomeScreen>
                             border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                           ),
                           child: Row(children: [
-                            Icon(Icons.access_time_rounded, size: 10, color: Colors.white),
+                            Icon(Icons.access_time_rounded, size: 11, color: Colors.white),
                             const SizedBox(width: 4),
                             Text(_formatTime(_now), style: GoogleFonts.poppins(
-                                fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
+                                fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white)),
                           ]),
                         ),
                       ],
                     ),
                     const SizedBox(height: 4),
                     Row(children: [
-                      Icon(Icons.calendar_today_rounded, size: 11, color: Colors.white.withValues(alpha: 0.85)),
+                      Icon(Icons.calendar_today_rounded, size: 11, color: Colors.white),
                       const SizedBox(width: 4),
-                      Text(_formatDate(_now), style: GoogleFonts.poppins(
-                          fontSize: 11, color: Colors.white.withValues(alpha: 0.85), fontWeight: FontWeight.w500)),
+                      Text(_formatDate(_now), style: GoogleFonts.poppins(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600)),
                     ]),
                     const SizedBox(height: 14),
                     _buildSyncBar(),
@@ -533,7 +573,6 @@ class _HomeScreenState extends State<HomeScreen>
         ),
       ),
     );
-
   }
 
   Widget _buildUserRow() {
@@ -579,7 +618,7 @@ class _HomeScreenState extends State<HomeScreen>
           children: [
             Text(_chwName.isNotEmpty ? _chwName : 'VisionScreen User',
                 style: GoogleFonts.nunito(
-                    color: Colors.white,
+                    color: Colors.black,
                     fontSize: 14,
                     fontWeight: FontWeight.w800)),
             Text(
@@ -588,6 +627,23 @@ class _HomeScreenState extends State<HomeScreen>
                     color: Colors.white.withValues(alpha: 0.8),
                     fontSize: 11,
                     fontWeight: FontWeight.w500)),
+            FutureBuilder<String>(
+              future: SharedPreferences.getInstance().then((p) => p.getString('chw_id') ?? 'CHW-000000'),
+              builder: (_, snap) {
+                final id = snap.data ?? 'CHW-000000';
+                return Container(
+                  margin: const EdgeInsets.only(top: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD700).withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(color: const Color(0xFFFFD700).withValues(alpha: 0.6)),
+                  ),
+                  child: Text(id,
+                    style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w700, color: const Color(0xFFFFD700))),
+                );
+              },
+            ),
           ],
         ),
         const Spacer(),
@@ -759,7 +815,7 @@ class _HomeScreenState extends State<HomeScreen>
                       ),
                       child: Text(
                         '$_notificationCount',
-                        style: GoogleFonts.inter(
+                        style: GoogleFonts.poppins(
                             fontSize: 9,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
@@ -781,9 +837,9 @@ class _HomeScreenState extends State<HomeScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.18),
+          color: const Color(0xFFF97316).withValues(alpha: 0.9),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+          border: Border.all(color: const Color(0xFFEA580C)),
         ),
         child: Row(
           children: [
@@ -806,7 +862,7 @@ class _HomeScreenState extends State<HomeScreen>
                 _isSyncing ? 'Syncing...' : '$_unsyncedCount record${_unsyncedCount == 1 ? '' : 's'} pending sync',
                 style: GoogleFonts.poppins(
                     fontSize: 11,
-                    color: Colors.white.withValues(alpha: 0.9),
+                    color: Colors.white,
                     fontWeight: FontWeight.w500),
               ),
             ),
@@ -832,45 +888,93 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildStatsRow() {
     return Row(
       children: [
-        _buildStatCard('$_totalScreened', 'Screened', Icons.remove_red_eye_outlined, Colors.white),
+        _buildStatCard(
+          number: '$_totalScreened',
+          label: 'Screened',
+          icon: Icons.remove_red_eye_outlined,
+          cardColor: const Color(0xFF0EA5E9),
+          iconBg: const Color(0xFF0284C7),
+        ),
+        const SizedBox(width: 6),
+        _buildStatCard(
+          number: '${_totalScreened - _totalReferred}',
+          label: 'Passed',
+          icon: Icons.check_circle_outline_rounded,
+          cardColor: AppColors.green,
+          iconBg: const Color(0xFF27AE60),
+        ),
         const SizedBox(width: 8),
-        _buildStatCard('$_totalReferred', 'Referred', Icons.warning_amber_rounded, const Color(0xFFFFE08A)),
+        _buildStatCard(
+          number: '$_totalReferred',
+          label: 'Referred',
+          icon: Icons.warning_amber_rounded,
+          cardColor: const Color(0xFFEF4444),
+          iconBg: const Color(0xFFDC2626),
+        ),
         const SizedBox(width: 8),
-        _buildStatCard('$_unsyncedCount', 'Unsynced', Icons.sync_rounded, const Color(0xFFFFB3B3)),
+        _buildStatCard(
+          number: '$_unsyncedCount',
+          label: 'Pending',
+          icon: Icons.hourglass_top_rounded,
+          cardColor: const Color(0xFF8B5CF6),
+          iconBg: const Color(0xFF7C3AED),
+        ),
       ],
     );
   }
 
-  Widget _buildStatCard(String number, String label, IconData icon, Color accent) {
+  Widget _buildStatCard({
+    required String number,
+    required String label,
+    required IconData icon,
+    required Color cardColor,
+    required Color iconBg,
+  }) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.18),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+          color: cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: cardColor.withValues(alpha: 0.45),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 18, color: accent),
-            const SizedBox(height: 4),
+            Container(
+              width: 26, height: 26,
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, size: 13, color: Colors.white),
+            ),
+            const SizedBox(height: 6),
             Text(number,
                 style: GoogleFonts.nunito(
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.w900,
-                    color: Colors.white)),
+                    color: Colors.white,
+                    height: 1.0)),
+            const SizedBox(height: 2),
             Text(label,
                 style: GoogleFonts.poppins(
-                    fontSize: 9,
-                    color: Colors.white.withValues(alpha: 0.85),
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.5)),
+                    fontSize: 8,
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3)),
           ],
         ),
       ),
     );
   }
+
 
 
   String _formatDate(DateTime dt) {
@@ -917,12 +1021,12 @@ class _HomeScreenState extends State<HomeScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('You are offline',
-                    style: GoogleFonts.ibmPlexSans(
+                    style: GoogleFonts.poppins(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFF92400E))),
                 Text('All data is saved locally. Sync will resume when connected.',
-                    style: GoogleFonts.ibmPlexSans(
+                    style: GoogleFonts.poppins(
                         fontSize: 10,
                         fontWeight: FontWeight.w500,
                         color: const Color(0xFF92400E).withOpacity(0.75))),
@@ -936,7 +1040,7 @@ class _HomeScreenState extends State<HomeScreen>
               borderRadius: BorderRadius.circular(99),
             ),
             child: Text('SQLite',
-                style: GoogleFonts.ibmPlexSans(
+                style: GoogleFonts.poppins(
                     fontSize: 9,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF92400E))),
@@ -950,12 +1054,12 @@ class _HomeScreenState extends State<HomeScreen>
     return Padding(
       padding: const EdgeInsets.only(bottom: 2),
       child: Text(text.toUpperCase(),
-          style: GoogleFonts.inter(
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-            color: const Color(0xFF1A2A3D),
-            letterSpacing: 1.8,
-          )),
+        style: GoogleFonts.nunito(
+          fontSize: 12,
+          fontWeight: FontWeight.w900,
+          color: AppColors.textDark,
+          letterSpacing: 1.5,
+        )),
     );
   }
 
@@ -967,14 +1071,14 @@ class _HomeScreenState extends State<HomeScreen>
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF0D3D38), Color(0xFF0D9488)],
+          colors: [AppColors.greenDeep, AppColors.green],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0D9488).withOpacity(0.25),
+            color: AppColors.green.withOpacity(0.25),
             blurRadius: 12,
             offset: const Offset(0, 4),
           )
@@ -997,13 +1101,13 @@ class _HomeScreenState extends State<HomeScreen>
                     strokeWidth: 5,
                     backgroundColor: Colors.white.withOpacity(0.15),
                     valueColor: const AlwaysStoppedAnimation<Color>(
-                        Color(0xFF5EEAD4)),
+                        AppColors.green),
                   ),
                 ),
                 Center(
                   child: Text(
                     _totalScreened == 0 ? 'N/A' : '${passPercent}%',
-                    style: GoogleFonts.spaceGrotesk(
+                    style: GoogleFonts.nunito(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: Colors.white)),
@@ -1017,7 +1121,7 @@ class _HomeScreenState extends State<HomeScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Pass Rate (All Time)',
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.nunito(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: Colors.white)),
@@ -1026,7 +1130,7 @@ class _HomeScreenState extends State<HomeScreen>
                   _totalScreened == 0
                       ? 'No screenings yet'
                       : '${passed} passed \u00b7 ${_totalReferred} referred',
-                  style: GoogleFonts.inter(
+                  style: GoogleFonts.poppins(
                       fontSize: 10,
                       fontWeight: FontWeight.w400,
                       color: Colors.white.withOpacity(0.6))),
@@ -1041,7 +1145,7 @@ class _HomeScreenState extends State<HomeScreen>
             ),
             child: Text(
               '${_totalScreened} total',
-              style: GoogleFonts.spaceGrotesk(
+              style: GoogleFonts.nunito(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: Colors.white)),
@@ -1058,7 +1162,7 @@ class _HomeScreenState extends State<HomeScreen>
         'title': 'New Screening',
         'sub': 'Register & test patient',
         'image': 'asset:—Pngtree—visual acuity_7080163.png',
-        'overlayColors': [const Color(0xFF0D9488), const Color(0xFF04091A)],
+        'overlayColors': [AppColors.green, const Color(0xFF04091A)],
         'tag': 'START TEST',
       },
       {
@@ -1095,183 +1199,130 @@ class _HomeScreenState extends State<HomeScreen>
       padding: EdgeInsets.zero,
       crossAxisSpacing: 10,
       mainAxisSpacing: 10,
-      childAspectRatio: 1.7,
+      childAspectRatio: 1.1,
       children: actions.map((a) => _buildActionCard(a)).toList(),
     );
   }
 
   Widget _buildActionCard(Map a) {
+    final accent = (a['overlayColors'] as List<Color>).first;
     return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(18),
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         onTap: () {
           if (a['title'] == 'New Screening') {
-            Navigator.push(
-              context,
+            Navigator.push(context,
               MaterialPageRoute(builder: (_) => const NewScreeningScreen(startWithNewPatient: true)),
             ).then((_) => _loadDbStats());
           } else if (a['title'] == 'Bulk Mode') {
-            Navigator.push(
-              context,
+            Navigator.push(context,
               MaterialPageRoute(builder: (_) => const BulkModeScreen()),
             ).then((_) => _loadDbStats());
           } else if (a['title'] == 'Training') {
             Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const TrainingScreen()));
+              MaterialPageRoute(builder: (_) => const TrainingScreen()));
           } else if (a['title'] == 'Analytics') {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AnalyticsScreen()),
-            );
+            Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const AnalyticsScreen()));
           }
         },
-        splashColor: Colors.white.withOpacity(0.1),
-        highlightColor: Colors.white.withOpacity(0.05),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(18),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // Background image
-              Builder(builder: (_) {
-                final img = a['image'] as String;
-                if (img.startsWith('asset:')) {
-                  return Image.asset(
-                    img.substring(6),
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: (a['overlayColors'] as List<Color>).first,
-                    ),
-                  );
-                }
-                return Image.network(
-                  img,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stack) => Container(
-                    color: (a['overlayColors'] as List<Color>).first,
-                  ),
-                );
-              }),
-              // Dark gradient overlay
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withOpacity(0.15),
-                      Colors.black.withOpacity(0.78),
-                    ],
-                  ),
-                ),
-              ),
-              // Tint overlay
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      (a['overlayColors'] as List<Color>)[0].withOpacity(0.35),
-                      (a['overlayColors'] as List<Color>)[1].withOpacity(0.55),
-                    ],
-                  ),
-                ),
-              ),
-              // Content
-              Padding(
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Top row: icon box + tag chip
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.18),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                                color: Colors.white.withOpacity(0.25),
-                                width: 1),
-                          ),
-                          child: Icon(a['icon'] as IconData,
-                              color: Colors.white, size: 14),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 7, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(99),
-                            border: Border.all(
-                                color: Colors.white.withOpacity(0.25),
-                                width: 1),
-                          ),
-                          child: Text(
-                            a['tag'] as String,
-                            style: GoogleFonts.inter(
-                                fontSize: 8,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                                letterSpacing: 1.2),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    // Bottom: title + subtitle + arrow
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(a['title'] as String,
-                                  style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                      letterSpacing: 0.1,
-                                      height: 1.1)),
-                              const SizedBox(height: 3),
-                              Text(a['sub'] as String,
-                                  style: GoogleFonts.inter(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w400,
-                                      color: Colors.white.withOpacity(0.65))),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          width: 22,
-                          height: 22,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.arrow_forward,
-                              color: Colors.white, size: 11),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+        splashColor: AppColors.greenHero,
+        highlightColor: AppColors.greenHero,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.borderColor, width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.cardShadow,
+                blurRadius: 8,
+                offset: const Offset(0, 3),
               ),
             ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(15),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Image top half
+                Expanded(
+                  child: Builder(builder: (_) {
+                    final img = a['image'] as String;
+                    if (img.startsWith('asset:')) {
+                      return Image.asset(
+                        img.substring(6),
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        errorBuilder: (_, __, ___) => Container(color: AppColors.greenHero),
+                      );
+                    }
+                    return Image.network(
+                      img, fit: BoxFit.cover, width: double.infinity,
+                      errorBuilder: (_, __, ___) => Container(color: AppColors.greenHero),
+                    );
+                  }),
+                ),
+                // White bottom info strip
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 28, height: 28,
+                        decoration: BoxDecoration(
+                          color: AppColors.greenHero,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.borderColor),
+                        ),
+                        child: Icon(a['icon'] as IconData,
+                            color: AppColors.greenDark, size: 14),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(a['title'] as String,
+                                style: GoogleFonts.nunito(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.textDark)),
+                            Text(a['sub'] as String,
+                                style: GoogleFonts.poppins(
+                                    fontSize: 9,
+                                    color: AppColors.textMuted)),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.greenHero,
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(color: AppColors.borderColor),
+                        ),
+                        child: Text(a['tag'] as String,
+                            style: GoogleFonts.poppins(
+                                fontSize: 7,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.greenDark,
+                                letterSpacing: 0.8)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+
 
   Widget _buildRecentPatients() {
     return Column(
@@ -1285,15 +1336,15 @@ class _HomeScreenState extends State<HomeScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text("Today's Screenings",
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.nunito(
                         fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF1A2A3D),
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.textDark,
                         letterSpacing: 0.1)),
                 Text('${_recentScreenings.length} patient${_recentScreenings.length == 1 ? '' : 's'} · ${_formatDate(_now)}',
-                    style: GoogleFonts.inter(
+                    style: GoogleFonts.poppins(
                         fontSize: 11,
-                        color: const Color(0xFF8FA0B4),
+                        color: AppColors.textMuted,
                         fontWeight: FontWeight.w400)),
               ],
             ),
@@ -1303,14 +1354,14 @@ class _HomeScreenState extends State<HomeScreen>
                 MaterialPageRoute(builder: (_) => const PatientsScreen()),
               ),
               icon: const Icon(Icons.arrow_forward_rounded,
-                  size: 13, color: Color(0xFF0D9488)),
+                  size: 13, color: AppColors.green),
               label: Text('See all',
-                  style: GoogleFonts.inter(
+                  style: GoogleFonts.poppins(
                       fontSize: 11,
-                      color: const Color(0xFF0D9488),
+                      color: AppColors.greenDark,
                       fontWeight: FontWeight.w600)),
               style: TextButton.styleFrom(
-                backgroundColor: const Color(0xFF0D9488).withOpacity(0.08),
+                backgroundColor: AppColors.greenHero,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(99)),
                 padding:
@@ -1327,7 +1378,7 @@ class _HomeScreenState extends State<HomeScreen>
               child: Text(
                 'No screenings yet.\nTap the eye button below to start.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF8FA0B4), height: 1.6),
+                style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textMuted, height: 1.6),
               ),
             ),
           )
@@ -1406,7 +1457,7 @@ class _HomeScreenState extends State<HomeScreen>
         ? const Color(0xFF3B82F6)
         : ageGroup == 'elderly'
             ? const Color(0xFFEF4444)
-            : const Color(0xFF0D9488);
+            : AppColors.green;
 
     return Material(
       color: Colors.white,
@@ -1419,7 +1470,7 @@ class _HomeScreenState extends State<HomeScreen>
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
+            border: Border.all(color: AppColors.borderColor, width: 1.5),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.05),
@@ -1460,7 +1511,7 @@ class _HomeScreenState extends State<HomeScreen>
                                    gradient: LinearGradient(colors: [c1, c2], begin: Alignment.topLeft, end: Alignment.bottomRight),
                                    borderRadius: BorderRadius.circular(14),
                                  ),
-                                 child: Center(child: Text(initials, style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white))),
+                                 child: Center(child: Text(initials, style: GoogleFonts.nunito(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white))),
                                ),
                       ),
                     ),
@@ -1472,12 +1523,12 @@ class _HomeScreenState extends State<HomeScreen>
                         children: [
                           Row(
                             children: [
-                              Flexible(child: Text(name, overflow: TextOverflow.ellipsis, style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: const Color(0xFF1A2A3D)))),
+                              Flexible(child: Text(name, overflow: TextOverflow.ellipsis, style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textDark))),
                               const SizedBox(width: 6),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                                 decoration: BoxDecoration(color: ageColor.withOpacity(0.1), borderRadius: BorderRadius.circular(99), border: Border.all(color: ageColor.withOpacity(0.25))),
-                                child: Text(ageGroup[0].toUpperCase() + ageGroup.substring(1), style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: ageColor)),
+                                child: Text(ageGroup[0].toUpperCase() + ageGroup.substring(1), style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w700, color: ageColor)),
                               ),
                             ],
                           ),
@@ -1486,7 +1537,7 @@ class _HomeScreenState extends State<HomeScreen>
                             children: [
                               const Icon(Icons.person_outline_rounded, size: 11, color: Color(0xFF8FA0B4)),
                               const SizedBox(width: 4),
-                              Flexible(child: Text(demographic, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8FA0B4)))),
+                               Flexible(child: Text(demographic, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(fontSize: 11, color: AppColors.textMuted))),
                             ],
                           ),
                           const SizedBox(height: 8),
@@ -1505,7 +1556,7 @@ class _HomeScreenState extends State<HomeScreen>
                               child: Row(mainAxisSize: MainAxisSize.min, children: [
                                 const Icon(Icons.hourglass_top_rounded, size: 11, color: Color(0xFFF59E0B)),
                                 const SizedBox(width: 5),
-                                Text('Awaiting screening', style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFFF59E0B), fontWeight: FontWeight.w600)),
+                                Text('Awaiting screening', style: GoogleFonts.poppins(fontSize: 11, color: const Color(0xFFF59E0B), fontWeight: FontWeight.w600)),
                               ]),
                             ),
                         ],
@@ -1518,7 +1569,7 @@ class _HomeScreenState extends State<HomeScreen>
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
                         Icon(badgeIcon, size: 10, color: accentColor),
                         const SizedBox(width: 3),
-                        Text(badgeLabel, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: accentColor)),
+                        Text(badgeLabel, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700, color: accentColor)),
                       ]),
                     ),
                   ],
@@ -1537,14 +1588,14 @@ class _HomeScreenState extends State<HomeScreen>
                     const Icon(Icons.badge_outlined, size: 11, color: Color(0xFF8FA0B4)),
                     const SizedBox(width: 4),
                     Expanded(
-                      child: Text(id, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF8FA0B4), fontWeight: FontWeight.w500)),
+                      child: Text(id, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(fontSize: 10, color: AppColors.textMuted, fontWeight: FontWeight.w500)),
                     ),
                     const SizedBox(width: 6),
                     const Icon(Icons.access_time_rounded, size: 11, color: Color(0xFF8FA0B4)),
                     const SizedBox(width: 4),
-                    Text(time, style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF8FA0B4), fontWeight: FontWeight.w500)),
+                    Text(time, style: GoogleFonts.poppins(fontSize: 10, color: AppColors.textMuted, fontWeight: FontWeight.w500)),
                     const SizedBox(width: 8),
-                    Text('View →', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: accentColor)),
+                    Text('View →', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700, color: accentColor)),
                   ],
                 ),
               ),
@@ -1557,7 +1608,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _homeVaPill(String value, String outcome) {
     final isBad = outcome == 'refer' && value != '6/6' && value != '6/9' && value != '6/12';
-    final fg = isBad ? const Color(0xFFEF4444) : const Color(0xFF0D9488);
+    final fg = isBad ? const Color(0xFFEF4444) : AppColors.greenDark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
       decoration: BoxDecoration(
@@ -1565,7 +1616,7 @@ class _HomeScreenState extends State<HomeScreen>
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: fg.withOpacity(0.2)),
       ),
-      child: Text(value, style: GoogleFonts.spaceGrotesk(fontSize: 10, fontWeight: FontWeight.w700, color: fg)),
+      child: Text(value, style: GoogleFonts.nunito(fontSize: 10, fontWeight: FontWeight.w700, color: fg)),
     );
   }
 
@@ -1584,22 +1635,22 @@ class _HomeScreenState extends State<HomeScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Referral Follow-Ups',
-                    style: GoogleFonts.plusJakartaSans(
-                        fontSize: 16, fontWeight: FontWeight.w800,
-                        color: const Color(0xFF1A2A3D), letterSpacing: 0.1)),
+                    style: GoogleFonts.nunito(
+                        fontSize: 16, fontWeight: FontWeight.w900,
+                        color: AppColors.textDark, letterSpacing: 0.1)),
                 Text(dueCount > 0 ? '$dueCount due · Action required' : 'All up to date',
-                    style: GoogleFonts.inter(
+                    style: GoogleFonts.poppins(
                         fontSize: 11,
-                        color: dueCount > 0 ? const Color(0xFFEF4444) : const Color(0xFF8FA0B4),
+                        color: dueCount > 0 ? const Color(0xFFEF4444) : AppColors.textMuted,
                         fontWeight: FontWeight.w500)),
               ],
             ),
             TextButton.icon(
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PatientsScreen())),
-              icon: const Icon(Icons.arrow_forward_rounded, size: 13, color: Color(0xFF0D9488)),
-              label: Text('View all', style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF0D9488), fontWeight: FontWeight.w600)),
+              icon: const Icon(Icons.arrow_forward_rounded, size: 13, color: AppColors.green),
+              label: Text('View all', style: GoogleFonts.poppins(fontSize: 11, color: AppColors.greenDark, fontWeight: FontWeight.w600)),
               style: TextButton.styleFrom(
-                backgroundColor: const Color(0xFF0D9488).withOpacity(0.08),
+                backgroundColor: AppColors.greenHero,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(99)),
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               ),
@@ -1612,7 +1663,7 @@ class _HomeScreenState extends State<HomeScreen>
             padding: const EdgeInsets.symmetric(vertical: 20),
             child: Center(
               child: Text('No referrals yet.',
-                  style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF8FA0B4))),
+                  style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textMuted)),
             ),
           )
         else
@@ -1640,7 +1691,7 @@ class _HomeScreenState extends State<HomeScreen>
             final statusColor = status == 'overdue'
                 ? const Color(0xFFEF4444)
                 : status == 'completed' ? const Color(0xFF22C55E)
-                : status == 'attended' ? const Color(0xFF0D9488)
+                : status == 'attended' ? AppColors.green
                 : status == 'notified' ? const Color(0xFF3B82F6)
                 : const Color(0xFFF59E0B);
             final initials = name.split(' ').map((w) => w.isEmpty ? '' : w[0]).take(2).join();
@@ -1665,7 +1716,7 @@ class _HomeScreenState extends State<HomeScreen>
     final statuses = [
       {'value': 'pending',   'label': 'Pending',   'icon': Icons.schedule_rounded,             'color': const Color(0xFFF59E0B)},
       {'value': 'notified',  'label': 'Notified',  'icon': Icons.notifications_active_rounded, 'color': const Color(0xFF3B82F6)},
-      {'value': 'attended',  'label': 'Attended',  'icon': Icons.check_circle_outline_rounded, 'color': const Color(0xFF0D9488)},
+      {'value': 'attended',  'label': 'Attended',  'icon': Icons.check_circle_outline_rounded, 'color': AppColors.green},
       {'value': 'completed', 'label': 'Completed', 'icon': Icons.check_circle_rounded,         'color': const Color(0xFF22C55E)},
       {'value': 'overdue',   'label': 'Overdue',   'icon': Icons.error_rounded,                'color': const Color(0xFFEF4444)},
       {'value': 'cancelled', 'label': 'Cancelled', 'icon': Icons.cancel_rounded,               'color': Colors.grey},
@@ -1689,12 +1740,12 @@ class _HomeScreenState extends State<HomeScreen>
             const SizedBox(height: 16),
             Row(children: [
               Container(width: 44, height: 44,
-                  decoration: BoxDecoration(color: const Color(0xFF0D9488).withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                  child: const Icon(Icons.update_rounded, color: Color(0xFF0D9488), size: 22)),
+                  decoration: BoxDecoration(color: AppColors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                  child: const Icon(Icons.update_rounded, color: AppColors.green, size: 22)),
               const SizedBox(width: 12),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Update Referral Status', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF1A2A3D))),
-                Text(patientName, style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF8FA0B4))),
+                Text('Update Referral Status', style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textDark)),
+                Text(patientName, style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textMuted)),
               ])),
             ]),
             const SizedBox(height: 20),
@@ -1709,7 +1760,7 @@ class _HomeScreenState extends State<HomeScreen>
                   await _loadDbStats();
                   if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                     content: Text('Status updated to ' + (st['label'] as String),
-                        style: GoogleFonts.inter(fontSize: 12, color: Colors.white)),
+                        style: GoogleFonts.poppins(fontSize: 12, color: Colors.white)),
                     backgroundColor: color, behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     duration: const Duration(seconds: 2),
@@ -1730,8 +1781,8 @@ class _HomeScreenState extends State<HomeScreen>
                         child: Icon(st['icon'] as IconData, size: 18, color: color)),
                     const SizedBox(width: 12),
                     Expanded(child: Text(st['label'] as String,
-                        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600,
-                            color: isActive ? color : const Color(0xFF1A2A3D)))),
+                        style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600,
+                            color: isActive ? color : AppColors.textDark))),
                     if (isActive) Icon(Icons.check_circle_rounded, color: color, size: 20),
                   ]),
                 ),
@@ -1804,7 +1855,7 @@ class _HomeScreenState extends State<HomeScreen>
                             : Container(
                                 color: avatarColor.withOpacity(0.15),
                                 child: Center(child: Text(initials,
-                                    style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w800, color: avatarColor))),
+                                    style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w800, color: avatarColor))),
                               ),
                       ),
                     ),
@@ -1818,32 +1869,32 @@ class _HomeScreenState extends State<HomeScreen>
                               Flexible(
                                 child: Text(name,
                                     overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.plusJakartaSans(
+                                    style: GoogleFonts.nunito(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w700,
-                                        color: const Color(0xFF1A2A3D))),
+                                        color: AppColors.textDark)),
                               ),
                               const SizedBox(width: 6),
                               Text(demographic,
-                                  style: GoogleFonts.inter(
+                                  style: GoogleFonts.poppins(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w400,
-                                      color: const Color(0xFF8FA0B4))),
+                                      color: AppColors.textMuted)),
                             ],
                           ),
                           const SizedBox(height: 4),
                           Row(
                             children: [
                               Icon(Icons.local_hospital_rounded,
-                                  size: 11, color: const Color(0xFF8FA0B4)),
+                                  size: 11, color: AppColors.textMuted),
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(facility,
                                     overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.inter(
+                                    style: GoogleFonts.poppins(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w500,
-                                        color: const Color(0xFF5E7291))),
+                                        color: AppColors.textMuted)),
                               ),
                             ],
                           ),
@@ -1873,7 +1924,7 @@ class _HomeScreenState extends State<HomeScreen>
                           Icon(statusIcon, size: 10, color: accentColor),
                           const SizedBox(width: 3),
                           Text(status,
-                              style: GoogleFonts.inter(
+                              style: GoogleFonts.poppins(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
                                   color: accentColor)),
@@ -1903,7 +1954,7 @@ class _HomeScreenState extends State<HomeScreen>
                         size: 12, color: accentColor),
                     const SizedBox(width: 6),
                     Text(dueDate,
-                        style: GoogleFonts.inter(
+                        style: GoogleFonts.poppins(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: accentColor)),
@@ -1924,7 +1975,7 @@ class _HomeScreenState extends State<HomeScreen>
                         ),
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
                           Text('Update Status',
-                              style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: accentColor)),
+                              style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: accentColor)),
                           const SizedBox(width: 4),
                           Icon(Icons.edit_rounded, size: 11, color: accentColor),
                         ]),
@@ -1951,7 +2002,7 @@ class _NotificationsSheet extends StatefulWidget {
 class _NotificationsSheetState extends State<_NotificationsSheet> {
   final List<Map<String, dynamic>> _notifications = [
     {'icon': Icons.warning_rounded, 'color': Color(0xFFEF4444), 'title': 'Referral Overdue', 'body': 'Okello James has not attended Mulago Hospital.', 'time': '2 min ago', 'read': false, 'tag': 'URGENT'},
-    {'icon': Icons.person_add_rounded, 'color': Color(0xFF0D9488), 'title': 'New Patient Registered', 'body': 'Mugisha Wilson is awaiting screening.', 'time': '15 min ago', 'read': false, 'tag': 'PATIENT'},
+    {'icon': Icons.person_add_rounded, 'color': AppColors.green, 'title': 'New Patient Registered', 'body': 'Mugisha Wilson is awaiting screening.', 'time': '15 min ago', 'read': false, 'tag': 'PATIENT'},
     {'icon': Icons.sync_rounded, 'color': Color(0xFF38BDF8), 'title': 'Sync Pending', 'body': '3 records waiting to sync to MongoDB Atlas.', 'time': '1 hr ago', 'read': false, 'tag': 'SYNC'},
     {'icon': Icons.check_circle_rounded, 'color': Color(0xFF22C55E), 'title': 'Screening Completed', 'body': 'Akello Mercy passed. OD 6/6, OS 6/9.', 'time': '2 hr ago', 'read': true, 'tag': 'RESULT'},
     {'icon': Icons.notifications_active_rounded, 'color': Color(0xFF8B5CF6), 'title': 'Appointment Reminder', 'body': 'Byaruhanga Sam â€” Kampala Eye Clinic, 2 Apr.', 'time': '3 hr ago', 'read': true, 'tag': 'REMINDER'},
@@ -1991,12 +2042,12 @@ class _NotificationsSheetState extends State<_NotificationsSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Notifications',
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.nunito(
                               fontSize: 22, fontWeight: FontWeight.w800,
-                              color: const Color(0xFF1A2A3D))),
+                              color: AppColors.textDark)),
                       Text(unread > 0 ? '$unread unread' : 'All caught up âœ“',
-                          style: GoogleFonts.inter(
-                              fontSize: 11, color: const Color(0xFF8FA0B4),
+                          style: GoogleFonts.poppins(
+                              fontSize: 11, color: AppColors.textMuted,
                               fontWeight: FontWeight.w400)),
                     ],
                   ),
@@ -2011,18 +2062,18 @@ class _NotificationsSheetState extends State<_NotificationsSheet> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF0D9488).withOpacity(0.1),
+                          color: AppColors.green.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(99),
-                          border: Border.all(color: const Color(0xFF0D9488).withOpacity(0.25)),
+                          border: Border.all(color: AppColors.green.withOpacity(0.25)),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.done_all_rounded, size: 13, color: Color(0xFF0D9488)),
+                            const Icon(Icons.done_all_rounded, size: 13, color: AppColors.green),
                             const SizedBox(width: 5),
                             Text('Mark all read',
-                                style: GoogleFonts.inter(
+                                style: GoogleFonts.poppins(
                                     fontSize: 11, fontWeight: FontWeight.w600,
-                                    color: const Color(0xFF0D9488))),
+                                    color: AppColors.green)),
                           ],
                         ),
                       ),
@@ -2105,10 +2156,10 @@ class _NotificationsSheetState extends State<_NotificationsSheet> {
                       children: [
                         Expanded(
                           child: Text(n['title'] as String,
-                              style: GoogleFonts.plusJakartaSans(
+                              style: GoogleFonts.nunito(
                                   fontSize: 13,
                                   fontWeight: isRead ? FontWeight.w600 : FontWeight.w700,
-                                  color: isRead ? const Color(0xFF5E7291) : const Color(0xFF1A2A3D))),
+                                  color: isRead ? AppColors.textMuted : AppColors.textDark)),
                         ),
                         if (!isRead)
                           Container(
@@ -2123,15 +2174,15 @@ class _NotificationsSheetState extends State<_NotificationsSheet> {
                     ),
                     const SizedBox(height: 3),
                     Text(n['body'] as String,
-                        style: GoogleFonts.inter(
-                            fontSize: 11, color: const Color(0xFF8FA0B4), height: 1.5)),
+                        style: GoogleFonts.poppins(
+                            fontSize: 11, color: AppColors.textMuted, height: 1.5)),
                     const SizedBox(height: 6),
                     Row(
                       children: [
                         Icon(Icons.access_time_rounded, size: 10, color: const Color(0xFFB0BEC5)),
                         const SizedBox(width: 3),
                         Text(n['time'] as String,
-                            style: GoogleFonts.inter(
+                            style: GoogleFonts.poppins(
                                 fontSize: 10, color: const Color(0xFFB0BEC5),
                                 fontWeight: FontWeight.w400)),
                         const Spacer(),
@@ -2142,7 +2193,7 @@ class _NotificationsSheetState extends State<_NotificationsSheet> {
                             borderRadius: BorderRadius.circular(99),
                           ),
                           child: Text(n['tag'] as String,
-                              style: GoogleFonts.inter(
+                              style: GoogleFonts.poppins(
                                   fontSize: 8, fontWeight: FontWeight.w700,
                                   color: color, letterSpacing: 0.8)),
                         ),
@@ -2284,7 +2335,7 @@ class _TipDialogContentState extends State<_TipDialogContent> {
                               borderRadius: BorderRadius.circular(99),
                             ),
                             child: Text('CLINICAL TIP OF THE DAY',
-                                style: GoogleFonts.inter(
+                                style: GoogleFonts.poppins(
                                     fontSize: 8,
                                     fontWeight: FontWeight.w700,
                                     color: Colors.white,
@@ -2324,10 +2375,10 @@ class _TipDialogContentState extends State<_TipDialogContent> {
                   child: Text(
                     tip['text'] as String,
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
+                    style: GoogleFonts.poppins(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: const Color(0xFF1A2A3D),
+                        color: AppColors.textDark,
                         height: 1.6),
                   ),
                 ),
@@ -2361,14 +2412,14 @@ class _TipDialogContentState extends State<_TipDialogContent> {
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0D9488),
+                    backgroundColor: AppColors.green,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                     elevation: 0,
                   ),
                   child: Text("Got it, let's screen!",
-                      style: GoogleFonts.inter(
+                      style: GoogleFonts.poppins(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: Colors.white)),
