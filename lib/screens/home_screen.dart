@@ -1104,7 +1104,7 @@ class _HomeScreenState extends State<HomeScreen>
         'icon': Icons.remove_red_eye_outlined,
         'title': 'New Screening',
         'sub': 'Register & test patient',
-        'image': 'https://images.unsplash.com/photo-1638202993928-7267aad84c31?w=400&q=80',
+        'image': 'asset:—Pngtree—visual acuity_7080163.png',
         'overlayColors': [const Color(0xFF0D9488), const Color(0xFF04091A)],
         'tag': 'START TEST',
       },
@@ -1112,7 +1112,7 @@ class _HomeScreenState extends State<HomeScreen>
         'icon': Icons.groups_outlined,
         'title': 'Bulk Mode',
         'sub': 'Campaign screening',
-        'image': 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400&q=80',
+        'image': 'asset:image.png',
         'overlayColors': [const Color(0xFF0B1530), const Color(0xFF04091A)],
         'tag': 'CAMPAIGN',
       },
@@ -1120,15 +1120,16 @@ class _HomeScreenState extends State<HomeScreen>
         'icon': Icons.school_outlined,
         'title': 'Training',
         'sub': 'Learn the system',
-        'image': 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=400&q=80',
+        'image': 'asset:Medical Staff Meeting-800x531.jpg',
         'overlayColors': [const Color(0xFF065F46), const Color(0xFF064E3B)],
         'tag': 'LEARN',
       },
       {
         'icon': Icons.insights_outlined,
         'title': 'Analytics',
+
         'sub': 'Programme data',
-        'image': 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&q=80',
+        'image': 'asset:pngwing.com.png',
         'overlayColors': [const Color(0xFF1E3A5F), const Color(0xFF0F172A)],
         'tag': 'INSIGHTS',
       },
@@ -1181,13 +1182,27 @@ class _HomeScreenState extends State<HomeScreen>
             fit: StackFit.expand,
             children: [
               // Background image
-              Image.network(
-                a['image'] as String,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stack) => Container(
-                  color: (a['overlayColors'] as List<Color>).first,
-                ),
-              ),
+              Builder(builder: (_) {
+                final img = a['image'] as String;
+                if (img.startsWith('asset:')) {
+                  return Image.asset(
+                    img.substring(6),
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: (a['overlayColors'] as List<Color>).first,
+                    ),
+                  );
+                }
+                return Image.network(
+                  img,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stack) => Container(
+                    color: (a['overlayColors'] as List<Color>).first,
+                  ),
+                );
+              }),
               // Dark gradient overlay
               Container(
                 decoration: BoxDecoration(
