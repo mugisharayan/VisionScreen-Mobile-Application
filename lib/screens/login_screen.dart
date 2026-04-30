@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite/sqflite.dart';
+import 'dart:math';
 import 'splash_screen.dart' show AppColors;
 import '../db/database_helper.dart';
 
@@ -56,6 +58,19 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void initState() {
     super.initState();
+    _loadRememberMe();
+  }
+
+  Future<void> _loadRememberMe() async {
+    final prefs = await SharedPreferences.getInstance();
+    final remember = prefs.getBool('remember_me') ?? false;
+    if (remember) {
+      final savedEmail = prefs.getString('remembered_email') ?? '';
+      setState(() {
+        _rememberMe = remember;
+        _loginEmailCtrl.text = savedEmail;
+      });
+    }
   }
 
   @override
@@ -80,10 +95,15 @@ class _LoginScreenState extends State<LoginScreen>
     });
     if (_loginEmailError != null || _loginPasswordError != null) return;
     setState(() => _loginLoading = true);
-    final profile = await DatabaseHelper.instance
-        .getChwProfileByEmail(_loginEmailCtrl.text.trim());
+
+    final enteredEmail = _loginEmailCtrl.text.trim().toLowerCase();
+    final enteredPassword = _loginPasswordCtrl.text;
+
+    final hashedPassword = DatabaseHelper.hashPassword(enteredPassword);
+    final profile = await DatabaseHelper.instance.getChwProfileByEmail(enteredEmail);
     if (!mounted) return;
-    if (profile == null || profile['password'] != _loginPasswordCtrl.text) {
+
+    if (profile == null || profile['password'] != hashedPassword) {
       setState(() {
         _loginLoading = false;
         _loginPasswordError = 'Invalid email or password';
@@ -99,7 +119,7 @@ class _LoginScreenState extends State<LoginScreen>
     // Restore or generate CHW ID on login
     final existingId = prefs.getString('chw_id') ?? '';
     if (existingId.isEmpty) {
-      final id = 'CHW-${(100000 + DateTime.now().millisecondsSinceEpoch % 900000).toString()}';
+      final id = 'CHW-${(Random.secure().nextInt(900000) + 100000)}';
       await prefs.setString('chw_id', id);
     }
     await prefs.setString('last_login_time',
@@ -107,6 +127,7 @@ class _LoginScreenState extends State<LoginScreen>
     await prefs.setString('last_login_role',
         (profile['role'] as String) == 'admin' ? 'Administrator' : 'Community Health Worker');
     if (!mounted) return;
+    setState(() => _loginLoading = false);
     Navigator.of(context).pushReplacementNamed('/home');
   }
 
@@ -162,15 +183,22 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _saveSignUp() async {
+    final email = _signUpEmailCtrl.text.trim().toLowerCase();
+    final existing = await DatabaseHelper.instance.getChwProfileByEmail(email);
+    if (!mounted) return;
+    if (existing != null) {
+      setState(() => _signUpEmailError = 'An account with this email already exists');
+      return;
+    }
     final phone = _signUpPhoneCtrl.text.replaceAll(RegExp(r'\s'), '');
     final profile = {
       'name':       _signUpNameCtrl.text.trim(),
       'center':     _signUpCentreCtrl.text.trim(),
       'district':   _signUpDistrictCtrl.text.trim(),
-      'email':      _signUpEmailCtrl.text.trim().toLowerCase(),
+      'email':      email,
       'phone':      phone,
-      'password':   _signUpPasswordCtrl.text,
-      'role':       _selectedRole,
+      'password':   DatabaseHelper.hashPassword(_signUpPasswordCtrl.text),
+      'role':       'chw',
       'created_at': DateTime.now().toIso8601String(),
     };
     await DatabaseHelper.instance.insertChwProfile(profile);
@@ -181,9 +209,9 @@ class _LoginScreenState extends State<LoginScreen>
     await prefs.setString('chw_email',    profile['email']!);
     await prefs.setString('chw_phone',    profile['phone']!);
     // Generate CHW ID: CHW-XXXXXX (6 random digits)
-    final existing = prefs.getString('chw_id') ?? '';
-    if (existing.isEmpty) {
-      final id = 'CHW-${(100000 + DateTime.now().millisecondsSinceEpoch % 900000).toString()}';
+    final existingId = prefs.getString('chw_id') ?? '';
+    if (existingId.isEmpty) {
+      final id = 'CHW-${(Random.secure().nextInt(900000) + 100000)}';
       await prefs.setString('chw_id', id);
     }
     await prefs.setString('last_login_time',
@@ -203,28 +231,7 @@ class _LoginScreenState extends State<LoginScreen>
   String? _validateEmail(String value) {
     if (value.trim().isEmpty) return 'Email address is required';
     final emailRegex = RegExp(r'^[\w.+-]+@[\w-]+\.[\w.]+$');
-    if (!emailRegex.hasMatch(value.trim())) { return 'Enter a valid email address'; }
-    const allowedDomains = [
-      'gmail.com',
-      'yahoo.com',
-      'yahoo.co.uk',
-      'outlook.com',
-      'hotmail.com',
-      'live.com',
-      'icloud.com',
-      'me.com',
-      'protonmail.com',
-      'proton.me',
-      'aol.com',
-      'zoho.com',
-      'yandex.com',
-      'gmx.com',
-      'mail.com',
-    ];
-    final domain = value.trim().split('@').last.toLowerCase();
-    if (!allowedDomains.contains(domain)) {
-      return 'Use a standard email (e.g. Gmail, Yahoo, Outlook)';
-    }
+    if (!emailRegex.hasMatch(value.trim())) return 'Enter a valid email address';
     return null;
   }
 
@@ -388,12 +395,27 @@ class _LoginScreenState extends State<LoginScreen>
                         onRoleChanged: (r) => setState(() => _selectedRole = r),
                         onTogglePassword: () => setState(() =>
                             _loginPasswordVisible = !_loginPasswordVisible),
-                        onEmailChanged: (_) =>
-                            setState(() => _loginEmailError = null),
+                        onEmailChanged: (v) async {
+                          setState(() => _loginEmailError = null);
+                          if (_rememberMe) {
+                            final prefs = await SharedPreferences.getInstance();
+                            await prefs.setString('remembered_email',
+                                v.trim().toLowerCase());
+                          }
+                        },
                         onPasswordChanged: (_) =>
                             setState(() => _loginPasswordError = null),
-                        onRememberMeChanged: (v) =>
-                            setState(() => _rememberMe = v),
+                        onRememberMeChanged: (v) async {
+                          setState(() => _rememberMe = v);
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.setBool('remember_me', v);
+                          if (v) {
+                            await prefs.setString('remembered_email',
+                                _loginEmailCtrl.text.trim().toLowerCase());
+                          } else {
+                            await prefs.remove('remembered_email');
+                          }
+                        },
                         onLogin: _login,
                         onGoSignUp: _goSignUp,
                       )
@@ -453,68 +475,119 @@ class _LoginScreenState extends State<LoginScreen>
 }
 
 // ─────────────────────────────────────────────────────────────
-// Auth Hero Zone — green top area with eye illustration + tab switcher
+// Auth Hero Zone — animated entry + logo bounce
 // ─────────────────────────────────────────────────────────────
-class _AuthHeroZone extends StatelessWidget {
+class _AuthHeroZone extends StatefulWidget {
   const _AuthHeroZone({required this.isSignUp});
   final bool isSignUp;
 
   @override
+  State<_AuthHeroZone> createState() => _AuthHeroZoneState();
+}
+
+class _AuthHeroZoneState extends State<_AuthHeroZone>
+    with TickerProviderStateMixin {
+  late final AnimationController _entryCtrl;
+  late final AnimationController _logoCtrl;
+  late final Animation<Offset> _heroSlide;
+  late final Animation<double> _heroOpacity;
+  late final Animation<double> _logoScale;
+
+  @override
+  void initState() {
+    super.initState();
+    _entryCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 700));
+    _heroSlide = Tween<Offset>(
+            begin: const Offset(0, -1), end: Offset.zero)
+        .animate(CurvedAnimation(
+            parent: _entryCtrl, curve: Curves.easeOutCubic));
+    _heroOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(
+            parent: _entryCtrl,
+            curve: const Interval(0.0, 0.6, curve: Curves.easeOut)));
+
+    _logoCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 600));
+    _logoScale = Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(parent: _logoCtrl, curve: Curves.elasticOut));
+
+    _entryCtrl.forward();
+    Future.delayed(const Duration(milliseconds: 300),
+        () { if (mounted) _logoCtrl.forward(); });
+  }
+
+  @override
+  void dispose() {
+    _entryCtrl.dispose();
+    _logoCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return ClipPath(
-      clipper: _WaveClipper(),
-      child: Container(
-        width: double.infinity,
-        height: 320,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: isSignUp
-                ? [AppColors.greenDark, AppColors.green]
-                : [AppColors.greenDark, AppColors.green],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 90, height: 90,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(26),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.4),
-                    width: 1.5,
-                  ),
-                ),
-                child: Center(
-                  child: CustomPaint(
-                    size: const Size(52, 52),
-                    painter: _AuthEyePainter(color: Colors.white),
-                  ),
-                ),
+    return SlideTransition(
+      position: _heroSlide,
+      child: FadeTransition(
+        opacity: _heroOpacity,
+        child: ClipPath(
+          clipper: _WaveClipper(),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 400),
+            width: double.infinity,
+            height: 360,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppColors.greenDark, AppColors.green],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              const SizedBox(height: 14),
-              RichText(
-                text: TextSpan(
-                  style: GoogleFonts.nunito(
-                      fontSize: 38, fontWeight: FontWeight.w900),
-                  children: const [
-                    TextSpan(
-                      text: 'Vision',
-                      style: TextStyle(color: Colors.white),
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ScaleTransition(
+                    scale: _logoScale,
+                    child: Container(
+                      width: 90, height: 90,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(26),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.4),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Center(
+                        child: CustomPaint(
+                          size: const Size(52, 52),
+                          painter: _AuthEyePainter(color: Colors.white),
+                        ),
+                      ),
                     ),
-                    TextSpan(
-                      text: 'Screen',
-                      style: TextStyle(color: Colors.black),
+                  ),
+                  const SizedBox(height: 14),
+                  RichText(
+                    text: TextSpan(
+                      style: GoogleFonts.nunito(
+                          fontSize: 38, fontWeight: FontWeight.w900),
+                      children: const [
+                        TextSpan(
+                          text: 'Vision',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        TextSpan(
+                          text: 'Screen',
+                          style: TextStyle(color: Colors.black),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -552,9 +625,9 @@ class _AuthEyePainter extends CustomPainter {
 }
 
 // ─────────────────────────────────────────────────────────────
-// New Login Form — white card, underline fields, green pill button
+// New Login Form — staggered entry + error shake
 // ─────────────────────────────────────────────────────────────
-class _NewLoginForm extends StatelessWidget {
+class _NewLoginForm extends StatefulWidget {
   const _NewLoginForm({
     super.key,
     required this.emailCtrl,
@@ -591,156 +664,244 @@ class _NewLoginForm extends StatelessWidget {
   final ValueChanged<String>? onPasswordChanged;
 
   @override
+  State<_NewLoginForm> createState() => _NewLoginFormState();
+}
+
+class _NewLoginFormState extends State<_NewLoginForm>
+    with TickerProviderStateMixin {
+  late final AnimationController _staggerCtrl;
+  late final AnimationController _shakeCtrl;
+  late final List<Animation<double>> _itemOpacity;
+  late final List<Animation<Offset>> _itemSlide;
+  late final Animation<double> _shakeAnim;
+
+  static const _itemCount = 5; // heading, email, password, row, button
+
+  @override
+  void initState() {
+    super.initState();
+    _staggerCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 700));
+    _shakeCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 500));
+
+    _itemOpacity = List.generate(_itemCount, (i) {
+      final start = i * 0.15;
+      final end = (start + 0.4).clamp(0.0, 1.0);
+      return Tween<double>(begin: 0.0, end: 1.0).animate(
+          CurvedAnimation(
+              parent: _staggerCtrl,
+              curve: Interval(start, end, curve: Curves.easeOut)));
+    });
+    _itemSlide = List.generate(_itemCount, (i) {
+      final start = i * 0.15;
+      final end = (start + 0.4).clamp(0.0, 1.0);
+      return Tween<Offset>(
+              begin: const Offset(0, 0.3), end: Offset.zero)
+          .animate(CurvedAnimation(
+              parent: _staggerCtrl,
+              curve: Interval(start, end, curve: Curves.easeOut)));
+    });
+
+    _shakeAnim = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: -8.0), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: -8.0, end: 8.0), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: 8.0, end: -6.0), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: -6.0, end: 6.0), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: 6.0, end: 0.0), weight: 1),
+    ]).animate(CurvedAnimation(parent: _shakeCtrl, curve: Curves.easeInOut));
+
+    _staggerCtrl.forward();
+  }
+
+  @override
+  void didUpdateWidget(_NewLoginForm old) {
+    super.didUpdateWidget(old);
+    // Shake when a new error appears
+    if ((widget.emailError != null && old.emailError == null) ||
+        (widget.passwordError != null && old.passwordError == null)) {
+      _shakeCtrl.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _staggerCtrl.dispose();
+    _shakeCtrl.dispose();
+    super.dispose();
+  }
+
+  Widget _stagger(int index, Widget child) {
+    return FadeTransition(
+      opacity: _itemOpacity[index],
+      child: SlideTransition(position: _itemSlide[index], child: child),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Heading
-        RichText(
-          text: TextSpan(
-            style: GoogleFonts.nunito(fontSize: 24, fontWeight: FontWeight.w900),
+    return AnimatedBuilder(
+      animation: _shakeAnim,
+      builder: (_, child) => Transform.translate(
+        offset: Offset(_shakeAnim.value, 0),
+        child: child,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _stagger(0, Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const TextSpan(
-                  text: 'Hello ', style: TextStyle(color: AppColors.greenDark)),
-              TextSpan(
-                  text: 'Again!',
-                  style: TextStyle(color: AppColors.textDark)),
-            ],
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Sign in to continue to VisionScreen.',
-          style: GoogleFonts.poppins(
-              fontSize: 12, color: AppColors.textMuted),
-        ),
-        const SizedBox(height: 24),
-
-        // Email
-        _UnderlineInputField(
-          controller: emailCtrl,
-          label: 'Email',
-          hint: 'yourname@gmail.com',
-          prefixIcon: Icons.mail_outline_rounded,
-          keyboardType: TextInputType.emailAddress,
-          inputAction: TextInputAction.next,
-          hasError: emailError != null,
-          errorText: emailError,
-          onChanged: onEmailChanged,
-        ),
-        const SizedBox(height: 18),
-
-        // Password
-        _UnderlineInputField(
-          controller: passwordCtrl,
-          label: 'Password',
-          hint: '••••••••',
-          prefixIcon: Icons.lock_outline_rounded,
-          obscure: !passwordVisible,
-          inputAction: TextInputAction.done,
-          hasError: passwordError != null,
-          errorText: passwordError,
-          onChanged: onPasswordChanged,
-          suffixIcon: GestureDetector(
-            onTap: onTogglePassword,
-            child: Padding(
-              padding: const EdgeInsets.only(right: 4),
-              child: Icon(
-                passwordVisible
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
-                size: 18,
-                color: AppColors.textMuted,
+              RichText(
+                text: TextSpan(
+                  style: GoogleFonts.nunito(
+                      fontSize: 24, fontWeight: FontWeight.w900),
+                  children: [
+                    const TextSpan(
+                        text: 'Hello ',
+                        style: TextStyle(color: AppColors.greenDark)),
+                    TextSpan(
+                        text: 'Again!',
+                        style: TextStyle(color: AppColors.textDark)),
+                  ],
+                ),
               ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 10),
-
-        // Remember me + Forgot password
-        Row(
-          children: [
-            GestureDetector(
-              onTap: () => onRememberMeChanged(!rememberMe),
-              child: Row(
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    width: 18, height: 18,
-                    decoration: BoxDecoration(
-                      color: rememberMe ? AppColors.green : Colors.white,
-                      borderRadius: BorderRadius.circular(5),
-                      border: Border.all(
-                        color: rememberMe
-                            ? AppColors.green
-                            : AppColors.borderColor,
-                        width: 1.5,
-                      ),
-                    ),
-                    child: rememberMe
-                        ? const Icon(Icons.check_rounded,
-                            size: 12, color: Colors.white)
-                        : null,
-                  ),
-                  const SizedBox(width: 7),
-                  Text('Remember me',
-                      style: GoogleFonts.poppins(
-                          fontSize: 11,
-                          color: AppColors.textMuted,
-                          fontWeight: FontWeight.w500)),
-                ],
-              ),
-            ),
-            const Spacer(),
-            GestureDetector(
-              onTap: () =>
-                  Navigator.of(context).pushNamed('/forgot-password'),
-              child: Text(
-                'Forgot Password?',
+              const SizedBox(height: 4),
+              Text(
+                'Sign in to continue to VisionScreen.',
                 style: GoogleFonts.poppins(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textDark,
+                    fontSize: 12, color: AppColors.textMuted),
+              ),
+            ],
+          )),
+          const SizedBox(height: 24),
+
+          _stagger(1, _UnderlineInputField(
+            controller: widget.emailCtrl,
+            label: 'Email',
+            hint: 'yourname@gmail.com',
+            prefixIcon: Icons.mail_outline_rounded,
+            keyboardType: TextInputType.emailAddress,
+            inputAction: TextInputAction.next,
+            hasError: widget.emailError != null,
+            errorText: widget.emailError,
+            onChanged: widget.onEmailChanged,
+          )),
+          const SizedBox(height: 18),
+
+          _stagger(2, _UnderlineInputField(
+            controller: widget.passwordCtrl,
+            label: 'Password',
+            hint: '••••••••',
+            prefixIcon: Icons.lock_outline_rounded,
+            obscure: !widget.passwordVisible,
+            inputAction: TextInputAction.done,
+            hasError: widget.passwordError != null,
+            errorText: widget.passwordError,
+            onChanged: widget.onPasswordChanged,
+            suffixIcon: GestureDetector(
+              onTap: widget.onTogglePassword,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Icon(
+                  widget.passwordVisible
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  size: 18,
+                  color: AppColors.textMuted,
                 ),
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 24),
+          )),
+          const SizedBox(height: 10),
 
-        // Sign In button
-        _GreenPillButton(
-          label: 'Sign In',
-          icon: Icons.login_rounded,
-          loading: loading,
-          onTap: onLogin,
-        ),
-        const SizedBox(height: 28),
+          _stagger(3, Row(
+            children: [
+              GestureDetector(
+                onTap: () => widget.onRememberMeChanged(!widget.rememberMe),
+                child: Row(
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      width: 18, height: 18,
+                      decoration: BoxDecoration(
+                        color: widget.rememberMe
+                            ? AppColors.green
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(5),
+                        border: Border.all(
+                          color: widget.rememberMe
+                              ? AppColors.green
+                              : AppColors.borderColor,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: widget.rememberMe
+                          ? const Icon(Icons.check_rounded,
+                              size: 12, color: Colors.white)
+                          : null,
+                    ),
+                    const SizedBox(width: 7),
+                    Text('Remember me',
+                        style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            color: AppColors.textMuted,
+                            fontWeight: FontWeight.w500)),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: () =>
+                    Navigator.of(context).pushNamed('/forgot-password'),
+                child: Text(
+                  'Forgot Password?',
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textDark,
+                  ),
+                ),
+              ),
+            ],
+          )),
+          const SizedBox(height: 24),
 
-        // Footer link
-        Center(
-          child: GestureDetector(
-            onTap: onGoSignUp,
-            child: RichText(
-              text: TextSpan(
-                style: GoogleFonts.poppins(
-                    fontSize: 12, color: AppColors.textMuted),
-                children: [
-                  const TextSpan(text: 'New User? '),
-                  TextSpan(
-                    text: 'Create Account',
-                    style: TextStyle(
-                      color: AppColors.greenDark,
-                      fontWeight: FontWeight.w700,
+          _stagger(4, Column(
+            children: [
+              _GreenPillButton(
+                label: 'Sign In',
+                icon: Icons.login_rounded,
+                loading: widget.loading,
+                onTap: widget.onLogin,
+              ),
+              const SizedBox(height: 28),
+              Center(
+                child: GestureDetector(
+                  onTap: widget.onGoSignUp,
+                  child: RichText(
+                    text: TextSpan(
+                      style: GoogleFonts.poppins(
+                          fontSize: 12, color: AppColors.textMuted),
+                      children: [
+                        const TextSpan(text: 'New User? '),
+                        TextSpan(
+                          text: 'Create Account',
+                          style: TextStyle(
+                            color: AppColors.greenDark,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-      ],
+            ],
+          )),
+          const SizedBox(height: 8),
+        ],
+      ),
     );
   }
 }
@@ -810,9 +971,9 @@ class _GreenRoleChip extends StatelessWidget {
   }
 }
 // ─────────────────────────────────────────────────────────────
-// New Sign Up Form — Phase 5 placeholder
+// New Sign Up Form — staggered entry
 // ─────────────────────────────────────────────────────────────
-class _NewSignUpForm extends StatelessWidget {
+class _NewSignUpForm extends StatefulWidget {
   const _NewSignUpForm({
     super.key,
     required this.nameCtrl,
@@ -879,109 +1040,147 @@ class _NewSignUpForm extends StatelessWidget {
   final ValueChanged<String>? onConfirmPasswordChanged;
 
   @override
+  State<_NewSignUpForm> createState() => _NewSignUpFormState();
+}
+
+class _NewSignUpFormState extends State<_NewSignUpForm>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _staggerCtrl;
+  late final List<Animation<double>> _opacity;
+  late final List<Animation<Offset>> _slide;
+
+  static const _count = 10;
+
+  @override
+  void initState() {
+    super.initState();
+    _staggerCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 900));
+    _opacity = List.generate(_count, (i) {
+      final s = (i * 0.09).clamp(0.0, 0.9);
+      final e = (s + 0.3).clamp(0.0, 1.0);
+      return Tween<double>(begin: 0.0, end: 1.0).animate(
+          CurvedAnimation(
+              parent: _staggerCtrl,
+              curve: Interval(s, e, curve: Curves.easeOut)));
+    });
+    _slide = List.generate(_count, (i) {
+      final s = (i * 0.09).clamp(0.0, 0.9);
+      final e = (s + 0.3).clamp(0.0, 1.0);
+      return Tween<Offset>(
+              begin: const Offset(0, 0.25), end: Offset.zero)
+          .animate(CurvedAnimation(
+              parent: _staggerCtrl,
+              curve: Interval(s, e, curve: Curves.easeOut)));
+    });
+    _staggerCtrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _staggerCtrl.dispose();
+    super.dispose();
+  }
+
+  Widget _s(int i, Widget child) => FadeTransition(
+        opacity: _opacity[i],
+        child: SlideTransition(position: _slide[i], child: child),
+      );
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Heading
-        RichText(
+        _s(0, RichText(
           text: TextSpan(
-            style: GoogleFonts.nunito(fontSize: 24, fontWeight: FontWeight.w900),
+            style: GoogleFonts.nunito(
+                fontSize: 24, fontWeight: FontWeight.w900),
             children: [
               const TextSpan(
-                  text: 'Create ', style: TextStyle(color: AppColors.greenDark)),
+                  text: 'Create ',
+                  style: TextStyle(color: AppColors.greenDark)),
               TextSpan(
                   text: 'Account',
                   style: TextStyle(color: AppColors.textDark)),
             ],
           ),
-        ),
+        )),
         const SizedBox(height: 4),
-        Text(
+        _s(0, Text(
           'Fill in your details to get started.',
-          style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textMuted),
-        ),
+          style: GoogleFonts.poppins(
+              fontSize: 12, color: AppColors.textMuted),
+        )),
         const SizedBox(height: 22),
-
-        // Full Name
-        _UnderlineInputField(
-          controller: nameCtrl,
+        _s(1, _UnderlineInputField(
+          controller: widget.nameCtrl,
           label: 'Full Name',
           hint: 'Your full name',
           prefixIcon: Icons.person_outline_rounded,
           inputAction: TextInputAction.next,
-          hasError: nameError != null,
-          errorText: nameError,
-          onChanged: onNameChanged,
-        ),
+          hasError: widget.nameError != null,
+          errorText: widget.nameError,
+          onChanged: widget.onNameChanged,
+        )),
         const SizedBox(height: 18),
-
-        // Health Center
-        _UnderlineInputField(
-          controller: centreCtrl,
+        _s(2, _UnderlineInputField(
+          controller: widget.centreCtrl,
           label: 'Health Center',
           hint: 'e.g. Nakawa HC III',
           prefixIcon: Icons.local_hospital_outlined,
           inputAction: TextInputAction.next,
-          hasError: centreError != null,
-          errorText: centreError,
-          onChanged: onCentreChanged,
-        ),
+          hasError: widget.centreError != null,
+          errorText: widget.centreError,
+          onChanged: widget.onCentreChanged,
+        )),
         const SizedBox(height: 18),
-
-        // District
-        _UnderlineInputField(
-          controller: districtCtrl,
+        _s(3, _UnderlineInputField(
+          controller: widget.districtCtrl,
           label: 'District',
           hint: 'e.g. Kampala',
           prefixIcon: Icons.location_on_outlined,
           inputAction: TextInputAction.next,
-          hasError: districtError != null,
-          errorText: districtError,
-          onChanged: onDistrictChanged,
-        ),
+          hasError: widget.districtError != null,
+          errorText: widget.districtError,
+          onChanged: widget.onDistrictChanged,
+        )),
         const SizedBox(height: 18),
-
-        // Email
-        _UnderlineInputField(
-          controller: emailCtrl,
+        _s(4, _UnderlineInputField(
+          controller: widget.emailCtrl,
           label: 'Email Address',
           hint: 'yourname@gmail.com',
           prefixIcon: Icons.mail_outline_rounded,
           keyboardType: TextInputType.emailAddress,
           inputAction: TextInputAction.next,
-          hasError: emailError != null,
-          errorText: emailError,
-          onChanged: onEmailChanged,
-        ),
+          hasError: widget.emailError != null,
+          errorText: widget.emailError,
+          onChanged: widget.onEmailChanged,
+        )),
         const SizedBox(height: 18),
-
-        // Phone
-        _UnderlinePhoneField(
-          controller: phoneCtrl,
-          hasError: phoneError != null,
-          errorText: phoneError,
-          onChanged: onPhoneChanged,
-        ),
+        _s(5, _UnderlinePhoneField(
+          controller: widget.phoneCtrl,
+          hasError: widget.phoneError != null,
+          errorText: widget.phoneError,
+          onChanged: widget.onPhoneChanged,
+        )),
         const SizedBox(height: 18),
-
-        // Password
-        _UnderlineInputField(
-          controller: passwordCtrl,
+        _s(6, _UnderlineInputField(
+          controller: widget.passwordCtrl,
           label: 'Password',
           hint: 'Create a strong password',
           prefixIcon: Icons.lock_outline_rounded,
-          obscure: !passwordVisible,
+          obscure: !widget.passwordVisible,
           inputAction: TextInputAction.next,
-          hasError: passwordError != null,
-          errorText: passwordError,
-          onChanged: onPasswordChanged,
+          hasError: widget.passwordError != null,
+          errorText: widget.passwordError,
+          onChanged: widget.onPasswordChanged,
           suffixIcon: GestureDetector(
-            onTap: onTogglePassword,
+            onTap: widget.onTogglePassword,
             child: Padding(
               padding: const EdgeInsets.only(right: 4),
               child: Icon(
-                passwordVisible
+                widget.passwordVisible
                     ? Icons.visibility_off_outlined
                     : Icons.visibility_outlined,
                 size: 18,
@@ -989,30 +1188,28 @@ class _NewSignUpForm extends StatelessWidget {
               ),
             ),
           ),
-        ),
-        if (passwordValue.isNotEmpty) ...[
+        )),
+        if (widget.passwordValue.isNotEmpty) ...[
           const SizedBox(height: 8),
-          _GreenPasswordStrength(password: passwordValue),
+          _s(6, _GreenPasswordStrength(password: widget.passwordValue)),
         ],
         const SizedBox(height: 18),
-
-        // Confirm Password
-        _UnderlineInputField(
-          controller: confirmPasswordCtrl,
+        _s(7, _UnderlineInputField(
+          controller: widget.confirmPasswordCtrl,
           label: 'Confirm Password',
           hint: 'Re-enter your password',
           prefixIcon: Icons.lock_outline_rounded,
-          obscure: !confirmPasswordVisible,
+          obscure: !widget.confirmPasswordVisible,
           inputAction: TextInputAction.done,
-          hasError: confirmPasswordError != null,
-          errorText: confirmPasswordError,
-          onChanged: onConfirmPasswordChanged,
+          hasError: widget.confirmPasswordError != null,
+          errorText: widget.confirmPasswordError,
+          onChanged: widget.onConfirmPasswordChanged,
           suffixIcon: GestureDetector(
-            onTap: onToggleConfirmPassword,
+            onTap: widget.onToggleConfirmPassword,
             child: Padding(
               padding: const EdgeInsets.only(right: 4),
               child: Icon(
-                confirmPasswordVisible
+                widget.confirmPasswordVisible
                     ? Icons.visibility_off_outlined
                     : Icons.visibility_outlined,
                 size: 18,
@@ -1020,46 +1217,44 @@ class _NewSignUpForm extends StatelessWidget {
               ),
             ),
           ),
-        ),
+        )),
         const SizedBox(height: 20),
-
-        // Terms checkbox
-        _GreenTermsRow(
-          agreed: termsAgreed,
-          onChanged: onTermsAgreedChanged,
-        ),
+        _s(8, _GreenTermsRow(
+          agreed: widget.termsAgreed,
+          onChanged: widget.onTermsAgreedChanged,
+        )),
         const SizedBox(height: 22),
-
-        // Sign Up button
-        _GreenPillButton(
-          label: 'Create Account',
-          icon: Icons.person_add_outlined,
-          onTap: onSignUp,
-        ),
-        const SizedBox(height: 24),
-
-        // Footer link
-        Center(
-          child: GestureDetector(
-            onTap: onGoLogin,
-            child: RichText(
-              text: TextSpan(
-                style: GoogleFonts.poppins(
-                    fontSize: 12, color: AppColors.textMuted),
-                children: [
-                  const TextSpan(text: 'Already have an account? '),
-                  TextSpan(
-                    text: 'Sign In',
-                    style: TextStyle(
-                      color: AppColors.greenDark,
-                      fontWeight: FontWeight.w700,
-                    ),
+        _s(9, Column(
+          children: [
+            _GreenPillButton(
+              label: 'Create Account',
+              icon: Icons.person_add_outlined,
+              onTap: widget.onSignUp,
+            ),
+            const SizedBox(height: 24),
+            Center(
+              child: GestureDetector(
+                onTap: widget.onGoLogin,
+                child: RichText(
+                  text: TextSpan(
+                    style: GoogleFonts.poppins(
+                        fontSize: 12, color: AppColors.textMuted),
+                    children: [
+                      const TextSpan(text: 'Already have an account? '),
+                      TextSpan(
+                        text: 'Sign In',
+                        style: TextStyle(
+                          color: AppColors.greenDark,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
-          ),
-        ),
+          ],
+        )),
         const SizedBox(height: 8),
       ],
     );

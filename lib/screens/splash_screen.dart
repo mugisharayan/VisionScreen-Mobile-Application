@@ -12,128 +12,101 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   late final AnimationController _entryCtrl;
-  late final AnimationController _ring1Ctrl;
-  late final AnimationController _ring2Ctrl;
   late final AnimationController _blinkCtrl;
   late final AnimationController _loadCtrl;
+  late final AnimationController _ring1Ctrl;
+  late final AnimationController _ring2Ctrl;
 
-  late final Animation<double> _entryScale;
   late final Animation<double> _entryOpacity;
+  late final Animation<Offset> _entrySlide;
+  late final Animation<double> _textScale;
+  late final Animation<double> _blinkOpacity;
+  late final Animation<double> _loadProgress;
   late final Animation<double> _ring1Scale;
   late final Animation<double> _ring1Opacity;
   late final Animation<double> _ring2Scale;
   late final Animation<double> _ring2Opacity;
-  late final Animation<double> _blinkOpacity;
-  late final Animation<double> _loadProgress;
+
+  int _loadingMsgIndex = 0;
+  static const _loadingMessages = [
+    'Preparing your workspace...',
+    'Loading patient records...',
+    'Syncing health data...',
+    'Almost ready...',
+  ];
 
   @override
   void initState() {
     super.initState();
 
     _entryCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    );
-    _entryScale = Tween<double>(
-      begin: 0.75,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _entryCtrl, curve: Curves.elasticOut));
+        vsync: this, duration: const Duration(milliseconds: 900));
     _entryOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _entryCtrl,
-        curve: const Interval(0.0, 0.55, curve: Curves.easeOut),
-      ),
-    );
+        CurvedAnimation(parent: _entryCtrl,
+            curve: const Interval(0.0, 0.6, curve: Curves.easeOut)));
+    _entrySlide = Tween<Offset>(
+            begin: const Offset(0, 0.15), end: Offset.zero)
+        .animate(CurvedAnimation(
+            parent: _entryCtrl, curve: Curves.easeOutCubic));
+    _textScale = Tween<double>(begin: 0.7, end: 1.0).animate(
+        CurvedAnimation(
+            parent: _entryCtrl,
+            curve: const Interval(0.3, 1.0, curve: Curves.elasticOut)));
 
-    // Pulsing ring animations
     _ring1Ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2000),
-    )..repeat(reverse: true);
-    _ring1Scale = Tween<double>(
-      begin: 1.0,
-      end: 1.12,
-    ).animate(CurvedAnimation(parent: _ring1Ctrl, curve: Curves.easeInOut));
-    _ring1Opacity = Tween<double>(
-      begin: 0.3,
-      end: 0.7,
-    ).animate(CurvedAnimation(parent: _ring1Ctrl, curve: Curves.easeInOut));
+        vsync: this, duration: const Duration(milliseconds: 2000))
+      ..repeat(reverse: true);
+    _ring1Scale = Tween<double>(begin: 1.0, end: 1.12).animate(
+        CurvedAnimation(parent: _ring1Ctrl, curve: Curves.easeInOut));
+    _ring1Opacity = Tween<double>(begin: 0.25, end: 0.6).animate(
+        CurvedAnimation(parent: _ring1Ctrl, curve: Curves.easeInOut));
 
     _ring2Ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2600),
-    );
-    _ring2Scale = Tween<double>(
-      begin: 1.0,
-      end: 1.18,
-    ).animate(CurvedAnimation(parent: _ring2Ctrl, curve: Curves.easeInOut));
-    _ring2Opacity = Tween<double>(
-      begin: 0.15,
-      end: 0.45,
-    ).animate(CurvedAnimation(parent: _ring2Ctrl, curve: Curves.easeInOut));
+        vsync: this, duration: const Duration(milliseconds: 2600));
+    _ring2Scale = Tween<double>(begin: 1.0, end: 1.18).animate(
+        CurvedAnimation(parent: _ring2Ctrl, curve: Curves.easeInOut));
+    _ring2Opacity = Tween<double>(begin: 0.1, end: 0.35).animate(
+        CurvedAnimation(parent: _ring2Ctrl, curve: Curves.easeInOut));
 
-    // Blinking animation controller - blinks twice
     _blinkCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    );
+        vsync: this, duration: const Duration(milliseconds: 1200));
     _blinkOpacity = TweenSequence<double>([
-      // First blink
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 0.0)
-            .chain(CurveTween(curve: Curves.easeInOut)),
-        weight: 12.5,
-      ),
+          tween: Tween(begin: 1.0, end: 0.0)
+              .chain(CurveTween(curve: Curves.easeInOut)),
+          weight: 12.5),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 0.0, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeInOut)),
-        weight: 12.5,
-      ),
-      // Pause between blinks
+          tween: Tween(begin: 0.0, end: 1.0)
+              .chain(CurveTween(curve: Curves.easeInOut)),
+          weight: 12.5),
+      TweenSequenceItem(tween: ConstantTween(1.0), weight: 25.0),
       TweenSequenceItem(
-        tween: ConstantTween<double>(1.0),
-        weight: 25.0,
-      ),
-      // Second blink
+          tween: Tween(begin: 1.0, end: 0.0)
+              .chain(CurveTween(curve: Curves.easeInOut)),
+          weight: 12.5),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 0.0)
-            .chain(CurveTween(curve: Curves.easeInOut)),
-        weight: 12.5,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 0.0, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeInOut)),
-        weight: 12.5,
-      ),
-      // Stay visible after blinking
-      TweenSequenceItem(
-        tween: ConstantTween<double>(1.0),
-        weight: 25.0,
-      ),
-    ]).animate(CurvedAnimation(parent: _blinkCtrl, curve: Curves.linear));
+          tween: Tween(begin: 0.0, end: 1.0)
+              .chain(CurveTween(curve: Curves.easeInOut)),
+          weight: 12.5),
+      TweenSequenceItem(tween: ConstantTween(1.0), weight: 25.0),
+    ]).animate(_blinkCtrl);
 
     _loadCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 3000),
-    );
-    _loadProgress = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _loadCtrl, curve: Curves.easeInOut));
+        vsync: this, duration: const Duration(milliseconds: 3200));
+    _loadProgress = Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(parent: _loadCtrl, curve: Curves.easeInOut));
 
-    // Animation sequence
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (mounted) _entryCtrl.forward();
-    });
-    Future.delayed(const Duration(milliseconds: 900), () {
-      if (mounted) _ring2Ctrl.repeat(reverse: true);
-    });
-    Future.delayed(const Duration(milliseconds: 1200), () {
-      if (mounted) _blinkCtrl.forward();
-    });
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      if (mounted) _loadCtrl.forward();
-    });
+    Future.delayed(const Duration(milliseconds: 200),
+        () { if (mounted) _entryCtrl.forward(); });
+    Future.delayed(const Duration(milliseconds: 800),
+        () { if (mounted) _ring2Ctrl.repeat(reverse: true); });
+    Future.delayed(const Duration(milliseconds: 1100),
+        () { if (mounted) _blinkCtrl.forward(); });
+    Future.delayed(const Duration(milliseconds: 600),
+        () { if (mounted) _loadCtrl.forward(); });
+
+    // Rotate loading messages every 900ms
+    Future.delayed(const Duration(milliseconds: 900), _rotateMessages);
 
     Future.delayed(const Duration(milliseconds: 4200), () async {
       if (!mounted) return;
@@ -148,67 +121,288 @@ class _SplashScreenState extends State<SplashScreen>
     });
   }
 
+  void _rotateMessages() {
+    if (!mounted) return;
+    setState(() =>
+        _loadingMsgIndex = (_loadingMsgIndex + 1) % _loadingMessages.length);
+    Future.delayed(const Duration(milliseconds: 900), _rotateMessages);
+  }
+
   @override
   void dispose() {
     _entryCtrl.dispose();
-    _ring1Ctrl.dispose();
-    _ring2Ctrl.dispose();
     _blinkCtrl.dispose();
     _loadCtrl.dispose();
+    _ring1Ctrl.dispose();
+    _ring2Ctrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Scaffold(
-      backgroundColor: AppColors.ink,
-      body: Stack(
-        fit: StackFit.expand,
+      backgroundColor: AppColors.authBg,
+      body: Column(
         children: [
-          // Grid background
-          CustomPaint(painter: _GridPainter()),
-          // Mesh gradient overlay
-          CustomPaint(painter: _MeshPainter()),
-
-          SafeArea(
-            child: Column(
-              children: [
-                const Spacer(flex: 2),
-                AnimatedBuilder(
-                  animation: _entryCtrl,
-                  builder: (_, child) => Opacity(
-                    opacity: _entryOpacity.value,
-                    child: Transform.scale(
-                      scale: _entryScale.value,
-                      child: child,
+          ClipPath(
+            clipper: _SplashWaveClipper(),
+            child: Container(
+              width: double.infinity,
+              height: size.height * 0.62,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.greenDark, AppColors.green],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: SafeArea(
+                bottom: false,
+                child: Stack(
+                  children: [
+                    // Dot pattern overlay
+                    Positioned.fill(
+                      child: CustomPaint(
+                          painter: _DotPatternPainter()),
                     ),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _EyeLogo(
-                        ring1Scale: _ring1Scale,
-                        ring1Opacity: _ring1Opacity,
-                        ring2Scale: _ring2Scale,
-                        ring2Opacity: _ring2Opacity,
-                        blinkOpacity: _blinkOpacity,
+                    SizedBox.expand(
+                      child: SlideTransition(
+                      position: _entrySlide,
+                      child: FadeTransition(
+                        opacity: _entryOpacity,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                        SizedBox(
+                          width: 180,
+                          height: 180,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              AnimatedBuilder(
+                                animation: _ring2Scale,
+                                builder: (_, child) => Transform.scale(
+                                  scale: _ring2Scale.value,
+                                  child: Opacity(
+                                      opacity: _ring2Opacity.value,
+                                      child: child),
+                                ),
+                                child: Container(
+                                  width: 180,
+                                  height: 180,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                        color: Colors.white, width: 1.5),
+                                  ),
+                                ),
+                              ),
+                              AnimatedBuilder(
+                                animation: _ring1Scale,
+                                builder: (_, child) => Transform.scale(
+                                  scale: _ring1Scale.value,
+                                  child: Opacity(
+                                      opacity: _ring1Opacity.value,
+                                      child: child),
+                                ),
+                                child: Container(
+                                  width: 144,
+                                  height: 144,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                        color: Colors.white.withValues(
+                                            alpha: 0.7),
+                                        width: 1.5),
+                                  ),
+                                ),
+                              ),
+                              AnimatedBuilder(
+                                animation: _blinkOpacity,
+                                builder: (_, child) => Opacity(
+                                    opacity: _blinkOpacity.value,
+                                    child: child),
+                                child: Container(
+                                  width: 100,
+                                  height: 100,
+                                  decoration: BoxDecoration(
+                                    color:
+                                        Colors.white.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(30),
+                                    border: Border.all(
+                                        color: Colors.white.withValues(
+                                            alpha: 0.5),
+                                        width: 1.5),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black
+                                            .withValues(alpha: 0.15),
+                                        blurRadius: 30,
+                                        spreadRadius: 2,
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Center(
+                                    child: CustomPaint(
+                                      size: Size(56, 56),
+                                      painter: _SplashEyePainter(),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+                        AnimatedBuilder(
+                          animation: _textScale,
+                          builder: (_, child) => Transform.scale(
+                            scale: _textScale.value,
+                            child: child,
+                          ),
+                          child: RichText(
+                            text: TextSpan(
+                              style: GoogleFonts.nunito(
+                                  fontSize: 44, fontWeight: FontWeight.w900),
+                              children: const [
+                                TextSpan(
+                                    text: 'Vision',
+                                    style: TextStyle(color: Colors.white)),
+                                TextSpan(
+                                    text: 'Screen',
+                                    style: TextStyle(color: Colors.black)),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Offline-first · Tumbling E · Community Health',
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            color: Colors.white.withValues(alpha: 0.85),
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0.3,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 32),
-                      _AppName(),
-                      const SizedBox(height: 10),
-                      _Tagline(),
+                    ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(48, 0, 48, 0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      _SplashBadge(Icons.verified_outlined, 'WHO'),
+                      SizedBox(width: 10),
+                      _SplashBadge(
+                          Icons.local_hospital_outlined, 'Uganda MOH'),
+                      SizedBox(width: 10),
+                      _SplashBadge(Icons.lock_outline_rounded, 'AES-256'),
                     ],
                   ),
+                  const SizedBox(height: 32),
+                  AnimatedBuilder(
+                    animation: _loadProgress,
+                    builder: (_, __) => Column(
+                      children: [
+                        Container(
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: AppColors.borderColor,
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          alignment: Alignment.centerLeft,
+                          child: FractionallySizedBox(
+                            widthFactor: _loadProgress.value,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    AppColors.green,
+                                    AppColors.greenDark,
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(99),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 400),
+                          transitionBuilder: (child, anim) => FadeTransition(
+                            opacity: anim,
+                            child: SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(0, 0.3),
+                                end: Offset.zero,
+                              ).animate(anim),
+                              child: child,
+                            ),
+                          ),
+                          child: Text(
+                            _loadingMessages[_loadingMsgIndex],
+                            key: ValueKey(_loadingMsgIndex),
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              color: AppColors.textMuted,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.only(bottom: 28),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  '© 2025 VisionScreen',
+                  style: GoogleFonts.poppins(
+                    fontSize: 10,
+                    color: AppColors.textMuted.withValues(alpha: 0.5),
+                  ),
                 ),
-                const Spacer(flex: 2),
-                // Loading bar pinned near bottom
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(48, 0, 48, 12),
-                  child: _LoadingBar(progress: _loadProgress),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 36),
-                  child: _LoadingLabel(),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.greenHero,
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(color: AppColors.borderColor),
+                  ),
+                  child: Text(
+                    'v1.0.0',
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.greenDark,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -225,7 +419,7 @@ class _SplashScreenState extends State<SplashScreen>
 class AppColors {
   AppColors._();
 
-  // ── Dark theme (splash / existing screens) ──
+  // ── Dark theme (kept for other screens) ──
   static const Color ink = Color(0xFF04091A);
   static const Color ink2 = Color(0xFF0B1530);
   static const Color ink3 = Color(0xFF162040);
@@ -234,329 +428,118 @@ class AppColors {
   static const Color teal3 = Color(0xFF5EEAD4);
   static const Color sky = Color(0xFF38BDF8);
 
-  // ── Auth screens — green palette ──
+  // ── Green palette ──
   static const Color green = Color(0xFF2ECC71);
   static const Color greenDark = Color(0xFF27AE60);
   static const Color greenDeep = Color(0xFF1A7A3E);
-  static const Color greenHero = Color(0xFFEAFFF3);   // pale mint hero bg
-  static const Color greenHero2 = Color(0xFFC8F5D8);  // deeper mint
-  static const Color greenForgot = Color(0xFF27AE60); // solid hero for forgot pw
+  static const Color greenHero = Color(0xFFEAFFF3);
+  static const Color greenHero2 = Color(0xFFC8F5D8);
+  static const Color greenForgot = Color(0xFF27AE60);
 
-  // ── Auth screens — neutral ──
+  // ── Neutral ──
   static const Color authBg = Color(0xFFFFFFFF);
   static const Color textDark = Color(0xFF1A1A2E);
   static const Color textMuted = Color(0xFF7A8394);
   static const Color borderColor = Color(0xFFD4E9DC);
-  static const Color cardShadow = Color(0x2E2ECC71); // green shadow
+  static const Color cardShadow = Color(0x2E2ECC71);
 }
 
-// ─────────────────────────────────────────────────────────────
-// App name
-// ─────────────────────────────────────────────────────────────
-class _AppName extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return RichText(
-      text: TextSpan(
-        style: GoogleFonts.dmSerifDisplay(
-          fontSize: 46,
-          color: Colors.white,
-          letterSpacing: -1.5,
-        ),
-        children: const [
-          TextSpan(text: 'Vision'),
-          TextSpan(
-            text: 'Screen',
-            style: TextStyle(color: AppColors.teal3),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// Tagline
-// ─────────────────────────────────────────────────────────────
-class _Tagline extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      'OFFLINE-FIRST · TUMBLING E · COMMUNITY HEALTH',
-      style: GoogleFonts.sora(
-        fontSize: 9.5,
-        color: AppColors.teal3.withValues(alpha: 0.65),
-        letterSpacing: 3.0,
-        fontWeight: FontWeight.w400,
-      ),
-      textAlign: TextAlign.center,
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// Loading label
-// ─────────────────────────────────────────────────────────────
-class _LoadingLabel extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      'LOADING',
-      style: GoogleFonts.sora(
-        fontSize: 9,
-        color: Colors.white.withValues(alpha: 0.35),
-        letterSpacing: 3.0,
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// Eye logo with two pulsing rings
-// ─────────────────────────────────────────────────────────────
-class _EyeLogo extends StatelessWidget {
-  const _EyeLogo({
-    required this.ring1Scale,
-    required this.ring1Opacity,
-    required this.ring2Scale,
-    required this.ring2Opacity,
-    required this.blinkOpacity,
-  });
-
-  final Animation<double> ring1Scale;
-  final Animation<double> ring1Opacity;
-  final Animation<double> ring2Scale;
-  final Animation<double> ring2Opacity;
-  final Animation<double> blinkOpacity;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 160,
-      height: 160,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Outer ring (ring 2) - animated
-          AnimatedBuilder(
-            animation: ring2Scale,
-            builder: (_, child) => Transform.scale(
-              scale: ring2Scale.value,
-              child: Opacity(opacity: ring2Opacity.value, child: child),
-            ),
-            child: Container(
-              width: 160,
-              height: 160,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.teal, width: 1.5),
-              ),
-            ),
-          ),
-
-          // Inner ring (ring 1) - animated
-          AnimatedBuilder(
-            animation: ring1Scale,
-            builder: (_, child) => Transform.scale(
-              scale: ring1Scale.value,
-              child: Opacity(opacity: ring1Opacity.value, child: child),
-            ),
-            child: Container(
-              width: 128,
-              height: 128,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.teal2, width: 1.5),
-              ),
-            ),
-          ),
-
-          // Logo box with blinking animation
-          AnimatedBuilder(
-            animation: blinkOpacity,
-            builder: (_, child) => Opacity(
-              opacity: blinkOpacity.value,
-              child: child,
-            ),
-            child: Container(
-              width: 96,
-              height: 96,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [AppColors.ink2, AppColors.ink3],
-                ),
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(
-                  color: AppColors.teal.withValues(alpha: 0.5),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.teal.withValues(alpha: 0.35),
-                    blurRadius: 48,
-                    spreadRadius: 4,
-                  ),
-                ],
-              ),
-              child: Center(
-                child: CustomPaint(
-                  size: const Size(52, 52),
-                  painter: _EyePainter(),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// Eye painter
-// ─────────────────────────────────────────────────────────────
-class _EyePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
-    final cy = size.height / 2;
-
-    // Outer ellipse
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(cx, cy),
-        width: size.width * 0.85,
-        height: size.height * 0.50,
-      ),
-      Paint()
-        ..color = AppColors.teal3
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.0,
-    );
-
-    // Iris
-    canvas.drawCircle(
-      Offset(cx, cy),
-      size.width * 0.17,
-      Paint()
-        ..color = AppColors.teal2
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.0,
-    );
-
-    // Pupil
-    canvas.drawCircle(
-      Offset(cx, cy),
-      size.width * 0.09,
-      Paint()..color = AppColors.teal2,
-    );
-
-    // White centre dot
-    canvas.drawCircle(
-      Offset(cx, cy),
-      size.width * 0.038,
-      Paint()..color = Colors.white,
-    );
-
-    // Highlight
-    canvas.drawCircle(
-      Offset(cx + size.width * 0.045, cy - size.height * 0.045),
-      size.width * 0.022,
-      Paint()..color = Colors.white.withValues(alpha: 0.6),
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter old) => false;
-}
-
-// ─────────────────────────────────────────────────────────────
-// Animated loading bar
-// ─────────────────────────────────────────────────────────────
-class _LoadingBar extends StatelessWidget {
-  const _LoadingBar({required this.progress});
-  final Animation<double> progress;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: progress,
-      builder: (_, _) => Container(
-        height: 3,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(99),
-        ),
-        alignment: Alignment.centerLeft,
-        child: FractionallySizedBox(
-          widthFactor: progress.value,
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.teal, AppColors.teal3],
-              ),
-              borderRadius: BorderRadius.circular(99),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// Grid pattern background
-// ─────────────────────────────────────────────────────────────
-class _GridPainter extends CustomPainter {
+class _DotPatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.teal.withValues(alpha: 0.07)
-      ..strokeWidth = 1;
-    const step = 32.0;
-    for (double y = 0; y < size.height; y += step) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-    for (double x = 0; x < size.width; x += step) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+      ..color = Colors.white.withValues(alpha: 0.08)
+      ..style = PaintingStyle.fill;
+    const spacing = 28.0;
+    const radius = 2.0;
+    for (double y = 0; y < size.height; y += spacing) {
+      for (double x = 0; x < size.width; x += spacing) {
+        canvas.drawCircle(Offset(x, y), radius, paint);
+      }
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter old) => false;
+  bool shouldRepaint(_DotPatternPainter old) => false;
 }
 
-// ─────────────────────────────────────────────────────────────
-// Radial mesh gradient overlay
-// ─────────────────────────────────────────────────────────────
-class _MeshPainter extends CustomPainter {
+class _SplashWaveClipper extends CustomClipper<Path> {
   @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
-
-    canvas.drawRect(
-      rect,
-      Paint()
-        ..shader = RadialGradient(
-          center: const Alignment(-0.4, -0.6),
-          radius: 0.7,
-          colors: [AppColors.teal.withValues(alpha: 0.22), Colors.transparent],
-        ).createShader(rect),
-    );
-
-    canvas.drawRect(
-      rect,
-      Paint()
-        ..shader = RadialGradient(
-          center: const Alignment(0.6, 0.4),
-          radius: 0.55,
-          colors: [AppColors.sky.withValues(alpha: 0.14), Colors.transparent],
-        ).createShader(rect),
-    );
+  Path getClip(Size size) {
+    final path = Path();
+    path.lineTo(0, size.height - 50);
+    path.quadraticBezierTo(
+        size.width * 0.25, size.height, size.width * 0.5, size.height - 25);
+    path.quadraticBezierTo(
+        size.width * 0.75, size.height - 50, size.width, size.height - 15);
+    path.lineTo(size.width, 0);
+    path.close();
+    return path;
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter old) => false;
+  bool shouldReclip(_SplashWaveClipper old) => false;
+}
+
+class _SplashEyePainter extends CustomPainter {
+  const _SplashEyePainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2, cy = size.height / 2;
+    final paint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.2;
+    canvas.drawOval(
+      Rect.fromCenter(
+          center: Offset(cx, cy),
+          width: size.width * 0.9,
+          height: size.height * 0.52),
+      paint,
+    );
+    canvas.drawCircle(Offset(cx, cy), size.width * 0.18, paint);
+    canvas.drawCircle(
+        Offset(cx, cy), size.width * 0.09, Paint()..color = Colors.white);
+    canvas.drawCircle(
+        Offset(cx, cy),
+        size.width * 0.04,
+        Paint()..color = AppColors.green);
+  }
+
+  @override
+  bool shouldRepaint(_SplashEyePainter old) => false;
+}
+
+class _SplashBadge extends StatelessWidget {
+  const _SplashBadge(this.icon, this.label);
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.greenHero,
+        borderRadius: BorderRadius.circular(99),
+        border: Border.all(color: AppColors.borderColor),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: AppColors.greenDark),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: AppColors.greenDark,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

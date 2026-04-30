@@ -11,48 +11,48 @@ class _SlideData {
     required this.headline,
     required this.headlineAccent,
     required this.body,
-    required this.iconBuilder,
-    required this.iconBackground,
+    required this.imagePath,
+    required this.gradientColors,
   });
   final String headline;
   final String headlineAccent;
   final String body;
-  final Widget Function() iconBuilder;
-  final Color iconBackground;
+  final String imagePath;
+  final List<Color> gradientColors;
 }
 
 final List<_SlideData> _slides = [
   _SlideData(
-    iconBackground: const Color(0x1A0D9488),
-    headline: 'Community\n',
+    headline: 'Community ',
     headlineAccent: 'Health Workers',
     body:
         'Designed for field-based Community Health Workers conducting vision screenings in Ugandan communities. No specialist training required.',
-    iconBuilder: () => const _CommunityIcon(),
+    imagePath: '—Pngtree—male nurse female nurse hospital_7123812.png',
+    gradientColors: [AppColors.greenDark, AppColors.green],
   ),
   _SlideData(
-    iconBackground: const Color(0x1A0D9488),
-    headline: 'Tumbling E\n',
-    headlineAccent: 'Vision Testing',
+    headline: 'Visual ',
+    headlineAccent: 'Acuity Testing',
     body:
-        'Uses the clinically validated Tumbling E chart, the literacy-independent optotype recommended for community settings. Works for children, adults and the elderly.',
-    iconBuilder: () => const _TumblingEIcon(),
+        'Uses the clinically validated Tumbling E chart, the literacy-independent optotype recommended for community settings. Works for all ages.',
+    imagePath: '—Pngtree—visual acuity_7080163.png',
+    gradientColors: [AppColors.greenDark, AppColors.green],
   ),
   _SlideData(
-    iconBackground: const Color(0x1AF59E0B),
-    headline: 'Patient\n',
-    headlineAccent: 'Care',
+    headline: 'Patient ',
+    headlineAccent: 'Care & Referrals',
     body:
-        'Register patients, track test history per eye, generate structured referral documents and follow up on every referred patient. All data stored locally offline.',
-    iconBuilder: () => const _PatientCareIcon(),
+        'Register patients, track test history per eye, generate structured referral documents and follow up on every referred patient.',
+    imagePath: '—Pngtree—medical clipboard with a red_18496671.png',
+    gradientColors: [AppColors.greenDark, AppColors.green],
   ),
   _SlideData(
-    iconBackground: const Color(0x1AEF4444),
-    headline: 'Data\n',
-    headlineAccent: 'Tracking',
+    headline: 'Data ',
+    headlineAccent: 'Analytics',
     body:
-        'Monitor your screening impact with live analytics. Data syncs automatically to MongoDB Atlas when internet is available. Core functions always work offline.',
-    iconBuilder: () => const _DataTrackingIcon(),
+        'Monitor your screening impact with live analytics. Data syncs automatically when internet is available. Core functions always work offline.',
+    imagePath: 'pngwing.com.png',
+    gradientColors: [AppColors.greenDark, AppColors.green],
   ),
 ];
 
@@ -72,7 +72,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   int _currentPage = 0;
   Timer? _autoAdvanceTimer;
 
-  // Per-slide entry animation
   late final AnimationController _slideCtrl;
   late final Animation<double> _slideOpacity;
   late final Animation<Offset> _slideOffset;
@@ -89,11 +88,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       CurvedAnimation(parent: _slideCtrl, curve: Curves.easeOut),
     );
     _slideOffset = Tween<Offset>(
-      begin: const Offset(0.08, 0),
+      begin: const Offset(0.06, 0),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _slideCtrl, curve: Curves.easeOut));
-    
-    // Start auto-advance timer
+
     _startAutoAdvance();
   }
 
@@ -104,19 +102,15 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     _slideCtrl.dispose();
     super.dispose();
   }
-  
+
   void _startAutoAdvance() {
     _autoAdvanceTimer?.cancel();
-    _autoAdvanceTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (mounted) {
-        _nextSlide();
-      }
+    _autoAdvanceTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (mounted) _nextSlide();
     });
   }
-  
-  void _stopAutoAdvance() {
-    _autoAdvanceTimer?.cancel();
-  }
+
+  void _stopAutoAdvance() => _autoAdvanceTimer?.cancel();
 
   void _goToLogin() {
     _stopAutoAdvance();
@@ -133,81 +127,72 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       _goToLogin();
     }
   }
-  
-  void _manualNextSlide() {
-    _stopAutoAdvance(); // Stop auto-advance when user interacts
+
+  void _manualNext() {
+    _stopAutoAdvance();
     _nextSlide();
-  }
-  
-  void _manualSkip() {
-    _stopAutoAdvance(); // Stop auto-advance when user skips
-    _goToLogin();
   }
 
   void _onPageChanged(int index) {
     setState(() => _currentPage = index);
     _slideCtrl.forward(from: 0);
-    // Restart auto-advance timer for the new slide
     _startAutoAdvance();
   }
 
   @override
   Widget build(BuildContext context) {
     final isLast = _currentPage == _slides.length - 1;
-
     return Scaffold(
-      backgroundColor: AppColors.ink,
-      body: Stack(
+      backgroundColor: AppColors.authBg,
+      body: Column(
         children: [
-          // ── Grid background ──
-          const Positioned.fill(child: _OnboardingGrid()),
+          Expanded(
+            child: PageView.builder(
+              controller: _pageCtrl,
+              onPageChanged: _onPageChanged,
+              itemCount: _slides.length,
+              itemBuilder: (_, index) => _SlideContent(
+                data: _slides[index],
+                slideCtrl: _slideCtrl,
+                slideOpacity: _slideOpacity,
+                slideOffset: _slideOffset,
+              ),
+            ),
+          ),
 
-          // ── Content ──
-          SafeArea(
+          // ── Footer ──
+          Container(
+            color: AppColors.authBg,
+            padding: const EdgeInsets.fromLTRB(28, 16, 28, 36),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // ── Slides area ──
-                Expanded(
-                  child: PageView.builder(
-                    controller: _pageCtrl,
-                    onPageChanged: _onPageChanged,
-                    itemCount: _slides.length,
-                    itemBuilder: (_, index) => _SlideContent(
-                      data: _slides[index],
-                      slideCtrl: _slideCtrl,
-                      slideOpacity: _slideOpacity,
-                      slideOffset: _slideOffset,
-                    ),
-                  ),
+                // Dot indicators
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(_slides.length, (i) {
+                    final isActive = i == _currentPage;
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: isActive ? 24 : 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? AppColors.green
+                            : AppColors.borderColor,
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    );
+                  }),
                 ),
+                const SizedBox(height: 20),
 
-                // ── Footer: dots + buttons ──
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(28, 0, 28, 36),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Dot indicators
-                      _DotIndicator(
-                        count: _slides.length,
-                        current: _currentPage,
-                      ),
-                      const SizedBox(height: 18),
-
-                      // Next / Get Started button
-                      _PrimaryButton(
-                        label: isLast ? 'Get Started' : 'Next',
-                        onTap: _manualNextSlide,
-                      ),
-                      const SizedBox(height: 10),
-
-                      // Skip button
-                      _SecondaryButton(
-                        label: 'Skip',
-                        onTap: _manualSkip,
-                      ),
-                    ],
-                  ),
+                // Next / Get Started button
+                _GreenPillBtn(
+                  label: isLast ? 'Get Started' : 'Next',
+                  onTap: _manualNext,
                 ),
               ],
             ),
@@ -219,7 +204,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 }
 
 // ─────────────────────────────────────────────────────────────
-// Individual slide content
+// Individual slide
 // ─────────────────────────────────────────────────────────────
 class _SlideContent extends StatelessWidget {
   const _SlideContent({
@@ -236,176 +221,168 @@ class _SlideContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return AnimatedBuilder(
       animation: slideCtrl,
       builder: (_, child) => FadeTransition(
         opacity: slideOpacity,
-        child: SlideTransition(
-          position: slideOffset,
-          child: child,
-        ),
+        child: SlideTransition(position: slideOffset, child: child),
       ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(28, 50, 28, 28),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Logo row ──
-            Row(
-              children: [
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [AppColors.teal, AppColors.teal2],
-                    ),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Center(
-                    child: CustomPaint(
-                      size: const Size(18, 18),
-                      painter: _LogoEyePainter(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 9),
-                RichText(
-                  text: TextSpan(
-                    style: GoogleFonts.dmSerifDisplay(
-                      fontSize: 19,
-                      color: Colors.white,
-                    ),
-                    children: const [
-                      TextSpan(text: 'Vision'),
-                      TextSpan(
-                        text: 'Screen',
-                        style: TextStyle(color: AppColors.teal3),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 44),
-
-            // ── Illustration box ──
-            Container(
-              width: 72,
-              height: 72,
+      child: Column(
+        children: [
+          // ── Green hero with image ──
+          ClipPath(
+            clipper: _OnboardWaveClipper(),
+            child: Container(
+              width: double.infinity,
+              height: size.height * 0.50,
               decoration: BoxDecoration(
-                color: data.iconBackground,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.06),
-                  width: 1,
+                gradient: LinearGradient(
+                  colors: data.gradientColors,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
               ),
-              child: Center(child: data.iconBuilder()),
-            ),
-
-            const SizedBox(height: 24),
-
-            // ── Headline ──
-            RichText(
-              text: TextSpan(
-                style: GoogleFonts.dmSerifDisplay(
-                  fontSize: 32,
-                  color: Colors.white,
-                  height: 1.2,
-                ),
+              child: Stack(
                 children: [
-                  TextSpan(text: data.headline),
-                  TextSpan(
-                    text: data.headlineAccent,
-                    style: GoogleFonts.dmSerifDisplay(
-                      fontSize: 32,
-                      color: AppColors.teal3,
-                      fontStyle: FontStyle.italic,
-                      height: 1.2,
+                  // Dot pattern overlay
+                  Positioned.fill(
+                    child: CustomPaint(painter: _DotPatternPainter()),
+                  ),
+                  // Logo top-left
+                  SafeArea(
+                    bottom: false,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 32, height: 32,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.4)),
+                            ),
+                            child: Center(
+                              child: CustomPaint(
+                                size: const Size(18, 18),
+                                painter: _LogoEyePainter(),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          RichText(
+                            text: TextSpan(
+                              style: GoogleFonts.nunito(
+                                  fontSize: 18, fontWeight: FontWeight.w900),
+                              children: const [
+                                TextSpan(
+                                    text: 'Vision',
+                                    style: TextStyle(color: Colors.white)),
+                                TextSpan(
+                                    text: 'Screen',
+                                    style: TextStyle(color: Colors.black)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Centered image
+                  Positioned.fill(
+                    child: Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 50),
+                        child: Image.asset(
+                          data.imagePath,
+                          height: size.height * 0.30,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) => Icon(
+                            Icons.image_not_supported_outlined,
+                            size: 60,
+                            color: Colors.white.withValues(alpha: 0.4),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
+          ),
 
-            const SizedBox(height: 14),
-
-            // ── Body text ──
-            Expanded(
-              child: Text(
-                data.body,
-                style: GoogleFonts.sora(
-                  fontSize: 13,
-                  color: AppColors.teal3.withValues(alpha: 0.65),
-                  height: 1.8,
-                  fontWeight: FontWeight.w400,
-                ),
+          // ── White text area ──
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(28, 20, 28, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Headline
+                  RichText(
+                    text: TextSpan(
+                      style: GoogleFonts.nunito(
+                          fontSize: 26, fontWeight: FontWeight.w900),
+                      children: [
+                        TextSpan(
+                          text: data.headline,
+                          style: const TextStyle(color: AppColors.greenDark),
+                        ),
+                        TextSpan(
+                          text: data.headlineAccent,
+                          style: const TextStyle(color: AppColors.textDark),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  // Body
+                  Text(
+                    data.body,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: AppColors.textMuted,
+                      height: 1.7,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────
-// Dot indicator row
+// Green pill button
 // ─────────────────────────────────────────────────────────────
-class _DotIndicator extends StatelessWidget {
-  const _DotIndicator({required this.count, required this.current});
-  final int count;
-  final int current;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: List.generate(count, (i) {
-        final isActive = i == current;
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          margin: const EdgeInsets.only(right: 5),
-          width: isActive ? 18 : 6,
-          height: 6,
-          decoration: BoxDecoration(
-            color: isActive
-                ? AppColors.teal3
-                : Colors.white.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(99),
-          ),
-        );
-      }),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// Primary button — teal gradient, no arrow
-// ─────────────────────────────────────────────────────────────
-class _PrimaryButton extends StatefulWidget {
-  const _PrimaryButton({required this.label, required this.onTap});
+class _GreenPillBtn extends StatefulWidget {
+  const _GreenPillBtn({required this.label, required this.onTap});
   final String label;
   final VoidCallback onTap;
 
   @override
-  State<_PrimaryButton> createState() => _PrimaryButtonState();
+  State<_GreenPillBtn> createState() => _GreenPillBtnState();
 }
 
-class _PrimaryButtonState extends State<_PrimaryButton> {
+class _GreenPillBtnState extends State<_GreenPillBtn> {
   bool _pressed = false;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown:   (_) => setState(() => _pressed = true),
-      onTapUp:     (_) { setState(() => _pressed = false); widget.onTap(); },
-      onTapCancel: ()  => setState(() => _pressed = false),
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedScale(
         scale: _pressed ? 0.97 : 1.0,
         duration: const Duration(milliseconds: 100),
@@ -414,16 +391,16 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
+              colors: [AppColors.green, AppColors.greenDark],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppColors.teal, AppColors.teal2],
             ),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(30),
             boxShadow: [
               BoxShadow(
-                color: AppColors.teal.withValues(alpha: 0.22),
-                blurRadius: 18,
-                offset: const Offset(0, 4),
+                color: AppColors.green.withValues(alpha: 0.4),
+                blurRadius: 20,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
@@ -433,7 +410,7 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
               widget.label,
               key: ValueKey(widget.label),
               textAlign: TextAlign.center,
-              style: GoogleFonts.sora(
+              style: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
@@ -447,572 +424,68 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Secondary button — white outlined, no arrow
+// Wave clipper
 // ─────────────────────────────────────────────────────────────
-class _SecondaryButton extends StatefulWidget {
-  const _SecondaryButton({required this.label, required this.onTap});
-  final String label;
-  final VoidCallback onTap;
-
+class _OnboardWaveClipper extends CustomClipper<Path> {
   @override
-  State<_SecondaryButton> createState() => _SecondaryButtonState();
-}
-
-class _SecondaryButtonState extends State<_SecondaryButton> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown:   (_) => setState(() => _pressed = true),
-      onTapUp:     (_) { setState(() => _pressed = false); widget.onTap(); },
-      onTapCancel: ()  => setState(() => _pressed = false),
-      child: AnimatedScale(
-        scale: _pressed ? 0.97 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.15),
-              width: 1.5,
-            ),
-          ),
-          child: Text(
-            widget.label,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.sora(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Colors.white.withValues(alpha: 0.5),
-            ),
-          ),
-        ),
-      ),
-    );
+  Path getClip(Size size) {
+    final path = Path();
+    path.lineTo(0, size.height - 45);
+    path.quadraticBezierTo(
+        size.width * 0.25, size.height, size.width * 0.5, size.height - 22);
+    path.quadraticBezierTo(
+        size.width * 0.75, size.height - 45, size.width, size.height - 12);
+    path.lineTo(size.width, 0);
+    path.close();
+    return path;
   }
-}
-
-// ─────────────────────────────────────────────────────────────
-// Slide 1 custom icon — two people + medical cross
-// Painted with CustomPainter to look professional and clean
-// ─────────────────────────────────────────────────────────────
-class _CommunityIcon extends StatelessWidget {
-  const _CommunityIcon();
 
   @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(40, 40),
-      painter: _CommunityIconPainter(),
-    );
-  }
+  bool shouldReclip(_OnboardWaveClipper old) => false;
 }
 
-class _CommunityIconPainter extends CustomPainter {
+// ─────────────────────────────────────────────────────────────
+// Dot pattern painter
+// ─────────────────────────────────────────────────────────────
+class _DotPatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-
-    final personPaint = Paint()
-      ..color = AppColors.teal3
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.07)
       ..style = PaintingStyle.fill;
-
-    final crossPaint = Paint()
-      ..color = AppColors.teal2
-      ..style = PaintingStyle.fill;
-
-    // ── Person 1 (left, slightly behind) ──
-    // Head
-    canvas.drawCircle(Offset(w * 0.30, h * 0.22), w * 0.10,
-        personPaint..color = AppColors.teal3.withValues(alpha: 0.55));
-    // Body
-    final body1 = Path()
-      ..moveTo(w * 0.10, h * 0.72)
-      ..quadraticBezierTo(w * 0.10, h * 0.42, w * 0.30, h * 0.38)
-      ..quadraticBezierTo(w * 0.50, h * 0.42, w * 0.50, h * 0.72)
-      ..close();
-    canvas.drawPath(
-        body1, personPaint..color = AppColors.teal3.withValues(alpha: 0.35));
-
-    // ── Person 2 (right, front) ──
-    // Head
-    canvas.drawCircle(Offset(w * 0.62, h * 0.20), w * 0.11,
-        personPaint..color = AppColors.teal3);
-    // Body
-    final body2 = Path()
-      ..moveTo(w * 0.38, h * 0.74)
-      ..quadraticBezierTo(w * 0.38, h * 0.40, w * 0.62, h * 0.36)
-      ..quadraticBezierTo(w * 0.86, h * 0.40, w * 0.86, h * 0.74)
-      ..close();
-    canvas.drawPath(body2, personPaint..color = AppColors.teal3);
-
-    // ── Medical cross (top-right corner of icon box) ──
-    const crossThick = 3.0;
-    final crossCx = w * 0.84;
-    final crossCy = h * 0.16;
-    const crossArm = 5.0;
-
-    // Horizontal bar
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromCenter(
-          center: Offset(crossCx, crossCy),
-          width: crossArm * 2,
-          height: crossThick,
-        ),
-        const Radius.circular(1.5),
-      ),
-      crossPaint,
-    );
-    // Vertical bar
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromCenter(
-          center: Offset(crossCx, crossCy),
-          width: crossThick,
-          height: crossArm * 2,
-        ),
-        const Radius.circular(1.5),
-      ),
-      crossPaint,
-    );
-
-    // ── Ground line ──
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(w * 0.08, h * 0.76, w * 0.84, 2.5),
-        const Radius.circular(99),
-      ),
-      Paint()
-        ..color = AppColors.teal3.withValues(alpha: 0.3)
-        ..style = PaintingStyle.fill,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter old) => false;
-}
-
-// ─────────────────────────────────────────────────────────────
-// Slide 2 — Tumbling E eye chart icon
-// Large "E" letter with four directional arrows around it
-// ─────────────────────────────────────────────────────────────
-class _TumblingEIcon extends StatelessWidget {
-  const _TumblingEIcon();
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(40, 40),
-      painter: _TumblingEIconPainter(),
-    );
-  }
-}
-
-class _TumblingEIconPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final cx = w / 2;
-    final cy = h / 2;
-
-    final strokePaint = Paint()
-      ..color = AppColors.teal3
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.2
-      ..strokeCap = StrokeCap.round;
-
-    final fillPaint = Paint()
-      ..color = AppColors.teal2
-      ..style = PaintingStyle.fill;
-
-    final dimPaint = Paint()
-      ..color = AppColors.teal3.withValues(alpha: 0.35)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.8
-      ..strokeCap = StrokeCap.round;
-
-    // ── Central "E" letter drawn as three horizontal bars + vertical spine ──
-    final eLeft   = cx - w * 0.14;
-    final eRight  = cx + w * 0.14;
-    final eTop    = cy - h * 0.18;
-    final eMid    = cy;
-    final eBot    = cy + h * 0.18;
-    final eMidR   = cx + w * 0.08; // middle bar is shorter
-
-    // Vertical spine
-    canvas.drawLine(Offset(eLeft, eTop), Offset(eLeft, eBot), strokePaint);
-    // Top bar
-    canvas.drawLine(Offset(eLeft, eTop), Offset(eRight, eTop), strokePaint);
-    // Middle bar (shorter)
-    canvas.drawLine(Offset(eLeft, eMid), Offset(eMidR, eMid), strokePaint);
-    // Bottom bar
-    canvas.drawLine(Offset(eLeft, eBot), Offset(eRight, eBot), strokePaint);
-
-    // ── Four directional arrows (up, down, left, right) ──
-    const arrowLen = 5.0;
-    const arrowHead = 3.0;
-
-    void drawArrow(Offset from, Offset to, Offset tipLeft, Offset tipRight) {
-      canvas.drawLine(from, to, dimPaint);
-      canvas.drawLine(to, tipLeft, dimPaint);
-      canvas.drawLine(to, tipRight, dimPaint);
-    }
-
-    // Up
-    drawArrow(
-      Offset(cx, cy - h * 0.36),
-      Offset(cx, cy - h * 0.36 - arrowLen),
-      Offset(cx - arrowHead, cy - h * 0.36 - arrowLen + arrowHead),
-      Offset(cx + arrowHead, cy - h * 0.36 - arrowLen + arrowHead),
-    );
-    // Down
-    drawArrow(
-      Offset(cx, cy + h * 0.36),
-      Offset(cx, cy + h * 0.36 + arrowLen),
-      Offset(cx - arrowHead, cy + h * 0.36 + arrowLen - arrowHead),
-      Offset(cx + arrowHead, cy + h * 0.36 + arrowLen - arrowHead),
-    );
-    // Left
-    drawArrow(
-      Offset(cx - w * 0.36, cy),
-      Offset(cx - w * 0.36 - arrowLen, cy),
-      Offset(cx - w * 0.36 - arrowLen + arrowHead, cy - arrowHead),
-      Offset(cx - w * 0.36 - arrowLen + arrowHead, cy + arrowHead),
-    );
-    // Right
-    drawArrow(
-      Offset(cx + w * 0.36, cy),
-      Offset(cx + w * 0.36 + arrowLen, cy),
-      Offset(cx + w * 0.36 + arrowLen - arrowHead, cy - arrowHead),
-      Offset(cx + w * 0.36 + arrowLen - arrowHead, cy + arrowHead),
-    );
-
-    // ── Small teal dot at centre ──
-    canvas.drawCircle(Offset(cx, cy), 1.8, fillPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter old) => false;
-}
-
-// ─────────────────────────────────────────────────────────────
-// Slide 3 — Patient care icon
-// Person silhouette + heart + clipboard lines
-// ─────────────────────────────────────────────────────────────
-class _PatientCareIcon extends StatelessWidget {
-  const _PatientCareIcon();
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(40, 40),
-      painter: _PatientCareIconPainter(),
-    );
-  }
-}
-
-class _PatientCareIconPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-
-    final tealFill = Paint()
-      ..color = AppColors.teal3
-      ..style = PaintingStyle.fill;
-
-    final tealStroke = Paint()
-      ..color = AppColors.teal3
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.8
-      ..strokeCap = StrokeCap.round;
-
-    final amberFill = Paint()
-      ..color = const Color(0xFFF59E0B)
-      ..style = PaintingStyle.fill;
-
-    // ── Person head ──
-    canvas.drawCircle(
-      Offset(w * 0.32, h * 0.20),
-      w * 0.10,
-      tealFill..color = AppColors.teal3,
-    );
-
-    // ── Person body ──
-    final body = Path()
-      ..moveTo(w * 0.12, h * 0.70)
-      ..quadraticBezierTo(w * 0.12, h * 0.40, w * 0.32, h * 0.36)
-      ..quadraticBezierTo(w * 0.52, h * 0.40, w * 0.52, h * 0.70)
-      ..close();
-    canvas.drawPath(body, tealFill..color = AppColors.teal3);
-
-    // ── Clipboard (right side) ──
-    final clipRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(w * 0.52, h * 0.28, w * 0.40, h * 0.48),
-      const Radius.circular(4),
-    );
-    canvas.drawRRect(
-      clipRect,
-      Paint()
-        ..color = AppColors.teal3.withValues(alpha: 0.15)
-        ..style = PaintingStyle.fill,
-    );
-    canvas.drawRRect(
-      clipRect,
-      tealStroke..color = AppColors.teal3.withValues(alpha: 0.5),
-    );
-
-    // Clipboard lines
-    final lineX1 = w * 0.57;
-    final lineX2 = w * 0.87;
-    for (int i = 0; i < 3; i++) {
-      final ly = h * 0.38 + i * h * 0.11;
-      canvas.drawLine(
-        Offset(lineX1, ly),
-        Offset(i == 2 ? lineX1 + (lineX2 - lineX1) * 0.6 : lineX2, ly),
-        tealStroke
-          ..color = AppColors.teal3.withValues(alpha: 0.5)
-          ..strokeWidth = 1.4,
-      );
-    }
-
-    // ── Heart (amber, overlapping person + clipboard) ──
-    final heartCx = w * 0.52;
-    final heartCy = h * 0.62;
-    const hr = 5.5;
-    final heartPath = Path();
-    heartPath.moveTo(heartCx, heartCy + hr * 0.6);
-    heartPath.cubicTo(
-      heartCx - hr * 1.6, heartCy - hr * 0.2,
-      heartCx - hr * 1.6, heartCy - hr * 1.2,
-      heartCx, heartCy - hr * 0.5,
-    );
-    heartPath.cubicTo(
-      heartCx + hr * 1.6, heartCy - hr * 1.2,
-      heartCx + hr * 1.6, heartCy - hr * 0.2,
-      heartCx, heartCy + hr * 0.6,
-    );
-    canvas.drawPath(heartPath, amberFill);
-
-    // ── Ground line ──
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(w * 0.08, h * 0.74, w * 0.46, 2.2),
-        const Radius.circular(99),
-      ),
-      Paint()
-        ..color = AppColors.teal3.withValues(alpha: 0.3)
-        ..style = PaintingStyle.fill,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter old) => false;
-}
-
-// ─────────────────────────────────────────────────────────────
-// Slide 4 — Data tracking icon
-// Bar chart with upward trend + cloud sync dot
-// ─────────────────────────────────────────────────────────────
-class _DataTrackingIcon extends StatelessWidget {
-  const _DataTrackingIcon();
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(40, 40),
-      painter: _DataTrackingIconPainter(),
-    );
-  }
-}
-
-class _DataTrackingIconPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-
-    final baseLine = h * 0.76;
-    final barWidth = w * 0.12;
-    final gap      = w * 0.06;
-    final startX   = w * 0.08;
-
-    // Bar heights (ascending trend)
-    final heights = [h * 0.22, h * 0.34, h * 0.46, h * 0.58, h * 0.44];
-    final colors  = [
-      AppColors.teal3.withValues(alpha: 0.35),
-      AppColors.teal3.withValues(alpha: 0.50),
-      AppColors.teal2,
-      AppColors.teal3,
-      AppColors.teal3.withValues(alpha: 0.60),
-    ];
-
-    // ── Bars ──
-    for (int i = 0; i < heights.length; i++) {
-      final bx = startX + i * (barWidth + gap);
-      final bh = heights[i];
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(bx, baseLine - bh, barWidth, bh),
-          const Radius.circular(3),
-        ),
-        Paint()
-          ..color = colors[i]
-          ..style = PaintingStyle.fill,
-      );
-    }
-
-    // ── Baseline ──
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(w * 0.06, baseLine, w * 0.88, 2.0),
-        const Radius.circular(99),
-      ),
-      Paint()
-        ..color = AppColors.teal3.withValues(alpha: 0.25)
-        ..style = PaintingStyle.fill,
-    );
-
-    // ── Trend line over bars ──
-    final trendPaint = Paint()
-      ..color = AppColors.teal2
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    final trendPath = Path();
-    for (int i = 0; i < heights.length; i++) {
-      final bx = startX + i * (barWidth + gap) + barWidth / 2;
-      final by = baseLine - heights[i];
-      if (i == 0) {
-        trendPath.moveTo(bx, by);
-      } else {
-        trendPath.lineTo(bx, by);
+    const spacing = 26.0;
+    for (double y = 0; y < size.height; y += spacing) {
+      for (double x = 0; x < size.width; x += spacing) {
+        canvas.drawCircle(Offset(x, y), 2.0, paint);
       }
     }
-    canvas.drawPath(trendPath, trendPaint);
-
-    // ── Cloud sync dot (top-right) ──
-    final cloudCx = w * 0.84;
-    final cloudCy = h * 0.14;
-
-    // Cloud body
-    canvas.drawCircle(
-      Offset(cloudCx - 3.5, cloudCy + 1),
-      4.5,
-      Paint()
-        ..color = AppColors.teal3.withValues(alpha: 0.5)
-        ..style = PaintingStyle.fill,
-    );
-    canvas.drawCircle(
-      Offset(cloudCx + 2, cloudCy + 1.5),
-      3.5,
-      Paint()
-        ..color = AppColors.teal3.withValues(alpha: 0.5)
-        ..style = PaintingStyle.fill,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(cloudCx - 7.5, cloudCy + 1, 13, 4),
-        const Radius.circular(2),
-      ),
-      Paint()
-        ..color = AppColors.teal3.withValues(alpha: 0.5)
-        ..style = PaintingStyle.fill,
-    );
-
-    // Sync arrow (down arrow below cloud)
-    final arrowPaint = Paint()
-      ..color = AppColors.teal2
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(
-      Offset(cloudCx, cloudCy + 6),
-      Offset(cloudCx, cloudCy + 10),
-      arrowPaint,
-    );
-    canvas.drawLine(
-      Offset(cloudCx, cloudCy + 10),
-      Offset(cloudCx - 2.5, cloudCy + 7.5),
-      arrowPaint,
-    );
-    canvas.drawLine(
-      Offset(cloudCx, cloudCy + 10),
-      Offset(cloudCx + 2.5, cloudCy + 7.5),
-      arrowPaint,
-    );
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter old) => false;
+  bool shouldRepaint(_DotPatternPainter old) => false;
 }
 
 // ─────────────────────────────────────────────────────────────
-// Logo eye painter — used in the top-left brand row
+// Logo eye painter
 // ─────────────────────────────────────────────────────────────
 class _LogoEyePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
-    final cy = size.height / 2;
+    final cx = size.width / 2, cy = size.height / 2;
+    final paint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.6;
     canvas.drawOval(
       Rect.fromCenter(
-        center: Offset(cx, cy),
-        width: size.width * 0.9,
-        height: size.height * 0.5,
-      ),
-      Paint()
-        ..color = Colors.white
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.6,
+          center: Offset(cx, cy),
+          width: size.width * 0.9,
+          height: size.height * 0.5),
+      paint,
     );
+    canvas.drawCircle(Offset(cx, cy), size.width * 0.18, paint);
     canvas.drawCircle(
-      Offset(cx, cy), size.width * 0.18,
-      Paint()
-        ..color = Colors.white
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.6,
-    );
-    canvas.drawCircle(
-      Offset(cx, cy), size.width * 0.09,
-      Paint()..color = Colors.white,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter old) => false;
-}
-
-// ─────────────────────────────────────────────────────────────
-// Subtle grid background for onboarding
-// ─────────────────────────────────────────────────────────────
-class _OnboardingGrid extends StatelessWidget {
-  const _OnboardingGrid();
-
-  @override
-  Widget build(BuildContext context) =>
-      CustomPaint(painter: _OnboardingGridPainter());
-}
-
-class _OnboardingGridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppColors.teal.withValues(alpha: 0.05)
-      ..strokeWidth = 1;
-    const step = 32.0;
-    for (double y = 0; y < size.height; y += step) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-    for (double x = 0; x < size.width; x += step) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
+        Offset(cx, cy), size.width * 0.09, Paint()..color = Colors.white);
   }
 
   @override

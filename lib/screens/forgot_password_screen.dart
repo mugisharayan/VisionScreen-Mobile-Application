@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'splash_screen.dart' show AppColors;
 import 'auth_widgets.dart';
+import '../db/database_helper.dart';
 
 // ─────────────────────────────────────────────────────────────
-// Forgot Password Screen
+// Forgot Password Screen — 3 steps:
+//   1. Enter email → verify exists in DB
+//   2. Enter new password + confirm
+//   3. Success view
 // ─────────────────────────────────────────────────────────────
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -14,14 +18,29 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+  // Step 1
   final _emailCtrl = TextEditingController();
   String? _emailError;
-  bool _loading = false;
-  bool _sent = false;
+  bool _emailLoading = false;
+
+  // Step 2
+  final _newPasswordCtrl = TextEditingController();
+  final _confirmPasswordCtrl = TextEditingController();
+  bool _newPasswordVisible = false;
+  bool _confirmPasswordVisible = false;
+  String? _newPasswordError;
+  String? _confirmPasswordError;
+  bool _resetLoading = false;
+
+  // Flow state
+  int _step = 1; // 1 = email, 2 = new password, 3 = success
+  String _verifiedEmail = '';
 
   @override
   void dispose() {
     _emailCtrl.dispose();
+    _newPasswordCtrl.dispose();
+    _confirmPasswordCtrl.dispose();
     super.dispose();
   }
 
@@ -32,14 +51,56 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return null;
   }
 
-  Future<void> _reset() async {
+  String? _validatePassword(String value) {
+    if (value.isEmpty) return 'Password is required';
+    if (value.length < 8) return 'Password must be at least 8 characters';
+    return null;
+  }
+
+  String? _validateConfirm(String password, String confirm) {
+    if (confirm.isEmpty) return 'Please confirm your password';
+    if (confirm != password) return 'Passwords do not match';
+    return null;
+  }
+
+  Future<void> _verifyEmail() async {
     final error = _validateEmail(_emailCtrl.text);
     setState(() => _emailError = error);
     if (error != null) return;
-    setState(() => _loading = true);
-    await Future.delayed(const Duration(seconds: 2));
+
+    setState(() => _emailLoading = true);
+    final email = _emailCtrl.text.trim().toLowerCase();
+    final profile = await DatabaseHelper.instance.getChwProfileByEmail(email);
     if (!mounted) return;
-    setState(() { _loading = false; _sent = true; });
+    setState(() => _emailLoading = false);
+
+    if (profile == null) {
+      setState(() => _emailError = 'No account found with this email address');
+      return;
+    }
+
+    setState(() {
+      _verifiedEmail = email;
+      _step = 2;
+    });
+  }
+
+  Future<void> _resetPassword() async {
+    setState(() {
+      _newPasswordError = _validatePassword(_newPasswordCtrl.text);
+      _confirmPasswordError = _validateConfirm(
+          _newPasswordCtrl.text, _confirmPasswordCtrl.text);
+    });
+    if (_newPasswordError != null || _confirmPasswordError != null) return;
+
+    setState(() => _resetLoading = true);
+    final hashed = DatabaseHelper.hashPassword(_newPasswordCtrl.text);
+    await DatabaseHelper.instance.updateChwPassword(_verifiedEmail, hashed);
+    if (!mounted) return;
+    setState(() {
+      _resetLoading = false;
+      _step = 3;
+    });
   }
 
   @override
@@ -49,7 +110,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       resizeToAvoidBottomInset: true,
       body: Column(
         children: [
-          // ── Deep green hero zone ──
+          // ── Hero zone ──
           ClipPath(
             clipper: AuthWaveClipper(),
             child: Container(
@@ -67,13 +128,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Back button
                     Align(
                       alignment: Alignment.topLeft,
                       child: Padding(
                         padding: const EdgeInsets.only(left: 16, top: 4),
                         child: GestureDetector(
-                          onTap: () => Navigator.of(context).pop(),
+                          onTap: () {
+                            if (Navigator.of(context).canPop()) {
+                              Navigator.of(context).pop();
+                            } else {
+                              Navigator.of(context).pushReplacementNamed('/login');
+                            }
+                          },
                           child: Container(
                             width: 36, height: 36,
                             decoration: BoxDecoration(
@@ -89,8 +155,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    // Eye logo
+                    const SizedBox(height: 12),
                     Container(
                       width: 90, height: 90,
                       decoration: BoxDecoration(
@@ -122,20 +187,40 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     RichText(
                       text: TextSpan(
                         style: GoogleFonts.nunito(
-                            fontSize: 20, fontWeight: FontWeight.w700),
+                            fontSize: 18, fontWeight: FontWeight.w700),
                         children: const [
                           TextSpan(
-                              text: 'Forgot ',
+                              text: 'Reset ',
                               style: TextStyle(color: Colors.white)),
                           TextSpan(
-                              text: 'Password?',
+                              text: 'Password',
                               style: TextStyle(color: Colors.black)),
                         ],
                       ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(3, (i) {
+                        final active = _step > i;
+                        final current = _step == i + 1;
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          width: current ? 24 : 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: active || current
+                                ? Colors.white
+                                : Colors.white.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                        );
+                      }),
                     ),
                   ],
                 ),
@@ -143,24 +228,65 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             ),
           ),
 
-          // ── White form area ──
+          // ── Form area ──
           Expanded(
             child: SingleChildScrollView(
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: EdgeInsets.fromLTRB(
                   24, 24, 24,
                   MediaQuery.of(context).viewInsets.bottom + 32),
-              child: _sent
-                  ? _SuccessView(email: _emailCtrl.text.trim())
-                  : _FormView(
-                      emailCtrl: _emailCtrl,
-                      emailError: _emailError,
-                      loading: _loading,
-                      onEmailChanged: (_) =>
-                          setState(() => _emailError = null),
-                      onReset: _reset,
-                      onBackToLogin: () => Navigator.of(context).pop(),
-                    ),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 280),
+                switchInCurve: Curves.easeOut,
+                switchOutCurve: Curves.easeIn,
+                transitionBuilder: (child, anim) => FadeTransition(
+                  opacity: anim,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0.04, 0),
+                      end: Offset.zero,
+                    ).animate(anim),
+                    child: child,
+                  ),
+                ),
+                child: _step == 1
+                    ? _EmailStep(
+                        key: const ValueKey('step1'),
+                        emailCtrl: _emailCtrl,
+                        emailError: _emailError,
+                        loading: _emailLoading,
+                        onEmailChanged: (_) =>
+                            setState(() => _emailError = null),
+                        onSubmit: _verifyEmail,
+                        onBackToLogin: () => Navigator.of(context).pop(),
+                      )
+                    : _step == 2
+                        ? _NewPasswordStep(
+                            key: const ValueKey('step2'),
+                            newPasswordCtrl: _newPasswordCtrl,
+                            confirmPasswordCtrl: _confirmPasswordCtrl,
+                            newPasswordVisible: _newPasswordVisible,
+                            confirmPasswordVisible: _confirmPasswordVisible,
+                            newPasswordError: _newPasswordError,
+                            confirmPasswordError: _confirmPasswordError,
+                            loading: _resetLoading,
+                            onToggleNew: () => setState(
+                                () => _newPasswordVisible = !_newPasswordVisible),
+                            onToggleConfirm: () => setState(() =>
+                                _confirmPasswordVisible =
+                                    !_confirmPasswordVisible),
+                            onNewPasswordChanged: (_) =>
+                                setState(() => _newPasswordError = null),
+                            onConfirmPasswordChanged: (_) =>
+                                setState(() => _confirmPasswordError = null),
+                            onSubmit: _resetPassword,
+                          )
+                        : _SuccessStep(
+                            key: const ValueKey('step3'),
+                            onBackToLogin: () =>
+                                Navigator.of(context).pop(),
+                          ),
+              ),
             ),
           ),
         ],
@@ -169,14 +295,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 }
 
-// ── Form view ──
-class _FormView extends StatelessWidget {
-  const _FormView({
+// ── Step 1: Email verification ──
+class _EmailStep extends StatelessWidget {
+  const _EmailStep({
+    super.key,
     required this.emailCtrl,
     required this.emailError,
     required this.loading,
     required this.onEmailChanged,
-    required this.onReset,
+    required this.onSubmit,
     required this.onBackToLogin,
   });
 
@@ -184,7 +311,7 @@ class _FormView extends StatelessWidget {
   final String? emailError;
   final bool loading;
   final ValueChanged<String> onEmailChanged;
-  final VoidCallback onReset;
+  final VoidCallback onSubmit;
   final VoidCallback onBackToLogin;
 
   @override
@@ -192,19 +319,18 @@ class _FormView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Reset your password',
+        Text('Find your account',
             style: GoogleFonts.nunito(
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
                 color: AppColors.textDark)),
         const SizedBox(height: 6),
         Text(
-          'Enter the email address linked to your VisionScreen account and we\'ll send you a reset link.',
+          'Enter the email address linked to your VisionScreen account.',
           style: GoogleFonts.poppins(
               fontSize: 12, color: AppColors.textMuted, height: 1.6),
         ),
-        const SizedBox(height: 32),
-
+        const SizedBox(height: 28),
         AuthUnderlineField(
           controller: emailCtrl,
           label: 'Email Address',
@@ -216,16 +342,14 @@ class _FormView extends StatelessWidget {
           errorText: emailError,
           onChanged: onEmailChanged,
         ),
-        const SizedBox(height: 32),
-
+        const SizedBox(height: 28),
         AuthGreenPillButton(
-          label: 'Reset Password',
-          icon: Icons.lock_reset_rounded,
+          label: 'Continue',
+          icon: Icons.arrow_forward_rounded,
           loading: loading,
-          onTap: onReset,
+          onTap: onSubmit,
         ),
         const SizedBox(height: 24),
-
         Center(
           child: GestureDetector(
             onTap: onBackToLogin,
@@ -251,10 +375,119 @@ class _FormView extends StatelessWidget {
   }
 }
 
-// ── Success view ──
-class _SuccessView extends StatelessWidget {
-  const _SuccessView({required this.email});
-  final String email;
+// ── Step 2: New password entry ──
+class _NewPasswordStep extends StatelessWidget {
+  const _NewPasswordStep({
+    super.key,
+    required this.newPasswordCtrl,
+    required this.confirmPasswordCtrl,
+    required this.newPasswordVisible,
+    required this.confirmPasswordVisible,
+    required this.newPasswordError,
+    required this.confirmPasswordError,
+    required this.loading,
+    required this.onToggleNew,
+    required this.onToggleConfirm,
+    required this.onNewPasswordChanged,
+    required this.onConfirmPasswordChanged,
+    required this.onSubmit,
+  });
+
+  final TextEditingController newPasswordCtrl;
+  final TextEditingController confirmPasswordCtrl;
+  final bool newPasswordVisible;
+  final bool confirmPasswordVisible;
+  final String? newPasswordError;
+  final String? confirmPasswordError;
+  final bool loading;
+  final VoidCallback onToggleNew;
+  final VoidCallback onToggleConfirm;
+  final ValueChanged<String> onNewPasswordChanged;
+  final ValueChanged<String> onConfirmPasswordChanged;
+  final VoidCallback onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Create new password',
+            style: GoogleFonts.nunito(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: AppColors.textDark)),
+        const SizedBox(height: 6),
+        Text(
+          'Your new password must be at least 8 characters.',
+          style: GoogleFonts.poppins(
+              fontSize: 12, color: AppColors.textMuted, height: 1.6),
+        ),
+        const SizedBox(height: 28),
+        AuthUnderlineField(
+          controller: newPasswordCtrl,
+          label: 'New Password',
+          hint: '••••••••',
+          prefixIcon: Icons.lock_outline_rounded,
+          obscure: !newPasswordVisible,
+          inputAction: TextInputAction.next,
+          hasError: newPasswordError != null,
+          errorText: newPasswordError,
+          onChanged: onNewPasswordChanged,
+          suffixIcon: GestureDetector(
+            onTap: onToggleNew,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: Icon(
+                newPasswordVisible
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                size: 18,
+                color: AppColors.textMuted,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        AuthUnderlineField(
+          controller: confirmPasswordCtrl,
+          label: 'Confirm New Password',
+          hint: '••••••••',
+          prefixIcon: Icons.lock_outline_rounded,
+          obscure: !confirmPasswordVisible,
+          inputAction: TextInputAction.done,
+          hasError: confirmPasswordError != null,
+          errorText: confirmPasswordError,
+          onChanged: onConfirmPasswordChanged,
+          suffixIcon: GestureDetector(
+            onTap: onToggleConfirm,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: Icon(
+                confirmPasswordVisible
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                size: 18,
+                color: AppColors.textMuted,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 28),
+        AuthGreenPillButton(
+          label: 'Reset Password',
+          icon: Icons.lock_reset_rounded,
+          loading: loading,
+          onTap: onSubmit,
+        ),
+      ],
+    );
+  }
+}
+
+// ── Step 3: Success ──
+class _SuccessStep extends StatelessWidget {
+  const _SuccessStep({super.key, required this.onBackToLogin});
+  final VoidCallback onBackToLogin;
 
   @override
   Widget build(BuildContext context) {
@@ -269,18 +502,17 @@ class _SuccessView extends StatelessWidget {
             border: Border.all(
                 color: AppColors.green.withValues(alpha: 0.3), width: 2),
           ),
-          child: const Icon(Icons.mark_email_read_outlined,
-              size: 36, color: AppColors.green),
+          child: const Icon(Icons.check_rounded, size: 40, color: AppColors.green),
         ),
         const SizedBox(height: 20),
-        Text('Check your inbox!',
+        Text('Password updated!',
             style: GoogleFonts.nunito(
                 fontSize: 22,
                 fontWeight: FontWeight.w900,
                 color: AppColors.textDark)),
         const SizedBox(height: 10),
         Text(
-          'A password reset link has been sent to\n$email',
+          'Your password has been successfully reset.\nYou can now sign in with your new password.',
           textAlign: TextAlign.center,
           style: GoogleFonts.poppins(
               fontSize: 13, color: AppColors.textMuted, height: 1.6),
@@ -289,7 +521,13 @@ class _SuccessView extends StatelessWidget {
         AuthGreenPillButton(
           label: 'Back to Sign In',
           icon: Icons.login_rounded,
-          onTap: () => Navigator.of(context).pop(),
+          onTap: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              Navigator.of(context).pushReplacementNamed('/login');
+            }
+          },
         ),
       ],
     );

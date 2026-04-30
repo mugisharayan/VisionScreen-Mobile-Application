@@ -1,6 +1,8 @@
 
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:crypto/crypto.dart';
+import 'dart:convert';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._();
@@ -91,6 +93,21 @@ class DatabaseHelper {
         if (oldVersion < 2) {
           await db.execute('ALTER TABLE screenings ADD COLUMN appointment_date TEXT');
         }
+        if (oldVersion < 3) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS campaigns (
+              id TEXT PRIMARY KEY,
+              name TEXT NOT NULL,
+              location TEXT NOT NULL,
+              target_group TEXT NOT NULL,
+              created_at TEXT NOT NULL,
+              total INTEGER DEFAULT 0,
+              passed INTEGER DEFAULT 0,
+              referred INTEGER DEFAULT 0
+            )
+          ''');
+          await db.execute('ALTER TABLE patients ADD COLUMN campaign_id TEXT');
+        }
         if (oldVersion < 4) {
           await db.execute('''
             CREATE TABLE IF NOT EXISTS chw_profiles (
@@ -105,21 +122,6 @@ class DatabaseHelper {
               created_at TEXT NOT NULL
             )
           ''');
-        }
-        if (oldVersion < 3) {
-          await db.execute('''
-            CREATE TABLE IF NOT EXISTS campaigns (
-              id TEXT PRIMARY KEY,
-              name TEXT NOT NULL,
-              location TEXT NOT NULL,
-              target_group TEXT NOT NULL,
-              created_at TEXT NOT NULL,
-              total INTEGER DEFAULT 0,
-              passed INTEGER DEFAULT 0,
-            referred INTEGER DEFAULT 0
-            )
-          ''');
-          await db.execute('ALTER TABLE patients ADD COLUMN campaign_id TEXT');
         }
       },
     );
@@ -755,6 +757,11 @@ class DatabaseHelper {
 
   // ── CHW PROFILES ──────────────────────────────────────────
 
+  static String hashPassword(String password) {
+    final bytes = utf8.encode(password);
+    return sha256.convert(bytes).toString();
+  }
+
   Future<void> insertChwProfile(Map<String, dynamic> profile) async {
     final database = await db;
     await database.insert('chw_profiles', profile, conflictAlgorithm: ConflictAlgorithm.replace);
@@ -769,6 +776,16 @@ class DatabaseHelper {
       limit: 1,
     );
     return rows.isEmpty ? null : rows.first;
+  }
+
+  Future<void> updateChwPassword(String email, String newHashedPassword) async {
+    final database = await db;
+    await database.update(
+      'chw_profiles',
+      {'password': newHashedPassword},
+      where: 'email = ?',
+      whereArgs: [email.trim().toLowerCase()],
+    );
   }
 
   Future<void> clearAllData() async {
