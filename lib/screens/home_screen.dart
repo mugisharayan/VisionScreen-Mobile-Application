@@ -8,6 +8,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'splash_screen.dart' show AppColors;
 import 'training_screen.dart';
 import 'notifications_screen.dart';
 import 'patients_screen.dart';
@@ -183,16 +184,17 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.authBg,
       body: Column(
         children: [
           _buildHeader(),
           Expanded(
-            child: RefreshIndicator(
-              onRefresh: _onRefresh,
-              color: const Color(0xFF0D9488),
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(14, 8, 14, 16),
+             child: RefreshIndicator(
+               onRefresh: _onRefresh,
+               color: AppColors.green,
+               child: SingleChildScrollView(
+                 physics: const AlwaysScrollableScrollPhysics(),
+                 padding: const EdgeInsets.fromLTRB(14, 8, 14, 16),
                 child: Column(
             mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -437,114 +439,101 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(18, 38, 18, 0),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF04091A), Color(0xFF0B1530)],
+    return ClipPath(
+      clipper: _HomeWaveClipper(),
+      child: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppColors.greenDark, AppColors.green],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildUserRow(),
-          const SizedBox(height: 6),
-          Text(
-            'Ready to screen,',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 20,
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
-            ),
-          ),
-          Text(
-            "let's go!",
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 20,
-              color: const Color(0xFF5EEAD4),
-              fontStyle: FontStyle.italic,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 3),
-          // Location row â€” tappable to retry
-          GestureDetector(
-            onTap: _fetchLocation,
-            child: Row(
-              children: [
-                Icon(
-                  _locationLabel.contains('retry') || _locationLabel.contains('timeout')
-                      ? Icons.refresh_rounded
-                      : Icons.location_on_rounded,
-                  size: 11,
-                  color: const Color(0x8C5EEAD4),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    _locationLabel,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.ibmPlexSans(
-                      fontSize: 11,
-                      color: const Color(0x8C5EEAD4),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 3),
-          // Date and time row
-          Row(
+        child: SafeArea(
+          bottom: false,
+          child: Stack(
             children: [
-              Icon(Icons.calendar_today_rounded,
-                  size: 11, color: const Color(0x8C5EEAD4)),
-              const SizedBox(width: 4),
-              Text(
-                _formatDate(_now),
-                style: GoogleFonts.ibmPlexSans(
-                  fontSize: 11,
-                  color: const Color(0x8C5EEAD4),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(99),
-                  border: Border.all(color: Colors.white.withOpacity(0.12)),
-                ),
-                child: Row(
+              Positioned.fill(child: CustomPaint(painter: _HomeDotPainter())),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 14, 18, 52),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.access_time_rounded,
-                        size: 10, color: const Color(0xFF5EEAD4)),
-                    const SizedBox(width: 4),
-                    Text(
-                      _formatTime(_now),
-                      style: GoogleFonts.ibmPlexSans(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF5EEAD4)),
+                    _buildUserRow(),
+                    const SizedBox(height: 14),
+                    RichText(
+                      text: TextSpan(
+                        style: GoogleFonts.nunito(fontSize: 22, fontWeight: FontWeight.w900),
+                        children: [
+                          const TextSpan(text: 'Ready to screen, ', style: TextStyle(color: Colors.white)),
+                          TextSpan(
+                            text: _chwName.isNotEmpty ? _chwName.split(' ').first : 'CHW',
+                            style: const TextStyle(color: Colors.black),
+                          ),
+                          const TextSpan(text: '!', style: TextStyle(color: Colors.white)),
+                        ],
+                      ),
                     ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: _fetchLocation,
+                          child: Row(
+                            children: [
+                              Icon(
+                                _locationLabel.contains('retry') || _locationLabel.contains('timeout')
+                                    ? Icons.refresh_rounded : Icons.location_on_rounded,
+                                size: 11, color: Colors.white.withValues(alpha: 0.85),
+                              ),
+                              const SizedBox(width: 4),
+                              ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 160),
+                                child: Text(_locationLabel, overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.poppins(fontSize: 11,
+                                    color: Colors.white.withValues(alpha: 0.85), fontWeight: FontWeight.w500)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(99),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                          ),
+                          child: Row(children: [
+                            Icon(Icons.access_time_rounded, size: 10, color: Colors.white),
+                            const SizedBox(width: 4),
+                            Text(_formatTime(_now), style: GoogleFonts.poppins(
+                                fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
+                          ]),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(children: [
+                      Icon(Icons.calendar_today_rounded, size: 11, color: Colors.white.withValues(alpha: 0.85)),
+                      const SizedBox(width: 4),
+                      Text(_formatDate(_now), style: GoogleFonts.poppins(
+                          fontSize: 11, color: Colors.white.withValues(alpha: 0.85), fontWeight: FontWeight.w500)),
+                    ]),
+                    const SizedBox(height: 14),
+                    _buildSyncBar(),
+                    const SizedBox(height: 12),
+                    _buildStatsRow(),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          _buildSyncBar(),
-          const SizedBox(height: 8),
-          _buildStatsRow(),
-          const SizedBox(height: 10),
-        ],
+        ),
       ),
     );
+
   }
 
   Widget _buildUserRow() {
@@ -556,12 +545,12 @@ class _HomeScreenState extends State<HomeScreen>
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(13),
             gradient: const LinearGradient(
-              colors: [Color(0xFF0D9488), Color(0xFF14B8A6)],
+              colors: [AppColors.greenDark, AppColors.green],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            border: Border.all(
-                color: const Color(0xFF0D9488).withOpacity(0.4), width: 2),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 2),
+
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(11),
@@ -576,7 +565,7 @@ class _HomeScreenState extends State<HomeScreen>
                       _chwName.trim().isEmpty
                           ? 'VS'
                           : _chwName.trim().split(' ').map((w) => w.isEmpty ? '' : w[0]).take(2).join().toUpperCase(),
-                      style: GoogleFonts.ibmPlexSans(
+                      style: GoogleFonts.poppins(
                           color: Colors.white,
                           fontWeight: FontWeight.w800,
                           fontSize: 14),
@@ -589,14 +578,14 @@ class _HomeScreenState extends State<HomeScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(_chwName.isNotEmpty ? _chwName : 'VisionScreen User',
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.nunito(
                     color: Colors.white,
                     fontSize: 14,
-                    fontWeight: FontWeight.w700)),
+                    fontWeight: FontWeight.w800)),
             Text(
                 _chwCenter.isNotEmpty ? 'CHW · $_chwCenter' : 'Community Health Worker',
-                style: GoogleFonts.inter(
-                    color: const Color(0x995EEAD4),
+                style: GoogleFonts.poppins(
+                    color: Colors.white.withValues(alpha: 0.8),
                     fontSize: 11,
                     fontWeight: FontWeight.w500)),
           ],
@@ -609,13 +598,13 @@ class _HomeScreenState extends State<HomeScreen>
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
             color: _isOffline
-                ? const Color(0xFFEF4444).withOpacity(0.2)
-                : const Color(0xFF22C55E).withOpacity(0.15),
+                ? Colors.red.withValues(alpha: 0.25)
+                : Colors.white.withValues(alpha: 0.25),
             borderRadius: BorderRadius.circular(99),
             border: Border.all(
               color: _isOffline
-                  ? const Color(0xFFEF4444).withOpacity(0.5)
-                  : const Color(0xFF22C55E).withOpacity(0.4),
+                  ? Colors.red.withValues(alpha: 0.7)
+                  : Colors.white.withValues(alpha: 0.6),
             ),
           ),
           child: Row(
@@ -630,8 +619,8 @@ class _HomeScreenState extends State<HomeScreen>
                     height: 6,
                     decoration: BoxDecoration(
                       color: _isOffline
-                          ? const Color(0xFFEF4444)
-                          : const Color(0xFF22C55E),
+                          ? Colors.red
+                          : Colors.white,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -640,12 +629,12 @@ class _HomeScreenState extends State<HomeScreen>
               const SizedBox(width: 5),
               Text(
                 _isOffline ? 'Offline' : 'Online',
-                style: GoogleFonts.inter(
+                style: GoogleFonts.poppins(
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
                     color: _isOffline
-                        ? const Color(0xFFEF4444)
-                        : const Color(0xFF22C55E)),
+                        ? Colors.red
+                        : Colors.white),
               ),
             ],
           ),
@@ -789,38 +778,23 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildSyncBar() {
     return GestureDetector(
       onTap: _isSyncing ? null : _doSync,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.07),
+          color: Colors.white.withValues(alpha: 0.18),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.15)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
         ),
         child: Row(
           children: [
-            // Animated pulsing dot
             AnimatedBuilder(
               animation: _pulseAnimation,
               builder: (context, child) => Opacity(
                 opacity: _isSyncing ? 1.0 : _pulseAnimation.value,
                 child: Container(
-                  width: 7,
-                  height: 7,
+                  width: 7, height: 7,
                   decoration: BoxDecoration(
-                    color: _isSyncing
-                        ? const Color(0xFF22C55E)
-                        : const Color(0xFFF59E0B),
+                    color: _isSyncing ? const Color(0xFF22C55E) : Colors.white,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -829,96 +803,75 @@ class _HomeScreenState extends State<HomeScreen>
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                _isSyncing
-                    ? 'Syncing to MongoDB Atlas...'
-                    : '$_unsyncedCount record${_unsyncedCount == 1 ? '' : 's'} pending sync',
-                style: GoogleFonts.inter(
+                _isSyncing ? 'Syncing...' : '$_unsyncedCount record${_unsyncedCount == 1 ? '' : 's'} pending sync',
+                style: GoogleFonts.poppins(
                     fontSize: 11,
-                    color: const Color(0xCC5EEAD4),
+                    color: Colors.white.withValues(alpha: 0.9),
                     fontWeight: FontWeight.w500),
               ),
             ),
             _isSyncing
                 ? const SizedBox(
-                    width: 12,
-                    height: 12,
+                    width: 12, height: 12,
                     child: CircularProgressIndicator(
-                      strokeWidth: 1.5,
-                      color: Color(0xFF5EEAD4),
+                      strokeWidth: 1.5, color: Colors.white,
                     ),
                   )
                 : Text('Sync Now',
-                    style: GoogleFonts.inter(
+                    style: GoogleFonts.poppins(
                         fontSize: 10,
-                        color: const Color(0xFF5EEAD4),
+                        color: Colors.white,
                         fontWeight: FontWeight.w700)),
           ],
-        ),
-          ),
         ),
       ),
     );
   }
 
-    Widget _buildStatsRow() {
+
+  Widget _buildStatsRow() {
     return Row(
       children: [
-        _buildStatCard('$_totalScreened', 'Screened', 'Total', const Color(0xFF5EEAD4)),
+        _buildStatCard('$_totalScreened', 'Screened', Icons.remove_red_eye_outlined, Colors.white),
         const SizedBox(width: 8),
-        _buildStatCard('$_totalReferred', 'Referrals', 'Need follow-up', const Color(0xFFF59E0B)),
+        _buildStatCard('$_totalReferred', 'Referred', Icons.warning_amber_rounded, const Color(0xFFFFE08A)),
         const SizedBox(width: 8),
-        _buildStatCard('$_unsyncedCount', 'Unsynced', 'Pending upload', const Color(0xFFEF4444)),
+        _buildStatCard('$_unsyncedCount', 'Unsynced', Icons.sync_rounded, const Color(0xFFFFB3B3)),
       ],
     );
   }
 
-  Widget _buildStatCard(
-      String number, String label, String change, Color changeColor) {
+  Widget _buildStatCard(String number, String label, IconData icon, Color accent) {
     return Expanded(
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-        padding: const EdgeInsets.all(11),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.09),
+          color: Colors.white.withValues(alpha: 0.18),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withOpacity(0.2)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.12),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
+            Icon(icon, size: 18, color: accent),
+            const SizedBox(height: 4),
             Text(number,
-                style: GoogleFonts.spaceGrotesk(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
+                style: GoogleFonts.nunito(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
                     color: Colors.white)),
             Text(label,
-                style: GoogleFonts.inter(
+                style: GoogleFonts.poppins(
                     fontSize: 9,
-                    color: const Color(0x8C5EEAD4),
+                    color: Colors.white.withValues(alpha: 0.85),
                     fontWeight: FontWeight.w500,
-                    letterSpacing: 1.0)),
-            const SizedBox(height: 3),
-            Text(change,
-                style: GoogleFonts.inter(
-                    fontSize: 10,
-                    color: changeColor,
-                    fontWeight: FontWeight.w600)),
+                    letterSpacing: 0.5)),
           ],
-        ),
-          ),
         ),
       ),
     );
   }
+
 
   String _formatDate(DateTime dt) {
     const months = [
@@ -2427,4 +2380,40 @@ class _TipDialogContentState extends State<_TipDialogContent> {
       ),
     );
   }
+}
+
+class _HomeWaveClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    path.lineTo(0, size.height - 40);
+    path.quadraticBezierTo(
+        size.width * 0.25, size.height, size.width * 0.5, size.height - 20);
+    path.quadraticBezierTo(
+        size.width * 0.75, size.height - 40, size.width, size.height - 10);
+    path.lineTo(size.width, 0);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(_HomeWaveClipper old) => false;
+}
+
+class _HomeDotPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.07)
+      ..style = PaintingStyle.fill;
+    const spacing = 26.0;
+    for (double y = 0; y < size.height; y += spacing) {
+      for (double x = 0; x < size.width; x += spacing) {
+        canvas.drawCircle(Offset(x, y), 2.0, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_HomeDotPainter old) => false;
 }
