@@ -3,10 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sqflite/sqflite.dart';
-import 'dart:math';
 import 'splash_screen.dart' show AppColors;
-import '../db/database_helper.dart';
+import '../repositories/auth_repository.dart';
 
 // ─────────────────────────────────────────────────────────────
 // Login Screen — Login + Sign Up tabs
@@ -96,36 +94,30 @@ class _LoginScreenState extends State<LoginScreen>
     if (_loginEmailError != null || _loginPasswordError != null) return;
     setState(() => _loginLoading = true);
 
-    final enteredEmail = _loginEmailCtrl.text.trim().toLowerCase();
-    final enteredPassword = _loginPasswordCtrl.text;
-
-    final hashedPassword = DatabaseHelper.hashPassword(enteredPassword);
-    final profile = await DatabaseHelper.instance.getChwProfileByEmail(enteredEmail);
+    final result = await AuthRepository.instance.login(
+      _loginEmailCtrl.text,
+      _loginPasswordCtrl.text,
+    );
     if (!mounted) return;
 
-    if (profile == null || profile['password'] != hashedPassword) {
+    if (!result.success) {
       setState(() {
         _loginLoading = false;
-        _loginPasswordError = 'Invalid email or password';
+        _loginPasswordError = result.errorMessage;
       });
       return;
     }
+
+    // Persist remember-me preference
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('chw_name',     profile['name']     as String);
-    await prefs.setString('chw_center',   profile['center']   as String);
-    await prefs.setString('chw_district', profile['district'] as String);
-    await prefs.setString('chw_email',    profile['email']    as String);
-    await prefs.setString('chw_phone',    profile['phone']    as String);
-    // Restore or generate CHW ID on login
-    final existingId = prefs.getString('chw_id') ?? '';
-    if (existingId.isEmpty) {
-      final id = 'CHW-${(Random.secure().nextInt(900000) + 100000)}';
-      await prefs.setString('chw_id', id);
+    await prefs.setBool('remember_me', _rememberMe);
+    if (_rememberMe) {
+      await prefs.setString('remembered_email',
+          _loginEmailCtrl.text.trim().toLowerCase());
+    } else {
+      await prefs.remove('remembered_email');
     }
-    await prefs.setString('last_login_time',
-        DateTime.now().toLocal().toString().substring(0, 16));
-    await prefs.setString('last_login_role',
-        (profile['role'] as String) == 'admin' ? 'Administrator' : 'Community Health Worker');
+
     if (!mounted) return;
     setState(() => _loginLoading = false);
     Navigator.of(context).pushReplacementNamed('/home');
@@ -183,42 +175,20 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _saveSignUp() async {
-    final email = _signUpEmailCtrl.text.trim().toLowerCase();
-    final existing = await DatabaseHelper.instance.getChwProfileByEmail(email);
+    final result = await AuthRepository.instance.signUp(
+      name:     _signUpNameCtrl.text,
+      center:   _signUpCentreCtrl.text,
+      district: _signUpDistrictCtrl.text,
+      email:    _signUpEmailCtrl.text,
+      phone:    _signUpPhoneCtrl.text,
+      password: _signUpPasswordCtrl.text,
+      role:     _selectedRole,
+    );
     if (!mounted) return;
-    if (existing != null) {
-      setState(() => _signUpEmailError = 'An account with this email already exists');
+    if (!result.success) {
+      setState(() => _signUpEmailError = result.errorMessage);
       return;
     }
-    final phone = _signUpPhoneCtrl.text.replaceAll(RegExp(r'\s'), '');
-    final profile = {
-      'name':       _signUpNameCtrl.text.trim(),
-      'center':     _signUpCentreCtrl.text.trim(),
-      'district':   _signUpDistrictCtrl.text.trim(),
-      'email':      email,
-      'phone':      phone,
-      'password':   DatabaseHelper.hashPassword(_signUpPasswordCtrl.text),
-      'role':       'chw',
-      'created_at': DateTime.now().toIso8601String(),
-    };
-    await DatabaseHelper.instance.insertChwProfile(profile);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('chw_name',     profile['name']!);
-    await prefs.setString('chw_center',   profile['center']!);
-    await prefs.setString('chw_district', profile['district']!);
-    await prefs.setString('chw_email',    profile['email']!);
-    await prefs.setString('chw_phone',    profile['phone']!);
-    // Generate CHW ID: CHW-XXXXXX (6 random digits)
-    final existingId = prefs.getString('chw_id') ?? '';
-    if (existingId.isEmpty) {
-      final id = 'CHW-${(Random.secure().nextInt(900000) + 100000)}';
-      await prefs.setString('chw_id', id);
-    }
-    await prefs.setString('last_login_time',
-        DateTime.now().toLocal().toString().substring(0, 16));
-    await prefs.setString('last_login_role',
-        _selectedRole == 'admin' ? 'Administrator' : 'Community Health Worker');
-    if (!mounted) return;
     Navigator.of(context).pushReplacementNamed('/home');
   }
 

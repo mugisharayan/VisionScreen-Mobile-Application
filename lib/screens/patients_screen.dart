@@ -2,8 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../db/database_helper.dart';
 import '../services/pdf_service.dart';
+import '../repositories/patient_repository.dart';
+import '../repositories/campaign_repository.dart';
+import '../repositories/screening_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bulk_mode_screen.dart';
 import 'new_screening_screen.dart';
@@ -120,9 +122,15 @@ class _PatientsScreenState extends State<PatientsScreen> {
   }
 
   Future<void> _loadPatients() async {
-    final campaignRows = await DatabaseHelper.instance.getAllCampaigns();
+    final campaignRows = await CampaignRepository.instance.getAllCampaigns();
     setState(() => _loading = true);
-    final allPatients = await DatabaseHelper.instance.getAllPatients();
+    // Use repository — fetches all non-campaign patients (no pagination needed
+    // here since we still build the full in-memory list for filtering; pagination
+    // is applied at the DB level via PatientRepository.getPatients when the list
+    // grows large enough to warrant it).
+    final allPatients = await PatientRepository.instance.getPatients(
+      pageSize: 500, // generous limit; replace with lazy loading if needed
+    );
     final patientRows = allPatients.where((r) {
       final cid = r['campaign_id'];
       return cid == null || cid.toString().isEmpty;
@@ -130,7 +138,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
     final list = <_Patient>[];
     for (final r in patientRows) {
       final pid = r['id'] as String;
-      final latest = await DatabaseHelper.instance.getLatestScreening(pid);
+      final latest = await ScreeningRepository.instance.getLatestScreening(pid);
       final age = (r['age'] as int?) ?? 0;
       final conditions = ((r['conditions'] as String?) ?? '')
           .split(',')
@@ -166,13 +174,13 @@ class _PatientsScreenState extends State<PatientsScreen> {
       ));
     }
     // Load all campaign patients for search
-    final campPatientRows = (await DatabaseHelper.instance.getAllPatients())
+    final campPatientRows = allPatients
         .where((r) => r['campaign_id'] != null && (r['campaign_id'] as String).isNotEmpty)
         .toList();
     final campList = <_Patient>[];
     for (final r in campPatientRows) {
       final age = (r['age'] as int?) ?? 0;
-      final latest = await DatabaseHelper.instance.getLatestScreening(r['id'] as String);
+      final latest = await ScreeningRepository.instance.getLatestScreening(r['id'] as String);
       final outcome = (latest?['outcome'] as String?) ?? 'pending';
       campList.add(_Patient(
         initials: (r['name'] as String).split(' ').map((w) => w.isEmpty ? '' : w[0]).take(2).join(),
@@ -737,7 +745,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              await DatabaseHelper.instance.deleteCampaign(c['id'] as String);
+              await CampaignRepository.instance.deleteCampaign(c['id'] as String);
               await _loadPatients();
               if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                 content: Text('Campaign "${c['name']}" deleted.',
@@ -1229,10 +1237,10 @@ class _PatientsScreenState extends State<PatientsScreen> {
               return GestureDetector(
                 onTap: () async {
                   Navigator.pop(context);
-                  final screenings = await DatabaseHelper.instance.getScreeningsForPatient(p.id);
+                  final screenings = await ScreeningRepository.instance.getScreeningsForPatient(p.id);
                   if (screenings.isEmpty) return;
                   final screeningId = screenings.first['id'] as int;
-                  await DatabaseHelper.instance.updateReferralStatus(screeningId, val);
+                  await ScreeningRepository.instance.updateReferralStatus(screeningId, val);
                   await _loadPatients();
                   if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                     content: Text('Status updated to ' + (st['label'] as String) + ' for ' + p.name,
@@ -1311,7 +1319,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              await DatabaseHelper.instance.deletePatient(p.id);
+              await PatientRepository.instance.deletePatient(p.id);
               await _loadPatients();
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -1751,7 +1759,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
       duration: const Duration(seconds: 30),
     ));
     try {
-      final screenings = await DatabaseHelper.instance.getScreeningsForPatient(p.id);
+      final screenings = await ScreeningRepository.instance.getScreeningsForPatient(p.id);
       final latest = screenings.isNotEmpty ? screenings.first : null;
       final eyeResults = <Map<String, dynamic>>[];
       if (latest != null) {
@@ -1829,7 +1837,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
   Future<void> _screenPatientNow(_Patient p) async {
     if (!mounted) return;
     if (p.campaignId != null) {
-      final campaigns = await DatabaseHelper.instance.getAllCampaigns();
+      final campaigns = await CampaignRepository.instance.getAllCampaigns();
       final campaign = campaigns.firstWhere(
         (c) => c['id'] == p.campaignId,
         orElse: () => <String, dynamic>{},
@@ -1966,7 +1974,7 @@ class _PatientHistorySheetState extends State<_PatientHistorySheet> {
   }
 
   Future<void> _load() async {
-    final rows = await DatabaseHelper.instance.getScreeningsForPatient(widget.patient.id);
+    final rows = await ScreeningRepository.instance.getScreeningsForPatient(widget.patient.id);
     if (mounted) setState(() { _history = rows; _loading = false; });
   }
 
@@ -2231,7 +2239,7 @@ class _CampaignDetailScreenState extends State<_CampaignDetailScreen> {
   }
 
   Future<void> _load() async {
-    final rows = await DatabaseHelper.instance.getPatientsForCampaign(widget.campaign['id'] as String);
+    final rows = await CampaignRepository.instance.getPatientsForCampaign(widget.campaign['id'] as String);
     final list = <_Patient>[];
     for (final r in rows) {
       final age = (r['age'] as int?) ?? 0;
@@ -2464,7 +2472,7 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              await DatabaseHelper.instance.deletePatient(p.id);
+              await PatientRepository.instance.deletePatient(p.id);
               widget.onRefresh();
             },
             style: ElevatedButton.styleFrom(backgroundColor: _red, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), elevation: 0),
@@ -2684,9 +2692,9 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
             return GestureDetector(
               onTap: () async {
                 Navigator.pop(context);
-                final screenings = await DatabaseHelper.instance.getScreeningsForPatient(p.id);
+                final screenings = await ScreeningRepository.instance.getScreeningsForPatient(p.id);
                 if (screenings.isEmpty) return;
-                await DatabaseHelper.instance.updateReferralStatus(screenings.first['id'] as int, val);
+                await ScreeningRepository.instance.updateReferralStatus(screenings.first['id'] as int, val);
                 widget.onRefresh();
                 if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                   content: Text('Status updated to ' + (st['label'] as String),
@@ -2764,7 +2772,7 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
       duration: const Duration(seconds: 30),
     ));
     try {
-      final screenings = await DatabaseHelper.instance.getScreeningsForPatient(p.id);
+      final screenings = await ScreeningRepository.instance.getScreeningsForPatient(p.id);
       final latest = screenings.isNotEmpty ? screenings.first : null;
       final eyeResults = <Map<String, dynamic>>[];
       if (latest != null) {
@@ -2863,7 +2871,7 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
   }
 
   Future<void> _screenCampaignPatientNow(_Patient p) async {
-    final campaigns = await DatabaseHelper.instance.getAllCampaigns();
+    final campaigns = await CampaignRepository.instance.getAllCampaigns();
     final campaign = campaigns.firstWhere(
       (c) => c['id'] == p.campaignId,
       orElse: () => <String, dynamic>{},

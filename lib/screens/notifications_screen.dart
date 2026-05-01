@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../db/database_helper.dart';
+import '../repositories/screening_repository.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -20,7 +20,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<void> _loadNotifications() async {
-    final data = await DatabaseHelper.instance.getNotifications();
+    final data = await ScreeningRepository.instance.getNotifications();
     if (mounted) setState(() { _notifications = data; _loading = false; });
   }
 

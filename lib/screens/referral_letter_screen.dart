@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../db/database_helper.dart';
+import '../repositories/screening_repository.dart';
 
 const _ink  = Color(0xFF04091A);
 const _ink2 = Color(0xFF0B1530);
@@ -328,7 +328,7 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
 
   Future<void> _saveToDb() async {
     if (widget.screeningId == null) return;
-    await DatabaseHelper.instance.updateReferralDetails(
+    await ScreeningRepository.instance.updateReferralDetails(
       widget.screeningId!,
       facility: _facilityName,
       appointmentDate: _appointmentDate?.toIso8601String(),

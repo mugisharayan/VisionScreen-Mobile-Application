@@ -5,6 +5,9 @@ import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../db/database_helper.dart';
+import '../repositories/patient_repository.dart';
+import '../repositories/screening_repository.dart';
+import '../repositories/campaign_repository.dart';
 import 'referral_letter_screen.dart';
 
 const _ink   = Color(0xFF04091A);
@@ -238,7 +241,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
   Future<void> _loadSummary() async {
     if (_campaignId == null) return;
     setState(() => _loadingSummary = true);
-    final rows = await DatabaseHelper.instance.getPatientsForCampaign(_campaignId!);
+    final rows = await CampaignRepository.instance.getPatientsForCampaign(_campaignId!);
     if (mounted) setState(() {
       _sessionPatients = rows;
       _loadingSummary  = false;
@@ -273,7 +276,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
       if (r['eye'] == 'OS') { osLogmar = r['logmar']; osCantTell = r['cantTell']; osDuration = r['duration']; }
     }
     final outcome = _needsReferral ? 'refer' : 'pass';
-    await DatabaseHelper.instance.insertScreening({
+    await ScreeningRepository.instance.insertScreening({
       'patient_id':      _currentPatientId,
       'screening_date':  DateTime.now().toIso8601String(),
       'od_logmar':       odLogmar,
@@ -294,7 +297,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
       'chw_name':        '',
       'synced':          0,
     });
-    await DatabaseHelper.instance.updateCampaignStats(_campaignId!);
+    await CampaignRepository.instance.updateCampaignStats(_campaignId!);
     setState(() => _section = 5); // result screen
   }
 
@@ -321,7 +324,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
       _campaignId = widget.existingCampaignId;
       if (widget.existingCampaignName != null) _campaignNameCtrl.text = widget.existingCampaignName!;
       if (widget.existingCampaignLocation != null) _locationCtrl.text = widget.existingCampaignLocation!;
-      DatabaseHelper.instance.getPatientsForCampaign(widget.existingCampaignId!).then((rows) {
+      CampaignRepository.instance.getPatientsForCampaign(widget.existingCampaignId!).then((rows) {
         if (!mounted) return;
         final screened = rows.where((r) => r['outcome'] != null && r['outcome'] != 'pending').length;
         setState(() {
@@ -374,7 +377,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
     setState(() => _saving = true);
 
     final id = 'CAM-${DateTime.now().millisecondsSinceEpoch}';
-    await DatabaseHelper.instance.insertCampaign({
+    await CampaignRepository.instance.insertCampaign({
       'id':           id,
       'name':         name,
       'location':     location,
@@ -898,7 +901,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
     }
     setState(() => _registering = true);
     final pid = 'PAT-${DateTime.now().millisecondsSinceEpoch}';
-    await DatabaseHelper.instance.insertPatient({
+    await PatientRepository.instance.insertPatient({
       'id':          pid,
       'name':        name,
       'age':         _quickAge,
@@ -1397,7 +1400,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                 await _saveFacility();
               }
               // Get patient data for referral letter
-              final patient = await DatabaseHelper.instance.getPatient(_currentPatientId!);
+              final patient = await PatientRepository.instance.getPatient(_currentPatientId!);
               if (patient == null || !mounted) return;
               final patientMap = {
                 'id':     patient['id'] as String,

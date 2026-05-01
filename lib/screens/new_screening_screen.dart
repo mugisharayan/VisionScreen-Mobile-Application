@@ -13,7 +13,8 @@ import 'package:geocoding/geocoding.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'referral_letter_screen.dart';
-import '../db/database_helper.dart';
+import '../repositories/patient_repository.dart';
+import '../repositories/screening_repository.dart';
 
 // ── Colours ──────────────────────────────────────────────────────────────────
 const _ink  = Color(0xFF04091A);
@@ -183,7 +184,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   }
 
   Future<void> _loadPatients() async {
-    final rows = await DatabaseHelper.instance.getAllPatients();
+    final rows = await PatientRepository.instance.getPatients(pageSize: 500);
     if (!mounted) return;
     setState(() {
       _patientListRuntime = rows.map((r) => {
@@ -660,7 +661,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 
     final outcome = _needsReferral ? 'refer' : 'pass';
 
-    final id = await DatabaseHelper.instance.insertScreening({
+    final id = await ScreeningRepository.instance.insertScreening({
       'patient_id': _selectedPatientId,
       'screening_date': DateTime.now().toIso8601String(),
       'od_logmar': odLogmar,
@@ -688,7 +689,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 
   // ── Unsynced ──────────────────────────────────────────────────────────────
   Future<void> _loadUnsyncedCount() async {
-    final count = await DatabaseHelper.instance.getUnsyncedCount();
+    final count = await ScreeningRepository.instance.getUnsyncedCount();
     if (mounted) setState(() => _unsyncedCount = count);
   }
 
@@ -1650,7 +1651,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   'photo_path': _newPhotoPath ?? '',
                   'created_at': DateTime.now().toIso8601String(),
                 };
-                await DatabaseHelper.instance.insertPatient(newPatient);
+                await PatientRepository.instance.insertPatient(newPatient);
                 await _loadPatients();
                 setState(() {
                   _selectedPatientId = id;

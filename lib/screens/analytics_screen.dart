@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math';
-import '../db/database_helper.dart';
+import '../repositories/screening_repository.dart';
+import '../repositories/campaign_repository.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -64,19 +65,20 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       _hasError = false;
     });
     try {
-      final db = DatabaseHelper.instance;
+      final sr = ScreeningRepository.instance;
+      final cr = CampaignRepository.instance;
       final results = await Future.wait([
-        db.getOutcomeCounts(period: _selectedPeriod),
-        db.getAgeGroupCounts(period: _selectedPeriod),
-        db.getGenderCounts(period: _selectedPeriod),
-        db.getPassRateTrend(_selectedPeriod),
-        db.getVisualAcuityDistribution(period: _selectedPeriod),
-        db.getConditionCounts(period: _selectedPeriod),
-        db.getSeverityClassification(period: _selectedPeriod),
-        db.getReferralStatusCounts(period: _selectedPeriod),
-        db.getAllCampaigns(),
-        db.getConditionsByAgeGroup(period: _selectedPeriod),
-        db.getVillageBreakdown(period: _selectedPeriod),
+        sr.getOutcomeCounts(period: _selectedPeriod),
+        sr.getAgeGroupCounts(period: _selectedPeriod),
+        sr.getGenderCounts(period: _selectedPeriod),
+        sr.getPassRateTrend(_selectedPeriod),
+        sr.getVisualAcuityDistribution(period: _selectedPeriod),
+        sr.getConditionCounts(period: _selectedPeriod),
+        sr.getSeverityClassification(period: _selectedPeriod),
+        sr.getReferralStatusCounts(period: _selectedPeriod),
+        cr.getAllCampaigns(),
+        sr.getConditionsByAgeGroup(period: _selectedPeriod),
+        sr.getVillageBreakdown(period: _selectedPeriod),
       ]);
       if (!mounted) return;
       setState(() {

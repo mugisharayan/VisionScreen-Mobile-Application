@@ -7,11 +7,13 @@ import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'package:printing/printing.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import '../db/database_helper.dart';
+import '../repositories/auth_repository.dart';
+import '../repositories/screening_repository.dart';
+import '../repositories/campaign_repository.dart';
 
 // â”€â”€ Colours â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _C {
@@ -75,7 +77,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _language = p.getString('referral_language') ?? 'English Only';
       _chwPhoto = p.getString('chw_photo') ?? '';
     });
-    final count = await DatabaseHelper.instance.getUnsyncedCount();
+    final count = await ScreeningRepository.instance.getUnsyncedCount();
     if (!mounted) return;
     setState(() => _unsyncedCount = count);
   }
@@ -2244,25 +2246,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 return;
                               }
                               setSheet(() => loading = true);
-                              // Verify current password against DB
-                              final profile = await DatabaseHelper.instance
-                                  .getChwProfileByEmail(_chwEmail);
-                              if (profile == null ||
-                                  profile['password'] != currentCtrl.text) {
+                              // Verify current password and update via AuthRepository
+                              final error = await AuthRepository.instance.changePassword(
+                                email: _chwEmail,
+                                currentPassword: currentCtrl.text,
+                                newPassword: newCtrl.text,
+                              );
+                              if (error != null) {
                                 setSheet(() {
                                   loading = false;
-                                  currentError = 'Incorrect current password';
+                                  currentError = error;
                                 });
                                 return;
                               }
-                              // Update password in DB
-                              final db = await DatabaseHelper.instance.db;
-                              await db.update(
-                                'chw_profiles',
-                                {'password': newCtrl.text},
-                                where: 'email = ?',
-                                whereArgs: [_chwEmail.toLowerCase()],
-                              );
                               if (ctx.mounted) Navigator.pop(ctx);
                               if (mounted) {
                                 _showSnack(
@@ -3106,7 +3102,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             : '0.0';
 
         // Fetch patients for this campaign
-        final patients = await DatabaseHelper.instance.getPatientsForCampaign(
+        final patients = await CampaignRepository.instance.getPatientsForCampaign(
           campaignId,
         );
 
@@ -3376,18 +3372,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       _showSnack('Generating analytics report...', _C.teal);
 
-      final outcomes = await DatabaseHelper.instance.getOutcomeCounts();
-      final ageGroups = await DatabaseHelper.instance.getAgeGroupCounts();
-      final genders = await DatabaseHelper.instance.getGenderCounts();
-      final acuity = await DatabaseHelper.instance
-          .getVisualAcuityDistribution();
-      final referrals = await DatabaseHelper.instance.getReferralStatusCounts();
-      final conditions = await DatabaseHelper.instance.getConditionCounts();
-      final villages = await DatabaseHelper.instance.getVillageBreakdown();
-      final severity = await DatabaseHelper.instance
-          .getSeverityClassification();
-      final campaigns = await DatabaseHelper.instance.getAllCampaigns();
-      final condByAge = await DatabaseHelper.instance.getConditionsByAgeGroup();
+      final outcomes   = await ScreeningRepository.instance.getOutcomeCounts();
+      final ageGroups  = await ScreeningRepository.instance.getAgeGroupCounts();
+      final genders    = await ScreeningRepository.instance.getGenderCounts();
+      final acuity     = await ScreeningRepository.instance.getVisualAcuityDistribution();
+      final referrals  = await ScreeningRepository.instance.getReferralStatusCounts();
+      final conditions = await ScreeningRepository.instance.getConditionCounts();
+      final villages   = await ScreeningRepository.instance.getVillageBreakdown();
+      final severity   = await ScreeningRepository.instance.getSeverityClassification();
+      final campaigns  = await CampaignRepository.instance.getAllCampaigns();
+      final condByAge  = await ScreeningRepository.instance.getConditionsByAgeGroup();
 
       final passed = outcomes['pass'] ?? 0;
       final referred = outcomes['refer'] ?? 0;

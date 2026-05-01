@@ -3,6 +3,8 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
+// ignore: unused_import — kept for legacy hashPassword compatibility
+import '../utils/security_utils.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._();
@@ -757,6 +759,9 @@ class DatabaseHelper {
 
   // ── CHW PROFILES ──────────────────────────────────────────
 
+  /// Legacy unsalted SHA-256 hash — kept for backward compatibility only.
+  /// New code should use [SecurityUtils.hashPassword] / [SecurityUtils.verifyPassword].
+  @Deprecated('Use SecurityUtils.hashPassword instead')
   static String hashPassword(String password) {
     final bytes = utf8.encode(password);
     return sha256.convert(bytes).toString();

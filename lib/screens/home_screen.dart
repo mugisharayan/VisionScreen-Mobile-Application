@@ -17,8 +17,7 @@ import 'new_screening_screen.dart';
 import 'bulk_mode_screen.dart';
 
 import 'analytics_screen.dart';
-import 'settings_screen.dart';
-import '../db/database_helper.dart';
+import '../repositories/screening_repository.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -141,10 +140,10 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _loadDbStats() async {
-    final outcomes = await DatabaseHelper.instance.getOutcomeCounts();
-    final unsynced = await DatabaseHelper.instance.getUnsyncedCount();
-    final recent = await DatabaseHelper.instance.getRecentScreeningsWithPatient(limit: 4);
-    final referred = await DatabaseHelper.instance.getReferredPatients();
+    final outcomes = await ScreeningRepository.instance.getOutcomeCounts();
+    final unsynced = await ScreeningRepository.instance.getUnsyncedCount();
+    final recent   = await ScreeningRepository.instance.getRecentScreeningsWithPatient(limit: 4);
+    final referred = await ScreeningRepository.instance.getReferredPatients();
     if (!mounted) return;
     setState(() {
       _totalScreened = (outcomes['pass'] ?? 0) + (outcomes['refer'] ?? 0);
@@ -153,7 +152,7 @@ class _HomeScreenState extends State<HomeScreen>
       _recentScreenings = recent;
       _referredPatients = referred;
     });
-    final notifications = await DatabaseHelper.instance.getNotifications();
+    final notifications = await ScreeningRepository.instance.getNotifications();
     if (!mounted) return;
     setState(() => _notificationCount = notifications.where((n) => n['read'] == false).length);
   }
@@ -1864,7 +1863,7 @@ class _HomeScreenState extends State<HomeScreen>
               return GestureDetector(
                 onTap: () async {
                   Navigator.pop(ctx);
-                  await DatabaseHelper.instance.updateReferralStatus(screeningId, val);
+                  await ScreeningRepository.instance.updateReferralStatus(screeningId, val);
                   await _loadDbStats();
                   if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                     content: Text('Status updated to ' + (st['label'] as String),

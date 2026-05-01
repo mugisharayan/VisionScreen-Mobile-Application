@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'splash_screen.dart' show AppColors;
 import 'auth_widgets.dart';
 import '../db/database_helper.dart';
+import '../repositories/auth_repository.dart';
 
 // ─────────────────────────────────────────────────────────────
 // Forgot Password Screen — 3 steps:
@@ -94,8 +95,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (_newPasswordError != null || _confirmPasswordError != null) return;
 
     setState(() => _resetLoading = true);
-    final hashed = DatabaseHelper.hashPassword(_newPasswordCtrl.text);
-    await DatabaseHelper.instance.updateChwPassword(_verifiedEmail, hashed);
+    await AuthRepository.instance.resetPassword(
+      _verifiedEmail,
+      _newPasswordCtrl.text,
+    );
     if (!mounted) return;
     setState(() {
       _resetLoading = false;
