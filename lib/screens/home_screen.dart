@@ -460,30 +460,31 @@ class _HomeScreenState extends State<HomeScreen>
                 padding: const EdgeInsets.fromLTRB(18, 14, 18, 52),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Brand row
+                   children: [
+                    // â”€â”€ Brand row â”€â”€
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
+                        // Logo left
                         Row(children: [
                           Container(
-                            width: 28, height: 28,
+                             width: 42, height: 42,
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(8),
+                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
                             ),
-                            child: const Center(
+                            child: Center(
                               child: CustomPaint(
-                                 size: const Size(16, 16),
-                                 painter: AuthEyePainter(color: Colors.white),
-                               ),
-                             ),
-                           ),
+                                 size: const Size(24, 24),
+                                painter: AuthEyePainter(color: Colors.white),
+                              ),
+                            ),
+                          ),
                           const SizedBox(width: 8),
                           RichText(
                             text: TextSpan(
-                              style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.w900),
+                               style: GoogleFonts.nunito(fontSize: 26, fontWeight: FontWeight.w900),
                               children: const [
                                 TextSpan(text: 'Vision', style: TextStyle(color: Colors.white)),
                                 TextSpan(text: 'Screen', style: TextStyle(color: Colors.black)),
@@ -491,52 +492,140 @@ class _HomeScreenState extends State<HomeScreen>
                             ),
                           ),
                         ]),
+                        // Online + bell + profile
+                        Row(children: [
+                          // Online indicator
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: _isOffline ? Colors.red.withValues(alpha: 0.25) : Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(99),
+                              border: Border.all(color: _isOffline ? Colors.red.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.5)),
+                            ),
+                            child: Row(mainAxisSize: MainAxisSize.min, children: [
+                              AnimatedBuilder(
+                                animation: _pulseAnimation,
+                                builder: (_, __) => Opacity(
+                                  opacity: _isOffline ? 1.0 : _pulseAnimation.value,
+                                  child: Container(
+                                    width: 6, height: 6,
+                                    decoration: BoxDecoration(
+                                      color: _isOffline ? Colors.red : Colors.white,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(_isOffline ? 'Offline' : 'Online',
+                                style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w700,
+                                  color: _isOffline ? Colors.red : Colors.white)),
+                            ]),
+                          ),
+                          const SizedBox(width: 8),
+                          // Notification bell
+                          GestureDetector(
+                            onTap: () async {
+                              await Navigator.push(context, PageRouteBuilder(
+                                pageBuilder: (_, __, ___) => const NotificationsScreen(),
+                                transitionsBuilder: (_, anim, __, child) => FadeTransition(opacity: anim, child: child),
+                                transitionDuration: const Duration(milliseconds: 300),
+                              ));
+                              if (mounted) setState(() => _notificationCount = 0);
+                            },
+                            child: Stack(clipBehavior: Clip.none, children: [
+                              Container(
+                                width: 36, height: 36,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
+                                ),
+                                child: Icon(
+                                  _notificationCount > 0 ? Icons.notifications_active_rounded : Icons.notifications_rounded,
+                                  color: Colors.white, size: 18,
+                                ),
+                              ),
+                              if (_notificationCount > 0)
+                                Positioned(
+                                  top: -4, right: -4,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFEF4444),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Text('$_notificationCount',
+                                      style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.w800, color: Colors.white)),
+                                  ),
+                                ),
+                            ]),
+                          ),
+                          const SizedBox(width: 8),
+                          // Profile avatar
+                          Container(
+                            width: 38, height: 38,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              gradient: const LinearGradient(
+                                colors: [AppColors.greenDark, AppColors.green],
+                                begin: Alignment.topLeft, end: Alignment.bottomRight,
+                              ),
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: _chwPhoto.isNotEmpty && File(_chwPhoto).existsSync()
+                                  ? Image.file(File(_chwPhoto), width: 38, height: 38, fit: BoxFit.cover)
+                                  : Center(
+                                      child: Text(
+                                        _chwName.trim().isEmpty ? 'VS' : _chwName.trim().split(' ').map((w) => w.isEmpty ? '' : w[0]).take(2).join().toUpperCase(),
+                                        style: GoogleFonts.nunito(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13),
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ]),
                       ],
                     ),
-                    const SizedBox(height: 14),
-                    _buildUserRow(),
-                    const SizedBox(height: 14),
-
-
-                    Text(
-                      _now.hour < 12 ? 'Good morning,' : _now.hour < 17 ? 'Good afternoon,' : 'Good evening,',
-                      style: GoogleFonts.poppins(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w500),
-                    ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 12),
+                    // â”€â”€ Greeting â”€â”€
                     RichText(
                       text: TextSpan(
-                        style: GoogleFonts.nunito(fontSize: 24, fontWeight: FontWeight.w900),
+                        style: GoogleFonts.nunito(fontSize: 22, fontWeight: FontWeight.w900),
                         children: [
-                          const TextSpan(text: 'Ready to screen, ', style: TextStyle(color: Colors.black, fontSize: 22)),
                           TextSpan(
-                            text: _chwName.isNotEmpty ? _chwName.split(' ').first : 'CHW',
+                            text: _now.hour < 12 ? 'Good morning, ' : _now.hour < 17 ? 'Good afternoon, ' : 'Good evening, ',
+                            style: const TextStyle(color: Colors.black, fontSize: 22),
+                          ),
+                          TextSpan(
+                            text: (_chwName.isNotEmpty ? _chwName.split(' ').first : 'CHW') + '!',
                             style: const TextStyle(color: Color(0xFFFFD700), fontSize: 22, fontStyle: FontStyle.italic),
                           ),
-                          const TextSpan(text: '!', style: TextStyle(color: Colors.white, fontSize: 22)),
                         ],
                       ),
                     ),
                     const SizedBox(height: 6),
+                    // â”€â”€ Location + time row â”€â”€
                     Row(
                       children: [
                         GestureDetector(
                           onTap: _fetchLocation,
-                          child: Row(
-                            children: [
-                              Icon(
-                                _locationLabel.contains('retry') || _locationLabel.contains('timeout')
-                                    ? Icons.refresh_rounded : Icons.location_on_rounded,
-                                size: 12, color: Colors.white,
-                              ),
-                              const SizedBox(width: 4),
-                              ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 160),
-                                child: Text(_locationLabel, overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.poppins(fontSize: 11,
-                                    color: Colors.white, fontWeight: FontWeight.w600)),
-                              ),
-                            ],
-                          ),
+                          child: Row(children: [
+                            Icon(
+                              _locationLabel.contains('retry') || _locationLabel.contains('timeout')
+                                  ? Icons.refresh_rounded : Icons.location_on_rounded,
+                              size: 12, color: Colors.white,
+                            ),
+                            const SizedBox(width: 4),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 160),
+                              child: Text(_locationLabel, overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.poppins(fontSize: 11,
+                                  color: Colors.white, fontWeight: FontWeight.w600)),
+                            ),
+                          ]),
                         ),
                         const Spacer(),
                         Container(
@@ -556,16 +645,21 @@ class _HomeScreenState extends State<HomeScreen>
                       ],
                     ),
                     const SizedBox(height: 4),
+                    // â”€â”€ Date row â”€â”€
                     Row(children: [
                       Icon(Icons.calendar_today_rounded, size: 11, color: Colors.white),
                       const SizedBox(width: 4),
-                      Text(_formatDate(_now), style: GoogleFonts.poppins(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600)),
+                      Text(_formatDate(_now), style: GoogleFonts.poppins(
+                          fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600)),
                     ]),
                     const SizedBox(height: 14),
+                    // â”€â”€ Sync bar â”€â”€
                     _buildSyncBar(),
                     const SizedBox(height: 12),
+                    // â”€â”€ Stats â”€â”€
                     _buildStatsRow(),
                   ],
+
                 ),
               ),
             ],
@@ -936,12 +1030,12 @@ class _HomeScreenState extends State<HomeScreen>
         decoration: BoxDecoration(
           color: cardColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white, width: 2),
+          border: Border.all(color: const Color(0xFFFFD700), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: cardColor.withValues(alpha: 0.45),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              color: cardColor.withValues(alpha: 0.6),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
