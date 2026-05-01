@@ -1256,7 +1256,7 @@ class _HomeScreenState extends State<HomeScreen>
         'title': 'New Screening',
         'sub': 'Register & test patient',
         'image': 'asset:—Pngtree—visual acuity_7080163.png',
-        'overlayColors': [AppColors.green, const Color(0xFF04091A)],
+        'overlayColors': [const Color(0xFF2ECC71), const Color(0xFF27AE60)],
         'tag': 'START TEST',
       },
       {
@@ -1264,7 +1264,7 @@ class _HomeScreenState extends State<HomeScreen>
         'title': 'Bulk Mode',
         'sub': 'Campaign screening',
         'image': 'asset:image.png',
-        'overlayColors': [const Color(0xFF0B1530), const Color(0xFF04091A)],
+        'overlayColors': [const Color(0xFF3B82F6), const Color(0xFF1D4ED8)],
         'tag': 'CAMPAIGN',
       },
       {
@@ -1272,7 +1272,7 @@ class _HomeScreenState extends State<HomeScreen>
         'title': 'Training',
         'sub': 'Learn the system',
         'image': 'asset:Medical Staff Meeting-800x531.jpg',
-        'overlayColors': [const Color(0xFF065F46), const Color(0xFF064E3B)],
+        'overlayColors': [const Color(0xFFF59E0B), const Color(0xFFD97706)],
         'tag': 'LEARN',
       },
       {
@@ -1281,7 +1281,7 @@ class _HomeScreenState extends State<HomeScreen>
 
         'sub': 'Programme data',
         'image': 'asset:pngwing.com.png',
-        'overlayColors': [const Color(0xFF1E3A5F), const Color(0xFF0F172A)],
+        'overlayColors': [const Color(0xFF8B5CF6), const Color(0xFF6D28D9)],
         'tag': 'INSIGHTS',
       },
     ];
@@ -1300,11 +1300,12 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildActionCard(Map a) {
     final accent = (a['overlayColors'] as List<Color>).first;
+    final img = a['image'] as String;
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(18),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         onTap: () {
           if (a['title'] == 'New Screening') {
             Navigator.push(context,
@@ -1322,89 +1323,100 @@ class _HomeScreenState extends State<HomeScreen>
               MaterialPageRoute(builder: (_) => const AnalyticsScreen()));
           }
         },
-        splashColor: AppColors.greenHero,
-        highlightColor: AppColors.greenHero,
+        splashColor: accent.withValues(alpha: 0.15),
+        highlightColor: accent.withValues(alpha: 0.08),
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.borderColor, width: 1.5),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: accent.withValues(alpha: 0.35), width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: AppColors.cardShadow,
-                blurRadius: 8,
-                offset: const Offset(0, 3),
+                color: accent.withValues(alpha: 0.22),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(15),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            borderRadius: BorderRadius.circular(17),
+            child: Stack(
+              fit: StackFit.expand,
               children: [
-                // Image top half
-                Expanded(
-                  child: Builder(builder: (_) {
-                    final img = a['image'] as String;
-                    if (img.startsWith('asset:')) {
-                      return Image.asset(
-                        img.substring(6),
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        errorBuilder: (_, __, ___) => Container(color: AppColors.greenHero),
-                      );
-                    }
-                    return Image.network(
-                      img, fit: BoxFit.cover, width: double.infinity,
-                      errorBuilder: (_, __, ___) => Container(color: AppColors.greenHero),
-                    );
-                  }),
+                // Background image
+                img.startsWith('asset:')
+                    ? Image.asset(img.substring(6), fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(color: accent.withValues(alpha: 0.15)))
+                    : Image.network(img, fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(color: accent.withValues(alpha: 0.15))),
+                // Frosted glass overlay
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.white.withValues(alpha: 0.15),
+                        Colors.white.withValues(alpha: 0.82),
+                      ],
+                    ),
+                  ),
                 ),
-                // White bottom info strip
+                // Colored left stripe
+                Positioned(
+                  left: 0, top: 0, bottom: 0,
+                  child: Container(
+                    width: 5,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [accent, (a['overlayColors'] as List<Color>)[1]],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                  ),
+                ),
+                // Content
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                  child: Row(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(
-                        width: 28, height: 28,
-                        decoration: BoxDecoration(
-                          color: AppColors.greenHero,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppColors.borderColor),
-                        ),
-                        child: Icon(a['icon'] as IconData,
-                            color: AppColors.greenDark, size: 14),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            width: 34, height: 34,
+                            decoration: BoxDecoration(
+                              color: accent.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: accent.withValues(alpha: 0.4)),
+                            ),
+                            child: Icon(a['icon'] as IconData, color: accent, size: 17),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: accent.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(99),
+                              border: Border.all(color: accent.withValues(alpha: 0.35)),
+                            ),
+                            child: Text(a['tag'] as String,
+                              style: GoogleFonts.poppins(fontSize: 7, fontWeight: FontWeight.w800,
+                                color: accent, letterSpacing: 0.8)),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(a['title'] as String,
-                                style: GoogleFonts.nunito(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.textDark)),
-                            Text(a['sub'] as String,
-                                style: GoogleFonts.poppins(
-                                    fontSize: 9,
-                                    color: AppColors.textMuted)),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.greenHero,
-                          borderRadius: BorderRadius.circular(99),
-                          border: Border.all(color: AppColors.borderColor),
-                        ),
-                        child: Text(a['tag'] as String,
-                            style: GoogleFonts.poppins(
-                                fontSize: 7,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.greenDark,
-                                letterSpacing: 0.8)),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(a['title'] as String,
+                            style: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w900,
+                              color: AppColors.textDark)),
+                          Text(a['sub'] as String,
+                            style: GoogleFonts.poppins(fontSize: 9,
+                              color: AppColors.textMuted, fontWeight: FontWeight.w500)),
+                        ],
                       ),
                     ],
                   ),
@@ -1416,6 +1428,8 @@ class _HomeScreenState extends State<HomeScreen>
       ),
     );
   }
+
+
 
 
   Widget _buildRecentPatients() {
