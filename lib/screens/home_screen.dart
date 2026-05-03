@@ -409,6 +409,9 @@ class _HomeScreenState extends State<HomeScreen>
                           // Online pill
                           _buildOnlinePill(),
                           const SizedBox(width: 8),
+                          // Sync button
+                          _buildSyncButton(),
+                          const SizedBox(width: 8),
                           // Notification bell
                           _buildNotifBell(),
                           const SizedBox(width: 8),
@@ -548,6 +551,62 @@ class _HomeScreenState extends State<HomeScreen>
                 fontWeight: FontWeight.w600,
                 color: _isOffline ? VsColors.rose : Colors.white)),
       ]),
+    );
+  }
+
+  Widget _buildSyncButton() {
+    return GestureDetector(
+      onTap: _isSyncing ? null : _doSync,
+      child: AnimatedBuilder(
+        animation: _syncCtrl,
+        builder: (_, child) => Transform.rotate(
+          angle: _isSyncing ? _syncCtrl.value * 2 * 3.14159 : 0,
+          child: child,
+        ),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          width: 38, height: 38,
+          decoration: BoxDecoration(
+            color: _unsyncedCount > 0
+                ? VsColors.amber.withValues(alpha: 0.25)
+                : Colors.white.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _unsyncedCount > 0
+                  ? VsColors.amber.withValues(alpha: 0.6)
+                  : Colors.white.withValues(alpha: 0.25),
+            ),
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Icon(
+                _isSyncing
+                    ? Icons.sync_rounded
+                    : _unsyncedCount > 0
+                        ? Icons.cloud_upload_rounded
+                        : Icons.cloud_done_rounded,
+                color: _unsyncedCount > 0 ? VsColors.amber : Colors.white,
+                size: 18,
+              ),
+              // Badge showing unsynced count
+              if (_unsyncedCount > 0 && !_isSyncing)
+                Positioned(
+                  top: 2, right: 2,
+                  child: Container(
+                    width: 8, height: 8,
+                    decoration: BoxDecoration(
+                      color: VsColors.amber,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                          color: VsColors.brandDeep, width: 1),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
