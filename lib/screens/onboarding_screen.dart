@@ -1,59 +1,82 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
+import 'dart:math';
 import '../utils/app_theme.dart';
 import '../widgets/vs_logo.dart';
 import '../widgets/onboarding_illustrations.dart';
 
 // ─────────────────────────────────────────────────────────────
-// Onboarding Screen
-// 4 slides, each with a unique gradient + custom illustration.
-// Diagonal clipper, animated dots, teal pill button.
+// Onboarding Screen — full-screen immersive slides
 // ─────────────────────────────────────────────────────────────
 
 class _SlideData {
   const _SlideData({
+    required this.tag,
     required this.headline,
     required this.headlineAccent,
     required this.body,
-    required this.gradient,
+    required this.gradientColors,
+    required this.accentColor,
     required this.illustration,
+    required this.stat,
+    required this.statLabel,
   });
+  final String tag;
   final String headline;
   final String headlineAccent;
   final String body;
-  final LinearGradient gradient;
+  final List<Color> gradientColors;
+  final Color accentColor;
   final Widget illustration;
+  final String stat;
+  final String statLabel;
 }
 
 final List<_SlideData> _slides = [
   _SlideData(
-    headline: 'Community ',
-    headlineAccent: 'Health Workers',
-    body: 'Designed for field-based CHWs conducting vision screenings in Ugandan communities. No specialist training required.',
-    gradient: VsGradients.heroSlide1,
+    tag: 'COMMUNITY HEALTH',
+    headline: 'Built for\n',
+    headlineAccent: 'Field Workers',
+    body: 'Designed for CHWs conducting vision screenings across Ugandan communities. No specialist training required.',
+    gradientColors: const [Color(0xFF0A3D38), Color(0xFF0D9488), Color(0xFF14B8A6)],
+    accentColor: const Color(0xFF5EEAD4),
     illustration: const ChwIllustration(color: Colors.white),
+    stat: '2,400+',
+    statLabel: 'CHWs trained',
   ),
   _SlideData(
-    headline: 'Visual ',
-    headlineAccent: 'Acuity Testing',
-    body: 'Uses the clinically validated Tumbling E chart — the literacy-independent optotype recommended for community settings. Works for all ages.',
-    gradient: VsGradients.heroSlide2,
+    tag: 'CLINICAL TESTING',
+    headline: 'WHO-Validated\n',
+    headlineAccent: 'Vision Testing',
+    body: 'Uses the Tumbling E chart — the literacy-independent optotype recommended for community settings. Works for all ages.',
+    gradientColors: const [Color(0xFF0C2A4A), Color(0xFF0369A1), Color(0xFF0EA5E9)],
+    accentColor: const Color(0xFF7DD3FC),
     illustration: const EChartIllustration(color: Colors.white),
+    stat: '6/6',
+    statLabel: 'Snellen standard',
   ),
   _SlideData(
-    headline: 'Patient ',
-    headlineAccent: 'Care & Referrals',
-    body: 'Register patients, track test history per eye, generate structured referral documents and follow up on every referred patient.',
-    gradient: VsGradients.heroSlide3,
+    tag: 'PATIENT CARE',
+    headline: 'Track &\n',
+    headlineAccent: 'Refer Patients',
+    body: 'Register patients, track test history per eye, generate structured referral documents and follow up on every case.',
+    gradientColors: const [Color(0xFF064E3B), Color(0xFF059669), Color(0xFF10B981)],
+    accentColor: const Color(0xFF6EE7B7),
     illustration: const PatientCareIllustration(color: Colors.white),
+    stat: '98%',
+    statLabel: 'Referral accuracy',
   ),
   _SlideData(
-    headline: 'Data ',
+    tag: 'DATA & INSIGHTS',
+    headline: 'Live\n',
     headlineAccent: 'Analytics',
-    body: 'Monitor your screening impact with live analytics. Data syncs automatically when internet is available. Core functions always work offline.',
-    gradient: VsGradients.heroSlide4,
+    body: 'Monitor your screening impact with real-time analytics. Syncs automatically when online. Works fully offline.',
+    gradientColors: const [Color(0xFF1E1B4B), Color(0xFF4F46E5), Color(0xFF818CF8)],
+    accentColor: const Color(0xFFC7D2FE),
     illustration: const AnalyticsIllustration(color: Colors.white),
+    stat: '100%',
+    statLabel: 'Offline capable',
   ),
 ];
 
@@ -69,43 +92,48 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   int _currentPage = 0;
   Timer? _autoTimer;
 
-  // Slide content animation
-  late final AnimationController _slideCtrl;
-  late final Animation<double> _slideOpacity;
-  late final Animation<Offset> _slideOffset;
-
-  // Button press animation
-  late final AnimationController _btnCtrl;
-  late final Animation<double> _btnScale;
-
-  // Gradient transition
+  // Gradient animation
   late final AnimationController _gradCtrl;
   late final Animation<double> _gradAnim;
-  LinearGradient _fromGrad = VsGradients.heroSlide1;
-  LinearGradient _toGrad   = VsGradients.heroSlide1;
+  List<Color> _fromColors = _slides[0].gradientColors;
+  List<Color> _toColors   = _slides[0].gradientColors;
+
+  // Content slide-in
+  late final AnimationController _contentCtrl;
+  late final Animation<double> _contentOpacity;
+  late final Animation<Offset>  _contentSlide;
+
+  // Button press
+  late final AnimationController _btnCtrl;
+  late final Animation<double>   _btnScale;
+
+  // Floating particles
+  late final AnimationController _particleCtrl;
 
   @override
   void initState() {
     super.initState();
 
-    _slideCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 450));
-    _slideOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(parent: _slideCtrl, curve: Curves.easeOut));
-    _slideOffset = Tween<Offset>(
-            begin: const Offset(0.08, 0), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _slideCtrl, curve: Curves.easeOut));
-    _slideCtrl.forward();
+    _gradCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 600));
+    _gradAnim = CurvedAnimation(parent: _gradCtrl, curve: Curves.easeInOut);
+
+    _contentCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 500));
+    _contentOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(parent: _contentCtrl, curve: const Interval(0.0, 0.7, curve: Curves.easeOut)));
+    _contentSlide = Tween<Offset>(begin: const Offset(0, 0.12), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _contentCtrl, curve: Curves.easeOutCubic));
+    _contentCtrl.forward();
 
     _btnCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 120));
-    _btnScale = Tween<double>(begin: 1.0, end: 0.95)
+    _btnScale = Tween<double>(begin: 1.0, end: 0.93)
         .animate(CurvedAnimation(parent: _btnCtrl, curve: Curves.easeInOut));
 
-    _gradCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 500));
-    _gradAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(parent: _gradCtrl, curve: Curves.easeInOut));
+    _particleCtrl = AnimationController(
+        vsync: this, duration: const Duration(seconds: 6))
+      ..repeat();
 
     _startAutoAdvance();
   }
@@ -114,15 +142,16 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   void dispose() {
     _autoTimer?.cancel();
     _pageCtrl.dispose();
-    _slideCtrl.dispose();
-    _btnCtrl.dispose();
     _gradCtrl.dispose();
+    _contentCtrl.dispose();
+    _btnCtrl.dispose();
+    _particleCtrl.dispose();
     super.dispose();
   }
 
   void _startAutoAdvance() {
     _autoTimer?.cancel();
-    _autoTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+    _autoTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (mounted) _nextSlide();
     });
   }
@@ -135,353 +164,419 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   void _nextSlide() {
     if (_currentPage < _slides.length - 1) {
       _pageCtrl.nextPage(
-          duration: const Duration(milliseconds: 420),
-          curve: Curves.easeInOut);
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOutCubic);
     } else {
       _goToLogin();
     }
   }
 
   void _onPageChanged(int index) {
-    // Animate gradient transition
-    _fromGrad = _slides[_currentPage].gradient;
-    _toGrad   = _slides[index].gradient;
+    _fromColors = _slides[_currentPage].gradientColors;
+    _toColors   = _slides[index].gradientColors;
     _gradCtrl.forward(from: 0);
-
     setState(() => _currentPage = index);
-    _slideCtrl.forward(from: 0);
+    _contentCtrl.forward(from: 0);
     _startAutoAdvance();
   }
 
-  LinearGradient _lerpGradient(double t) {
-    final c1a = _fromGrad.colors[0];
-    final c1b = _fromGrad.colors[1];
-    final c2a = _toGrad.colors[0];
-    final c2b = _toGrad.colors[1];
-    return LinearGradient(
-      colors: [
-        Color.lerp(c1a, c2a, t)!,
-        Color.lerp(c1b, c2b, t)!,
-      ],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-    );
-  }
+  List<Color> _lerpColors(double t) => [
+    Color.lerp(_fromColors[0], _toColors[0], t)!,
+    Color.lerp(_fromColors[1], _toColors[1], t)!,
+    Color.lerp(_fromColors[2], _toColors[2], t)!,
+  ];
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final slide = _slides[_currentPage];
     final isLast = _currentPage == _slides.length - 1;
+
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          // ── Hero zone with illustration ──────────────────
-          Expanded(
-            flex: 58,
-            child: AnimatedBuilder(
-              animation: _gradAnim,
-              builder: (_, child) => Container(
-                decoration: BoxDecoration(
-                  gradient: _lerpGradient(_gradAnim.value),
-                ),
-                child: child,
+      backgroundColor: Colors.black,
+      body: AnimatedBuilder(
+        animation: _gradAnim,
+        builder: (_, child) {
+          final colors = _lerpColors(_gradAnim.value);
+          return Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: colors,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                stops: const [0.0, 0.5, 1.0],
               ),
-              child: Stack(
+            ),
+            child: child,
+          );
+        },
+        child: Stack(
+          children: [
+            // ── Floating particles background ──
+            Positioned.fill(
+              child: AnimatedBuilder(
+                animation: _particleCtrl,
+                builder: (_, __) => CustomPaint(
+                  painter: _ParticlePainter(
+                    progress: _particleCtrl.value,
+                    color: slide.accentColor,
+                  ),
+                ),
+              ),
+            ),
+
+            // ── Large decorative circles ──
+            Positioned(
+              top: -size.width * 0.4,
+              right: -size.width * 0.3,
+              child: Container(
+                width: size.width * 0.9,
+                height: size.width * 0.9,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.05), width: 1),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -size.width * 0.3,
+              left: -size.width * 0.2,
+              child: Container(
+                width: size.width * 0.7,
+                height: size.width * 0.7,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.03),
+                  border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.06), width: 1),
+                ),
+              ),
+            ),
+
+            // ── Full-screen PageView ──
+            PageView.builder(
+              controller: _pageCtrl,
+              onPageChanged: _onPageChanged,
+              itemCount: _slides.length,
+              itemBuilder: (_, index) => const SizedBox.shrink(),
+            ),
+
+            // ── Content overlay ──
+            SafeArea(
+              child: Column(
                 children: [
-                  // Dot pattern
-                  Positioned.fill(
-                    child: CustomPaint(painter: _DotPatternPainter()),
-                  ),
-
-                  // Decorative circles
-                  Positioned(
-                    top: -40, right: -40,
-                    child: Container(
-                      width: 160, height: 160,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.08),
-                            width: 1),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 20, left: -30,
-                    child: Container(
-                      width: 100, height: 100,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.06),
-                            width: 1),
-                      ),
-                    ),
-                  ),
-
-                  // Logo top-left
-                  SafeArea(
-                    bottom: false,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                      child: VsLogoWordmark(
-                        logoSize: 30,
-                        color: Colors.white,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-
-                  // Skip button top-right
-                  SafeArea(
-                    bottom: false,
-                    child: Align(
-                      alignment: Alignment.topRight,
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(0, 16, 20, 0),
-                        child: GestureDetector(
+                  // Top bar
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+                    child: Row(
+                      children: [
+                        // Logo wordmark
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 32, height: 32,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(9),
+                                border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.3)),
+                              ),
+                              child: const Center(
+                                child: VsLogo(size: 22, color: Colors.white),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            RichText(
+                              text: TextSpan(children: [
+                                TextSpan(
+                                  text: 'Vision',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 16, fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: 'Screen',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 16, fontWeight: FontWeight.w800,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ]),
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        // Skip
+                        GestureDetector(
                           onTap: _goToLogin,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 6),
+                                horizontal: 16, vertical: 7),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
+                              color: Colors.white.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(99),
                               border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.3)),
+                                  color: Colors.white.withValues(alpha: 0.25)),
                             ),
-                            child: Text(
-                              'Skip',
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
+                            child: Text('Skip',
+                                style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // ── Illustration zone ──
+                  Expanded(
+                    flex: 52,
+                    child: FadeTransition(
+                      opacity: _contentOpacity,
+                      child: SlideTransition(
+                        position: _contentSlide,
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: slide.illustration,
                           ),
                         ),
                       ),
                     ),
                   ),
 
-                  // Illustration (PageView for swipe)
-                  PageView.builder(
-                    controller: _pageCtrl,
-                    onPageChanged: _onPageChanged,
-                    itemCount: _slides.length,
-                    itemBuilder: (_, index) => _IllustrationSlide(
-                      data: _slides[index],
-                      slideCtrl: _slideCtrl,
-                      slideOpacity: _slideOpacity,
-                      slideOffset: _slideOffset,
-                      isActive: index == _currentPage,
-                    ),
-                  ),
-
-                  // Diagonal bottom cut
-                  Positioned(
-                    bottom: -1,
-                    left: 0,
-                    right: 0,
-                    child: ClipPath(
-                      clipper: _DiagonalClipper(),
-                      child: Container(height: 48, color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // ── Text + controls zone ─────────────────────────
-          Expanded(
-            flex: 42,
-            child: Container(
-              color: Colors.white,
-              padding: const EdgeInsets.fromLTRB(28, 8, 28, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 8),
-
-                  // Headline
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 350),
-                    transitionBuilder: (child, anim) => FadeTransition(
-                      opacity: anim,
-                      child: SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0.05, 0),
-                          end: Offset.zero,
-                        ).animate(anim),
-                        child: child,
-                      ),
-                    ),
-                    child: Align(
-                      key: ValueKey(_currentPage),
-                      alignment: Alignment.centerLeft,
-                      child: RichText(
-                        text: TextSpan(
-                          style: GoogleFonts.plusJakartaSans(
-                              fontSize: 24, fontWeight: FontWeight.w800),
-                          children: [
-                            TextSpan(
-                              text: _slides[_currentPage].headline,
-                              style: TextStyle(color: VsColors.brandDark),
+                  // ── Bottom glass card ──
+                  FadeTransition(
+                    opacity: _contentOpacity,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                              begin: const Offset(0, 0.2), end: Offset.zero)
+                          .animate(CurvedAnimation(
+                              parent: _contentCtrl,
+                              curve: Curves.easeOutCubic)),
+                      child: Container(
+                        margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(28),
+                          border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.18),
+                              width: 1.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 30,
+                              offset: const Offset(0, 10),
                             ),
-                            TextSpan(
-                              text: _slides[_currentPage].headlineAccent,
-                              style: const TextStyle(color: VsColors.slate900),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Tag + stat row
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: slide.accentColor.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(99),
+                                    border: Border.all(
+                                        color: slide.accentColor.withValues(alpha: 0.4)),
+                                  ),
+                                  child: Text(slide.tag,
+                                      style: GoogleFonts.inter(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w800,
+                                          color: slide.accentColor,
+                                          letterSpacing: 1.2)),
+                                ),
+                                const Spacer(),
+                                // Stat badge
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(slide.stat,
+                                        style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w900,
+                                            color: Colors.white,
+                                            height: 1.0)),
+                                    Text(slide.statLabel,
+                                        style: GoogleFonts.inter(
+                                            fontSize: 9,
+                                            color: Colors.white.withValues(alpha: 0.6),
+                                            fontWeight: FontWeight.w500)),
+                                  ],
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 14),
+
+                            // Headline
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 350),
+                              transitionBuilder: (child, anim) => FadeTransition(
+                                opacity: anim,
+                                child: SlideTransition(
+                                  position: Tween<Offset>(
+                                    begin: const Offset(0.06, 0),
+                                    end: Offset.zero,
+                                  ).animate(anim),
+                                  child: child,
+                                ),
+                              ),
+                              child: Align(
+                                key: ValueKey(_currentPage),
+                                alignment: Alignment.centerLeft,
+                                child: RichText(
+                                  text: TextSpan(
+                                    children: [
+                                      TextSpan(
+                                        text: slide.headline,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.white.withValues(alpha: 0.75),
+                                          height: 1.1,
+                                        ),
+                                      ),
+                                      TextSpan(
+                                        text: slide.headlineAccent,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.w900,
+                                          color: Colors.white,
+                                          height: 1.1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 10),
+
+                            // Body
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 350),
+                              child: Text(
+                                slide.body,
+                                key: ValueKey('body_$_currentPage'),
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  color: Colors.white.withValues(alpha: 0.70),
+                                  height: 1.6,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // Dots + button row
+                            Row(
+                              children: [
+                                // Dot indicators
+                                Row(
+                                  children: List.generate(_slides.length, (i) {
+                                    final isActive = i == _currentPage;
+                                    return GestureDetector(
+                                      onTap: () {
+                                        _autoTimer?.cancel();
+                                        _pageCtrl.animateToPage(i,
+                                            duration: const Duration(milliseconds: 400),
+                                            curve: Curves.easeInOut);
+                                      },
+                                      child: AnimatedContainer(
+                                        duration: const Duration(milliseconds: 300),
+                                        curve: Curves.easeInOut,
+                                        margin: const EdgeInsets.only(right: 6),
+                                        width: isActive ? 24 : 7,
+                                        height: 7,
+                                        decoration: BoxDecoration(
+                                          color: isActive
+                                              ? Colors.white
+                                              : Colors.white.withValues(alpha: 0.3),
+                                          borderRadius: BorderRadius.circular(99),
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                                ),
+                                const Spacer(),
+                                // Next / Get Started button
+                                AnimatedBuilder(
+                                  animation: _btnScale,
+                                  builder: (_, child) => Transform.scale(
+                                      scale: _btnScale.value, child: child),
+                                  child: GestureDetector(
+                                    onTapDown: (_) => _btnCtrl.forward(),
+                                    onTapUp: (_) {
+                                      _btnCtrl.reverse();
+                                      _autoTimer?.cancel();
+                                      _nextSlide();
+                                    },
+                                    onTapCancel: () => _btnCtrl.reverse(),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 22, vertical: 13),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(99),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(alpha: 0.25),
+                                            blurRadius: 16,
+                                            offset: const Offset(0, 6),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            isLast ? 'Get Started' : 'Next',
+                                            style: GoogleFonts.inter(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w700,
+                                              color: _slides[_currentPage]
+                                                  .gradientColors[1],
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Icon(
+                                            isLast
+                                                ? Icons.rocket_launch_rounded
+                                                : Icons.arrow_forward_rounded,
+                                            size: 16,
+                                            color: _slides[_currentPage]
+                                                .gradientColors[1],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
                       ),
                     ),
                   ),
-
-                  const SizedBox(height: 10),
-
-                  // Body
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 350),
-                    child: Text(
-                      _slides[_currentPage].body,
-                      key: ValueKey('body_$_currentPage'),
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: VsColors.slate500,
-                        height: 1.65,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ),
-
-                  const Spacer(),
-
-                  // Dot indicators
-                  Row(
-                    children: [
-                      Row(
-                        children: List.generate(_slides.length, (i) {
-                          final isActive = i == _currentPage;
-                          return AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                            margin: const EdgeInsets.only(right: 6),
-                            width: isActive ? 22 : 7,
-                            height: 7,
-                            decoration: BoxDecoration(
-                              color: isActive
-                                  ? VsColors.brand
-                                  : VsColors.slate200,
-                              borderRadius: BorderRadius.circular(99),
-                            ),
-                          );
-                        }),
-                      ),
-                      const Spacer(),
-                      // Next / Get Started button
-                      AnimatedBuilder(
-                        animation: _btnScale,
-                        builder: (_, child) => Transform.scale(
-                          scale: _btnScale.value,
-                          child: child,
-                        ),
-                        child: GestureDetector(
-                          onTapDown: (_) => _btnCtrl.forward(),
-                          onTapUp: (_) {
-                            _btnCtrl.reverse();
-                            _autoTimer?.cancel();
-                            _nextSlide();
-                          },
-                          onTapCancel: () => _btnCtrl.reverse(),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 24, vertical: 13),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  _slides[_currentPage].gradient.colors[1],
-                                  _slides[_currentPage].gradient.colors[0],
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(30),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: _slides[_currentPage]
-                                      .gradient
-                                      .colors[1]
-                                      .withValues(alpha: 0.4),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 6),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  isLast ? 'Get Started' : 'Next',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                const Icon(Icons.arrow_forward_rounded,
-                                    size: 16, color: Colors.white),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 28),
                 ],
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// Individual illustration slide
-// ─────────────────────────────────────────────────────────────
-class _IllustrationSlide extends StatelessWidget {
-  const _IllustrationSlide({
-    required this.data,
-    required this.slideCtrl,
-    required this.slideOpacity,
-    required this.slideOffset,
-    required this.isActive,
-  });
-
-  final _SlideData data;
-  final AnimationController slideCtrl;
-  final Animation<double> slideOpacity;
-  final Animation<Offset> slideOffset;
-  final bool isActive;
-
-  @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: slideOpacity,
-      child: SlideTransition(
-        position: slideOffset,
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 60, bottom: 48),
-            child: data.illustration,
-          ),
+          ],
         ),
       ),
     );
@@ -489,41 +584,40 @@ class _IllustrationSlide extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Diagonal clipper — more dynamic than wave
+// Floating particles painter
 // ─────────────────────────────────────────────────────────────
-class _DiagonalClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    path.lineTo(0, size.height);
-    path.lineTo(size.width, 0);
-    path.lineTo(size.width, size.height);
-    path.close();
-    return path;
-  }
+class _ParticlePainter extends CustomPainter {
+  _ParticlePainter({required this.progress, required this.color});
+  final double progress;
+  final Color color;
 
-  @override
-  bool shouldReclip(_DiagonalClipper old) => false;
-}
+  static final _rng = Random(42);
+  static final _particles = List.generate(18, (i) => [
+    _rng.nextDouble(), // x ratio
+    _rng.nextDouble(), // y ratio
+    _rng.nextDouble() * 0.5 + 0.3, // speed
+    _rng.nextDouble() * 3 + 2, // radius
+    _rng.nextDouble(), // phase offset
+  ]);
 
-// ─────────────────────────────────────────────────────────────
-// Dot pattern painter
-// ─────────────────────────────────────────────────────────────
-class _DotPatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.07)
-      ..style = PaintingStyle.fill;
-    const spacing = 26.0;
-    for (double y = 0; y < size.height; y += spacing) {
-      for (double x = 0; x < size.width; x += spacing) {
-        canvas.drawCircle(Offset(x, y), 1.8, paint);
-      }
+    for (final p in _particles) {
+      final phase = (progress * p[2] + p[4]) % 1.0;
+      final x = p[0] * size.width;
+      final y = (p[1] * size.height - phase * size.height * 0.4 + size.height) % size.height;
+      final opacity = (sin(phase * pi) * 0.25).clamp(0.0, 0.25);
+      canvas.drawCircle(
+        Offset(x, y),
+        p[3],
+        Paint()
+          ..color = color.withValues(alpha: opacity)
+          ..style = PaintingStyle.fill,
+      );
     }
   }
 
   @override
-  bool shouldRepaint(_DotPatternPainter old) => false;
+  bool shouldRepaint(_ParticlePainter old) =>
+      old.progress != progress || old.color != color;
 }
-

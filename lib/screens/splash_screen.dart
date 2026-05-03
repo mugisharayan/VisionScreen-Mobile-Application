@@ -199,30 +199,69 @@ class _SplashScreenState extends State<SplashScreen>
 
                           const SizedBox(height: 28),
 
-                          // App name — "Vision" white, "Screen" black
-                          RichText(
-                            text: TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: 'Vision',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 40,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    letterSpacing: -1.0,
+                          // App name — shimmer on each word independently
+                          AnimatedBuilder(
+                            animation: _shimmerAnim,
+                            builder: (_, __) {
+                              List<double> stops(double v) => [
+                                (v - 0.35).clamp(0.0, 1.0),
+                                v.clamp(0.0, 1.0),
+                                (v + 0.35).clamp(0.0, 1.0),
+                              ];
+                              return Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // "Vision" — white shimmer
+                                  ShaderMask(
+                                    blendMode: BlendMode.srcIn,
+                                    shaderCallback: (bounds) =>
+                                        LinearGradient(
+                                      begin: Alignment.centerLeft,
+                                      end: Alignment.centerRight,
+                                      colors: [
+                                        Colors.white.withValues(alpha: 0.55),
+                                        Colors.white,
+                                        Colors.white.withValues(alpha: 0.55),
+                                      ],
+                                      stops: stops(_shimmerAnim.value),
+                                    ).createShader(bounds),
+                                    child: Text(
+                                      'Vision',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 40,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                        letterSpacing: -1.0,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                                TextSpan(
-                                  text: 'Screen',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 40,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.black,
-                                    letterSpacing: -1.0,
+                                  // "Screen" — black/dark shimmer
+                                  ShaderMask(
+                                    blendMode: BlendMode.srcIn,
+                                    shaderCallback: (bounds) =>
+                                        LinearGradient(
+                                      begin: Alignment.centerLeft,
+                                      end: Alignment.centerRight,
+                                      colors: [
+                                        const Color(0xFF1A1A1A).withValues(alpha: 0.7),
+                                        Colors.black,
+                                        const Color(0xFF1A1A1A).withValues(alpha: 0.7),
+                                      ],
+                                      stops: stops(_shimmerAnim.value),
+                                    ).createShader(bounds),
+                                    child: Text(
+                                      'Screen',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 40,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.black,
+                                        letterSpacing: -1.0,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
+                                ],
+                              );
+                            },
                           ),
 
                           const SizedBox(height: 8),

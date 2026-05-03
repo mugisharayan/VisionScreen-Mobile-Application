@@ -146,7 +146,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             clipper: AuthWaveClipper(),
             child: Container(
               width: double.infinity,
-              height: 300,
+              height: MediaQuery.of(context).size.height * 0.48,
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   colors: [Color(0xFF134E4A), Color(0xFF0D9488)],
@@ -160,9 +160,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                     child: CustomPaint(painter: _ForgotDotPainter()),
                   ),
                   Positioned(
-                    top: -40, right: -40,
+                    top: -60, right: -60,
                     child: Container(
-                      width: 160, height: 160,
+                      width: 220, height: 220,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
@@ -201,68 +201,96 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                             ),
                           ),
                           // Centered content
-                          Center(
+                          SizedBox.expand(
                             child: Column(
-                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 // Logo — elastic scale + animated blink (same as login)
                                 ScaleTransition(
                                   scale: _logoScale,
                                   child: Container(
-                                    width: 88, height: 88,
+                                    width: 120, height: 120,
                                     decoration: BoxDecoration(
                                       color: Colors.white.withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(24),
+                                      borderRadius: BorderRadius.circular(32),
                                       border: Border.all(
                                           color: Colors.white.withValues(alpha: 0.35),
                                           width: 1.5),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withValues(alpha: 0.18),
-                                          blurRadius: 24,
-                                          offset: const Offset(0, 8),
+                                          color: Colors.black.withValues(alpha: 0.22),
+                                          blurRadius: 32,
+                                          offset: const Offset(0, 10),
                                         ),
                                       ],
                                     ),
                                     child: const Center(
-                                      child: VsLogoAnimated(size: 50, color: Colors.white),
+                                      child: VsLogoAnimated(size: 96, color: Colors.white),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 16),
-                                // App name with shimmer (same as login)
+                                const SizedBox(height: 20),
+                                // App name — "Vision" white shimmer, "Screen" black shimmer
                                 AnimatedBuilder(
                                   animation: _shimmerAnim,
-                                  builder: (_, child) => ShaderMask(
-                                    shaderCallback: (bounds) => LinearGradient(
-                                      colors: [
-                                        Colors.white.withValues(alpha: 0.65),
-                                        Colors.white,
-                                        Colors.white.withValues(alpha: 0.65),
+                                  builder: (_, __) {
+                                    List<double> stops(double v) => [
+                                      (v - 0.35).clamp(0.0, 1.0),
+                                      v.clamp(0.0, 1.0),
+                                      (v + 0.35).clamp(0.0, 1.0),
+                                    ];
+                                    return Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        ShaderMask(
+                                          blendMode: BlendMode.srcIn,
+                                          shaderCallback: (bounds) => LinearGradient(
+                                            colors: [
+                                              Colors.white.withValues(alpha: 0.55),
+                                              Colors.white,
+                                              Colors.white.withValues(alpha: 0.55),
+                                            ],
+                                            stops: stops(_shimmerAnim.value),
+                                          ).createShader(bounds),
+                                          child: Text(
+                                            'Vision',
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 46,
+                                              fontWeight: FontWeight.w800,
+                                              color: Colors.white,
+                                              letterSpacing: -1.0,
+                                            ),
+                                          ),
+                                        ),
+                                        ShaderMask(
+                                          blendMode: BlendMode.srcIn,
+                                          shaderCallback: (bounds) => LinearGradient(
+                                            colors: [
+                                              const Color(0xFF1A1A1A).withValues(alpha: 0.7),
+                                              Colors.black,
+                                              const Color(0xFF1A1A1A).withValues(alpha: 0.7),
+                                            ],
+                                            stops: stops(_shimmerAnim.value),
+                                          ).createShader(bounds),
+                                          child: Text(
+                                            'Screen',
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 46,
+                                              fontWeight: FontWeight.w800,
+                                              color: Colors.black,
+                                              letterSpacing: -1.0,
+                                            ),
+                                          ),
+                                        ),
                                       ],
-                                      stops: [
-                                        (_shimmerAnim.value - 0.3).clamp(0.0, 1.0),
-                                        _shimmerAnim.value.clamp(0.0, 1.0),
-                                        (_shimmerAnim.value + 0.3).clamp(0.0, 1.0),
-                                      ],
-                                    ).createShader(bounds),
-                                    child: child!,
-                                  ),
-                                  child: Text(
-                                    'VisionScreen',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                      letterSpacing: -0.8,
-                                    ),
-                                  ),
+                                    );
+                                  },
                                 ),
-                                const SizedBox(height: 6),
+                                const SizedBox(height: 8),
                                 Text('Reset Password',
                                     style: GoogleFonts.inter(
-                                        fontSize: 13,
-                                        color: Colors.white.withValues(alpha: 0.75),
+                                        fontSize: 14,
+                                        color: Colors.white.withValues(alpha: 0.80),
                                         fontWeight: FontWeight.w500)),
                                 const SizedBox(height: 14),
                                 // Step dots
