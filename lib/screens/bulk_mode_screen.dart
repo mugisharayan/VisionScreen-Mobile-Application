@@ -9,6 +9,7 @@ import '../repositories/patient_repository.dart';
 import '../repositories/screening_repository.dart';
 import '../repositories/campaign_repository.dart';
 import 'referral_letter_screen.dart';
+import 'face_distance_screen.dart';
 
 const _ink   = Color(0xFF04091A);
 const _ink2  = Color(0xFF0B1530);
@@ -915,8 +916,20 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
       _totalInCampaign++;
       _currentPatientId = pid;
       _registering = false;
-      _section = 2;
     });
+    // Show face distance check before starting the eye test
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FaceDistanceScreen(
+          onDistanceConfirmed: () {
+            Navigator.pop(context);
+            setState(() => _section = 2);
+          },
+        ),
+      ),
+    );
   }
 
   Widget _buildQuickRegister() {
@@ -1310,7 +1323,18 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
           onTap: () {
             _generateRotation();
             _startTestTimer();
-            setState(() => _section = 2);
+            // Show face distance check before starting the chart
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => FaceDistanceScreen(
+                  onDistanceConfirmed: () {
+                    Navigator.pop(context);
+                    setState(() => _section = 2);
+                  },
+                ),
+              ),
+            );
           },
           child: Container(
             width: double.infinity,

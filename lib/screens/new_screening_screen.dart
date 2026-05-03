@@ -2891,7 +2891,22 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             )
           else
             GestureDetector(
-              onTap: _startNearCountdown,
+              onTap: () {
+                // Show 40cm face distance check before near vision test
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => FaceDistanceScreen(
+                      targetDistanceM: 0.4,
+                      toleranceM: 0.08,
+                      onDistanceConfirmed: () {
+                        Navigator.pop(context);
+                        _startNearCountdown();
+                      },
+                    ),
+                  ),
+                );
+              },
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 18),
