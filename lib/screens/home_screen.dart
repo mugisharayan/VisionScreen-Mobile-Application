@@ -462,13 +462,13 @@ class _HomeScreenState extends State<HomeScreen>
                               children: [
                                 Text(_greeting,
                                     style: GoogleFonts.inter(
-                                        fontSize: 13,
-                                        color: Colors.white.withValues(alpha: 0.75),
+                                        fontSize: 17,
+                                        color: Colors.white.withValues(alpha: 0.80),
                                         fontWeight: FontWeight.w500)),
-                                const SizedBox(height: 2),
+                                const SizedBox(height: 4),
                                 Text('$_firstName 👋',
                                     style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 24,
+                                        fontSize: 32,
                                         fontWeight: FontWeight.w800,
                                         color: Colors.white,
                                         height: 1.1)),
@@ -976,8 +976,8 @@ class _HomeScreenState extends State<HomeScreen>
               const SizedBox(height: 2),
               Text(
                 _totalScreened == 0
-                    ? 'No screenings yet � start your first test!'
-                    : '$passed passed � $_totalReferred referred � $_totalScreened total',
+                    ? 'No screenings yet — start your first test!'
+                    : '$passed passed · $_totalReferred referred · $_totalScreened total',
                 style: GoogleFonts.inter(
                     fontSize: 12, color: VsColors.slate500,
                     fontWeight: FontWeight.w400),
@@ -1292,7 +1292,7 @@ class _HomeScreenState extends State<HomeScreen>
                         fontSize: 14, fontWeight: FontWeight.w700,
                         color: VsColors.slate900)),
                 const SizedBox(height: 3),
-                Text('$gender � $age yrs',
+                Text('$gender · $age yrs',
                     style: GoogleFonts.inter(
                         fontSize: 11, color: VsColors.slate500)),
                 const SizedBox(height: 6),
@@ -1467,7 +1467,7 @@ class _HomeScreenState extends State<HomeScreen>
                             fontSize: 13, fontWeight: FontWeight.w700,
                             color: VsColors.slate900)),
                     const SizedBox(height: 2),
-                    Text('$gender � $age yrs',
+                    Text('$gender · $age yrs',
                         style: GoogleFonts.inter(
                             fontSize: 11, color: VsColors.slate500)),
                     const SizedBox(height: 4),

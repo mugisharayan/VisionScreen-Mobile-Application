@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:math';
 import 'module1_screen.dart';
 import 'module2_screen.dart';
 import 'module3_screen.dart';
@@ -314,7 +315,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                           fontSize: 20, fontWeight: FontWeight.w800,
                           color: Colors.white, height: 1.2)),
                   const SizedBox(height: 6),
-                  Text('Registration · Testing · Bulk Mode · Referrals',
+                  Text('Registration Â· Testing Â· Bulk Mode Â· Referrals',
                       style: GoogleFonts.inter(
                           fontSize: 11, color: Colors.white.withValues(alpha: 0.7),
                           fontWeight: FontWeight.w400)),
@@ -348,44 +349,87 @@ class _TrainingScreenState extends State<TrainingScreen> {
       child: InkWell(
         onTap: () => _onModuleTap(index),
         borderRadius: BorderRadius.circular(16),
-        splashColor: color.withOpacity(0.08),
-        highlightColor: color.withOpacity(0.04),
+        splashColor: color.withValues(alpha: 0.08),
+        highlightColor: color.withValues(alpha: 0.04),
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: isDone ? color.withOpacity(0.3) : const Color(0xFFEEF2F6), width: 1.5),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+            border: Border.all(color: isDone ? color.withValues(alpha: 0.3) : const Color(0xFFEEF2F6), width: 1.5),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
           ),
           child: Row(
             children: [
+              // â”€â”€ Illustration panel (replaces image) â”€â”€
               ClipRRect(
-                borderRadius: const BorderRadius.only(topLeft: Radius.circular(14), bottomLeft: Radius.circular(14)),
-                child: Stack(
-                  children: [
-                    Image.network(m['image'] as String, width: 90, height: 90, fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(width: 90, height: 90, color: color.withOpacity(0.15),
-                            child: Icon(m['icon'] as IconData, color: color, size: 32))),
-                    Container(width: 90, height: 90,
-                        decoration: BoxDecoration(gradient: LinearGradient(
-                            colors: [color.withOpacity(0.4), Colors.transparent],
-                            begin: Alignment.bottomCenter, end: Alignment.topCenter))),
-                    Positioned(top: 8, left: 8,
-                        child: Container(width: 22, height: 22,
-                            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-                            child: Center(child: Text('${index + 1}',
-                                style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white))))),
-                    if (isDone)
-                      Positioned(bottom: 8, left: 8,
+                borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(14),
+                    bottomLeft: Radius.circular(14)),
+                child: Container(
+                  width: 90, height: 90,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [color.withValues(alpha: 0.85), color],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: Stack(
+                    children: [
+                      // Dot pattern
+                      Positioned.fill(
+                        child: CustomPaint(painter: _CardDotPainter(color: Colors.white)),
+                      ),
+                      // Illustration
+                      Center(
+                        child: CustomPaint(
+                          size: const Size(64, 64),
+                          painter: _moduleIllustration(index),
+                        ),
+                      ),
+                      // Module number badge
+                      Positioned(
+                        top: 7, left: 7,
+                        child: Container(
+                          width: 22, height: 22,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.25),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
+                          ),
+                          child: Center(
+                            child: Text('${index + 1}',
+                                style: GoogleFonts.inter(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white)),
+                          ),
+                        ),
+                      ),
+                      // Done badge
+                      if (isDone)
+                        Positioned(
+                          bottom: 7, left: 7,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(color: const Color(0xFF22C55E), borderRadius: BorderRadius.circular(99)),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF22C55E),
+                              borderRadius: BorderRadius.circular(99),
+                            ),
                             child: Row(children: [
-                              const Icon(Icons.check_rounded, size: 9, color: Colors.white),
+                              const Icon(Icons.check_rounded,
+                                  size: 9, color: Colors.white),
                               const SizedBox(width: 2),
-                              Text('Done', style: GoogleFonts.inter(fontSize: 8, fontWeight: FontWeight.w800, color: Colors.white)),
+                              Text('Done',
+                                  style: GoogleFonts.inter(
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white)),
                             ]),
-                          )),
-                  ],
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
               Expanded(
@@ -399,7 +443,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                             style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w800, color: const Color(0xFF1A2A3D)))),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                          decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(99)),
+                          decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(99)),
                           child: Row(children: [
                             Icon(Icons.timer_rounded, size: 9, color: color),
                             const SizedBox(width: 3),
@@ -416,10 +460,10 @@ class _TrainingScreenState extends State<TrainingScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
-                          color: isDone ? const Color(0xFFDCFCE7) : color.withOpacity(0.1),
+                          color: isDone ? const Color(0xFFDCFCE7) : color.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(99),
                         ),
-                        child: Text(isDone ? '✓ Completed' : 'Start Module →',
+                        child: Text(isDone ? 'âœ“ Completed' : 'Start Module â†’',
                             style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w800,
                                 color: isDone ? const Color(0xFF15803D) : color)),
                       ),
@@ -458,6 +502,212 @@ class _TrainingScreenState extends State<TrainingScreen> {
 }
 
 
+// â”€â”€ Helper: pick illustration painter by module index â”€â”€
+CustomPainter _moduleIllustration(int index) {
+  switch (index) {
+    case 0:  return _Module1Painter();
+    case 1:  return _Module2Painter();
+    case 2:  return _Module3Painter();
+    default: return _Module4Painter();
+  }
+}
+
+// â”€â”€ Card dot pattern â”€â”€
+class _CardDotPainter extends CustomPainter {
+  const _CardDotPainter({required this.color});
+  final Color color;
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()..color = color.withValues(alpha: 0.08)..style = PaintingStyle.fill;
+    const spacing = 14.0;
+    for (double y = 0; y < size.height; y += spacing) {
+      for (double x = 0; x < size.width; x += spacing) {
+        canvas.drawCircle(Offset(x, y), 1.2, p);
+      }
+    }
+  }
+  @override
+  bool shouldRepaint(_CardDotPainter old) => false;
+}
+
+// â”€â”€ Module 1: Patient Registration â€” person + clipboard â”€â”€
+class _Module1Painter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2, cy = size.height / 2;
+    final w = Paint()..color = Colors.white..style = PaintingStyle.stroke..strokeWidth = 2.2..strokeCap = StrokeCap.round..strokeJoin = StrokeJoin.round;
+    final wf = Paint()..color = Colors.white.withValues(alpha: 0.30)..style = PaintingStyle.fill;
+    final wb = Paint()..color = Colors.white.withValues(alpha: 0.85)..style = PaintingStyle.fill;
+
+    // Person head
+    canvas.drawCircle(Offset(cx - 10, cy - 14), 9, wf);
+    canvas.drawCircle(Offset(cx - 10, cy - 14), 9, w..strokeWidth = 1.8);
+    // Person body
+    final body = Path()..moveTo(cx - 18, cy + 2)..quadraticBezierTo(cx - 10, cy - 4, cx - 2, cy + 2)..lineTo(cx - 2, cy + 18)..lineTo(cx - 18, cy + 18)..close();
+    canvas.drawPath(body, wf);
+    canvas.drawPath(body, w..strokeWidth = 1.8);
+
+    // Clipboard
+    final clip = RRect.fromRectAndRadius(Rect.fromLTWH(cx + 2, cy - 20, 26, 34), const Radius.circular(4));
+    canvas.drawRRect(clip, wf);
+    canvas.drawRRect(clip, w..strokeWidth = 1.8);
+    // Clip top
+    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(cx + 9, cy - 23, 12, 6), const Radius.circular(3)), wb);
+    // Lines
+    for (int i = 0; i < 3; i++) {
+      canvas.drawLine(Offset(cx + 6, cy - 10 + i * 7.0), Offset(cx + 24, cy - 10 + i * 7.0),
+          Paint()..color = Colors.white.withValues(alpha: 0.6)..strokeWidth = 1.5..strokeCap = StrokeCap.round);
+    }
+    // Plus icon
+    canvas.drawLine(Offset(cx + 15, cy + 18), Offset(cx + 15, cy + 26), w..strokeWidth = 2.5..color = Colors.white);
+    canvas.drawLine(Offset(cx + 11, cy + 22), Offset(cx + 19, cy + 22), w..strokeWidth = 2.5..color = Colors.white);
+  }
+  @override
+  bool shouldRepaint(_Module1Painter old) => false;
+}
+
+// â”€â”€ Module 2: Vision Testing â€” E chart + eye â”€â”€
+class _Module2Painter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2, cy = size.height / 2;
+    final w = Paint()..color = Colors.white..style = PaintingStyle.stroke..strokeWidth = 2.0..strokeCap = StrokeCap.round..strokeJoin = StrokeJoin.round;
+    final wf = Paint()..color = Colors.white.withValues(alpha: 0.30)..style = PaintingStyle.fill;
+    final wb = Paint()..color = Colors.white..style = PaintingStyle.fill;
+
+    // Chart board
+    final board = RRect.fromRectAndRadius(Rect.fromCenter(center: Offset(cx, cy - 2), width: 38, height: 44), const Radius.circular(5));
+    canvas.drawRRect(board, wf);
+    canvas.drawRRect(board, w..strokeWidth = 1.8);
+
+    // E letters (3 rows, decreasing)
+    void drawE(double x, double y, double sz, double rot) {
+      canvas.save();
+      canvas.translate(x, y);
+      canvas.rotate(rot);
+      final u = sz / 5;
+      final p = Path()
+        ..addRect(Rect.fromLTWH(-sz/2, -sz/2, u, sz))
+        ..addRect(Rect.fromLTWH(-sz/2, -sz/2, sz, u))
+        ..addRect(Rect.fromLTWH(-sz/2, -u/2, sz*0.8, u))
+        ..addRect(Rect.fromLTWH(-sz/2, sz/2-u, sz, u));
+      canvas.drawPath(p, wb);
+      canvas.restore();
+    }
+    drawE(cx, cy - 16, 10, 0);
+    drawE(cx - 6, cy - 4, 7, pi / 2);
+    drawE(cx + 6, cy - 4, 7, pi);
+    drawE(cx, cy + 6, 5, 3 * pi / 2);
+
+    // Eye below chart
+    final eye = Path()
+      ..moveTo(cx - 16, cy + 22)
+      ..cubicTo(cx - 8, cy + 14, cx + 8, cy + 14, cx + 16, cy + 22)
+      ..cubicTo(cx + 8, cy + 30, cx - 8, cy + 30, cx - 16, cy + 22);
+    canvas.drawPath(eye, wf);
+    canvas.drawPath(eye, w..strokeWidth = 1.8);
+    canvas.drawCircle(Offset(cx, cy + 22), 5, wf);
+    canvas.drawCircle(Offset(cx, cy + 22), 5, w..strokeWidth = 1.5);
+    canvas.drawCircle(Offset(cx, cy + 22), 2, wb);
+  }
+  @override
+  bool shouldRepaint(_Module2Painter old) => false;
+}
+
+// â”€â”€ Module 3: Bulk Mode â€” group of people + campaign flag â”€â”€
+class _Module3Painter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2, cy = size.height / 2;
+    final w = Paint()..color = Colors.white..style = PaintingStyle.stroke..strokeWidth = 2.0..strokeCap = StrokeCap.round..strokeJoin = StrokeJoin.round;
+    final wf = Paint()..color = Colors.white.withValues(alpha: 0.30)..style = PaintingStyle.fill;
+    final wb = Paint()..color = Colors.white.withValues(alpha: 0.85)..style = PaintingStyle.fill;
+
+    // 3 people
+    final positions = [cx - 14.0, cx, cx + 14.0];
+    for (int i = 0; i < 3; i++) {
+      final px = positions[i];
+      final scale = i == 1 ? 1.0 : 0.82;
+      // Head
+      canvas.drawCircle(Offset(px, cy - 10 * scale), 6 * scale, i == 1 ? wb : wf);
+      canvas.drawCircle(Offset(px, cy - 10 * scale), 6 * scale, w..strokeWidth = 1.5);
+      // Body arc
+      final bodyPath = Path()
+        ..moveTo(px - 9 * scale, cy + 4 * scale)
+        ..quadraticBezierTo(px, cy - 2 * scale, px + 9 * scale, cy + 4 * scale);
+      canvas.drawPath(bodyPath, w..strokeWidth = 1.5);
+      // Shoulders
+      canvas.drawOval(Rect.fromCenter(center: Offset(px, cy + 6 * scale), width: 16 * scale, height: 7 * scale),
+          i == 1 ? wb : wf);
+    }
+
+    // Campaign flag (top right)
+    canvas.drawLine(Offset(cx + 22, cy - 24), Offset(cx + 22, cy + 4), w..strokeWidth = 2.0..color = Colors.white);
+    final flag = Path()
+      ..moveTo(cx + 22, cy - 24)
+      ..lineTo(cx + 34, cy - 18)
+      ..lineTo(cx + 22, cy - 12);
+    canvas.drawPath(flag, wb);
+    canvas.drawPath(flag, w..strokeWidth = 1.5);
+
+    // Check badge bottom
+    canvas.drawCircle(Offset(cx - 20, cy + 18), 8, wf);
+    canvas.drawCircle(Offset(cx - 20, cy + 18), 8, w..strokeWidth = 1.5);
+    final check = Path()..moveTo(cx - 24, cy + 18)..lineTo(cx - 21, cy + 22)..lineTo(cx - 16, cy + 14);
+    canvas.drawPath(check, w..strokeWidth = 2.0..color = Colors.white);
+  }
+  @override
+  bool shouldRepaint(_Module3Painter old) => false;
+}
+
+// â”€â”€ Module 4: Referrals â€” letter + calendar + arrow â”€â”€
+class _Module4Painter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2, cy = size.height / 2;
+    final w = Paint()..color = Colors.white..style = PaintingStyle.stroke..strokeWidth = 2.0..strokeCap = StrokeCap.round..strokeJoin = StrokeJoin.round;
+    final wf = Paint()..color = Colors.white.withValues(alpha: 0.30)..style = PaintingStyle.fill;
+    final wb = Paint()..color = Colors.white.withValues(alpha: 0.85)..style = PaintingStyle.fill;
+
+    // Referral letter / envelope
+    final env = RRect.fromRectAndRadius(Rect.fromCenter(center: Offset(cx - 8, cy - 4), width: 36, height: 26), const Radius.circular(4));
+    canvas.drawRRect(env, wf);
+    canvas.drawRRect(env, w..strokeWidth = 1.8);
+    // Envelope flap
+    final flap = Path()
+      ..moveTo(cx - 26, cy - 17)
+      ..lineTo(cx - 8, cy - 4)
+      ..lineTo(cx + 10, cy - 17);
+    canvas.drawPath(flap, w..strokeWidth = 1.8);
+    // Lines inside
+    for (int i = 0; i < 2; i++) {
+      canvas.drawLine(Offset(cx - 20, cy - 2 + i * 6.0), Offset(cx + 4, cy - 2 + i * 6.0),
+          Paint()..color = Colors.white.withValues(alpha: 0.5)..strokeWidth = 1.2..strokeCap = StrokeCap.round);
+    }
+
+    // Calendar (bottom right)
+    final cal = RRect.fromRectAndRadius(Rect.fromLTWH(cx + 6, cy + 6, 24, 22), const Radius.circular(4));
+    canvas.drawRRect(cal, wf);
+    canvas.drawRRect(cal, w..strokeWidth = 1.5);
+    // Calendar header
+    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(cx + 6, cy + 6, 24, 7), const Radius.circular(4)), wb);
+    // Calendar dots
+    for (int row = 0; row < 2; row++) {
+      for (int col = 0; col < 3; col++) {
+        canvas.drawCircle(Offset(cx + 11 + col * 7.0, cy + 18 + row * 6.0), 1.5,
+            Paint()..color = Colors.white.withValues(alpha: 0.7)..style = PaintingStyle.fill);
+      }
+    }
+
+    // Arrow (referral direction)
+    canvas.drawLine(Offset(cx - 22, cy + 20), Offset(cx + 2, cy + 20), w..strokeWidth = 2.2..color = Colors.white);
+    canvas.drawLine(Offset(cx - 4, cy + 15), Offset(cx + 2, cy + 20), w..strokeWidth = 2.2..color = Colors.white);
+    canvas.drawLine(Offset(cx - 4, cy + 25), Offset(cx + 2, cy + 20), w..strokeWidth = 2.2..color = Colors.white);
+  }
+  @override
+  bool shouldRepaint(_Module4Painter old) => false;
+}
+
 class _TrainingDotPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -474,4 +724,5 @@ class _TrainingDotPainter extends CustomPainter {
   @override
   bool shouldRepaint(_TrainingDotPainter old) => false;
 }
+
 

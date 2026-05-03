@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -719,7 +719,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                       horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
                     color: active
-                        ? _teal.withOpacity(0.08)
+                        ? _teal.withValues(alpha: 0.08)
                         : Colors.white,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
@@ -728,7 +728,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
+                          color: Colors.black.withValues(alpha: 0.04),
                           blurRadius: 8,
                           offset: const Offset(0, 2))
                     ],
@@ -773,9 +773,9 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: _amber.withOpacity(0.06),
+              color: _amber.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _amber.withOpacity(0.2)),
+              border: Border.all(color: _amber.withValues(alpha: 0.2)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -817,7 +817,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                     ? []
                     : [
                         BoxShadow(
-                            color: _teal.withOpacity(0.4),
+                            color: _teal.withValues(alpha: 0.4),
                             blurRadius: 20,
                             offset: const Offset(0, 8))
                       ],
@@ -838,7 +838,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                             Container(
                               width: 36, height: 36,
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
+                                color: Colors.white.withValues(alpha: 0.2),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(Icons.play_arrow_rounded,
@@ -856,7 +856,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                         Text('Tap to begin — patients will be added one by one',
                             style: GoogleFonts.inter(
                                 fontSize: 11,
-                                color: Colors.white.withOpacity(0.7))),
+                                color: Colors.white.withValues(alpha: 0.7))),
                       ],
                     ),
             ),
@@ -932,13 +932,13 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
             ),
             child: Row(children: [
               Container(
                 width: 44, height: 44,
                 decoration: BoxDecoration(
-                  color: _teal.withOpacity(0.1),
+                  color: _teal.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
@@ -961,9 +961,9 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: _teal.withOpacity(0.08),
+                  color: _teal.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(99),
-                  border: Border.all(color: _teal.withOpacity(0.2)),
+                  border: Border.all(color: _teal.withValues(alpha: 0.2)),
                 ),
                 child: Text('IN SESSION', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w800, color: _teal, letterSpacing: 1.0)),
               ),
@@ -992,7 +992,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
             ),
             child: Row(children: [
               GestureDetector(
@@ -1013,7 +1013,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                 onTap: () => setState(() => _quickAge = (_quickAge + 1).clamp(1, 120)),
                 child: Container(
                   width: 36, height: 36,
-                  decoration: BoxDecoration(color: _teal.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(color: _teal.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
                   child: const Icon(Icons.add_rounded, size: 18, color: _teal),
                 ),
               ),
@@ -1034,10 +1034,10 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                   margin: EdgeInsets.only(right: g == 'M' ? 8 : 0),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
-                    color: active ? _teal.withOpacity(0.08) : Colors.white,
+                    color: active ? _teal.withValues(alpha: 0.08) : Colors.white,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: active ? _teal : const Color(0xFFEEF2F6), width: active ? 2 : 1.5),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
                   ),
                   child: Column(children: [
                     Icon(g == 'M' ? Icons.male_rounded : Icons.female_rounded,
@@ -1086,7 +1086,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                   duration: const Duration(milliseconds: 150),
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                   decoration: BoxDecoration(
-                    color: selected ? _teal.withOpacity(0.1) : Colors.white,
+                    color: selected ? _teal.withValues(alpha: 0.1) : Colors.white,
                     borderRadius: BorderRadius.circular(99),
                     border: Border.all(color: selected ? _teal : const Color(0xFFDDE4EC), width: 1.5),
                   ),
@@ -1119,7 +1119,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: _registering ? [] : [BoxShadow(color: _teal.withOpacity(0.4), blurRadius: 20, offset: const Offset(0, 8))],
+                boxShadow: _registering ? [] : [BoxShadow(color: _teal.withValues(alpha: 0.4), blurRadius: 20, offset: const Offset(0, 8))],
               ),
               child: _registering
                   ? const Center(child: SizedBox(width: 22, height: 22,
@@ -1127,7 +1127,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                   : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                       Container(
                         width: 36, height: 36,
-                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
+                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
                         child: const Icon(Icons.remove_red_eye_rounded, color: Colors.white, size: 20),
                       ),
                       const SizedBox(width: 12),
@@ -1215,7 +1215,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(color: _teal.withOpacity(0.08), borderRadius: BorderRadius.circular(99)),
+              decoration: BoxDecoration(color: _teal.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(99)),
               child: Text('Testing: ${_eyeOrder[_eyeIndex]} · LogMAR ${_rows[_currentRow]['logmar']}',
                   style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: _teal)),
             ),
@@ -1262,7 +1262,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
       decoration: BoxDecoration(
         color: Colors.white, borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFDDE4EC), width: 1.5),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 6, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 6, offset: const Offset(0, 2))],
       ),
       child: Icon(icon, size: 20, color: _ink),
     ),
@@ -1279,16 +1279,16 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
           width: 120, height: 120,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: _teal.withOpacity(0.08),
-            border: Border.all(color: _teal.withOpacity(0.25), width: 2),
+            color: _teal.withValues(alpha: 0.08),
+            border: Border.all(color: _teal.withValues(alpha: 0.25), width: 2),
           ),
           child: Stack(alignment: Alignment.center, children: [
-            Icon(Icons.remove_red_eye_rounded, size: 56, color: _teal.withOpacity(0.3)),
+            Icon(Icons.remove_red_eye_rounded, size: 56, color: _teal.withValues(alpha: 0.3)),
             Positioned(
               left: eye == 'OD' ? 12 : null, right: eye == 'OD' ? null : 12,
               child: Container(
                 width: 40, height: 40,
-                decoration: BoxDecoration(color: _ink.withOpacity(0.75), borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: _ink.withValues(alpha: 0.75), borderRadius: BorderRadius.circular(8)),
                 child: const Icon(Icons.back_hand_rounded, size: 22, color: Colors.white),
               ),
             ),
@@ -1318,12 +1318,12 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
             decoration: BoxDecoration(
               gradient: const LinearGradient(colors: [_teal, Color(0xFF0F766E)], begin: Alignment.topLeft, end: Alignment.bottomRight),
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [BoxShadow(color: _teal.withOpacity(0.4), blurRadius: 20, offset: const Offset(0, 8))],
+              boxShadow: [BoxShadow(color: _teal.withValues(alpha: 0.4), blurRadius: 20, offset: const Offset(0, 8))],
             ),
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               Container(
                 width: 36, height: 36,
-                decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
                 child: const Icon(Icons.remove_red_eye_rounded, color: Colors.white, size: 20),
               ),
               const SizedBox(width: 12),
@@ -1356,16 +1356,16 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: col.withOpacity(0.3), width: 2),
-            boxShadow: [BoxShadow(color: col.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 4))],
+            border: Border.all(color: col.withValues(alpha: 0.3), width: 2),
+            boxShadow: [BoxShadow(color: col.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 4))],
           ),
           child: Column(children: [
             Container(
               width: 72, height: 72,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: col.withOpacity(0.1),
-                border: Border.all(color: col.withOpacity(0.3), width: 2),
+                color: col.withValues(alpha: 0.1),
+                border: Border.all(color: col.withValues(alpha: 0.3), width: 2),
               ),
               child: Icon(passed ? Icons.check_rounded : Icons.warning_rounded, color: col, size: 36),
             ),
@@ -1421,9 +1421,9 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 14),
               decoration: BoxDecoration(
-                color: _red.withOpacity(0.06),
+                color: _red.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: _red.withOpacity(0.3), width: 1.5),
+                border: Border.all(color: _red.withValues(alpha: 0.3), width: 1.5),
               ),
               child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 const Icon(Icons.description_rounded, size: 18, color: _red),
@@ -1449,12 +1449,12 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
             decoration: BoxDecoration(
               gradient: const LinearGradient(colors: [_teal, Color(0xFF0F766E)], begin: Alignment.topLeft, end: Alignment.bottomRight),
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [BoxShadow(color: _teal.withOpacity(0.4), blurRadius: 20, offset: const Offset(0, 8))],
+              boxShadow: [BoxShadow(color: _teal.withValues(alpha: 0.4), blurRadius: 20, offset: const Offset(0, 8))],
             ),
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               Container(
                 width: 36, height: 36,
-                decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
                 child: const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 20),
               ),
               const SizedBox(width: 12),
@@ -1497,15 +1497,15 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: col.withOpacity(0.05),
+        color: col.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: col.withOpacity(0.2)),
+        border: Border.all(color: col.withValues(alpha: 0.2)),
       ),
       child: Column(children: [
         Text(eye, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF8FA0B4))),
         const SizedBox(height: 4),
         Text(snellen, style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w900, color: col)),
-        Text('LogMAR $logmar', style: GoogleFonts.inter(fontSize: 10, color: col.withOpacity(0.7))),
+        Text('LogMAR $logmar', style: GoogleFonts.inter(fontSize: 10, color: col.withValues(alpha: 0.7))),
       ]),
     );
   }
@@ -1531,7 +1531,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
           decoration: BoxDecoration(
             gradient: const LinearGradient(colors: [_ink, _ink2], begin: Alignment.topLeft, end: Alignment.bottomRight),
             borderRadius: BorderRadius.circular(20),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 16, offset: const Offset(0, 6))],
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 16, offset: const Offset(0, 6))],
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
@@ -1540,7 +1540,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(colors: [_teal, _teal2]),
                   borderRadius: BorderRadius.circular(14),
-                  boxShadow: [BoxShadow(color: _teal.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 4))],
+                  boxShadow: [BoxShadow(color: _teal.withValues(alpha: 0.4), blurRadius: 12, offset: const Offset(0, 4))],
                 ),
                 child: const Icon(Icons.groups_rounded, color: Colors.white, size: 24),
               ),
@@ -1549,14 +1549,14 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                 Text(_campaignNameCtrl.text,
                     style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
                 Text('${_locationCtrl.text} · ${_targetGroup}',
-                    style: GoogleFonts.inter(fontSize: 11, color: Colors.white.withOpacity(0.5))),
+                    style: GoogleFonts.inter(fontSize: 11, color: Colors.white.withValues(alpha: 0.5))),
               ])),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: _green.withOpacity(0.2),
+                  color: _green.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(99),
-                  border: Border.all(color: _green.withOpacity(0.4)),
+                  border: Border.all(color: _green.withValues(alpha: 0.4)),
                 ),
                 child: Text('COMPLETE', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w800, color: _green, letterSpacing: 1.0)),
               ),
@@ -1612,7 +1612,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
               ),
               child: Row(children: [
                 // Number badge
@@ -1627,9 +1627,9 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                 Container(
                   width: 40, height: 40,
                   decoration: BoxDecoration(
-                    color: col.withOpacity(0.1),
+                    color: col.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: col.withOpacity(0.25)),
+                    border: Border.all(color: col.withValues(alpha: 0.25)),
                   ),
                   child: Center(child: Text(initials,
                       style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w800, color: col))),
@@ -1660,9 +1660,9 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: col.withOpacity(0.1),
+                    color: col.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(99),
-                    border: Border.all(color: col.withOpacity(0.25)),
+                    border: Border.all(color: col.withValues(alpha: 0.25)),
                   ),
                   child: Text(badgeLabel,
                       style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: col)),
@@ -1682,12 +1682,12 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
             decoration: BoxDecoration(
               gradient: const LinearGradient(colors: [_teal, Color(0xFF0F766E)], begin: Alignment.topLeft, end: Alignment.bottomRight),
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [BoxShadow(color: _teal.withOpacity(0.4), blurRadius: 20, offset: const Offset(0, 8))],
+              boxShadow: [BoxShadow(color: _teal.withValues(alpha: 0.4), blurRadius: 20, offset: const Offset(0, 8))],
             ),
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               Container(
                 width: 36, height: 36,
-                decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
                 child: const Icon(Icons.check_rounded, color: Colors.white, size: 20),
               ),
               const SizedBox(width: 12),
@@ -1705,14 +1705,14 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.06),
+          color: Colors.white.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.25)),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
         ),
         child: Column(children: [
           Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w900, color: color, height: 1.0)),
           const SizedBox(height: 2),
-          Text(label.toUpperCase(), style: GoogleFonts.inter(fontSize: 7, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.4), letterSpacing: 0.8)),
+          Text(label.toUpperCase(), style: GoogleFonts.inter(fontSize: 7, fontWeight: FontWeight.w700, color: Colors.white.withValues(alpha: 0.4), letterSpacing: 0.8)),
         ]),
       ),
     );
@@ -1724,9 +1724,9 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: col.withOpacity(0.08),
+        color: col.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: col.withOpacity(0.2)),
+        border: Border.all(color: col.withValues(alpha: 0.2)),
       ),
       child: Text('$eye $snellen',
           style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: col)),
@@ -1757,7 +1757,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
           border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 8,
                 offset: const Offset(0, 2))
           ],
@@ -1770,7 +1770,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
             hintText: hint,
             hintStyle: GoogleFonts.inter(
                 fontSize: 13, color: const Color(0xFF8FA0B4)),
-            prefixIcon: Icon(icon, size: 18, color: _teal.withOpacity(0.6)),
+            prefixIcon: Icon(icon, size: 18, color: _teal.withValues(alpha: 0.6)),
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(
                 horizontal: 14, vertical: 14),

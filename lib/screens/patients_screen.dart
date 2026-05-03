@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -779,10 +779,10 @@ class _PatientsScreenState extends State<PatientsScreen> {
             ),
             boxShadow: [
               BoxShadow(
-                color: _teal.withOpacity(0.35),
+                color: _teal.withValues(alpha: 0.35),
                 blurRadius: 16, offset: const Offset(0, 6)),
               BoxShadow(
-                color: _teal.withOpacity(0.15),
+                color: _teal.withValues(alpha: 0.15),
                 blurRadius: 32, spreadRadius: 2, offset: const Offset(0, 2)),
             ],
           ),
@@ -796,7 +796,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                 Positioned(top: -30, right: -30,
                   child: Container(width: 120, height: 120,
                     decoration: BoxDecoration(shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white.withOpacity(0.08), width: 1)))),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1)))),
                 // Content
                 Padding(
                   padding: const EdgeInsets.all(16),
@@ -808,9 +808,9 @@ class _PatientsScreenState extends State<PatientsScreen> {
                         Container(
                           width: 44, height: 44,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
+                            color: Colors.white.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(13),
-                            border: Border.all(color: Colors.white.withOpacity(0.25)),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
                           ),
                           child: const Icon(Icons.groups_rounded, color: Colors.white, size: 22),
                         ),
@@ -822,14 +822,14 @@ class _PatientsScreenState extends State<PatientsScreen> {
                           const SizedBox(height: 2),
                           Text('$location � $group',
                               style: GoogleFonts.inter(
-                                  fontSize: 11, color: Colors.white.withOpacity(0.65))),
+                                  fontSize: 11, color: Colors.white.withValues(alpha: 0.65))),
                         ])),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
+                            color: Colors.white.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(99),
-                            border: Border.all(color: Colors.white.withOpacity(0.3)),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                           ),
                           child: Text('CAMPAIGN',
                               style: GoogleFonts.inter(
@@ -842,9 +842,9 @@ class _PatientsScreenState extends State<PatientsScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.12),
+                          color: Colors.white.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white.withOpacity(0.2)),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                         ),
                         child: Row(children: [
                           _campStatNew(total.toString(), 'Screened', Colors.white),
@@ -855,12 +855,12 @@ class _PatientsScreenState extends State<PatientsScreen> {
                           Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                             Text(dateLabel,
                                 style: GoogleFonts.inter(
-                                    fontSize: 9, color: Colors.white.withOpacity(0.55))),
+                                    fontSize: 9, color: Colors.white.withValues(alpha: 0.55))),
                             const SizedBox(height: 3),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
+                                color: Colors.white.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(99),
                               ),
                               child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -896,7 +896,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
       Text(label,
           style: GoogleFonts.inter(
               fontSize: 9, fontWeight: FontWeight.w500,
-              color: Colors.white.withOpacity(0.55))),
+              color: Colors.white.withValues(alpha: 0.55))),
     ]),
   );
 
@@ -908,7 +908,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
         title: Row(children: [
           Container(
             width: 40, height: 40,
-            decoration: BoxDecoration(color: _red.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(color: _red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
             child: const Icon(Icons.delete_rounded, color: _red, size: 20),
           ),
           const SizedBox(width: 12),
@@ -971,8 +971,8 @@ class _PatientsScreenState extends State<PatientsScreen> {
         onTap: () => _showHistory(p),
         onLongPress: () => _confirmDelete(p),
         borderRadius: BorderRadius.circular(16),
-        splashColor: accentColor.withOpacity(0.06),
-        highlightColor: accentColor.withOpacity(0.03),
+        splashColor: accentColor.withValues(alpha: 0.06),
+        highlightColor: accentColor.withValues(alpha: 0.03),
         child: Container(
           decoration: BoxDecoration(
             color: Colors.white,
@@ -980,7 +980,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
             border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -1003,7 +1003,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                             borderRadius: BorderRadius.circular(14),
                             boxShadow: [
                               BoxShadow(
-                                color: accentColor.withOpacity(0.3),
+                                color: accentColor.withValues(alpha: 0.3),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
@@ -1016,7 +1016,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                                 : Container(
                                     decoration: BoxDecoration(
                                       gradient: LinearGradient(
-                                        colors: [accentColor, accentColor.withOpacity(0.7)],
+                                        colors: [accentColor, accentColor.withValues(alpha: 0.7)],
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
                                       ),
@@ -1066,7 +1066,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: ageGroupColor.withOpacity(0.1),
+                                color: ageGroupColor.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(99),
                               ),
                               child: Text(_capitalize(p.ageGroup),
@@ -1101,9 +1101,9 @@ class _PatientsScreenState extends State<PatientsScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: _amber.withOpacity(0.08),
+                                color: _amber.withValues(alpha: 0.08),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: _amber.withOpacity(0.2)),
+                                border: Border.all(color: _amber.withValues(alpha: 0.2)),
                               ),
                               child: Row(mainAxisSize: MainAxisSize.min, children: [
                                 const Icon(Icons.hourglass_top_rounded, size: 11, color: _amber),
@@ -1120,9 +1120,9 @@ class _PatientsScreenState extends State<PatientsScreen> {
                               children: p.safeConditions.map((c) => Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: _amber.withOpacity(0.08),
+                                  color: _amber.withValues(alpha: 0.08),
                                   borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: _amber.withOpacity(0.25)),
+                                  border: Border.all(color: _amber.withValues(alpha: 0.25)),
                                 ),
                                 child: Text(c, style: GoogleFonts.inter(
                                     fontSize: 9, fontWeight: FontWeight.w600, color: _amber)),
@@ -1138,7 +1138,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                       decoration: BoxDecoration(
                         color: badgeBg,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: accentColor.withOpacity(0.2)),
+                        border: Border.all(color: accentColor.withValues(alpha: 0.2)),
                       ),
                       child: Column(mainAxisSize: MainAxisSize.min, children: [
                         Icon(badgeIcon, size: 13, color: accentColor),
@@ -1162,7 +1162,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                     bottomRight: Radius.circular(15),
                   ),
                   border: Border(
-                    top: BorderSide(color: accentColor.withOpacity(0.10), width: 1),
+                    top: BorderSide(color: accentColor.withValues(alpha: 0.10), width: 1),
                   ),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -1200,10 +1200,10 @@ class _PatientsScreenState extends State<PatientsScreen> {
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                               decoration: BoxDecoration(
-                                color: _referralStatusColor(p.referralStatus).withOpacity(0.1),
+                                color: _referralStatusColor(p.referralStatus).withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(7),
                                 border: Border.all(
-                                    color: _referralStatusColor(p.referralStatus).withOpacity(0.3)),
+                                    color: _referralStatusColor(p.referralStatus).withValues(alpha: 0.3)),
                               ),
                               child: Icon(Icons.edit_rounded, size: 12,
                                   color: _referralStatusColor(p.referralStatus)),
@@ -1241,7 +1241,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                               borderRadius: BorderRadius.circular(8),
                               boxShadow: [
                                 BoxShadow(
-                                  color: _teal.withOpacity(0.3),
+                                  color: _teal.withValues(alpha: 0.3),
                                   blurRadius: 6, offset: const Offset(0, 2)),
                               ],
                             ),
@@ -1270,9 +1270,9 @@ class _PatientsScreenState extends State<PatientsScreen> {
       child: Container(
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(7),
-          border: Border.all(color: color.withOpacity(0.25)),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
         ),
         child: Icon(icon, size: 14, color: color),
       ),
@@ -1285,14 +1285,14 @@ class _PatientsScreenState extends State<PatientsScreen> {
         value != '6/6' &&
         value != '6/9' &&
         value != '6/12';
-    final bg = isBad ? _red.withOpacity(0.08) : _teal.withOpacity(0.08);
+    final bg = isBad ? _red.withValues(alpha: 0.08) : _teal.withValues(alpha: 0.08);
     final fg = isBad ? _red : _teal;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(7),
-        border: Border.all(color: fg.withOpacity(0.2), width: 1),
+        border: Border.all(color: fg.withValues(alpha: 0.2), width: 1),
       ),
       child: RichText(
         text: TextSpan(
@@ -1350,7 +1350,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
             Row(children: [
               Container(
                 width: 44, height: 44,
-                decoration: BoxDecoration(color: _teal.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(color: _teal.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
                 child: const Icon(Icons.update_rounded, color: _teal, size: 22),
               ),
               const SizedBox(width: 12),
@@ -1386,14 +1386,14 @@ class _PatientsScreenState extends State<PatientsScreen> {
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: isActive ? color.withOpacity(0.08) : Colors.white,
+                    color: isActive ? color.withValues(alpha: 0.08) : Colors.white,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: isActive ? color : const Color(0xFFEEF2F6), width: isActive ? 2 : 1.5),
                   ),
                   child: Row(children: [
                     Container(
                       width: 36, height: 36,
-                      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+                      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
                       child: Icon(st['icon'] as IconData, size: 18, color: color),
                     ),
                     const SizedBox(width: 12),
@@ -1421,7 +1421,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
             Container(
               width: 40, height: 40,
               decoration: BoxDecoration(
-                color: _red.withOpacity(0.1),
+                color: _red.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(Icons.delete_rounded, color: _red, size: 20),
@@ -1833,7 +1833,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: _teal.withOpacity(0.1),
+                  color: _teal.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: _teal, size: 18),
@@ -2060,7 +2060,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                     message,
                     style: GoogleFonts.inter(
                       fontSize: 10,
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                     ),
                   ),
                 ],
@@ -2190,9 +2190,9 @@ class _PatientHistorySheetState extends State<_PatientHistorySheet> {
                   children: p.safeConditions.map((c) => Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: _amber.withOpacity(0.08),
+                      color: _amber.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(99),
-                      border: Border.all(color: _amber.withOpacity(0.3)),
+                      border: Border.all(color: _amber.withValues(alpha: 0.3)),
                     ),
                     child: Text(c, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: _amber)),
                   )).toList(),
@@ -2245,8 +2245,8 @@ class _PatientHistorySheetState extends State<_PatientHistorySheet> {
             Container(
               width: 28, height: 28,
               decoration: BoxDecoration(
-                color: col.withOpacity(0.1), shape: BoxShape.circle,
-                border: Border.all(color: col.withOpacity(0.3), width: 1.5),
+                color: col.withValues(alpha: 0.1), shape: BoxShape.circle,
+                border: Border.all(color: col.withValues(alpha: 0.3), width: 1.5),
               ),
               child: Icon(outcome == 'pass' ? Icons.check_rounded : Icons.warning_rounded, size: 14, color: col),
             ),
@@ -2261,10 +2261,10 @@ class _PatientHistorySheetState extends State<_PatientHistorySheet> {
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: isLatest ? col.withOpacity(0.04) : Colors.white,
+                color: isLatest ? col.withValues(alpha: 0.04) : Colors.white,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: isLatest ? col.withOpacity(0.2) : const Color(0xFFEEF2F6),
+                  color: isLatest ? col.withValues(alpha: 0.2) : const Color(0xFFEEF2F6),
                   width: 1.5,
                 ),
               ),
@@ -2279,13 +2279,13 @@ class _PatientHistorySheetState extends State<_PatientHistorySheet> {
                       if (isLatest)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                          decoration: BoxDecoration(color: _teal.withOpacity(0.1), borderRadius: BorderRadius.circular(99)),
+                          decoration: BoxDecoration(color: _teal.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(99)),
                           child: Text('Latest', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: _teal)),
                         ),
                       Container(
                         margin: const EdgeInsets.only(left: 6),
                         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(color: col.withOpacity(0.1), borderRadius: BorderRadius.circular(99)),
+                        decoration: BoxDecoration(color: col.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(99)),
                         child: Text(outcome == 'pass' ? 'Pass' : 'Refer',
                             style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: col)),
                       ),
@@ -2322,9 +2322,9 @@ class _PatientHistorySheetState extends State<_PatientHistorySheet> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: col.withOpacity(0.08),
+        color: col.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(7),
-        border: Border.all(color: col.withOpacity(0.2)),
+        border: Border.all(color: col.withValues(alpha: 0.2)),
       ),
       child: RichText(
         text: TextSpan(children: [
@@ -2592,7 +2592,7 @@ class _CampaignDetailScreenState extends State<_CampaignDetailScreen> {
     final col = outcome == 'refer' ? _red : _green;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(color: col.withOpacity(0.08), borderRadius: BorderRadius.circular(7), border: Border.all(color: col.withOpacity(0.2))),
+      decoration: BoxDecoration(color: col.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(7), border: Border.all(color: col.withValues(alpha: 0.2))),
       child: Text('$eye $snellen', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: col)),
     );
   }
@@ -2627,7 +2627,7 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
         title: Row(children: [
           Container(
             width: 40, height: 40,
-            decoration: BoxDecoration(color: _red.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(color: _red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
             child: const Icon(Icons.delete_rounded, color: _red, size: 20),
           ),
           const SizedBox(width: 12),
@@ -2693,7 +2693,7 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 3))],
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 3))],
           ),
           child: Column(children: [
             Padding(
@@ -2708,7 +2708,7 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
                   width: 50, height: 50,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(14),
-                    boxShadow: [BoxShadow(color: p.avatarGradient.last.withOpacity(0.35), blurRadius: 10, offset: const Offset(0, 4))],
+                    boxShadow: [BoxShadow(color: p.avatarGradient.last.withValues(alpha: 0.35), blurRadius: 10, offset: const Offset(0, 4))],
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(14),
@@ -2733,7 +2733,7 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(color: ageGroupColor.withOpacity(0.1), borderRadius: BorderRadius.circular(99), border: Border.all(color: ageGroupColor.withOpacity(0.25))),
+                        decoration: BoxDecoration(color: ageGroupColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(99), border: Border.all(color: ageGroupColor.withValues(alpha: 0.25))),
                         child: Text(_capitalize(p.ageGroup), style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: ageGroupColor)),
                       ),
                     ]),
@@ -2757,7 +2757,7 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
                     else
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                        decoration: BoxDecoration(color: _amber.withOpacity(0.08), borderRadius: BorderRadius.circular(8), border: Border.all(color: _amber.withOpacity(0.2))),
+                        decoration: BoxDecoration(color: _amber.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8), border: Border.all(color: _amber.withValues(alpha: 0.2))),
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
                           const Icon(Icons.hourglass_top_rounded, size: 11, color: _amber),
                           const SizedBox(width: 5),
@@ -2769,7 +2769,7 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
                       Wrap(spacing: 4, runSpacing: 4,
                         children: p.safeConditions.map((c) => Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(color: _amber.withOpacity(0.08), borderRadius: BorderRadius.circular(6), border: Border.all(color: _amber.withOpacity(0.25))),
+                          decoration: BoxDecoration(color: _amber.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(6), border: Border.all(color: _amber.withValues(alpha: 0.25))),
                           child: Text(c, style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w600, color: _amber)),
                         )).toList(),
                       ),
@@ -2779,7 +2779,7 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
                 Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(color: badgeBg, borderRadius: BorderRadius.circular(99), border: Border.all(color: accentColor.withOpacity(0.25))),
+                    decoration: BoxDecoration(color: badgeBg, borderRadius: BorderRadius.circular(99), border: Border.all(color: accentColor.withValues(alpha: 0.25))),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       Icon(badgeIcon, size: 11, color: accentColor),
                       const SizedBox(width: 4),
@@ -2792,9 +2792,9 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
             // Bottom strip
             Container(
               decoration: BoxDecoration(
-                color: accentColor.withOpacity(0.05),
+                color: accentColor.withValues(alpha: 0.05),
                 borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(15), bottomRight: Radius.circular(15)),
-                border: Border(top: BorderSide(color: accentColor.withOpacity(0.12))),
+                border: Border(top: BorderSide(color: accentColor.withValues(alpha: 0.12))),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
               child: Row(children: [
@@ -2848,7 +2848,7 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
           const SizedBox(height: 16),
           Row(children: [
             Container(width: 44, height: 44,
-                decoration: BoxDecoration(color: _teal.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(color: _teal.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
                 child: const Icon(Icons.update_rounded, color: _teal, size: 22)),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -2881,13 +2881,13 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: isActive ? color.withOpacity(0.08) : Colors.white,
+                  color: isActive ? color.withValues(alpha: 0.08) : Colors.white,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: isActive ? color : const Color(0xFFEEF2F6), width: isActive ? 2 : 1.5),
                 ),
                 child: Row(children: [
                   Container(width: 36, height: 36,
-                      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+                      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
                       child: Icon(st['icon'] as IconData, size: 18, color: color)),
                   const SizedBox(width: 12),
                   Expanded(child: Text(st['label'] as String,
@@ -3011,7 +3011,7 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
     final fg = isBad ? _red : _teal;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(color: fg.withOpacity(0.08), borderRadius: BorderRadius.circular(7), border: Border.all(color: fg.withOpacity(0.2))),
+      decoration: BoxDecoration(color: fg.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(7), border: Border.all(color: fg.withValues(alpha: 0.2))),
       child: RichText(text: TextSpan(children: [
         TextSpan(text: '$eye ', style: GoogleFonts.inter(fontSize: 9, color: const Color(0xFF8FA0B4), fontWeight: FontWeight.w500)),
         TextSpan(text: value, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: fg)),
@@ -3072,9 +3072,9 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
       child: Container(
         padding: const EdgeInsets.all(5),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(7),
-          border: Border.all(color: color.withOpacity(0.25)),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
         ),
         child: Icon(icon, size: 13, color: color),
       ),

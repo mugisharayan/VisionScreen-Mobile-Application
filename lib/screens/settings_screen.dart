@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -1487,7 +1487,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _showClearDataDialog() {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.6),
+      barrierColor: Colors.black.withValues(alpha: 0.6),
       builder: (_) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 40),
@@ -1504,7 +1504,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: _C.teal.withOpacity(0.1),
+                  color: _C.teal.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -1596,7 +1596,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _showLogoutDialog() {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.6),
+      barrierColor: Colors.black.withValues(alpha: 0.6),
       builder: (_) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 40),
@@ -1613,7 +1613,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: _C.teal.withOpacity(0.1),
+                  color: _C.teal.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -2305,7 +2305,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: _C.teal.withOpacity(0.1),
+                    color: _C.teal.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(
