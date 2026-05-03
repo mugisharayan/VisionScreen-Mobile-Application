@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:camera/camera.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 // ─────────────────────────────────────────────────────────────
 // FaceDistanceScreen
@@ -73,6 +74,12 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
   double _focalLengthPx = 0.0;
   int _rawImageW = 0;
 
+  // ── Text-to-Speech ──────────────────────────────────────────
+  final FlutterTts _tts = FlutterTts();
+  String _lastSpoken = '';
+  DateTime _lastSpeakTime = DateTime(2000);
+  static const _speakCooldown = Duration(seconds: 3);
+
   @override
   void initState() {
     super.initState();
@@ -99,6 +106,37 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
         CurvedAnimation(parent: _checkCtrl, curve: Curves.elasticOut));
 
     _initCamera();
+    _initTts().then((_) {
+      Future.delayed(const Duration(milliseconds: 800), () {
+        if (mounted) _speak('Position the patient two metres from the screen.');
+      });
+    });
+  }
+
+  Future<void> _initTts() async {
+    await _tts.setLanguage('en-US');
+    await _tts.setSpeechRate(0.45);
+    await _tts.setVolume(1.0);
+    await _tts.setPitch(1.0);
+    // Warm up the engine with a silent speak so first real call is instant
+    await _tts.speak(' ');
+    await _tts.stop();
+  }
+
+  // ── Speak with cooldown per unique message ───────────────────
+  // Different messages always play immediately.
+  // Same message repeats only after cooldown expires.
+  Future<void> _speak(String text) async {
+    final now = DateTime.now();
+    final sameMessage = text == _lastSpoken;
+    final cooldownExpired = now.difference(_lastSpeakTime) >= _speakCooldown;
+
+    if (sameMessage && !cooldownExpired) return;
+
+    _lastSpoken = text;
+    _lastSpeakTime = now;
+    await _tts.stop();
+    await _tts.speak(text);
   }
 
   @override
@@ -106,6 +144,7 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
     _holdTimer?.cancel();
     _camCtrl?.dispose();
     _detector.close();
+    _tts.stop();
     _pulseCtrl.dispose();
     _checkCtrl.dispose();
     super.dispose();
@@ -244,6 +283,29 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
         _distanceM = distM;
       });
 
+      // ── Voice guidance ───────────────────────────────────────
+      if (distM != null) {
+        if (_isAtTarget(distM)) {
+          if (_holdSeconds == 0) _speak('Perfect. Hold still.');
+        } else if (distM < widget.targetDistanceM - widget.toleranceM) {
+          final diff = (widget.targetDistanceM - distM);
+          if (diff > 0.5) {
+            _speak('Move back about ${diff.toStringAsFixed(1)} metres.');
+          } else {
+            _speak('A little further back.');
+          }
+        } else {
+          final diff = (distM - widget.targetDistanceM);
+          if (diff > 0.5) {
+            _speak('Move closer about ${diff.toStringAsFixed(1)} metres.');
+          } else {
+            _speak('A little closer.');
+          }
+        }
+      } else {
+        _speak('No face detected. Please look at the camera.');
+      }
+
       // ── Hold timer logic ─────────────────────────────────────
       if (distM != null && _isAtTarget(distM)) {
         _startHoldTimer();
@@ -287,11 +349,15 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
 
   void _startHoldTimer() {
     if (_holdTimer != null) return;
+    _speak('Good. Hold still.');
     _holdTimer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) { t.cancel(); return; }
       setState(() => _holdSeconds++);
+      if (_holdSeconds == 1) _speak('Two.');
+      if (_holdSeconds == 2) _speak('One.');
       if (_holdSeconds >= _holdRequired) {
         t.cancel();
+        _speak('Perfect distance confirmed. Starting test.');
         _checkCtrl.forward();
         Future.delayed(const Duration(milliseconds: 800), () {
           if (mounted) widget.onDistanceConfirmed();
@@ -471,7 +537,7 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
                   colors: [
-                    Colors.black.withValues(alpha: 0.85),
+                    Colors.black.withValues(alpha: 0.92),
                     Colors.transparent,
                   ],
                 ),
@@ -482,9 +548,24 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Status message
+
+                  // ── Live distance meter ──────────────────────
+                  _buildDistanceMeter(),
+                  const SizedBox(height: 16),
+
+                  // ── Status message ───────────────────────────
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
+                    transitionBuilder: (child, anim) => FadeTransition(
+                      opacity: anim,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, 0.3),
+                          end: Offset.zero,
+                        ).animate(anim),
+                        child: child,
+                      ),
+                    ),
                     child: Text(
                       _statusLabel,
                       key: ValueKey(_statusLabel),
@@ -496,7 +577,7 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Text(
                     'Ask the patient to stand ${widget.targetDistanceM.toStringAsFixed(0)} metres away\nfrom the screen for accurate vision testing',
                     textAlign: TextAlign.center,
@@ -506,18 +587,17 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
                       height: 1.5,
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  // Hold progress bar
+                  const SizedBox(height: 16),
+
+                  // ── Hold progress bar ────────────────────────
                   if (_holdSeconds > 0) ...[
                     ClipRRect(
                       borderRadius: BorderRadius.circular(99),
                       child: LinearProgressIndicator(
                         value: _holdSeconds / _holdRequired,
                         minHeight: 6,
-                        backgroundColor:
-                            Colors.white.withValues(alpha: 0.15),
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                            _statusColor),
+                        backgroundColor: Colors.white.withValues(alpha: 0.15),
+                        valueColor: AlwaysStoppedAnimation<Color>(_statusColor),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -531,7 +611,8 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
                     ),
                     const SizedBox(height: 12),
                   ],
-                  // Skip button
+
+                  // ── Skip button ──────────────────────────────
                   GestureDetector(
                     onTap: widget.onDistanceConfirmed,
                     child: Container(
@@ -592,6 +673,126 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
           ),
         ],
       ),
+    );
+  }
+
+  // ── Animated distance meter ──────────────────────────────────
+  Widget _buildDistanceMeter() {
+    final target = widget.targetDistanceM;
+    final current = _distanceM;
+
+    // Meter range: 0m to 4m, target at 2m
+    const minM = 0.0, maxM = 4.0;
+    final fillRatio = current == null
+        ? 0.0
+        : ((current - minM) / (maxM - minM)).clamp(0.0, 1.0);
+    final targetRatio = (target - minM) / (maxM - minM);
+
+    return Column(
+      children: [
+        // Big live distance number
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 150),
+          child: Text(
+            current == null ? '— m' : '${current.toStringAsFixed(2)} m',
+            key: ValueKey(current?.toStringAsFixed(1)),
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 48,
+              fontWeight: FontWeight.w900,
+              color: _statusColor,
+              height: 1.0,
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Target: ${target.toStringAsFixed(1)} m',
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            color: Colors.white.withValues(alpha: 0.55),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Horizontal ruler bar
+        LayoutBuilder(builder: (_, constraints) {
+          final w = constraints.maxWidth;
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // Track background
+              Container(
+                height: 10,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+              // Fill bar
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 120),
+                height: 10,
+                width: w * fillRatio,
+                decoration: BoxDecoration(
+                  color: _statusColor,
+                  borderRadius: BorderRadius.circular(99),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _statusColor.withValues(alpha: 0.5),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+              ),
+              // Target marker line
+              Positioned(
+                left: w * targetRatio - 1.5,
+                top: -4,
+                child: Container(
+                  width: 3,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ),
+              // Target label
+              Positioned(
+                left: (w * targetRatio - 16).clamp(0.0, w - 32),
+                top: 16,
+                child: Text(
+                  '${target.toStringAsFixed(0)}m',
+                  style: GoogleFonts.inter(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white.withValues(alpha: 0.7),
+                  ),
+                ),
+              ),
+            ],
+          );
+        }),
+        const SizedBox(height: 8),
+        // Scale labels
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('0m', style: GoogleFonts.inter(
+                fontSize: 9, color: Colors.white.withValues(alpha: 0.4))),
+            Text('1m', style: GoogleFonts.inter(
+                fontSize: 9, color: Colors.white.withValues(alpha: 0.4))),
+            Text('2m', style: GoogleFonts.inter(
+                fontSize: 9, color: Colors.white.withValues(alpha: 0.7),
+                fontWeight: FontWeight.w700)),
+            Text('3m', style: GoogleFonts.inter(
+                fontSize: 9, color: Colors.white.withValues(alpha: 0.4))),
+            Text('4m', style: GoogleFonts.inter(
+                fontSize: 9, color: Colors.white.withValues(alpha: 0.4))),
+          ],
+        ),
+      ],
     );
   }
 
