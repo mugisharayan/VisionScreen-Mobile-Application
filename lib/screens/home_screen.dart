@@ -406,8 +406,35 @@ class _HomeScreenState extends State<HomeScreen>
                       Row(
                         children: [
                           // Logo wordmark
-                          VsLogoWordmark(
-                              logoSize: 32, color: Colors.white, fontSize: 17),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              VsPulsingRings(
+                                color: Colors.white,
+                                size: 52,
+                                child: VsLogoAnimated(size: 26),
+                              ),
+                              const SizedBox(width: 8),
+                              RichText(
+                                text: TextSpan(children: [
+                                  TextSpan(
+                                    text: 'Vision',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 17, fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: 'Screen',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 17, fontWeight: FontWeight.w800,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                ]),
+                              ),
+                            ],
+                          ),
                           const Spacer(),
                           // Online pill
                           _buildOnlinePill(),
@@ -693,36 +720,11 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildHeaderIllustration() {
     return SizedBox(
-      width: 90, height: 90,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Outer glow ring
-          AnimatedBuilder(
-            animation: _pulseAnim,
-            builder: (_, __) => Container(
-              width: 90 * (0.9 + _pulseAnim.value * 0.1),
-              height: 90 * (0.9 + _pulseAnim.value * 0.1),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.15 * _pulseAnim.value),
-                    width: 1),
-              ),
-            ),
-          ),
-          // Inner ring
-          Container(
-            width: 70, height: 70,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.10),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1),
-            ),
-          ),
-          // Logo
-          const VsLogoAnimated(size: 44, color: Colors.white),
-        ],
+      width: 110, height: 110,
+      child: VsPulsingRings(
+        color: Colors.white,
+        size: 110,
+        child: VsLogoAnimated(size: 56),
       ),
     );
   }
@@ -996,16 +998,10 @@ class _HomeScreenState extends State<HomeScreen>
             ]),
           ),
           // Sight mark mini
-          Container(
-            width: 44, height: 44,
-            decoration: BoxDecoration(
-              color: VsColors.brandFaint,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: VsColors.brandLight),
-            ),
-            child: const Center(
-              child: VsLogo(size: 26, color: VsColors.brand),
-            ),
+          VsPulsingRings(
+            color: VsColors.brand,
+            size: 64,
+            child: VsLogoAnimated(size: 32),
           ),
         ]),
       ),

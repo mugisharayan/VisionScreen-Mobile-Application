@@ -275,17 +275,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              width: 32, height: 32,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(9),
-                                border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.3)),
-                              ),
-                              child: const Center(
-                                child: VsLogo(size: 22, color: Colors.white),
-                              ),
+                            VsPulsingRings(
+                              color: Colors.white,
+                              size: 52,
+                              child: VsLogoAnimated(size: 26),
                             ),
                             const SizedBox(width: 8),
                             RichText(

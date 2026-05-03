@@ -205,28 +205,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                // Logo — elastic scale + animated blink (same as login)
+                                // Logo — pulsing rings same as splash screen
                                 ScaleTransition(
                                   scale: _logoScale,
-                                  child: Container(
-                                    width: 120, height: 120,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(32),
-                                      border: Border.all(
-                                          color: Colors.white.withValues(alpha: 0.35),
-                                          width: 1.5),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withValues(alpha: 0.22),
-                                          blurRadius: 32,
-                                          offset: const Offset(0, 10),
-                                        ),
-                                      ],
-                                    ),
-                                    child: const Center(
-                                      child: VsLogoAnimated(size: 96, color: Colors.white),
-                                    ),
+                                  child: VsPulsingRings(
+                                    color: Colors.white,
+                                    size: 220,
+                                    child: VsLogoAnimated(size: 110),
                                   ),
                                 ),
                                 const SizedBox(height: 20),
