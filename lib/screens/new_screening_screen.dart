@@ -2202,7 +2202,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   borderRadius: BorderRadius.circular(99),
                 ),
                 child: Text(_eyeOrder[i],
-                    style: GoogleFonts.spaceGrotesk(
+                    style: GoogleFonts.inter(
                         fontSize: 13, fontWeight: FontWeight.w700,
                         color: done ? _green
                             : active ? Colors.white
@@ -2255,7 +2255,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               borderRadius: BorderRadius.circular(99),
             ),
             child: Text('Testing: $eyeLabel — $eyeFull',
-                style: GoogleFonts.spaceGrotesk(
+                style: GoogleFonts.inter(
                     fontSize: 13, fontWeight: FontWeight.w700, color: _teal)),
           ),
           const SizedBox(height: 16),
@@ -2291,7 +2291,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   child: Center(
                     child: Text(
                       '$_countdown',
-                      style: GoogleFonts.spaceGrotesk(
+                      style: GoogleFonts.inter(
                           fontSize: 64,
                           fontWeight: FontWeight.w900,
                           color: _teal),
@@ -2551,7 +2551,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   border: active ? Border.all(color: _green, width: 1.5) : null,
                 ),
                 child: Text(_eyeOrder[i],
-                    style: GoogleFonts.spaceGrotesk(
+                    style: GoogleFonts.inter(
                         fontSize: 13, fontWeight: FontWeight.w700,
                         color: done ? _green : const Color(0xFF8FA0B4))),
               );
@@ -2584,7 +2584,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   ),
                   child: Center(
                     child: Text(eye,
-                        style: GoogleFonts.spaceGrotesk(
+                        style: GoogleFonts.inter(
                             fontSize: 16, fontWeight: FontWeight.w800, color: col)),
                   ),
                 ),
@@ -2596,7 +2596,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                 const SizedBox(height: 6),
                 Text(
                   double.tryParse(logmar) != null ? _toSnellen(logmar) : logmar,
-                  style: GoogleFonts.spaceGrotesk(
+                  style: GoogleFonts.inter(
                       fontSize: 48, fontWeight: FontWeight.w900, color: col)),
                 if (double.tryParse(logmar) != null)
                   Text('LogMAR $logmar',
@@ -2655,7 +2655,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           Icon(icon, size: 16, color: const Color(0xFF8FA0B4)),
           const SizedBox(height: 4),
           Text(value,
-              style: GoogleFonts.spaceGrotesk(
+              style: GoogleFonts.inter(
                   fontSize: 14, fontWeight: FontWeight.w800,
                   color: const Color(0xFF1A2A3D))),
           Text(label,
@@ -2779,7 +2779,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               borderRadius: BorderRadius.circular(99),
             ),
             child: Text('Near Vision — Both Eyes Open',
-                style: GoogleFonts.spaceGrotesk(
+                style: GoogleFonts.inter(
                     fontSize: 13, fontWeight: FontWeight.w700, color: _teal)),
           ),
           const SizedBox(height: 16),
@@ -2866,7 +2866,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   child: Center(
                     child: Text(
                       '$_nearCountdown',
-                      style: GoogleFonts.spaceGrotesk(
+                      style: GoogleFonts.inter(
                           fontSize: 64,
                           fontWeight: FontWeight.w900,
                           color: _teal),
@@ -3131,7 +3131,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                 const SizedBox(height: 6),
                 Text(double.tryParse(logmar) != null
                     ? _toSnellen(logmar) : logmar,
-                    style: GoogleFonts.spaceGrotesk(
+                    style: GoogleFonts.inter(
                         fontSize: 48, fontWeight: FontWeight.w900, color: col)),
                 if (double.tryParse(logmar) != null)
                   Text('LogMAR $logmar',
@@ -3284,7 +3284,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                     ),
                     child: Center(
                       child: Text(eye,
-                          style: GoogleFonts.spaceGrotesk(
+                          style: GoogleFonts.inter(
                               fontSize: 13, fontWeight: FontWeight.w800, color: col)),
                     ),
                   ),
@@ -3316,7 +3316,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                       Text(
                         double.tryParse(logmar) != null
                             ? _toSnellen(logmar) : logmar,
-                        style: GoogleFonts.spaceGrotesk(
+                        style: GoogleFonts.inter(
                             fontSize: 16, fontWeight: FontWeight.w800, color: col)),
                       if (double.tryParse(logmar) != null)
                         Text('LogMAR $logmar',
@@ -3368,7 +3368,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                       ),
                       child: Center(
                         child: Text('OU',
-                            style: GoogleFonts.spaceGrotesk(
+                            style: GoogleFonts.inter(
                                 fontSize: 12, fontWeight: FontWeight.w800,
                                 color: col)),
                       ),
@@ -3399,7 +3399,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                         Text(
                           double.tryParse(logmar) != null
                               ? _toSnellen(logmar) : logmar,
-                          style: GoogleFonts.spaceGrotesk(
+                          style: GoogleFonts.inter(
                               fontSize: 16, fontWeight: FontWeight.w800,
                               color: col)),
                         if (double.tryParse(logmar) != null)
@@ -3609,3 +3609,4 @@ class _ScreeningHeaderDotPainter extends CustomPainter {
   @override
   bool shouldRepaint(_ScreeningHeaderDotPainter old) => false;
 }
+

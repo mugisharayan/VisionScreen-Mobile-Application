@@ -398,7 +398,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFB),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: Column(
         children: [
           _buildHeader(),
@@ -424,7 +424,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [_ink, _ink2],
+          colors: [Color(0xFF134E4A), Color(0xFF0D9488)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -436,18 +436,24 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
       child: Stack(
         clipBehavior: Clip.hardEdge,
         children: [
-          Positioned(
-            top: -40, right: -40,
-            child: Container(
-              width: 180, height: 180,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(colors: [
-                  _teal.withOpacity(0.18), Colors.transparent,
-                ]),
+          // Dot pattern
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(28),
+                bottomRight: Radius.circular(28),
               ),
+              child: CustomPaint(painter: _BulkDotPainter()),
             ),
           ),
+          Positioned(top: -50, right: -50,
+            child: Container(width: 180, height: 180,
+              decoration: BoxDecoration(shape: BoxShape.circle,
+                border: Border.all(color: Colors.white.withValues(alpha: 0.07), width: 1)))),
+          Positioned(top: -10, right: -10,
+            child: Container(width: 100, height: 100,
+              decoration: BoxDecoration(shape: BoxShape.circle,
+                border: Border.all(color: Colors.white.withValues(alpha: 0.10), width: 1)))),
           SafeArea(
             bottom: false,
             child: Padding(
@@ -461,15 +467,15 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                     child: Container(
                       width: 38, height: 38,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.08),
+                        color: Colors.white.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(11),
-                        border: Border.all(color: Colors.white.withOpacity(0.12)),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
                       ),
                       child: const Icon(Icons.arrow_back_ios_new_rounded,
                           color: Colors.white, size: 15),
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 16),
                   // Title row
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -478,86 +484,66 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: _teal.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(99),
-                                border: Border.all(
-                                    color: _teal3.withOpacity(0.3)),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 6, height: 6,
-                                    decoration: const BoxDecoration(
-                                        color: _teal3,
-                                        shape: BoxShape.circle),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text('CAMPAIGN MODE',
-                                      style: GoogleFonts.ibmPlexSans(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700,
-                                          color: _teal3)),
-                                ],
-                              ),
-                            ),
+                            Row(children: [
+                              Container(width: 6, height: 6,
+                                decoration: const BoxDecoration(
+                                    color: Color(0xFF5EEAD4),
+                                    shape: BoxShape.circle)),
+                              const SizedBox(width: 6),
+                              Text('CAMPAIGN MODE',
+                                  style: GoogleFonts.inter(
+                                      fontSize: 9, fontWeight: FontWeight.w700,
+                                      color: Colors.white.withValues(alpha: 0.65),
+                                      letterSpacing: 1.8)),
+                            ]),
                             const SizedBox(height: 8),
                             Text('Bulk',
-                                style: GoogleFonts.barlow(
-                                    fontSize: 34,
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.white,
-                                    letterSpacing: -1.2,
-                                    height: 1.0)),
+                                style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 30, fontWeight: FontWeight.w800,
+                                    color: Colors.white, height: 1.0,
+                                    letterSpacing: -0.5)),
                             Text('Screening',
-                                style: GoogleFonts.barlow(
-                                    fontSize: 34,
-                                    fontWeight: FontWeight.w900,
-                                    color: _teal3,
-                                    letterSpacing: -1.2,
-                                    height: 1.0,
-                                    fontStyle: FontStyle.italic)),
+                                style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 30, fontWeight: FontWeight.w800,
+                                    color: const Color(0xFF5EEAD4),
+                                    height: 1.0, letterSpacing: -0.5)),
                             const SizedBox(height: 4),
                             Text('Screen many patients quickly in one session',
-                                style: GoogleFonts.ibmPlexSans(
+                                style: GoogleFonts.inter(
                                     fontSize: 11,
-                                    color: Colors.white.withOpacity(0.4))),
+                                    color: Colors.white.withValues(alpha: 0.6))),
                           ],
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Container(
-                        width: 64, height: 64,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                              colors: [_teal, _teal2],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight),
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                                color: _teal.withOpacity(0.45),
-                                blurRadius: 18,
-                                offset: const Offset(0, 6))
-                          ],
+                      TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0.0, end: 1.0),
+                        duration: const Duration(milliseconds: 600),
+                        curve: Curves.elasticOut,
+                        builder: (_, t, child) =>
+                            Transform.scale(scale: t, child: child),
+                        child: Container(
+                          width: 64, height: 64,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.3)),
+                          ),
+                          child: const Icon(Icons.groups_rounded,
+                              color: Colors.white, size: 30),
                         ),
-                        child: const Icon(Icons.groups_rounded,
-                            color: Colors.white, size: 30),
                       ),
                     ],
                   ),
-                  // Step indicator
                   const SizedBox(height: 18),
+                  // Step indicator
                   Row(children: [
-                    _stepDot(1, 'Setup',    _section >= 0),
+                    _stepDot(1, 'Setup',   _section >= 0),
                     _stepLine(_section >= 1),
-                    _stepDot(2, 'Screen',   _section >= 1),
+                    _stepDot(2, 'Screen',  _section >= 1),
                     _stepLine(_section >= 2),
-                    _stepDot(3, 'Summary',  _section >= 2),
+                    _stepDot(3, 'Summary', _section >= 2),
                   ]),
                 ],
               ),
@@ -569,10 +555,16 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
   }
 
   Widget _buildCompactHeader() {
-    final eye = _section == 2 ? _eyeOrder[_eyeIndex] : (_eyeIndex < _eyeOrder.length ? _eyeOrder[_eyeIndex] : 'OS');
+    final eye = _section == 2
+        ? _eyeOrder[_eyeIndex]
+        : (_eyeIndex < _eyeOrder.length ? _eyeOrder[_eyeIndex] : 'OS');
     return Container(
       decoration: const BoxDecoration(
-        gradient: LinearGradient(colors: [_ink, _ink2], begin: Alignment.topLeft, end: Alignment.bottomRight),
+        gradient: LinearGradient(
+          colors: [Color(0xFF134E4A), Color(0xFF0D9488)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       ),
       child: SafeArea(
         bottom: false,
@@ -584,11 +576,12 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
               child: Container(
                 width: 36, height: 36,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.08),
+                  color: Colors.white.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.white.withOpacity(0.12)),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
                 ),
-                child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 14),
+                child: const Icon(Icons.arrow_back_ios_new_rounded,
+                    color: Colors.white, size: 14),
               ),
             ),
             const SizedBox(width: 12),
@@ -596,22 +589,31 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _teal.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(99),
-                  border: Border.all(color: _teal3.withOpacity(0.3)),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                 ),
                 child: Text('Testing: $eye · LogMAR ${_rows[_currentRow]['logmar']}',
-                    style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.w700, color: _teal3)),
+                    style: GoogleFonts.inter(
+                        fontSize: 11, fontWeight: FontWeight.w700,
+                        color: Colors.white)),
               ),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: Colors.white.withOpacity(0.08), borderRadius: BorderRadius.circular(99)),
-                child: Text('$_letterIndex/5', style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.7))),
+                decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(99)),
+                child: Text('$_letterIndex/5',
+                    style: GoogleFonts.inter(
+                        fontSize: 11, fontWeight: FontWeight.w700,
+                        color: Colors.white)),
               ),
             ] else ...[
               Text(_section == 4 ? 'Cover Eye Reminder' : 'Bulk Screening',
-                  style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
+                  style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14, fontWeight: FontWeight.w700,
+                      color: Colors.white)),
             ],
           ]),
         ),
@@ -620,37 +622,31 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
   }
 
   Widget _stepDot(int n, String label, bool active) {
-    return Column(
-      children: [
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          width: 28, height: 28,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: active ? _teal : Colors.white.withOpacity(0.1),
-            border: Border.all(
-                color: active ? _teal3 : Colors.white.withOpacity(0.2),
-                width: 1.5),
-          ),
-          child: Center(
-            child: Text('$n',
-                style: GoogleFonts.barlow(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                    color: active ? Colors.white : Colors.white.withOpacity(0.3))),
-          ),
+    return Column(children: [
+      AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        width: 28, height: 28,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: active ? Colors.white.withValues(alpha: 0.25) : Colors.white.withValues(alpha: 0.08),
+          border: Border.all(
+              color: active ? Colors.white.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.2),
+              width: 1.5),
         ),
-        const SizedBox(height: 4),
-        Text(label,
-            style: GoogleFonts.ibmPlexSans(
-                fontSize: 9,
-                fontWeight: FontWeight.w600,
-                color: active
-                    ? _teal3
-                    : Colors.white.withOpacity(0.3),
-                letterSpacing: 0.5)),
-      ],
-    );
+        child: Center(
+          child: Text('$n',
+              style: GoogleFonts.inter(
+                  fontSize: 12, fontWeight: FontWeight.w800,
+                  color: active ? Colors.white : Colors.white.withValues(alpha: 0.3))),
+        ),
+      ),
+      const SizedBox(height: 4),
+      Text(label,
+          style: GoogleFonts.inter(
+              fontSize: 9, fontWeight: FontWeight.w600,
+              color: active ? Colors.white.withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.3),
+              letterSpacing: 0.5)),
+    ]);
   }
 
   Widget _stepLine(bool active) => Expanded(
@@ -658,7 +654,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
       height: 2,
       margin: const EdgeInsets.only(bottom: 18),
       decoration: BoxDecoration(
-        color: active ? _teal3.withOpacity(0.5) : Colors.white.withOpacity(0.1),
+        color: active ? Colors.white.withValues(alpha: 0.4) : Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(99),
       ),
     ),
@@ -947,7 +943,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                 ),
                 child: Center(
                   child: Text('$_patientCount',
-                      style: GoogleFonts.barlow(fontSize: 20, fontWeight: FontWeight.w900, color: _teal)),
+                      style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w900, color: _teal)),
                 ),
               ),
               const SizedBox(width: 12),
@@ -969,7 +965,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                   borderRadius: BorderRadius.circular(99),
                   border: Border.all(color: _teal.withOpacity(0.2)),
                 ),
-                child: Text('IN SESSION', style: GoogleFonts.ibmPlexSans(fontSize: 9, fontWeight: FontWeight.w800, color: _teal, letterSpacing: 1.0)),
+                child: Text('IN SESSION', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w800, color: _teal, letterSpacing: 1.0)),
               ),
             ]),
           ),
@@ -1009,7 +1005,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
               ),
               Expanded(
                 child: Column(children: [
-                  Text('$_quickAge', style: GoogleFonts.barlow(fontSize: 28, fontWeight: FontWeight.w900, color: const Color(0xFF1A2A3D))),
+                  Text('$_quickAge', style: GoogleFonts.plusJakartaSans(fontSize: 28, fontWeight: FontWeight.w900, color: const Color(0xFF1A2A3D))),
                   Text('years old', style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8FA0B4))),
                 ]),
               ),
@@ -1221,7 +1217,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(color: _teal.withOpacity(0.08), borderRadius: BorderRadius.circular(99)),
               child: Text('Testing: ${_eyeOrder[_eyeIndex]} · LogMAR ${_rows[_currentRow]['logmar']}',
-                  style: GoogleFonts.spaceGrotesk(fontSize: 12, fontWeight: FontWeight.w700, color: _teal)),
+                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: _teal)),
             ),
             const SizedBox(height: 8),
             Text('Which way is the E facing?', style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8FA0B4))),
@@ -1375,7 +1371,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
             ),
             const SizedBox(height: 12),
             Text(passed ? 'PASS' : 'REFER',
-                style: GoogleFonts.barlow(fontSize: 32, fontWeight: FontWeight.w900, color: col)),
+                style: GoogleFonts.plusJakartaSans(fontSize: 32, fontWeight: FontWeight.w900, color: col)),
             const SizedBox(height: 4),
             Text(passed ? 'Vision is within normal range' : 'Vision below threshold — referral needed',
                 style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF8FA0B4))),
@@ -1506,9 +1502,9 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
         border: Border.all(color: col.withOpacity(0.2)),
       ),
       child: Column(children: [
-        Text(eye, style: GoogleFonts.spaceGrotesk(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF8FA0B4))),
+        Text(eye, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF8FA0B4))),
         const SizedBox(height: 4),
-        Text(snellen, style: GoogleFonts.spaceGrotesk(fontSize: 22, fontWeight: FontWeight.w900, color: col)),
+        Text(snellen, style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w900, color: col)),
         Text('LogMAR $logmar', style: GoogleFonts.inter(fontSize: 10, color: col.withOpacity(0.7))),
       ]),
     );
@@ -1562,7 +1558,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                   borderRadius: BorderRadius.circular(99),
                   border: Border.all(color: _green.withOpacity(0.4)),
                 ),
-                child: Text('COMPLETE', style: GoogleFonts.ibmPlexSans(fontSize: 9, fontWeight: FontWeight.w800, color: _green, letterSpacing: 1.0)),
+                child: Text('COMPLETE', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w800, color: _green, letterSpacing: 1.0)),
               ),
             ]),
             const SizedBox(height: 20),
@@ -1624,7 +1620,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                   width: 32, height: 32,
                   decoration: BoxDecoration(color: const Color(0xFFF0F4F7), borderRadius: BorderRadius.circular(8)),
                   child: Center(child: Text('${i + 1}',
-                      style: GoogleFonts.barlow(fontSize: 13, fontWeight: FontWeight.w900, color: const Color(0xFF8FA0B4)))),
+                      style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w900, color: const Color(0xFF8FA0B4)))),
                 ),
                 const SizedBox(width: 10),
                 // Avatar
@@ -1714,9 +1710,9 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
           border: Border.all(color: color.withOpacity(0.25)),
         ),
         child: Column(children: [
-          Text(value, style: GoogleFonts.barlow(fontSize: 20, fontWeight: FontWeight.w900, color: color, height: 1.0)),
+          Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w900, color: color, height: 1.0)),
           const SizedBox(height: 2),
-          Text(label.toUpperCase(), style: GoogleFonts.ibmPlexSans(fontSize: 7, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.4), letterSpacing: 0.8)),
+          Text(label.toUpperCase(), style: GoogleFonts.inter(fontSize: 7, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.4), letterSpacing: 0.8)),
         ]),
       ),
     );
@@ -1733,7 +1729,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
         border: Border.all(color: col.withOpacity(0.2)),
       ),
       child: Text('$eye $snellen',
-          style: GoogleFonts.spaceGrotesk(fontSize: 9, fontWeight: FontWeight.w700, color: col)),
+          style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: col)),
     );
   }
 
@@ -1782,3 +1778,23 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
         ),
       );
 }
+
+
+// ── Dot pattern painter for bulk mode header ────────────────
+class _BulkDotPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = Colors.white.withValues(alpha: 0.06)
+      ..style = PaintingStyle.fill;
+    const spacing = 26.0;
+    for (double y = 0; y < size.height; y += spacing) {
+      for (double x = 0; x < size.width; x += spacing) {
+        canvas.drawCircle(Offset(x, y), 1.8, p);
+      }
+    }
+  }
+  @override
+  bool shouldRepaint(_BulkDotPainter old) => false;
+}
+

@@ -99,7 +99,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         _villages = results[10] as List<Map<String, dynamic>>;
         _loading = false;
       });
-    } catch (_) {
+    } catch (e, stack) {
+      debugPrint('Analytics load error: $e\n$stack');
       if (!mounted) return;
       setState(() {
         _hasError = true;
@@ -153,7 +154,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   )
                 : _loading
                 ? const Center(
-                    child: CircularProgressIndicator(color: Color(0xFF0D9488)),
+                    child: CircularProgressIndicator(
+                      color: Color(0xFF0D9488),
+                      strokeWidth: 2.5,
+                    ),
                   )
                 : SingleChildScrollView(
                     padding: const EdgeInsets.all(8),
@@ -401,76 +405,59 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   ) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [color.withOpacity(0.18), color.withOpacity(0.06)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withOpacity(0.35), width: 1.5),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.18),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
+              color: color.withValues(alpha: 0.10),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Icon + change badge
+            // Icon + change badge row
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 30, height: 30,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(11),
-                    border: Border.all(color: color.withOpacity(0.4)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    color: color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(9),
                   ),
-                  child: Icon(icon, color: color, size: 18),
+                  child: Icon(icon, color: color, size: 15),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 7,
-                    vertical: 3,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.15),
+                    color: color.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(99),
-                    border: Border.all(color: color.withOpacity(0.3)),
                   ),
                   child: Text(
                     change,
                     style: GoogleFonts.inter(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w800,
+                      fontSize: 8,
+                      fontWeight: FontWeight.w700,
                       color: color,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
-            // Large number
+            const SizedBox(height: 8),
+            // Number
             Text(
               number,
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 32,
-                fontWeight: FontWeight.w900,
-                color: const Color(0xFF1A2A3D),
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF0F172A),
                 height: 1.0,
               ),
             ),
@@ -478,66 +465,21 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             Text(
               label,
               style: GoogleFonts.inter(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF5E7291),
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF64748B),
               ),
             ),
-            const SizedBox(height: 14),
-            // Progress ring + bar combined
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                // Background track
-                Container(
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-                // Filled bar
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: FractionallySizedBox(
-                    widthFactor: progress.clamp(0.0, 1.0),
-                    child: Container(
-                      height: 6,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [color.withOpacity(0.7), color],
-                        ),
-                        borderRadius: BorderRadius.circular(99),
-                        boxShadow: [
-                          BoxShadow(
-                            color: color.withOpacity(0.5),
-                            blurRadius: 6,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                // Glowing dot at progress point
-                Align(
-                  alignment: Alignment(
-                    (progress.clamp(0.0, 1.0) * 2 - 1).clamp(-1.0, 1.0),
-                    0,
-                  ),
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                      boxShadow: [
-                        BoxShadow(color: color.withOpacity(0.7), blurRadius: 6),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+            const SizedBox(height: 8),
+            // Thin progress bar
+            ClipRRect(
+              borderRadius: BorderRadius.circular(99),
+              child: LinearProgressIndicator(
+                value: progress.clamp(0.0, 1.0),
+                minHeight: 3,
+                backgroundColor: color.withValues(alpha: 0.10),
+                valueColor: AlwaysStoppedAnimation<Color>(color),
+              ),
             ),
           ],
         ),
@@ -553,7 +495,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final chartData = _trendData
         .where((r) => r['label'] != '__total__')
         .toList();
-    final hasData = chartData.length >= 2;
+    final hasData = chartData.isNotEmpty;
 
     // Period-wide pass rate from the total row (accurate headline)
     double periodPassRate = 0.0;
@@ -613,7 +555,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF04091A), Color(0xFF0B1530)],
+            colors: [Color(0xFF0F4C45), Color(0xFF0D9488)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -625,7 +567,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             children: [
               Icon(
                 Icons.show_chart_rounded,
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.4),
                 size: 36,
               ),
               const SizedBox(height: 10),
@@ -633,7 +575,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 'No screenings recorded for this period',
                 style: GoogleFonts.inter(
                   fontSize: 12,
-                  color: Colors.white.withOpacity(0.35),
+                  color: Colors.white.withValues(alpha: 0.6),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Switch to a different period or add screenings',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  color: Colors.white.withValues(alpha: 0.4),
                 ),
               ),
             ],
@@ -645,14 +595,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF04091A), Color(0xFF0B1530)],
+          colors: [Color(0xFF0F4C45), Color(0xFF0D9488)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0D9488).withOpacity(0.18),
+            color: const Color(0xFF0D9488).withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 6),
           ),
@@ -682,7 +632,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         subtitle,
                         style: GoogleFonts.inter(
                           fontSize: 11,
-                          color: Colors.white.withOpacity(0.45),
+                          color: Colors.white.withValues(alpha: 0.6),
                         ),
                       ),
                     ],
@@ -745,7 +695,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               children: [
                 Text(
                   '${periodPassRate.toStringAsFixed(0)}%',
-                  style: GoogleFonts.spaceGrotesk(
+                  style: GoogleFonts.inter(
                     fontSize: 44,
                     fontWeight: FontWeight.w900,
                     color: Colors.white,
@@ -756,10 +706,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Text(
-                    'pass rate · ${_selectedPeriod.toLowerCase()}',
+                    'pass rate \u00b7 ${_selectedPeriod.toLowerCase()}',
                     style: GoogleFonts.inter(
                       fontSize: 12,
-                      color: Colors.white.withOpacity(0.4),
+                      color: Colors.white.withValues(alpha: 0.6),
                     ),
                   ),
                 ),
@@ -794,7 +744,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     fontSize: 8,
                     color: isLast
                         ? const Color(0xFF5EEAD4)
-                        : Colors.white.withOpacity(0.3),
+                        : Colors.white.withValues(alpha: 0.5),
                     fontWeight: isLast ? FontWeight.w700 : FontWeight.w500,
                   ),
                 );
@@ -806,9 +756,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withOpacity(0.08)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
             ),
             child: Row(
               children: [
@@ -820,7 +770,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 Container(
                   width: 1,
                   height: 28,
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withValues(alpha: 0.15),
                 ),
                 _legendDot(
                   const Color(0xFFF59E0B),
@@ -830,7 +780,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 Container(
                   width: 1,
                   height: 28,
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withValues(alpha: 0.15),
                 ),
                 _legendDot(const Color(0xFF5EEAD4), 'Peak', peakLabel),
               ],
@@ -854,7 +804,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 color: color,
                 shape: BoxShape.circle,
                 boxShadow: [
-                  BoxShadow(color: color.withOpacity(0.6), blurRadius: 6),
+                  BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 6),
                 ],
               ),
             ),
@@ -867,13 +817,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     label,
                     style: GoogleFonts.inter(
                       fontSize: 9,
-                      color: Colors.white.withOpacity(0.4),
+                      color: Colors.white.withValues(alpha: 0.6),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   Text(
                     value,
-                    style: GoogleFonts.spaceGrotesk(
+                    style: GoogleFonts.inter(
                       fontSize: 12,
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
@@ -1093,7 +1043,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     children: [
                       Text(
                         '${e.$2}',
-                        style: GoogleFonts.spaceGrotesk(
+                        style: GoogleFonts.inter(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
                           color: e.$3,
@@ -1207,7 +1157,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     const SizedBox(height: 10),
                     Text(
                       '$male',
-                      style: GoogleFonts.spaceGrotesk(
+                      style: GoogleFonts.inter(
                         fontSize: 28,
                         fontWeight: FontWeight.w900,
                         color: const Color(0xFF1A2A3D),
@@ -1224,7 +1174,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     const SizedBox(height: 6),
                     Text(
                       '${(mRatio * 100).toStringAsFixed(0)}%',
-                      style: GoogleFonts.spaceGrotesk(
+                      style: GoogleFonts.inter(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFF3B82F6),
@@ -1268,7 +1218,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     const SizedBox(height: 10),
                     Text(
                       '$female',
-                      style: GoogleFonts.spaceGrotesk(
+                      style: GoogleFonts.inter(
                         fontSize: 28,
                         fontWeight: FontWeight.w900,
                         color: const Color(0xFF1A2A3D),
@@ -1285,7 +1235,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     const SizedBox(height: 6),
                     Text(
                       '${(fRatio * 100).toStringAsFixed(0)}%',
-                      style: GoogleFonts.spaceGrotesk(
+                      style: GoogleFonts.inter(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFFEC4899),
@@ -1408,7 +1358,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             children: [
                               Text(
                                 normalPct,
-                                style: GoogleFonts.spaceGrotesk(
+                                style: GoogleFonts.inter(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w900,
                                   color: const Color(0xFF22C55E),
@@ -1463,7 +1413,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                           ),
                                           Text(
                                             '${(e.$2 * 100).toStringAsFixed(0)}%',
-                                            style: GoogleFonts.spaceGrotesk(
+                                            style: GoogleFonts.inter(
                                               fontSize: 11,
                                               fontWeight: FontWeight.w700,
                                               color: e.$3,
@@ -1666,7 +1616,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                     ),
                                     Text(
                                       '$count patients',
-                                      style: GoogleFonts.spaceGrotesk(
+                                      style: GoogleFonts.inter(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w700,
                                         color: color,
@@ -1826,7 +1776,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                   child: pct >= 0.08
                                       ? Text(
                                           '${(pct * 100).toStringAsFixed(0)}%',
-                                          style: GoogleFonts.spaceGrotesk(
+                                          style: GoogleFonts.inter(
                                             fontSize: 10,
                                             fontWeight: FontWeight.w800,
                                             color: Colors.white,
@@ -1887,7 +1837,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               const SizedBox(width: 5),
                               Text(
                                 '${e.$2}',
-                                style: GoogleFonts.spaceGrotesk(
+                                style: GoogleFonts.inter(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w800,
                                   color: e.$3,
@@ -2053,7 +2003,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             children: [
                               Text(
                                 '$count',
-                                style: GoogleFonts.spaceGrotesk(
+                                style: GoogleFonts.inter(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w900,
                                   color: Colors.white,
@@ -2070,7 +2020,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               ),
                               Text(
                                 '$pct%',
-                                style: GoogleFonts.spaceGrotesk(
+                                style: GoogleFonts.inter(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
                                   color: m.$2,
@@ -2233,7 +2183,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             child: Center(
                               child: Text(
                                 '#$rank',
-                                style: GoogleFonts.spaceGrotesk(
+                                style: GoogleFonts.inter(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w900,
                                   color: rankColor,
@@ -2318,7 +2268,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               child: Center(
                                 child: Text(
                                   '${(passRate * 100).toStringAsFixed(0)}%',
-                                  style: GoogleFonts.spaceGrotesk(
+                                  style: GoogleFonts.inter(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w800,
                                     color: Colors.white,
@@ -2349,7 +2299,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       children: [
         Text(
           value,
-          style: GoogleFonts.spaceGrotesk(
+          style: GoogleFonts.inter(
             fontSize: 11,
             fontWeight: FontWeight.w800,
             color: color,
@@ -2541,7 +2491,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                     children: [
                                       Text(
                                         '$count',
-                                        style: GoogleFonts.spaceGrotesk(
+                                        style: GoogleFonts.inter(
                                           fontSize: 11,
                                           fontWeight: FontWeight.w800,
                                           color: ageColors[i],
@@ -2709,7 +2659,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             child: Center(
                               child: Text(
                                 '${i + 1}',
-                                style: GoogleFonts.spaceGrotesk(
+                                style: GoogleFonts.inter(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w800,
                                   color: color,
@@ -2780,7 +2730,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             ),
                             child: Text(
                               '$total',
-                              style: GoogleFonts.spaceGrotesk(
+                              style: GoogleFonts.inter(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
                                 color: color,
@@ -2993,7 +2943,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               ),
                               Text(
                                 '$screened screened',
-                                style: GoogleFonts.spaceGrotesk(
+                                style: GoogleFonts.inter(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
                                   color: color,
@@ -3070,7 +3020,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       children: [
         Text(
           value,
-          style: GoogleFonts.spaceGrotesk(
+          style: GoogleFonts.inter(
             fontSize: 18,
             fontWeight: FontWeight.w900,
             color: color,
@@ -3124,7 +3074,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             const SizedBox(height: 10),
             Text(
               '$count',
-              style: GoogleFonts.spaceGrotesk(
+              style: GoogleFonts.inter(
                 fontSize: 26,
                 fontWeight: FontWeight.w900,
                 color: Colors.white,
@@ -3620,7 +3570,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           child: Center(
                             child: Text(
                               num,
-                              style: GoogleFonts.spaceGrotesk(
+                              style: GoogleFonts.inter(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w900,
                                 color: e.accent,
@@ -3775,15 +3725,17 @@ class _PassRateTrendPainter extends CustomPainter {
     const lp = 36.0, tp = 10.0, bp = 8.0;
     final cW = size.width - lp;
     final cH = size.height - tp - bp;
-    double xOf(int i) => lp + (i / (passData.length - 1)) * cW;
+    final n = passData.length;
+    // Guard against single-point division by zero
+    double xOf(int i) => n <= 1 ? lp + cW / 2 : lp + (i / (n - 1)) * cW;
     double yOf(double v) => tp + cH - (v / 100) * cH;
 
     final gridP = Paint()
-      ..color = Colors.white.withOpacity(0.06)
+      ..color = Colors.white.withValues(alpha: 0.08)
       ..strokeWidth = 1;
     final lblS = GoogleFonts.inter(
       fontSize: 9,
-      color: Colors.white.withOpacity(0.3),
+      color: Colors.white.withValues(alpha: 0.4),
       fontWeight: FontWeight.w500,
     );
     for (final pct in [25.0, 50.0, 75.0, 100.0]) {
@@ -3797,6 +3749,13 @@ class _PassRateTrendPainter extends CustomPainter {
     }
 
     Path smooth(List<double> vals) {
+      if (vals.length == 1) {
+        // Single point — draw a horizontal line
+        final p = Path()
+          ..moveTo(lp, yOf(vals[0]))
+          ..lineTo(lp + cW, yOf(vals[0]));
+        return p;
+      }
       final pts = List.generate(
         vals.length,
         (i) => Offset(xOf(i), yOf(vals[i])),
@@ -3820,7 +3779,7 @@ class _PassRateTrendPainter extends CustomPainter {
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [_amber.withOpacity(0.18), _amber.withOpacity(0.0)],
+          colors: [_amber.withValues(alpha: 0.18), _amber.withValues(alpha: 0.0)],
         ).createShader(Rect.fromLTWH(0, 0, size.width, size.height)),
     );
 
@@ -3834,14 +3793,14 @@ class _PassRateTrendPainter extends CustomPainter {
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [_teal.withOpacity(0.35), _teal.withOpacity(0.0)],
+          colors: [_teal.withValues(alpha: 0.35), _teal.withValues(alpha: 0.0)],
         ).createShader(Rect.fromLTWH(0, 0, size.width, size.height)),
     );
 
     canvas.drawPath(
       rPath,
       Paint()
-        ..color = _amber.withOpacity(0.7)
+        ..color = _amber.withValues(alpha: 0.7)
         ..strokeWidth = 2
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round
@@ -3869,7 +3828,7 @@ class _PassRateTrendPainter extends CustomPainter {
         canvas.drawCircle(
           Offset(x, y),
           10,
-          Paint()..color = _teal3.withOpacity(0.2),
+          Paint()..color = _teal3.withValues(alpha: 0.2),
         );
       canvas.drawCircle(
         Offset(x, y),
@@ -3885,7 +3844,7 @@ class _PassRateTrendPainter extends CustomPainter {
         final tp2 = TextPainter(
           text: TextSpan(
             text: '${passData.reduce(max).toStringAsFixed(0)}%',
-            style: GoogleFonts.spaceGrotesk(
+            style: GoogleFonts.inter(
               fontSize: 10,
               fontWeight: FontWeight.w800,
               color: Colors.white,
@@ -3939,3 +3898,4 @@ class _AnalyticsDotPainter extends CustomPainter {
   @override
   bool shouldRepaint(_AnalyticsDotPainter old) => false;
 }
+

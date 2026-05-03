@@ -136,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen>
           ),
           content: Text(
             'Please read and agree to the Terms of Service & Privacy Policy.',
-            style: GoogleFonts.sora(
+            style: GoogleFonts.inter(
               fontSize: 12,
               color: const Color(0xFFEF4444),
               fontWeight: FontWeight.w600,
@@ -776,7 +776,7 @@ class _NewLoginFormState extends State<_NewLoginForm>
             children: [
               RichText(
                 text: TextSpan(
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.plusJakartaSans(
                       fontSize: 24, fontWeight: FontWeight.w900),
                   children: [
                     const TextSpan(
@@ -791,7 +791,7 @@ class _NewLoginFormState extends State<_NewLoginForm>
               const SizedBox(height: 4),
               Text(
                 'Sign in to continue to VisionScreen.',
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.inter(
                     fontSize: 12, color: AppColors.textMuted),
               ),
             ],
@@ -865,7 +865,7 @@ class _NewLoginFormState extends State<_NewLoginForm>
                     ),
                     const SizedBox(width: 7),
                     Text('Remember me',
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.inter(
                             fontSize: 11,
                             color: AppColors.textMuted,
                             fontWeight: FontWeight.w500)),
@@ -878,7 +878,7 @@ class _NewLoginFormState extends State<_NewLoginForm>
                     Navigator.of(context).pushNamed('/forgot-password'),
                 child: Text(
                   'Forgot Password?',
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textDark,
@@ -903,7 +903,7 @@ class _NewLoginFormState extends State<_NewLoginForm>
                   onTap: widget.onGoSignUp,
                   child: RichText(
                     text: TextSpan(
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.inter(
                           fontSize: 12, color: AppColors.textMuted),
                       children: [
                         const TextSpan(text: 'New User? '),
@@ -977,7 +977,7 @@ class _GreenRoleChip extends StatelessWidget {
               Flexible(
                 child: Text(
                   label,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: active ? AppColors.greenDark : AppColors.textMuted,
@@ -1116,7 +1116,7 @@ class _NewSignUpFormState extends State<_NewSignUpForm>
       children: [
         _s(0, RichText(
           text: TextSpan(
-            style: GoogleFonts.nunito(
+            style: GoogleFonts.plusJakartaSans(
                 fontSize: 24, fontWeight: FontWeight.w900),
             children: [
               const TextSpan(
@@ -1131,7 +1131,7 @@ class _NewSignUpFormState extends State<_NewSignUpForm>
         const SizedBox(height: 4),
         _s(0, Text(
           'Fill in your details to get started.',
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.inter(
               fontSize: 12, color: AppColors.textMuted),
         )),
         const SizedBox(height: 22),
@@ -1259,7 +1259,7 @@ class _NewSignUpFormState extends State<_NewSignUpForm>
                 onTap: widget.onGoLogin,
                 child: RichText(
                   text: TextSpan(
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.inter(
                         fontSize: 12, color: AppColors.textMuted),
                     children: [
                       const TextSpan(text: 'Already have an account? '),
@@ -1355,7 +1355,7 @@ class _UnderlinePhoneFieldState extends State<_UnderlinePhoneField> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Phone Number',
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.inter(
                 fontSize: 11, fontWeight: FontWeight.w500,
                 color: AppColors.textMuted)),
         const SizedBox(height: 2),
@@ -1381,7 +1381,7 @@ class _UnderlinePhoneFieldState extends State<_UnderlinePhoneField> {
                   const Text('🇺🇬', style: TextStyle(fontSize: 13)),
                   const SizedBox(width: 4),
                   Text('+256',
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.inter(
                           fontSize: 12, fontWeight: FontWeight.w700,
                           color: _focused
                               ? AppColors.greenDark
@@ -1402,13 +1402,13 @@ class _UnderlinePhoneFieldState extends State<_UnderlinePhoneField> {
                   LengthLimitingTextInputFormatter(9),
                   _UgandaPhoneFormatter(),
                 ],
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.inter(
                     fontSize: 13, fontWeight: FontWeight.w500,
                     color: AppColors.textDark, letterSpacing: 1.2),
                 cursorColor: AppColors.green,
                 decoration: InputDecoration(
                   hintText: '7XX XXX XXX',
-                  hintStyle: GoogleFonts.poppins(
+                  hintStyle: GoogleFonts.inter(
                       fontSize: 13,
                       color: AppColors.textMuted.withValues(alpha: 0.4),
                       letterSpacing: 0.5),
@@ -1431,7 +1431,7 @@ class _UnderlinePhoneFieldState extends State<_UnderlinePhoneField> {
                       color: _networkColor.withValues(alpha: 0.4), width: 1),
                 ),
                 child: Text(_network,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.inter(
                         fontSize: 10, fontWeight: FontWeight.w700,
                         color: _network == 'MTN'
                             ? const Color(0xFF92700A)
@@ -1454,7 +1454,7 @@ class _UnderlinePhoneFieldState extends State<_UnderlinePhoneField> {
                     size: 12, color: Color(0xFFEF4444)),
                 const SizedBox(width: 4),
                 Text(widget.errorText!,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.inter(
                         fontSize: 11, color: const Color(0xFFEF4444),
                         fontWeight: FontWeight.w500)),
               ],
@@ -1463,7 +1463,7 @@ class _UnderlinePhoneFieldState extends State<_UnderlinePhoneField> {
         Padding(
           padding: const EdgeInsets.only(top: 4),
           child: Text('MTN or Airtel Uganda · 9 digits',
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.inter(
                   fontSize: 10, color: AppColors.textMuted.withValues(alpha: 0.6))),
         ),
       ],
@@ -1524,7 +1524,7 @@ class _GreenPasswordStrength extends StatelessWidget {
             ),
             const SizedBox(width: 5),
             Text('Password strength: ${labels[score]}',
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.inter(
                     fontSize: 11, fontWeight: FontWeight.w600, color: color)),
             if (score < 3) ...[
               const SizedBox(width: 6),
@@ -1533,7 +1533,7 @@ class _GreenPasswordStrength extends StatelessWidget {
                   score == 1
                       ? '· Add uppercase, numbers & symbols'
                       : '· Add symbols to strengthen',
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.inter(
                       fontSize: 10, color: AppColors.textMuted),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1598,7 +1598,7 @@ class _GreenTermsRow extends StatelessWidget {
             Expanded(
               child: RichText(
                 text: TextSpan(
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.inter(
                       fontSize: 12, fontWeight: FontWeight.w400,
                       color: AppColors.textMuted, height: 1.6),
                   children: [
@@ -1607,7 +1607,7 @@ class _GreenTermsRow extends StatelessWidget {
                       child: GestureDetector(
                         onTap: () => showTermsOfService(context),
                         child: Text('Terms of Service',
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.inter(
                                 fontSize: 12, fontWeight: FontWeight.w700,
                                 color: AppColors.greenDark,
                                 decoration: TextDecoration.underline,
@@ -1619,7 +1619,7 @@ class _GreenTermsRow extends StatelessWidget {
                       child: GestureDetector(
                         onTap: () => showPrivacyPolicy(context),
                         child: Text('Privacy Policy',
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.inter(
                                 fontSize: 12, fontWeight: FontWeight.w700,
                                 color: AppColors.greenDark,
                                 decoration: TextDecoration.underline,
@@ -1803,7 +1803,7 @@ class _HeroSectionState extends State<_HeroSection> with TickerProviderStateMixi
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(tagline, style: GoogleFonts.sora(
+                      Text(tagline, style: GoogleFonts.inter(
                         fontSize: 10, color: AppColors.teal3.withValues(alpha: 0.65),
                         letterSpacing: 1.8, fontWeight: FontWeight.w400,
                       )),
@@ -1852,7 +1852,7 @@ class _BlinkingCursorState extends State<_BlinkingCursor> with SingleTickerProvi
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: _ctrl,
     builder: (_, __) => Opacity(opacity: _ctrl.value,
-      child: Text('|', style: GoogleFonts.sora(fontSize: 10, color: AppColors.teal2, fontWeight: FontWeight.w700))),
+      child: Text('|', style: GoogleFonts.inter(fontSize: 10, color: AppColors.teal2, fontWeight: FontWeight.w700))),
   );
 }
 
@@ -1871,7 +1871,7 @@ class _HeroBadge extends StatelessWidget {
     child: Row(mainAxisSize: MainAxisSize.min, children: [
       Icon(icon, size: 10, color: AppColors.teal2),
       const SizedBox(width: 4),
-      Text(label, style: GoogleFonts.sora(fontSize: 9, fontWeight: FontWeight.w700,
+      Text(label, style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700,
           color: AppColors.teal3.withValues(alpha: 0.8), letterSpacing: 0.5)),
     ]),
   );
@@ -1951,7 +1951,7 @@ class _TabSwitcher extends StatelessWidget {
     return Tab(
       child: Text(
         label,
-        style: GoogleFonts.sora(
+        style: GoogleFonts.inter(
           fontSize: 12,
           fontWeight: FontWeight.w700,
           color: active
@@ -2097,7 +2097,7 @@ class _LoginForm extends StatelessWidget {
                   const SizedBox(width: 7),
                   Text(
                     'Remember me',
-                    style: GoogleFonts.sora(
+                    style: GoogleFonts.inter(
                       fontSize: 12,
                       color: AppColors.teal3.withValues(alpha: 0.6),
                       fontWeight: FontWeight.w600,
@@ -2111,7 +2111,7 @@ class _LoginForm extends StatelessWidget {
               onTap: () {},
               child: Text(
                 'Forgot password?',
-                style: GoogleFonts.sora(
+                style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: AppColors.teal2,
@@ -2397,7 +2397,7 @@ class _RoleButton extends StatelessWidget {
                 Text(
                   label,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.sora(
+                  style: GoogleFonts.inter(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     color: active
@@ -2426,7 +2426,7 @@ class _FieldLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label.toUpperCase(),
-      style: GoogleFonts.sora(
+      style: GoogleFonts.inter(
         fontSize: 11,
         fontWeight: FontWeight.w800,
         color: AppColors.teal3.withValues(alpha: 0.85),
@@ -2522,7 +2522,7 @@ class _InputFieldState extends State<_InputField> {
             keyboardType: widget.keyboardType,
             textInputAction: widget.inputAction,
             onChanged: widget.onChanged,
-            style: GoogleFonts.sora(
+            style: GoogleFonts.inter(
               fontSize: 12,
               fontWeight: FontWeight.w500,
               color: Colors.white,
@@ -2530,7 +2530,7 @@ class _InputFieldState extends State<_InputField> {
             cursorColor: AppColors.teal2,
             decoration: InputDecoration(
               hintText: widget.hint,
-              hintStyle: GoogleFonts.sora(
+              hintStyle: GoogleFonts.inter(
                 fontSize: 12,
                 color: AppColors.teal3.withValues(alpha: 0.3),
               ),
@@ -2782,7 +2782,7 @@ class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
                         const SizedBox(width: 5),
                         Text(
                           '+256',
-                          style: GoogleFonts.sora(
+                          style: GoogleFonts.inter(
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
                             color: _focused
@@ -2813,7 +2813,7 @@ class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
                         LengthLimitingTextInputFormatter(9),
                         _UgandaPhoneFormatter(),
                       ],
-                      style: GoogleFonts.sora(
+                      style: GoogleFonts.inter(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         color: Colors.white,
@@ -2822,7 +2822,7 @@ class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
                       cursorColor: AppColors.teal2,
                       decoration: InputDecoration(
                         hintText: '7XX XXX XXX',
-                        hintStyle: GoogleFonts.sora(
+                        hintStyle: GoogleFonts.inter(
                           fontSize: 14,
                           color: AppColors.teal3.withValues(alpha: 0.3),
                           letterSpacing: 0.5,
@@ -2857,7 +2857,7 @@ class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
                         ),
                         child: Text(
                           _network,
-                          style: GoogleFonts.sora(
+                          style: GoogleFonts.inter(
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
                             color: _network == 'MTN'
@@ -2877,7 +2877,7 @@ class _UgandaPhoneFieldState extends State<_UgandaPhoneField> {
           padding: const EdgeInsets.only(top: 5, left: 2),
           child: Text(
             'Format: 7XX XXX XXX  ·  MTN or Airtel Uganda',
-            style: GoogleFonts.sora(
+            style: GoogleFonts.inter(
               fontSize: 11,
               fontWeight: FontWeight.w500,
               color: AppColors.teal3.withValues(alpha: 0.5),
@@ -2982,7 +2982,7 @@ class _PasswordStrength extends StatelessWidget {
               const SizedBox(width: 5),
               Text(
                 'Password strength: $label',
-                style: GoogleFonts.sora(
+                style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: color,
@@ -2995,7 +2995,7 @@ class _PasswordStrength extends StatelessWidget {
                     score == 1
                         ? '· Add uppercase, numbers & symbols'
                         : '· Add symbols to strengthen',
-                    style: GoogleFonts.sora(
+                    style: GoogleFonts.inter(
                       fontSize: 11,
                       color: AppColors.teal3.withValues(alpha: 0.5),
                     ),
@@ -3036,7 +3036,7 @@ class _ErrorText extends StatelessWidget {
                   const SizedBox(width: 5),
                   Text(
                     error!,
-                    style: GoogleFonts.sora(
+                    style: GoogleFonts.inter(
                       fontSize: 12,
                       color: const Color(0xFFEF4444),
                       fontWeight: FontWeight.w700,
@@ -3131,7 +3131,7 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
                     const SizedBox(width: 8),
                     Text(
                       widget.label,
-                      style: GoogleFonts.sora(
+                      style: GoogleFonts.inter(
                         fontSize: 13,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
@@ -3202,7 +3202,7 @@ class _VersionFooter extends StatelessWidget {
           ),
           child: Text(
             'v1.0.0',
-            style: GoogleFonts.sora(
+            style: GoogleFonts.inter(
               fontSize: 10,
               fontWeight: FontWeight.w700,
               color: AppColors.teal2,
@@ -3223,7 +3223,7 @@ class _VersionFooter extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               'Uganda MOH',
-              style: GoogleFonts.sora(
+              style: GoogleFonts.inter(
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
                 color: AppColors.teal3.withValues(alpha: 0.55),
@@ -3238,7 +3238,7 @@ class _VersionFooter extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               'WHO Compliant',
-              style: GoogleFonts.sora(
+              style: GoogleFonts.inter(
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
                 color: AppColors.teal3.withValues(alpha: 0.55),
@@ -3253,7 +3253,7 @@ class _VersionFooter extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               'AES-256',
-              style: GoogleFonts.sora(
+              style: GoogleFonts.inter(
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
                 color: AppColors.teal3.withValues(alpha: 0.55),
@@ -3265,7 +3265,7 @@ class _VersionFooter extends StatelessWidget {
         // ── Copyright ──
         Text(
           '© 2025 VisionScreen · All rights reserved',
-          style: GoogleFonts.sora(
+          style: GoogleFonts.inter(
             fontSize: 10,
             fontWeight: FontWeight.w400,
             color: AppColors.teal3.withValues(alpha: 0.3),
@@ -3319,7 +3319,7 @@ class _OfflineNote extends StatelessWidget {
               Expanded(
                 child: Text(
                   'VisionScreen works fully offline. All patient data is stored securely on your device using SQLite.',
-                  style: GoogleFonts.sora(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: AppColors.teal3.withValues(alpha: 0.85),
@@ -3401,7 +3401,7 @@ class _TermsAgreementRow extends StatelessWidget {
             Expanded(
               child: RichText(
                 text: TextSpan(
-                  style: GoogleFonts.sora(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: AppColors.teal3.withValues(alpha: 0.7),
@@ -3414,7 +3414,7 @@ class _TermsAgreementRow extends StatelessWidget {
                         onTap: () => showTermsOfService(context),
                         child: Text(
                           'Terms of Service',
-                          style: GoogleFonts.sora(
+                          style: GoogleFonts.inter(
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
                             color: AppColors.teal2,
@@ -3430,7 +3430,7 @@ class _TermsAgreementRow extends StatelessWidget {
                         onTap: () => showPrivacyPolicy(context),
                         child: Text(
                           'Privacy Policy',
-                          style: GoogleFonts.sora(
+                          style: GoogleFonts.inter(
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
                             color: AppColors.teal2,
@@ -3464,7 +3464,7 @@ class _TermsNote extends StatelessWidget {
         children: [
           Text(
             'By creating an account you agree to our ',
-            style: GoogleFonts.sora(
+            style: GoogleFonts.inter(
               fontSize: 12,
               fontWeight: FontWeight.w500,
               color: AppColors.teal3.withValues(alpha: 0.6),
@@ -3475,7 +3475,7 @@ class _TermsNote extends StatelessWidget {
             onTap: () => showTermsOfService(context),
             child: Text(
               'Terms of Service',
-              style: GoogleFonts.sora(
+              style: GoogleFonts.inter(
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
                 color: AppColors.teal2,
@@ -3487,7 +3487,7 @@ class _TermsNote extends StatelessWidget {
           ),
           Text(
             ' and ',
-            style: GoogleFonts.sora(
+            style: GoogleFonts.inter(
               fontSize: 12,
               fontWeight: FontWeight.w500,
               color: AppColors.teal3.withValues(alpha: 0.6),
@@ -3498,7 +3498,7 @@ class _TermsNote extends StatelessWidget {
             onTap: () => showPrivacyPolicy(context),
             child: Text(
               'Privacy Policy',
-              style: GoogleFonts.sora(
+              style: GoogleFonts.inter(
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
                 color: AppColors.teal2,
@@ -3699,7 +3699,7 @@ class _LegalSheet extends StatelessWidget {
                         ),
                         Text(
                           'VisionScreen · Uganda MOH',
-                          style: GoogleFonts.sora(
+                          style: GoogleFonts.inter(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                             color: const Color(0xFF8FA0B4),
@@ -3773,7 +3773,7 @@ class _LegalSectionWidget extends StatelessWidget {
           ),
           child: Text(
             section.heading,
-            style: GoogleFonts.sora(
+            style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.w800,
               color: AppColors.teal,
@@ -3783,7 +3783,7 @@ class _LegalSectionWidget extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           section.body,
-          style: GoogleFonts.sora(
+          style: GoogleFonts.inter(
             fontSize: 13,
             fontWeight: FontWeight.w400,
             color: const Color(0xFF3D5470),
@@ -4022,7 +4022,7 @@ class _UnderlineInputFieldState extends State<_UnderlineInputField> {
       children: [
         Text(
           widget.label,
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.inter(
             fontSize: 11,
             fontWeight: FontWeight.w500,
             color: AppColors.textMuted,
@@ -4045,7 +4045,7 @@ class _UnderlineInputFieldState extends State<_UnderlineInputField> {
                 keyboardType: widget.keyboardType,
                 textInputAction: widget.inputAction,
                 onChanged: widget.onChanged,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.inter(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textDark,
@@ -4053,7 +4053,7 @@ class _UnderlineInputFieldState extends State<_UnderlineInputField> {
                 cursorColor: AppColors.green,
                 decoration: InputDecoration(
                   hintText: widget.hint,
-                  hintStyle: GoogleFonts.poppins(
+                  hintStyle: GoogleFonts.inter(
                     fontSize: 13,
                     color: AppColors.textMuted.withValues(alpha: 0.5),
                   ),
@@ -4088,7 +4088,7 @@ class _UnderlineInputFieldState extends State<_UnderlineInputField> {
                 const SizedBox(width: 4),
                 Text(
                   widget.errorText!,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.inter(
                     fontSize: 11,
                     color: const Color(0xFFEF4444),
                     fontWeight: FontWeight.w500,
@@ -4177,7 +4177,7 @@ class _GreenPillButtonState extends State<_GreenPillButton> {
                     ],
                     Text(
                       widget.label,
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.inter(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -4214,3 +4214,4 @@ class _WaveClipper extends CustomClipper<Path> {
   @override
   bool shouldReclip(_WaveClipper old) => false;
 }
+

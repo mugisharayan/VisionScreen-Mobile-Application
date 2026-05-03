@@ -1,26 +1,29 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
-import '../utils/app_theme.dart';
 
 // ─────────────────────────────────────────────────────────────
-// VisionScreen "Sight Mark" Logo
+// VisionScreen Eyeball Logo
 //
-// Design: Eye shape + crosshair target ring inside iris +
-//         heartbeat pulse integrated into lower eyelid +
-//         solid teal pupil with white highlight
+// Matches the reference image:
+//   • Outer dark border ring
+//   • Teal iris with radiating fiber lines
+//   • Amber/orange inner iris ring
+//   • Deep dark pupil with glossy highlight
 //
-// Works on both light (teal) and dark (white) backgrounds.
+// Adapted to app theme: teal (#0D9488) iris, amber inner ring,
+// dark pupil with white highlight.
 // ─────────────────────────────────────────────────────────────
 
 class VsLogo extends StatelessWidget {
   const VsLogo({
     super.key,
     this.size = 56,
-    this.color = Colors.white,
+    this.color,          // kept for API compat — ignored, uses theme colors
     this.showRing = true,
   });
 
   final double size;
-  final Color color;
+  final Color? color;
   final bool showRing;
 
   @override
@@ -29,74 +32,72 @@ class VsLogo extends StatelessWidget {
       width: size,
       height: size,
       child: CustomPaint(
-        painter: _SightMarkPainter(color: color, showRing: showRing),
+        painter: _EyeballPainter(showRing: showRing),
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────
-// Animated logo — blinks the pupil
+// Animated logo — iris slowly rotates + pupil dilates
 // ─────────────────────────────────────────────────────────────
 class VsLogoAnimated extends StatefulWidget {
   const VsLogoAnimated({
     super.key,
     this.size = 56,
-    this.color = Colors.white,
+    this.color,
   });
 
   final double size;
-  final Color color;
+  final Color? color;
 
   @override
   State<VsLogoAnimated> createState() => _VsLogoAnimatedState();
 }
 
 class _VsLogoAnimatedState extends State<VsLogoAnimated>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  late final Animation<double> _blink;
+    with TickerProviderStateMixin {
+  late final AnimationController _rotateCtrl;
+  late final AnimationController _dilateCtrl;
+  late final Animation<double> _rotation;
+  late final Animation<double> _dilate;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 3200),
-    )..repeat();
 
-    // Blink: quick close (80ms) then open (120ms), rest open
-    _blink = TweenSequence<double>([
-      TweenSequenceItem(tween: ConstantTween(1.0), weight: 70),
-      TweenSequenceItem(
-          tween: Tween(begin: 1.0, end: 0.05)
-              .chain(CurveTween(curve: Curves.easeIn)),
-          weight: 8),
-      TweenSequenceItem(
-          tween: Tween(begin: 0.05, end: 1.0)
-              .chain(CurveTween(curve: Curves.easeOut)),
-          weight: 12),
-      TweenSequenceItem(tween: ConstantTween(1.0), weight: 10),
-    ]).animate(_ctrl);
+    // Slow iris rotation
+    _rotateCtrl = AnimationController(
+        vsync: this, duration: const Duration(seconds: 12))
+      ..repeat();
+    _rotation = Tween<double>(begin: 0, end: 2 * pi).animate(_rotateCtrl);
+
+    // Pupil dilation — slow breathe
+    _dilateCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 3000))
+      ..repeat(reverse: true);
+    _dilate = Tween<double>(begin: 0.85, end: 1.15).animate(
+        CurvedAnimation(parent: _dilateCtrl, curve: Curves.easeInOut));
   }
 
   @override
   void dispose() {
-    _ctrl.dispose();
+    _rotateCtrl.dispose();
+    _dilateCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _blink,
+      animation: Listenable.merge([_rotation, _dilate]),
       builder: (_, __) => SizedBox(
         width: widget.size,
         height: widget.size,
         child: CustomPaint(
-          painter: _SightMarkPainter(
-            color: widget.color,
-            blinkFactor: _blink.value,
+          painter: _EyeballPainter(
+            irisRotation: _rotation.value,
+            pupilScale: _dilate.value,
           ),
         ),
       ),
@@ -105,136 +106,215 @@ class _VsLogoAnimatedState extends State<VsLogoAnimated>
 }
 
 // ─────────────────────────────────────────────────────────────
-// Painter
+// Core eyeball painter
 // ─────────────────────────────────────────────────────────────
-class _SightMarkPainter extends CustomPainter {
-  const _SightMarkPainter({
-    required this.color,
-    this.blinkFactor = 1.0,
+class _EyeballPainter extends CustomPainter {
+  const _EyeballPainter({
+    this.irisRotation = 0,
+    this.pupilScale = 1.0,
     this.showRing = true,
   });
 
-  final Color color;
-  final double blinkFactor; // 1.0 = fully open, 0.0 = closed
+  final double irisRotation;
+  final double pupilScale;
   final bool showRing;
+
+  // App theme colors
+  static const _teal      = Color(0xFF0D9488);
+  static const _tealLight = Color(0xFF14B8A6);
+  static const _tealDark  = Color(0xFF0F766E);
+  static const _tealDeep  = Color(0xFF134E4A);
+  static const _amber     = Color(0xFFF59E0B);
+  static const _amberDark = Color(0xFFD97706);
 
   @override
   void paint(Canvas canvas, Size size) {
     final cx = size.width / 2;
     final cy = size.height / 2;
-    final w = size.width;
-    final h = size.height;
+    final r = size.width / 2;
 
-    final strokePaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = w * 0.055
-      ..strokeCap = StrokeCap.round;
+    // ── 1. Outer dark border ring ──────────────────────────
+    canvas.drawCircle(
+      Offset(cx, cy),
+      r,
+      Paint()
+        ..shader = RadialGradient(
+          colors: [
+            const Color(0xFF0A2A28),
+            const Color(0xFF051A18),
+          ],
+        ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: r)),
+    );
 
-    final fillPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
+    // ── 2. Teal iris (outer) ───────────────────────────────
+    final irisR = r * 0.88;
+    canvas.drawCircle(
+      Offset(cx, cy),
+      irisR,
+      Paint()
+        ..shader = RadialGradient(
+          center: Alignment.center,
+          radius: 1.0,
+          colors: [
+            _tealLight.withValues(alpha: 0.9),
+            _teal,
+            _tealDark,
+            _tealDeep,
+          ],
+          stops: const [0.0, 0.4, 0.75, 1.0],
+        ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: irisR)),
+    );
 
-    // ── Eye outline (almond shape) ──────────────────────────
-    // Vertical scale by blinkFactor to simulate blinking
-    final eyeH = h * 0.44 * blinkFactor;
-    final eyeW = w * 0.88;
-
+    // ── 3. Iris fiber lines (radiating) ───────────────────
     canvas.save();
     canvas.translate(cx, cy);
-    canvas.scale(1.0, blinkFactor.clamp(0.05, 1.0));
-    canvas.translate(-cx, -cy);
+    canvas.rotate(irisRotation);
 
-    final eyePath = Path();
-    // Upper lid — gentle arc
-    eyePath.moveTo(cx - eyeW / 2, cy);
-    eyePath.cubicTo(
-      cx - eyeW * 0.25, cy - eyeH * 1.1,
-      cx + eyeW * 0.25, cy - eyeH * 1.1,
-      cx + eyeW / 2, cy,
-    );
-    // Lower lid — with subtle pulse bump in center
-    eyePath.cubicTo(
-      cx + eyeW * 0.25, cy + eyeH * 0.9,
-      cx + eyeW * 0.05, cy + eyeH * 0.9,
-      cx, cy + eyeH * 0.75,
-    );
-    eyePath.cubicTo(
-      cx - eyeW * 0.05, cy + eyeH * 0.9,
-      cx - eyeW * 0.25, cy + eyeH * 0.9,
-      cx - eyeW / 2, cy,
-    );
-    eyePath.close();
-    canvas.drawPath(eyePath, strokePaint);
-    canvas.restore();
+    final fiberPaint = Paint()
+      ..strokeWidth = size.width * 0.012
+      ..strokeCap = StrokeCap.round;
 
-    if (blinkFactor < 0.15) return; // fully closed — skip iris
+    final fiberCount = 36;
+    for (int i = 0; i < fiberCount; i++) {
+      final angle = (i / fiberCount) * 2 * pi;
+      final opacity = (i % 3 == 0) ? 0.35 : 0.18;
+      fiberPaint.color = Colors.white.withValues(alpha: opacity);
 
-    // ── Iris circle ─────────────────────────────────────────
-    final irisR = w * 0.20;
-    canvas.drawCircle(Offset(cx, cy), irisR, strokePaint);
-
-    // ── Crosshair target lines inside iris ──────────────────
-    if (showRing) {
-      final crossPaint = Paint()
-        ..color = color.withValues(alpha: 0.55)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = w * 0.035
-        ..strokeCap = StrokeCap.round;
-
-      final gap = irisR * 0.35;
-      final arm = irisR * 0.55;
-
-      // Top
+      final innerR = irisR * 0.38;
+      final outerR = irisR * 0.96;
       canvas.drawLine(
-          Offset(cx, cy - gap), Offset(cx, cy - gap - arm), crossPaint);
-      // Bottom
-      canvas.drawLine(
-          Offset(cx, cy + gap), Offset(cx, cy + gap + arm), crossPaint);
-      // Left
-      canvas.drawLine(
-          Offset(cx - gap, cy), Offset(cx - gap - arm, cy), crossPaint);
-      // Right
-      canvas.drawLine(
-          Offset(cx + gap, cy), Offset(cx + gap + arm, cy), crossPaint);
+        Offset(cos(angle) * innerR, sin(angle) * innerR),
+        Offset(cos(angle) * outerR, sin(angle) * outerR),
+        fiberPaint,
+      );
     }
 
-    // ── Pupil (solid filled circle) ─────────────────────────
-    canvas.drawCircle(Offset(cx, cy), w * 0.09, fillPaint);
+    // Secondary finer fibers
+    final fineFiberCount = 72;
+    for (int i = 0; i < fineFiberCount; i++) {
+      final angle = (i / fineFiberCount) * 2 * pi;
+      fiberPaint.color = Colors.white.withValues(alpha: 0.08);
+      fiberPaint.strokeWidth = size.width * 0.006;
+      final innerR = irisR * 0.45;
+      final outerR = irisR * 0.88;
+      canvas.drawLine(
+        Offset(cos(angle) * innerR, sin(angle) * innerR),
+        Offset(cos(angle) * outerR, sin(angle) * outerR),
+        fiberPaint,
+      );
+    }
 
-    // ── Highlight dot ────────────────────────────────────────
-    final highlightPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.75)
+    canvas.restore();
+
+    // ── 4. Iris texture dots (flecks) ─────────────────────
+    final rng = Random(42); // fixed seed for consistent pattern
+    final fleckPaint = Paint()
+      ..color = _tealDeep.withValues(alpha: 0.4)
       ..style = PaintingStyle.fill;
+    for (int i = 0; i < 20; i++) {
+      final angle = rng.nextDouble() * 2 * pi;
+      final dist = irisR * (0.45 + rng.nextDouble() * 0.45);
+      final fx = cx + cos(angle) * dist;
+      final fy = cy + sin(angle) * dist;
+      canvas.drawCircle(Offset(fx, fy), size.width * 0.012, fleckPaint);
+    }
+
+    // ── 5. Amber inner iris ring ───────────────────────────
+    final amberR = irisR * 0.42;
     canvas.drawCircle(
-        Offset(cx + w * 0.04, cy - w * 0.04), w * 0.03, highlightPaint);
+      Offset(cx, cy),
+      amberR,
+      Paint()
+        ..shader = RadialGradient(
+          colors: [
+            const Color(0xFFFBBF24),
+            _amber,
+            _amberDark,
+            const Color(0xFF92400E),
+          ],
+          stops: const [0.0, 0.35, 0.7, 1.0],
+        ).createShader(
+            Rect.fromCircle(center: Offset(cx, cy), radius: amberR)),
+    );
 
-    // ── Heartbeat pulse on lower eyelid ─────────────────────
-    // Small ECG-style bump drawn below the iris
-    final pulsePaint = Paint()
-      ..color = color.withValues(alpha: 0.45)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = w * 0.04
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
+    // Amber ring texture lines
+    canvas.save();
+    canvas.translate(cx, cy);
+    canvas.rotate(-irisRotation * 0.5); // counter-rotate slightly
+    final amberFiberPaint = Paint()
+      ..strokeWidth = size.width * 0.008
+      ..strokeCap = StrokeCap.round;
+    for (int i = 0; i < 24; i++) {
+      final angle = (i / 24) * 2 * pi;
+      amberFiberPaint.color = Colors.white.withValues(alpha: 0.15);
+      canvas.drawLine(
+        Offset(cos(angle) * amberR * 0.55, sin(angle) * amberR * 0.55),
+        Offset(cos(angle) * amberR * 0.95, sin(angle) * amberR * 0.95),
+        amberFiberPaint,
+      );
+    }
+    canvas.restore();
 
-    final py = cy + irisR + w * 0.08;
-    final pw2 = w * 0.28;
-    final pulsePath = Path();
-    pulsePath.moveTo(cx - pw2, py);
-    pulsePath.lineTo(cx - pw2 * 0.5, py);
-    pulsePath.lineTo(cx - pw2 * 0.25, py - w * 0.09);
-    pulsePath.lineTo(cx, py + w * 0.06);
-    pulsePath.lineTo(cx + pw2 * 0.25, py - w * 0.04);
-    pulsePath.lineTo(cx + pw2 * 0.5, py);
-    pulsePath.lineTo(cx + pw2, py);
-    canvas.drawPath(pulsePath, pulsePaint);
+    // ── 6. Pupil (dark) ────────────────────────────────────
+    final pupilR = amberR * 0.62 * pupilScale;
+    canvas.drawCircle(
+      Offset(cx, cy),
+      pupilR,
+      Paint()
+        ..shader = RadialGradient(
+          center: const Alignment(-0.2, -0.2),
+          radius: 1.0,
+          colors: [
+            const Color(0xFF1A1A2E),
+            const Color(0xFF0A0A14),
+            Colors.black,
+          ],
+          stops: const [0.0, 0.5, 1.0],
+        ).createShader(
+            Rect.fromCircle(center: Offset(cx, cy), radius: pupilR)),
+    );
+
+    // ── 7. Pupil glossy highlights ─────────────────────────
+    // Main highlight — top-left
+    final h1Paint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          Colors.white.withValues(alpha: 0.85),
+          Colors.white.withValues(alpha: 0.0),
+        ],
+      ).createShader(Rect.fromCircle(
+          center: Offset(cx - pupilR * 0.28, cy - pupilR * 0.32),
+          radius: pupilR * 0.32));
+    canvas.drawCircle(
+      Offset(cx - pupilR * 0.28, cy - pupilR * 0.32),
+      pupilR * 0.32,
+      h1Paint,
+    );
+
+    // Secondary smaller highlight
+    canvas.drawCircle(
+      Offset(cx + pupilR * 0.18, cy + pupilR * 0.22),
+      pupilR * 0.12,
+      Paint()..color = Colors.white.withValues(alpha: 0.35),
+    );
+
+    // ── 8. Outer glow ring (optional) ─────────────────────
+    if (showRing) {
+      canvas.drawCircle(
+        Offset(cx, cy),
+        r * 0.96,
+        Paint()
+          ..color = _teal.withValues(alpha: 0.25)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = size.width * 0.025,
+      );
+    }
   }
 
   @override
-  bool shouldRepaint(_SightMarkPainter old) =>
-      old.color != color ||
-      old.blinkFactor != blinkFactor ||
+  bool shouldRepaint(_EyeballPainter old) =>
+      old.irisRotation != irisRotation ||
+      old.pupilScale != pupilScale ||
       old.showRing != showRing;
 }
 
@@ -260,29 +340,47 @@ class VsLogoWordmark extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Logo in a rounded container
         Container(
           width: logoSize,
           height: logoSize,
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
+            color: Colors.black.withValues(alpha: 0.25),
             borderRadius: BorderRadius.circular(logoSize * 0.28),
-            border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
+            border: Border.all(
+                color: color.withValues(alpha: 0.3), width: 1.5),
           ),
           child: Center(
             child: animate
-                ? VsLogoAnimated(size: logoSize * 0.58, color: color)
-                : VsLogo(size: logoSize * 0.58, color: color),
+                ? VsLogoAnimated(size: logoSize * 0.72)
+                : VsLogo(size: logoSize * 0.72),
           ),
         ),
         SizedBox(width: logoSize * 0.22),
-        Text(
-          'VisionScreen',
-          style: TextStyle(
-            fontFamily: 'PlusJakartaSans',
-            fontSize: fontSize,
-            fontWeight: FontWeight.w800,
-            color: color,
-            letterSpacing: -0.5,
+        RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: 'Vision',
+                style: TextStyle(
+                  fontFamily: 'PlusJakartaSans',
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              TextSpan(
+                text: 'Screen',
+                style: TextStyle(
+                  fontFamily: 'PlusJakartaSans',
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.black,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -354,8 +452,7 @@ class _VsPulsingRingsState extends State<VsPulsingRings>
               height: baseSize,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(
-                    color: widget.color, width: 1.2),
+                border: Border.all(color: widget.color, width: 1.2),
               ),
             ),
           ),

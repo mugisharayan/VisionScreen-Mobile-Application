@@ -89,7 +89,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             Center(
                               child: Text(
                                 'Swipe left on any card to delete',
-                                style: GoogleFonts.ibmPlexSans(
+                                style: GoogleFonts.inter(
                                   fontSize: 10,
                                   color: const Color(0xFFB0BEC5),
                                   fontWeight: FontWeight.w500,
@@ -347,7 +347,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
         ),
         const SizedBox(width: 8),
-        Text(label.toUpperCase(), style: GoogleFonts.ibmPlexSans(fontSize: 10, fontWeight: FontWeight.w900, color: count != null ? const Color(0xFF1A2A3D) : const Color(0xFF8FA0B4), letterSpacing: 2.0)),
+        Text(label.toUpperCase(), style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w900, color: count != null ? const Color(0xFF1A2A3D) : const Color(0xFF8FA0B4), letterSpacing: 2.0)),
         if (count != null) ...[
           const SizedBox(width: 8),
           Container(
@@ -357,7 +357,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               borderRadius: BorderRadius.circular(99),
               boxShadow: [BoxShadow(color: const Color(0xFF0D9488).withOpacity(0.35), blurRadius: 8, offset: const Offset(0, 2))],
             ),
-            child: Text('$count new', style: GoogleFonts.ibmPlexSans(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 0.5)),
+            child: Text('$count new', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 0.5)),
           ),
         ],
         const SizedBox(width: 10),
@@ -402,7 +402,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               child: const Icon(Icons.delete_rounded, color: Colors.white, size: 22),
             ),
             const SizedBox(height: 4),
-            Text('Delete', style: GoogleFonts.ibmPlexSans(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5)),
+            Text('Delete', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5)),
           ]),
         ),
         onDismissed: (_) => setState(() => _notifications.removeAt(index)),
@@ -456,7 +456,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Row(children: [
-                                      Expanded(child: Text(n['title'] as String, style: GoogleFonts.ibmPlexSans(fontSize: 13, fontWeight: isRead ? FontWeight.w600 : FontWeight.w800, color: isRead ? const Color(0xFF5E7291) : const Color(0xFF1A2A3D)))),
+                                      Expanded(child: Text(n['title'] as String, style: GoogleFonts.inter(fontSize: 13, fontWeight: isRead ? FontWeight.w600 : FontWeight.w800, color: isRead ? const Color(0xFF5E7291) : const Color(0xFF1A2A3D)))),
                                       if (!isRead)
                                         Container(
                                           width: 9, height: 9,
@@ -465,7 +465,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                         ),
                                     ]),
                                     const SizedBox(height: 5),
-                                    Text(n['body'] as String, style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w400, color: const Color(0xFF8FA0B4), height: 1.6)),
+                                    Text(n['body'] as String, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w400, color: const Color(0xFF8FA0B4), height: 1.6)),
                                   ],
                                 ),
                               ),
@@ -485,7 +485,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               child: Row(children: [
                                 const Icon(Icons.access_time_rounded, size: 10, color: Color(0xFFB0BEC5)),
                                 const SizedBox(width: 4),
-                                Text(timeStr, style: GoogleFonts.ibmPlexSans(fontSize: 10, color: const Color(0xFFB0BEC5), fontWeight: FontWeight.w600)),
+                                Text(timeStr, style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFFB0BEC5), fontWeight: FontWeight.w600)),
                               ]),
                             ),
                             const SizedBox(width: 8),
@@ -496,7 +496,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                 borderRadius: BorderRadius.circular(99),
                                 border: Border.all(color: color.withOpacity(isRead ? 0.1 : 0.3)),
                               ),
-                              child: Text(n['tag'] as String, style: GoogleFonts.ibmPlexSans(fontSize: 8, fontWeight: FontWeight.w900, color: color.withOpacity(isRead ? 0.55 : 1.0), letterSpacing: 1.0)),
+                              child: Text(n['tag'] as String, style: GoogleFonts.inter(fontSize: 8, fontWeight: FontWeight.w900, color: color.withOpacity(isRead ? 0.55 : 1.0), letterSpacing: 1.0)),
                             ),
                             const Spacer(),
                             if (!isRead)
@@ -505,14 +505,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(99), border: Border.all(color: color.withOpacity(0.3))),
-                                  child: Text('Mark read', style: GoogleFonts.ibmPlexSans(fontSize: 9, fontWeight: FontWeight.w800, color: color)),
+                                  child: Text('Mark read', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w800, color: color)),
                                 ),
                               )
                             else
                               Row(children: [
                                 Icon(Icons.check_circle_rounded, size: 12, color: const Color(0xFF22C55E).withOpacity(0.6)),
                                 const SizedBox(width: 4),
-                                Text('Read', style: GoogleFonts.ibmPlexSans(fontSize: 9, fontWeight: FontWeight.w700, color: const Color(0xFFB0BEC5))),
+                                Text('Read', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: const Color(0xFFB0BEC5))),
                               ]),
                           ]),
                         ),
@@ -555,9 +555,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
           ]),
           const SizedBox(height: 24),
-          Text('All caught up!', style: GoogleFonts.barlow(fontSize: 24, fontWeight: FontWeight.w900, color: const Color(0xFF1A2A3D), letterSpacing: -0.3)),
+          Text('All caught up!', style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.w900, color: const Color(0xFF1A2A3D), letterSpacing: -0.3)),
           const SizedBox(height: 8),
-          Text('No new notifications right now.\nCheck back after your next screening.', textAlign: TextAlign.center, style: GoogleFonts.ibmPlexSans(fontSize: 13, color: const Color(0xFF8FA0B4), fontWeight: FontWeight.w500, height: 1.6)),
+          Text('No new notifications right now.\nCheck back after your next screening.', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF8FA0B4), fontWeight: FontWeight.w500, height: 1.6)),
         ],
       ),
     );
@@ -581,3 +581,4 @@ class _NotifDotPainter extends CustomPainter {
   @override
   bool shouldRepaint(_NotifDotPainter old) => false;
 }
+

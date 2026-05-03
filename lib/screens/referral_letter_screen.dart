@@ -440,7 +440,7 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFB),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: Column(
         children: [
           _buildHeader(),
@@ -456,73 +456,101 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [_ink, _ink2],
+          colors: [Color(0xFF134E4A), Color(0xFF0D9488)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(24),
+          bottomRight: Radius.circular(24),
+        ),
       ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-          child: Row(
-            children: [
-              GestureDetector(
-                onTap: () => _showLetter
-                    ? setState(() => _showLetter = false)
-                    : Navigator.pop(context),
-                child: Container(
-                  width: 38, height: 38,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-                  ),
-                  child: const Icon(Icons.arrow_back_rounded,
-                      color: Colors.white, size: 18),
-                ),
+      child: Stack(
+        clipBehavior: Clip.hardEdge,
+        children: [
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(24),
+                bottomRight: Radius.circular(24),
               ),
-              const SizedBox(width: 14),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(_showLetter ? 'Referral Letter' : 'Generate Referral',
+              child: CustomPaint(painter: _ReferralDotPainter()),
+            ),
+          ),
+          Positioned(top: -40, right: -40,
+            child: Container(width: 160, height: 160,
+              decoration: BoxDecoration(shape: BoxShape.circle,
+                border: Border.all(color: Colors.white.withValues(alpha: 0.07), width: 1)))),
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
+              child: Row(children: [
+                GestureDetector(
+                  onTap: () => _showLetter
+                      ? setState(() => _showLetter = false)
+                      : Navigator.pop(context),
+                  child: Container(
+                    width: 38, height: 38,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                    ),
+                    child: const Icon(Icons.arrow_back_rounded,
+                        color: Colors.white, size: 18),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(
+                      _showLetter ? 'REFERRAL LETTER' : 'GENERATE REFERRAL',
+                      style: GoogleFonts.inter(
+                          fontSize: 9, fontWeight: FontWeight.w700,
+                          color: Colors.white.withValues(alpha: 0.65),
+                          letterSpacing: 1.8),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _showLetter ? 'Referral Letter' : 'Generate Referral',
                       style: GoogleFonts.plusJakartaSans(
                           fontSize: 18, fontWeight: FontWeight.w800,
-                          color: Colors.white)),
-                  Text(widget.patient['name']!,
-                      style: GoogleFonts.inter(
-                          fontSize: 11, color: _teal3.withValues(alpha: 0.7))),
-                ],
-              ),
-              const Spacer(),
-              if (_showLetter)
-                GestureDetector(
-                  onTap: () => Share.share(_letterText,
-                      subject: 'Vision Screening Referral — ${widget.patient['name']}'),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                    decoration: BoxDecoration(
-                      color: _teal.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(99),
-                      border: Border.all(color: _teal3.withValues(alpha: 0.3)),
+                          color: Colors.white),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.share_rounded, size: 14, color: _teal3),
+                    Text(
+                      widget.patient['name']!,
+                      style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: Colors.white.withValues(alpha: 0.7)),
+                    ),
+                  ]),
+                ),
+                if (_showLetter)
+                  GestureDetector(
+                    onTap: () => Share.share(_letterText,
+                        subject: 'Vision Screening Referral — ${widget.patient['name']}'),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(99),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        const Icon(Icons.share_rounded, size: 14, color: Colors.white),
                         const SizedBox(width: 5),
                         Text('Share',
                             style: GoogleFonts.inter(
                                 fontSize: 11, fontWeight: FontWeight.w700,
-                                color: _teal3)),
-                      ],
+                                color: Colors.white)),
+                      ]),
                     ),
                   ),
-                ),
-            ],
+              ]),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -539,8 +567,17 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: _ink,
+              gradient: const LinearGradient(
+                colors: [Color(0xFF134E4A), Color(0xFF0D9488)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF0D9488).withValues(alpha: 0.25),
+                  blurRadius: 12, offset: const Offset(0, 4)),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -630,7 +667,7 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
               child: Row(
                 children: [
                   Text(eye,
-                      style: GoogleFonts.spaceGrotesk(
+                      style: GoogleFonts.inter(
                           fontSize: 13, fontWeight: FontWeight.w800, color: col)),
                   const SizedBox(width: 10),
                   Text(eye == 'OD' ? 'Right Eye' : 'Left Eye',
@@ -638,7 +675,7 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                           fontSize: 12, color: const Color(0xFF8FA0B4))),
                   const Spacer(),
                   Text(_toSnellen(logmar),
-                      style: GoogleFonts.spaceGrotesk(
+                      style: GoogleFonts.inter(
                           fontSize: 14, fontWeight: FontWeight.w800, color: col)),
                   const SizedBox(width: 6),
                   Text('(LogMAR $logmar)',
@@ -670,7 +707,7 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                 child: Row(
                   children: [
                     Text('OU',
-                        style: GoogleFonts.spaceGrotesk(
+                        style: GoogleFonts.inter(
                             fontSize: 13, fontWeight: FontWeight.w800, color: col)),
                     const SizedBox(width: 10),
                     Text('Both Eyes — Near',
@@ -678,7 +715,7 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                             fontSize: 12, color: const Color(0xFF8FA0B4))),
                     const Spacer(),
                     Text(_toSnellen(logmar),
-                        style: GoogleFonts.spaceGrotesk(
+                        style: GoogleFonts.inter(
                             fontSize: 14, fontWeight: FontWeight.w800, color: col)),
                     const SizedBox(width: 6),
                     Text('(LogMAR $logmar)',
@@ -976,7 +1013,7 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(_toSnellen(logmar),
-                                style: GoogleFonts.spaceGrotesk(
+                                style: GoogleFonts.inter(
                                     fontSize: 16, fontWeight: FontWeight.w800,
                                     color: col)),
                             Text('LogMAR $logmar',
@@ -1027,7 +1064,7 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               Text(_toSnellen(logmar),
-                                  style: GoogleFonts.spaceGrotesk(
+                                  style: GoogleFonts.inter(
                                       fontSize: 16, fontWeight: FontWeight.w800,
                                       color: col)),
                               Text('LogMAR $logmar',
@@ -1244,5 +1281,25 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
         ),
       ),
     );
+}
+
+
+
+// ── Dot pattern painter for referral letter header ──────────
+class _ReferralDotPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = Colors.white.withValues(alpha: 0.06)
+      ..style = PaintingStyle.fill;
+    const spacing = 26.0;
+    for (double y = 0; y < size.height; y += spacing) {
+      for (double x = 0; x < size.width; x += spacing) {
+        canvas.drawCircle(Offset(x, y), 1.8, p);
+      }
+    }
+  }
+  @override
+  bool shouldRepaint(_ReferralDotPainter old) => false;
 }
 

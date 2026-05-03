@@ -14,6 +14,7 @@ import '../db/database_helper.dart';
 import '../repositories/auth_repository.dart';
 import '../repositories/screening_repository.dart';
 import '../repositories/campaign_repository.dart';
+import '../utils/haptics.dart';
 
 // â”€â”€ Colours â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _C {
@@ -224,7 +225,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     _lastLoginRole == 'Administrator'
                                         ? 'Admin'
                                         : 'CHW',
-                                    style: GoogleFonts.ibmPlexSans(
+                                    style: GoogleFonts.inter(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
                                       color: _C.teal,
@@ -312,7 +313,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                             child: Text(
                               _unsyncedCount == 0 ? 'Synced' : 'Pending',
-                              style: GoogleFonts.ibmPlexSans(
+                              style: GoogleFonts.inter(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
                                 color: _unsyncedCount == 0
@@ -381,7 +382,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                             child: Text(
                               'NEW',
-                              style: GoogleFonts.ibmPlexSans(
+                              style: GoogleFonts.inter(
                                 fontSize: 9,
                                 fontWeight: FontWeight.w800,
                                 color: _C.amber,
@@ -420,7 +421,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                             child: Text(
                               'v1.0.0',
-                              style: GoogleFonts.ibmPlexSans(
+                              style: GoogleFonts.inter(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
                                 color: _C.teal,
@@ -435,13 +436,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Text(
                       'VisionScreen v1.0',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.sora(fontSize: 11, color: _C.g400),
+                      style: GoogleFonts.inter(fontSize: 11, color: _C.g400),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Made for Community Health Workers Â· Uganda',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.sora(fontSize: 10, color: _C.g400),
+                      style: GoogleFonts.inter(fontSize: 10, color: _C.g400),
                     ),
                     const SizedBox(height: 80),
                   ],
@@ -838,7 +839,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                                           .take(2)
                                                           .join()
                                                           .toUpperCase(),
-                                                style: GoogleFonts.barlow(
+                                                style: GoogleFonts.plusJakartaSans(
                                                   fontSize: 24,
                                                   fontWeight: FontWeight.w900,
                                                   color: Colors.white,
@@ -861,7 +862,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                                   .take(2)
                                                   .join()
                                                   .toUpperCase(),
-                                        style: GoogleFonts.barlow(
+                                        style: GoogleFonts.plusJakartaSans(
                                           fontSize: 24,
                                           fontWeight: FontWeight.w900,
                                           color: Colors.white,
@@ -1034,7 +1035,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       children: [
         Text(
           label.toUpperCase(),
-          style: GoogleFonts.ibmPlexSans(
+          style: GoogleFonts.inter(
             fontSize: 9,
             fontWeight: FontWeight.w700,
             color: _C.g400,
@@ -1080,7 +1081,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   // â”€â”€ SECTION CARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // Renders a labelled group: uppercase label above + white card with rows
   Widget _buildSection({
     required String title,
     required List<Widget> children,
@@ -1091,24 +1091,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 6),
-            child: Text(
-              title.toUpperCase(),
-              style: GoogleFonts.ibmPlexSans(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: _C.g400,
-                letterSpacing: 1.4,
+            padding: const EdgeInsets.only(left: 2, bottom: 8),
+            child: Row(children: [
+              Container(
+                width: 3, height: 13,
+                decoration: BoxDecoration(
+                  color: _C.teal,
+                  borderRadius: BorderRadius.circular(99),
+                ),
               ),
-            ),
+              const SizedBox(width: 7),
+              Text(
+                title.toUpperCase(),
+                style: GoogleFonts.inter(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF475569),
+                  letterSpacing: 1.4,
+                ),
+              ),
+            ]),
           ),
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -1165,7 +1176,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       color: Colors.white,
       borderRadius: radius,
       child: InkWell(
-        onTap: onTap,
+        onTap: onTap != null ? () { VsHaptics.light(); onTap(); } : null,
         borderRadius: radius,
         splashColor: _C.teal.withValues(alpha: 0.06),
         highlightColor: _C.g100.withValues(alpha: 0.5),
@@ -1282,7 +1293,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 child: Text(
                   'Active',
-                  style: GoogleFonts.ibmPlexSans(
+                  style: GoogleFonts.inter(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     color: _C.teal,
@@ -1370,7 +1381,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: Center(
                           child: Text(
                             lang.substring(0, 1),
-                            style: GoogleFonts.barlow(
+                            style: GoogleFonts.plusJakartaSans(
                               fontSize: 15,
                               fontWeight: FontWeight.w900,
                               color: active ? Colors.white : _C.g400,
@@ -1462,7 +1473,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       SnackBar(
         content: Text(
           msg,
-          style: GoogleFonts.sora(fontSize: 12, color: Colors.white),
+          style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
         ),
         backgroundColor: color,
         behavior: SnackBarBehavior.floating,
@@ -1505,7 +1516,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 14),
               Text(
                 'Clear All Data',
-                style: GoogleFonts.sora(
+                style: GoogleFonts.inter(
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
                   color: _C.g800,
@@ -1515,7 +1526,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Text(
                 'This will permanently delete all patient records, screenings and referrals from this device. This cannot be undone.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.sora(
+                style: GoogleFonts.inter(
                   fontSize: 12,
                   color: _C.g400,
                   height: 1.6,
@@ -1536,7 +1547,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       child: Text(
                         'Cancel',
-                        style: GoogleFonts.sora(
+                        style: GoogleFonts.inter(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: _C.g500,
@@ -1565,7 +1576,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       child: Text(
                         'Clear',
-                        style: GoogleFonts.sora(
+                        style: GoogleFonts.inter(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
@@ -1614,7 +1625,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 14),
               Text(
                 'Logout',
-                style: GoogleFonts.sora(
+                style: GoogleFonts.inter(
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
                   color: _C.g800,
@@ -1624,7 +1635,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Text(
                 'Are you sure you want to logout?',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.sora(
+                style: GoogleFonts.inter(
                   fontSize: 12,
                   color: _C.g400,
                   height: 1.5,
@@ -1645,7 +1656,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       child: Text(
                         'Cancel',
-                        style: GoogleFonts.sora(
+                        style: GoogleFonts.inter(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: _C.g500,
@@ -1678,7 +1689,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       child: Text(
                         'Logout',
-                        style: GoogleFonts.sora(
+                        style: GoogleFonts.inter(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
@@ -1812,7 +1823,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(height: 12),
                     Text(
                       'VisionScreen',
-                      style: GoogleFonts.sora(
+                      style: GoogleFonts.inter(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
@@ -1821,7 +1832,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(height: 4),
                     Text(
                       'Version 1.0.0',
-                      style: GoogleFonts.sora(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         color: _C.teal3.withValues(alpha: 0.7),
                       ),
@@ -1861,7 +1872,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         child: Text(
                           'Close',
-                          style: GoogleFonts.sora(
+                          style: GoogleFonts.inter(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -1886,11 +1897,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           Text(emoji, style: const TextStyle(fontSize: 16)),
           const SizedBox(width: 10),
-          Text(label, style: GoogleFonts.sora(fontSize: 12, color: _C.g400)),
+          Text(label, style: GoogleFonts.inter(fontSize: 12, color: _C.g400)),
           const Spacer(),
           Text(
             value,
-            style: GoogleFonts.sora(
+            style: GoogleFonts.inter(
               fontSize: 12,
               fontWeight: FontWeight.w700,
               color: _C.g800,
@@ -1927,7 +1938,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             Text(
               "What's New in v1.0",
-              style: GoogleFonts.sora(
+              style: GoogleFonts.inter(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
                 color: _C.g800,
@@ -1936,7 +1947,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 4),
             Text(
               'Initial release Â· March 2026',
-              style: GoogleFonts.sora(fontSize: 11, color: _C.g400),
+              style: GoogleFonts.inter(fontSize: 11, color: _C.g400),
             ),
             const SizedBox(height: 16),
             ...[
@@ -1967,7 +1978,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Expanded(
                       child: Text(
                         item,
-                        style: GoogleFonts.sora(
+                        style: GoogleFonts.inter(
                           fontSize: 13,
                           color: _C.g800,
                           height: 1.5,
@@ -2030,7 +2041,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   Text(
                     'Change Password',
-                    style: GoogleFonts.sora(
+                    style: GoogleFonts.inter(
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
                       color: _C.g800,
@@ -2039,7 +2050,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 4),
                   Text(
                     'Choose a strong password of at least 8 characters.',
-                    style: GoogleFonts.sora(
+                    style: GoogleFonts.inter(
                       fontSize: 12,
                       color: _C.g400,
                       height: 1.5,
@@ -2153,7 +2164,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             )
                           : Text(
                               'Save Password',
-                              style: GoogleFonts.sora(
+                              style: GoogleFonts.inter(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
@@ -2176,7 +2187,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _sheetFieldLabel(String text) => Text(
     text,
-    style: GoogleFonts.sora(
+    style: GoogleFonts.inter(
       fontSize: 11,
       fontWeight: FontWeight.w700,
       color: _C.g500,
@@ -2192,7 +2203,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const SizedBox(width: 5),
         Text(
           text,
-          style: GoogleFonts.sora(
+          style: GoogleFonts.inter(
             fontSize: 11,
             fontWeight: FontWeight.w600,
             color: _C.red,
@@ -2220,10 +2231,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         controller: ctrl,
         obscureText: !visible,
         onChanged: onChanged,
-        style: GoogleFonts.sora(fontSize: 13, color: _C.g800),
+        style: GoogleFonts.inter(fontSize: 13, color: _C.g800),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: GoogleFonts.sora(fontSize: 13, color: _C.g300),
+          hintStyle: GoogleFonts.inter(fontSize: 13, color: _C.g300),
           prefixIcon: const Padding(
             padding: EdgeInsets.only(left: 12, right: 8),
             child: Icon(Icons.lock_outline_rounded, size: 16, color: _C.g400),
@@ -2309,7 +2320,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     Text(
                       'Export as PDF',
-                      style: GoogleFonts.sora(
+                      style: GoogleFonts.inter(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
                         color: _C.g800,
@@ -2317,7 +2328,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     Text(
                       'Choose a report to generate',
-                      style: GoogleFonts.sora(fontSize: 12, color: _C.g400),
+                      style: GoogleFonts.inter(fontSize: 12, color: _C.g400),
                     ),
                   ],
                 ),
@@ -2379,7 +2390,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 label: Text(
                   'Export All Reports',
-                  style: GoogleFonts.sora(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -4230,7 +4241,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.sora(
+                    style: GoogleFonts.inter(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: _C.g800,
@@ -4239,7 +4250,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 3),
                   Text(
                     subtitle,
-                    style: GoogleFonts.sora(
+                    style: GoogleFonts.inter(
                       fontSize: 12,
                       color: _C.g400,
                       height: 1.4,
@@ -4327,7 +4338,7 @@ class _LegalSheet extends StatelessWidget {
                       children: [
                         Text(
                           title,
-                          style: GoogleFonts.sora(
+                          style: GoogleFonts.inter(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
                             color: _C.g800,
@@ -4335,7 +4346,7 @@ class _LegalSheet extends StatelessWidget {
                         ),
                         Text(
                           'VisionScreen Â· Uganda MOH',
-                          style: GoogleFonts.sora(fontSize: 11, color: _C.g400),
+                          style: GoogleFonts.inter(fontSize: 11, color: _C.g400),
                         ),
                       ],
                     ),
@@ -4382,7 +4393,7 @@ class _LegalSheet extends StatelessWidget {
                       ),
                       child: Text(
                         sections[i].heading,
-                        style: GoogleFonts.sora(
+                        style: GoogleFonts.inter(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: _C.teal,
@@ -4392,7 +4403,7 @@ class _LegalSheet extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       sections[i].body,
-                      style: GoogleFonts.sora(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         color: _C.g500,
                         height: 1.75,
@@ -4426,3 +4437,4 @@ class _SettingsDotPainter extends CustomPainter {
   @override
   bool shouldRepaint(_SettingsDotPainter old) => false;
 }
+

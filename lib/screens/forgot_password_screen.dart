@@ -389,14 +389,14 @@ class _EmailStep extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Find your account',
-            style: GoogleFonts.nunito(
+            style: GoogleFonts.plusJakartaSans(
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
                 color: AppColors.textDark)),
         const SizedBox(height: 6),
         Text(
           'Enter the email address linked to your VisionScreen account.',
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.inter(
               fontSize: 12, color: AppColors.textMuted, height: 1.6),
         ),
         const SizedBox(height: 28),
@@ -424,7 +424,7 @@ class _EmailStep extends StatelessWidget {
             onTap: onBackToLogin,
             child: RichText(
               text: TextSpan(
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.inter(
                     fontSize: 12, color: AppColors.textMuted),
                 children: [
                   const TextSpan(text: 'Remembered it? '),
@@ -481,14 +481,14 @@ class _NewPasswordStep extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Create new password',
-            style: GoogleFonts.nunito(
+            style: GoogleFonts.plusJakartaSans(
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
                 color: AppColors.textDark)),
         const SizedBox(height: 6),
         Text(
           'Your new password must be at least 8 characters.',
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.inter(
               fontSize: 12, color: AppColors.textMuted, height: 1.6),
         ),
         const SizedBox(height: 28),
@@ -575,7 +575,7 @@ class _SuccessStep extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         Text('Password updated!',
-            style: GoogleFonts.nunito(
+            style: GoogleFonts.plusJakartaSans(
                 fontSize: 22,
                 fontWeight: FontWeight.w900,
                 color: AppColors.textDark)),
@@ -583,7 +583,7 @@ class _SuccessStep extends StatelessWidget {
         Text(
           'Your password has been successfully reset.\nYou can now sign in with your new password.',
           textAlign: TextAlign.center,
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.inter(
               fontSize: 13, color: AppColors.textMuted, height: 1.6),
         ),
         const SizedBox(height: 32),
@@ -621,3 +621,4 @@ class _ForgotDotPainter extends CustomPainter {
   @override
   bool shouldRepaint(_ForgotDotPainter old) => false;
 }
+

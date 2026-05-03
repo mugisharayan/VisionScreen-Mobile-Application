@@ -526,3 +526,4 @@ class _DotPatternPainter extends CustomPainter {
   @override
   bool shouldRepaint(_DotPatternPainter old) => false;
 }
+

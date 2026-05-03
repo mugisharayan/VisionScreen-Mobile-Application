@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../widgets/module_illustrations.dart';
 
 class Module1Screen extends StatefulWidget {
   final VoidCallback? onCompleted;
@@ -95,7 +96,7 @@ class _Module1ScreenState extends State<Module1Screen> {
     final isLast = _currentStep == _steps.length - 1;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFB),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: Column(children: [
         _buildHeader(color),
         Expanded(
@@ -111,11 +112,14 @@ class _Module1ScreenState extends State<Module1Screen> {
 
   Widget _buildHeader(Color color) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 50, 20, 16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [const Color(0xFF04091A), color], begin: Alignment.topLeft, end: Alignment.bottomRight),
+        gradient: LinearGradient(colors: [const Color(0xFF134E4A), color], begin: Alignment.topLeft, end: Alignment.bottomRight),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           GestureDetector(
             onTap: () => Navigator.pop(context),
@@ -128,14 +132,14 @@ class _Module1ScreenState extends State<Module1Screen> {
           ),
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Module 1', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.6), letterSpacing: 1.0)),
-            Text('Patient Registration', style: GoogleFonts.barlow(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.white)),
+            Text('MODULE 1', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: Colors.white.withValues(alpha: 0.6), letterSpacing: 1.8)),
+            Text('Patient Registration', style: GoogleFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w800, color: Colors.white)),
           ])),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(99)),
+            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(99)),
             child: Text('${_currentStep + 1} / ${_steps.length}',
-                style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white)),
+                style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
           ),
         ]),
         const SizedBox(height: 14),
@@ -157,11 +161,13 @@ class _Module1ScreenState extends State<Module1Screen> {
         const SizedBox(height: 10),
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Text(_steps[_currentStep]['title'] as String,
-              style: GoogleFonts.ibmPlexSans(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white.withOpacity(0.8))),
+              style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white.withValues(alpha: 0.8))),
           Text('${((_currentStep + 1) / _steps.length * 100).toInt()}% complete',
-              style: GoogleFonts.ibmPlexSans(fontSize: 11, color: Colors.white.withOpacity(0.6))),
+              style: GoogleFonts.inter(fontSize: 10, color: Colors.white.withValues(alpha: 0.6))),
         ]),
-      ]),
+          ]),
+        ),
+      ),
     );
   }
 
@@ -170,26 +176,14 @@ class _Module1ScreenState extends State<Module1Screen> {
       key: key,
       padding: const EdgeInsets.all(20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Illustration
         ClipRRect(
           borderRadius: BorderRadius.circular(16),
-          child: Stack(children: [
-            Image.network(step['image'] as String, height: 160, width: double.infinity, fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(height: 160, color: color.withOpacity(0.15),
-                    child: Icon(step['icon'] as IconData, size: 60, color: color))),
-            Container(height: 160, decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [Colors.black.withOpacity(0.5), Colors.transparent],
-                    begin: Alignment.bottomCenter, end: Alignment.topCenter))),
-            Positioned(bottom: 14, left: 14, child: Container(
-              width: 44, height: 44,
-              decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(12),
-                  boxShadow: [BoxShadow(color: color.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 4))]),
-              child: Icon(step['icon'] as IconData, color: Colors.white, size: 22),
-            )),
-          ]),
+          child: Module1Illustration(color: color),
         ),
         const SizedBox(height: 20),
         Text(step['title'] as String,
-            style: GoogleFonts.barlow(fontSize: 22, fontWeight: FontWeight.w900, color: const Color(0xFF1A2A3D))),
+            style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: const Color(0xFF0F172A))),
         const SizedBox(height: 14),
         Container(
           padding: const EdgeInsets.all(16),
@@ -197,7 +191,7 @@ class _Module1ScreenState extends State<Module1Screen> {
               border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
               boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))]),
           child: Text(step['body'] as String,
-              style: GoogleFonts.ibmPlexSans(fontSize: 13, color: const Color(0xFF1A2A3D), height: 1.7)),
+              style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF334155), height: 1.7)),
         ),
         const SizedBox(height: 14),
         Container(
@@ -208,7 +202,7 @@ class _Module1ScreenState extends State<Module1Screen> {
             Icon(Icons.lightbulb_rounded, size: 16, color: color),
             const SizedBox(width: 10),
             Expanded(child: Text(step['tip'] as String,
-                style: GoogleFonts.ibmPlexSans(fontSize: 12, color: const Color(0xFF1A2A3D), height: 1.5))),
+                style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF334155), height: 1.5))),
           ]),
         ),
         const SizedBox(height: 20),
@@ -227,7 +221,7 @@ class _Module1ScreenState extends State<Module1Screen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                 decoration: BoxDecoration(color: const Color(0xFFF0F4F7), borderRadius: BorderRadius.circular(12)),
-                child: Text('← Back', style: GoogleFonts.ibmPlexSans(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF5E7291))),
+                child: Text('← Back', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF64748B))),
               ),
             ),
           if (_currentStep > 0) const SizedBox(width: 10),
@@ -237,7 +231,7 @@ class _Module1ScreenState extends State<Module1Screen> {
                 if (isLast) {
                   widget.onCompleted?.call();
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text('Module 1 completed! 🎉', style: GoogleFonts.ibmPlexSans(fontSize: 12, color: Colors.white)),
+                    content: Text('Module 1 completed! 🎉', style: GoogleFonts.inter(fontSize: 12, color: Colors.white)),
                     backgroundColor: color, behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     duration: const Duration(seconds: 2),
@@ -255,7 +249,7 @@ class _Module1ScreenState extends State<Module1Screen> {
                   boxShadow: [BoxShadow(color: color.withOpacity(0.35), blurRadius: 12, offset: const Offset(0, 4))],
                 ),
                 child: Center(child: Text(isLast ? 'Complete Module ✓' : 'Next Step →',
-                    style: GoogleFonts.ibmPlexSans(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white))),
+                    style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white))),
               ),
             ),
           ),
@@ -264,3 +258,4 @@ class _Module1ScreenState extends State<Module1Screen> {
     );
   }
 }
+

@@ -119,7 +119,7 @@ class _AuthUnderlineFieldState extends State<AuthUnderlineField> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(widget.label,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.inter(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textMuted)),
@@ -141,14 +141,14 @@ class _AuthUnderlineFieldState extends State<AuthUnderlineField> {
                 keyboardType: widget.keyboardType,
                 textInputAction: widget.inputAction,
                 onChanged: widget.onChanged,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                     color: AppColors.textDark),
                 cursorColor: AppColors.green,
                 decoration: InputDecoration(
                   hintText: widget.hint,
-                  hintStyle: GoogleFonts.poppins(
+                  hintStyle: GoogleFonts.inter(
                       fontSize: 13,
                       color: AppColors.textMuted.withValues(alpha: 0.5)),
                   suffixIcon: widget.suffixIcon,
@@ -179,7 +179,7 @@ class _AuthUnderlineFieldState extends State<AuthUnderlineField> {
                     size: 12, color: Color(0xFFEF4444)),
                 const SizedBox(width: 4),
                 Text(widget.errorText!,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.inter(
                         fontSize: 11,
                         color: const Color(0xFFEF4444),
                         fontWeight: FontWeight.w500)),
@@ -269,7 +269,7 @@ class _AuthGreenPillButtonState extends State<AuthGreenPillButton> {
                       const SizedBox(width: 8),
                     ],
                     Text(widget.label,
-                        style: GoogleFonts.poppins(
+                        style: GoogleFonts.inter(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -281,3 +281,4 @@ class _AuthGreenPillButtonState extends State<AuthGreenPillButton> {
     );
   }
 }
+

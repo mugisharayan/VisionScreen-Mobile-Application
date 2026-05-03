@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:async' show TimeoutException;
 import 'dart:io';
 import 'dart:math';
@@ -16,6 +16,8 @@ import 'bulk_mode_screen.dart';
 import 'analytics_screen.dart';
 import '../repositories/screening_repository.dart';
 import '../utils/app_theme.dart';
+import '../utils/page_transitions.dart';
+import '../utils/haptics.dart';
 import '../widgets/vs_logo.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -27,7 +29,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen>
     with TickerProviderStateMixin {
 
-  // ── Data ──────────────────────────────────────────────────
+  // -- Data --------------------------------------------------
   String _chwName     = '';
   String _chwCenter   = '';
   String _chwDistrict = '';
@@ -40,16 +42,16 @@ class _HomeScreenState extends State<HomeScreen>
   List<Map<String, dynamic>> _recentScreenings = [];
   List<Map<String, dynamic>> _referredPatients = [];
 
-  // ── UI state ──────────────────────────────────────────────
+  // -- UI state ----------------------------------------------
   bool _isOffline = false;
   String _locationLabel = 'Detecting location...';
   DateTime _now = DateTime.now();
 
-  // ── Subscriptions / timers ────────────────────────────────
+  // -- Subscriptions / timers --------------------------------
   late StreamSubscription<List<ConnectivityResult>> _connectivitySub;
   late Timer _clockTimer;
 
-  // ── Animations ────────────────────────────────────────────
+  // -- Animations --------------------------------------------
   // Pulse for online dot
   late final AnimationController _pulseCtrl;
   late final Animation<double>   _pulseAnim;
@@ -82,7 +84,7 @@ class _HomeScreenState extends State<HomeScreen>
     _TipData(Icons.visibility_off_rounded, VsColors.rose, 'Ask patients to remove glasses before the unaided vision test begins.'),
   ];
 
-  // ── Lifecycle ─────────────────────────────────────────────
+  // -- Lifecycle ---------------------------------------------
   @override
   void initState() {
     super.initState();
@@ -190,6 +192,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   Future<void> _doSync() async {
     if (_isSyncing) return;
+    VsHaptics.medium();
     setState(() => _isSyncing = true);
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
@@ -249,7 +252,7 @@ class _HomeScreenState extends State<HomeScreen>
     super.dispose();
   }
 
-  // ── Helpers ───────────────────────────────────────────────
+  // -- Helpers -----------------------------------------------
   String get _greeting {
     final h = _now.hour;
     if (h < 12) return 'Good morning';
@@ -282,7 +285,7 @@ class _HomeScreenState extends State<HomeScreen>
     } catch (_) { return 'Today'; }
   }
 
-  // ── Build ─────────────────────────────────────────────────
+  // -- Build -------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -326,7 +329,7 @@ class _HomeScreenState extends State<HomeScreen>
                   _buildSectionHeader("Today's Screenings",
                       TextButton(
                         onPressed: () => Navigator.push(context,
-                            MaterialPageRoute(builder: (_) => const PatientsScreen())),
+                            VsPageRoute(builder: (_) => const PatientsScreen())),
                         child: Text('See all',
                             style: GoogleFonts.inter(
                                 fontSize: 12, color: VsColors.brand,
@@ -338,7 +341,7 @@ class _HomeScreenState extends State<HomeScreen>
                   _buildSectionHeader('Referral Follow-Ups',
                       TextButton(
                         onPressed: () => Navigator.push(context,
-                            MaterialPageRoute(builder: (_) => const PatientsScreen())),
+                            VsPageRoute(builder: (_) => const PatientsScreen())),
                         child: Text('View all',
                             style: GoogleFonts.inter(
                                 fontSize: 12, color: VsColors.brand,
@@ -355,7 +358,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // ── HEADER ────────────────────────────────────────────────
+  // -- HEADER ------------------------------------------------
   Widget _buildHeader() {
     return FadeTransition(
       opacity: _headerOpacity,
@@ -399,7 +402,7 @@ class _HomeScreenState extends State<HomeScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ── Top bar ──
+                      // -- Top bar --
                       Row(
                         children: [
                           // Logo wordmark
@@ -422,7 +425,7 @@ class _HomeScreenState extends State<HomeScreen>
 
                       const SizedBox(height: 20),
 
-                      // ── Greeting + illustration row ──
+                      // -- Greeting + illustration row --
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
@@ -502,7 +505,7 @@ class _HomeScreenState extends State<HomeScreen>
 
                       const SizedBox(height: 20),
 
-                      // ── Stats row ──
+                      // -- Stats row --
                       _buildStatsRow(),
                     ],
                   ),
@@ -809,7 +812,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // ── BANNERS ───────────────────────────────────────────────
+  // -- BANNERS -----------------------------------------------
   Widget _buildOfflineBanner() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -914,7 +917,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // ── IMPACT BANNER ─────────────────────────────────────────
+  // -- IMPACT BANNER -----------------------------------------
   Widget _buildImpactBanner() {
     final passed = _totalScreened - _totalReferred;
     final passRate = _totalScreened > 0
@@ -953,7 +956,7 @@ class _HomeScreenState extends State<HomeScreen>
               ),
               Center(
                 child: Text(
-                  _totalScreened == 0 ? '—' : '$passRate%',
+                  _totalScreened == 0 ? '�' : '$passRate%',
                   style: GoogleFonts.plusJakartaSans(
                       fontSize: 12, fontWeight: FontWeight.w800,
                       color: VsColors.slate900),
@@ -971,8 +974,8 @@ class _HomeScreenState extends State<HomeScreen>
               const SizedBox(height: 2),
               Text(
                 _totalScreened == 0
-                    ? 'No screenings yet — start your first test!'
-                    : '$passed passed · $_totalReferred referred · $_totalScreened total',
+                    ? 'No screenings yet � start your first test!'
+                    : '$passed passed � $_totalReferred referred � $_totalScreened total',
                 style: GoogleFonts.inter(
                     fontSize: 12, color: VsColors.slate500,
                     fontWeight: FontWeight.w400),
@@ -1009,7 +1012,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // ── SECTION HEADER ────────────────────────────────────────
+  // -- SECTION HEADER ----------------------------------------
   Widget _buildSectionHeader(String title, Widget? trailing) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1023,7 +1026,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // ── ACTION GRID ───────────────────────────────────────────
+  // -- ACTION GRID -------------------------------------------
   Widget _buildActionGrid() {
     final actions = [
       _ActionData(
@@ -1035,7 +1038,7 @@ class _HomeScreenState extends State<HomeScreen>
         gradientColors: const [Color(0xFF0D9488), Color(0xFF0F766E)],
         illustration: const _EyeScanIllustration(),
         onTap: () => Navigator.push(context,
-            MaterialPageRoute(builder: (_) =>
+            VsPageRoute(builder: (_) =>
                 const NewScreeningScreen(startWithNewPatient: true)))
             .then((_) => _loadDbStats()),
       ),
@@ -1048,7 +1051,7 @@ class _HomeScreenState extends State<HomeScreen>
         gradientColors: const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
         illustration: const _GroupIllustration(),
         onTap: () => Navigator.push(context,
-            MaterialPageRoute(builder: (_) => const BulkModeScreen()))
+            VsPageRoute(builder: (_) => const BulkModeScreen()))
             .then((_) => _loadDbStats()),
       ),
       _ActionData(
@@ -1060,7 +1063,7 @@ class _HomeScreenState extends State<HomeScreen>
         gradientColors: const [Color(0xFFF59E0B), Color(0xFFD97706)],
         illustration: const _BookIllustration(),
         onTap: () => Navigator.push(context,
-            MaterialPageRoute(builder: (_) => const TrainingScreen())),
+            VsPageRoute(builder: (_) => const TrainingScreen())),
       ),
       _ActionData(
         icon: Icons.bar_chart_rounded,
@@ -1071,7 +1074,7 @@ class _HomeScreenState extends State<HomeScreen>
         gradientColors: const [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
         illustration: const _ChartIllustration(),
         onTap: () => Navigator.push(context,
-            MaterialPageRoute(builder: (_) => const AnalyticsScreen())),
+            VsPageRoute(builder: (_) => const AnalyticsScreen())),
       ),
     ];
 
@@ -1103,7 +1106,7 @@ class _HomeScreenState extends State<HomeScreen>
     return _PressableActionCard(data: a);
   }
 
-  // ── TIP CARD ──────────────────────────────────────────────
+  // -- TIP CARD ----------------------------------------------
   Widget _buildTipCard() {
     final tip = _tips[_tipIndex];
     return AnimatedSwitcher(
@@ -1169,7 +1172,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // ── RECENT SCREENINGS LIST ────────────────────────────────
+  // -- RECENT SCREENINGS LIST --------------------------------
   Widget _buildRecentList() {
     if (_recentScreenings.isEmpty) {
       return _buildEmptyState(
@@ -1205,8 +1208,8 @@ class _HomeScreenState extends State<HomeScreen>
     final age      = (r['age'] as int?) ?? 0;
     final gender   = (r['gender'] as String?) ?? '';
     final outcome  = (r['outcome'] as String?) ?? 'pending';
-    final od       = (r['od_snellen'] as String?) ?? '—';
-    final os       = (r['os_snellen'] as String?) ?? '—';
+    final od       = (r['od_snellen'] as String?) ?? '�';
+    final os       = (r['os_snellen'] as String?) ?? '�';
     final pid      = (r['patient_id'] as String?) ?? '';
     final photo    = (r['photo_path'] as String?) ?? '';
     final initials = name.split(' ').map((w) => w.isEmpty ? '' : w[0]).take(2).join();
@@ -1293,7 +1296,7 @@ class _HomeScreenState extends State<HomeScreen>
                         fontSize: 14, fontWeight: FontWeight.w700,
                         color: VsColors.slate900)),
                 const SizedBox(height: 3),
-                Text('$gender · $age yrs',
+                Text('$gender � $age yrs',
                     style: GoogleFonts.inter(
                         fontSize: 11, color: VsColors.slate500)),
                 const SizedBox(height: 6),
@@ -1382,7 +1385,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // ── REFERRAL LIST ─────────────────────────────────────────
+  // -- REFERRAL LIST -----------------------------------------
   Widget _buildReferralList() {
     if (_referredPatients.isEmpty) {
       return _buildEmptyState(
@@ -1468,7 +1471,7 @@ class _HomeScreenState extends State<HomeScreen>
                             fontSize: 13, fontWeight: FontWeight.w700,
                             color: VsColors.slate900)),
                     const SizedBox(height: 2),
-                    Text('$gender · $age yrs',
+                    Text('$gender � $age yrs',
                         style: GoogleFonts.inter(
                             fontSize: 11, color: VsColors.slate500)),
                     const SizedBox(height: 4),
@@ -1516,7 +1519,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // ── EMPTY STATE ───────────────────────────────────────────
+  // -- EMPTY STATE -------------------------------------------
   Widget _buildEmptyState({
     required IconData icon,
     required String title,
@@ -1553,9 +1556,9 @@ class _HomeScreenState extends State<HomeScreen>
   }
 }
 
-// ─────────────────────────────────────────────────────────────
+// -------------------------------------------------------------
 // Data classes
-// ─────────────────────────────────────────────────────────────
+// -------------------------------------------------------------
 class _TipData {
   const _TipData(this.icon, this.color, this.text);
   final IconData icon;
@@ -1584,9 +1587,9 @@ class _ActionData {
   final VoidCallback onTap;
 }
 
-// ─────────────────────────────────────────────────────────────
-// Pressable Action Card — clinical gradient design
-// ─────────────────────────────────────────────────────────────
+// -------------------------------------------------------------
+// Pressable Action Card � clinical gradient design
+// -------------------------------------------------------------
 class _PressableActionCard extends StatefulWidget {
   const _PressableActionCard({required this.data});
   final _ActionData data;
@@ -1622,7 +1625,7 @@ class _PressableActionCardState extends State<_PressableActionCard>
   Widget build(BuildContext context) {
     final a = widget.data;
     return GestureDetector(
-      onTapDown: (_) => _pressCtrl.forward(),
+      onTapDown: (_) { VsHaptics.medium(); _pressCtrl.forward(); },
       onTapUp: (_) {
         _pressCtrl.reverse();
         a.onTap();
@@ -1661,49 +1664,38 @@ class _PressableActionCardState extends State<_PressableActionCard>
             borderRadius: BorderRadius.circular(20),
             child: Stack(
               children: [
-                // ── Dot pattern overlay ──
+                // -- Dot pattern overlay --
                 Positioned.fill(
                   child: CustomPaint(painter: _CardDotPainter()),
                 ),
-                // ── Large illustration — bottom-right watermark ──
+                // -- Decorative arc top-right --
                 Positioned(
-                  right: -12, bottom: -12,
-                  child: Opacity(
-                    opacity: 0.18,
-                    child: SizedBox(
-                      width: 90, height: 90,
-                      child: a.illustration,
-                    ),
-                  ),
-                ),
-                // ── Decorative arc top-right ──
-                Positioned(
-                  top: -20, right: -20,
+                  top: -24, right: -24,
                   child: Container(
-                    width: 80, height: 80,
+                    width: 90, height: 90,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.12),
+                          color: Colors.white.withValues(alpha: 0.10),
                           width: 1.5),
                     ),
                   ),
                 ),
                 Positioned(
-                  top: -5, right: -5,
+                  top: -8, right: -8,
                   child: Container(
-                    width: 48, height: 48,
+                    width: 54, height: 54,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.18),
+                          color: Colors.white.withValues(alpha: 0.15),
                           width: 1),
                     ),
                   ),
                 ),
-                // ── Content ──
+                // -- Content --
                 Padding(
-                  padding: const EdgeInsets.all(13),
+                  padding: const EdgeInsets.fromLTRB(13, 12, 13, 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1715,76 +1707,83 @@ class _PressableActionCardState extends State<_PressableActionCard>
                         children: [
                           // Icon with glow container
                           Container(
-                            width: 38, height: 38,
+                            width: 40, height: 40,
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(11),
+                              color: Colors.white.withValues(alpha: 0.22),
+                              borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.3),
+                                  color: Colors.white.withValues(alpha: 0.35),
                                   width: 1.5),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.15),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
+                                  color: Colors.black.withValues(alpha: 0.18),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
                                 ),
                               ],
                             ),
-                            child: Icon(a.icon,
-                                color: Colors.white, size: 19),
+                            child: Icon(a.icon, color: Colors.white, size: 20),
                           ),
                           // Tag pill
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
+                                horizontal: 7, vertical: 4),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
+                              color: Colors.white.withValues(alpha: 0.22),
                               borderRadius: BorderRadius.circular(99),
                               border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.35)),
+                                  color: Colors.white.withValues(alpha: 0.4)),
                             ),
                             child: Text(a.tag,
                                 style: GoogleFonts.inter(
-                                    fontSize: 8,
+                                    fontSize: 7.5,
                                     fontWeight: FontWeight.w800,
                                     color: Colors.white,
-                                    letterSpacing: 0.6)),
+                                    letterSpacing: 0.7)),
                           ),
                         ],
                       ),
 
+                      // Middle: illustration (visible, full opacity)
+                      SizedBox(
+                        height: 44,
+                        child: a.illustration,
+                      ),
+
                       // Bottom: title + subtitle + arrow
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Text(a.title,
-                              style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
-                                  height: 1.1)),
-                          const SizedBox(height: 3),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Flexible(
-                                child: Text(a.subtitle,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(a.title,
+                                    style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                        height: 1.1)),
+                                const SizedBox(height: 2),
+                                Text(a.subtitle,
                                     style: GoogleFonts.inter(
-                                        fontSize: 11,
+                                        fontSize: 10,
                                         color: Colors.white.withValues(alpha: 0.75),
                                         fontWeight: FontWeight.w400)),
-                              ),
-                              Container(
-                                width: 24, height: 24,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                    Icons.arrow_forward_rounded,
-                                    size: 13, color: Colors.white),
-                              ),
-                            ],
+                              ],
+                            ),
+                          ),
+                          Container(
+                            width: 26, height: 26,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.22),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.35)),
+                            ),
+                            child: const Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 13, color: Colors.white),
                           ),
                         ],
                       ),
@@ -1818,9 +1817,9 @@ class _CardDotPainter extends CustomPainter {
   bool shouldRepaint(_CardDotPainter old) => false;
 }
 
-// ─────────────────────────────────────────────────────────────
+// -------------------------------------------------------------
 // Dot pattern painter
-// ─────────────────────────────────────────────────────────────
+// -------------------------------------------------------------
 class _DotPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -1838,131 +1837,364 @@ class _DotPainter extends CustomPainter {
   bool shouldRepaint(_DotPainter old) => false;
 }
 
-// ─────────────────────────────────────────────────────────────
-// Action card mini-illustrations (CustomPainter)
-// ─────────────────────────────────────────────────────────────
+// -------------------------------------------------------------
+// Action card mini-illustrations (CustomPainter) — white on gradient
+// -------------------------------------------------------------
+
+// ── 1. Eye Scan — detailed eye with scan lines + corner brackets ──
 class _EyeScanIllustration extends StatelessWidget {
   const _EyeScanIllustration();
   @override
-  Widget build(BuildContext context) => CustomPaint(
-      size: const Size(80, 80), painter: _EyeScanPainter());
+  Widget build(BuildContext context) =>
+      CustomPaint(size: const Size(double.infinity, 44), painter: _EyeScanPainter());
 }
 
 class _EyeScanPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = VsColors.brand
+    final w = size.width, h = size.height;
+    final cx = w * 0.52, cy = h * 0.52;
+
+    final stroke = Paint()
+      ..color = Colors.white.withValues(alpha: 0.9)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0
+      ..strokeWidth = 2.0
       ..strokeCap = StrokeCap.round;
-    final cx = size.width / 2, cy = size.height / 2;
-    canvas.drawOval(
-        Rect.fromCenter(center: Offset(cx, cy), width: 60, height: 34), p);
-    canvas.drawCircle(Offset(cx, cy), 12, p);
-    canvas.drawCircle(Offset(cx, cy), 6,
-        Paint()..color = VsColors.brand..style = PaintingStyle.fill);
-    // Scan line
-    canvas.drawLine(Offset(cx - 30, cy + 20), Offset(cx + 30, cy + 20),
-        p..color = VsColors.brand.withValues(alpha: 0.4)..strokeWidth = 1.5);
+
+    final fill = Paint()
+      ..color = Colors.white.withValues(alpha: 0.18)
+      ..style = PaintingStyle.fill;
+
+    final dim = Paint()
+      ..color = Colors.white.withValues(alpha: 0.35)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..strokeCap = StrokeCap.round;
+
+    // Eye outline (almond shape via bezier)
+    final eyePath = Path();
+    eyePath.moveTo(cx - 22, cy);
+    eyePath.cubicTo(cx - 14, cy - 14, cx + 14, cy - 14, cx + 22, cy);
+    eyePath.cubicTo(cx + 14, cy + 14, cx - 14, cy + 14, cx - 22, cy);
+    canvas.drawPath(eyePath, fill);
+    canvas.drawPath(eyePath, stroke);
+
+    // Iris circle
+    canvas.drawCircle(Offset(cx, cy), 9, fill);
+    canvas.drawCircle(Offset(cx, cy), 9, stroke);
+
+    // Pupil filled
+    canvas.drawCircle(Offset(cx, cy), 4,
+        Paint()..color = Colors.white.withValues(alpha: 0.85)..style = PaintingStyle.fill);
+
+    // Highlight dot
+    canvas.drawCircle(Offset(cx + 3, cy - 3), 1.5,
+        Paint()..color = Colors.white..style = PaintingStyle.fill);
+
+    // Scan line (horizontal dashed)
+    for (double x = cx - 22; x < cx + 22; x += 5) {
+      canvas.drawLine(Offset(x, cy + 18), Offset(x + 3, cy + 18), dim);
+    }
+
+    // Corner brackets (top-left, top-right, bottom-left, bottom-right)
+    const bLen = 7.0, bOff = 4.0;
+    final bx = cx - 26.0, by = cy - 20.0;
+    final bx2 = cx + 26.0, by2 = cy + 20.0;
+    // TL
+    canvas.drawLine(Offset(bx, by + bLen), Offset(bx, by), dim);
+    canvas.drawLine(Offset(bx, by), Offset(bx + bLen, by), dim);
+    // TR
+    canvas.drawLine(Offset(bx2 - bLen, by), Offset(bx2, by), dim);
+    canvas.drawLine(Offset(bx2, by), Offset(bx2, by + bLen), dim);
+    // BL
+    canvas.drawLine(Offset(bx, by2 - bLen), Offset(bx, by2), dim);
+    canvas.drawLine(Offset(bx, by2), Offset(bx + bLen, by2), dim);
+    // BR
+    canvas.drawLine(Offset(bx2 - bLen, by2), Offset(bx2, by2), dim);
+    canvas.drawLine(Offset(bx2, by2), Offset(bx2, by2 - bLen), dim);
   }
+
   @override
   bool shouldRepaint(_EyeScanPainter old) => false;
 }
 
+// ── 2. Group / Campaign — 3 people silhouettes + clipboard ──
 class _GroupIllustration extends StatelessWidget {
   const _GroupIllustration();
   @override
-  Widget build(BuildContext context) => CustomPaint(
-      size: const Size(80, 80), painter: _GroupPainter());
+  Widget build(BuildContext context) =>
+      CustomPaint(size: const Size(double.infinity, 44), painter: _GroupPainter());
 }
 
 class _GroupPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = VsColors.sky
+    final w = size.width, h = size.height;
+
+    final fill = Paint()
+      ..color = Colors.white.withValues(alpha: 0.85)
+      ..style = PaintingStyle.fill;
+
+    final fillDim = Paint()
+      ..color = Colors.white.withValues(alpha: 0.35)
+      ..style = PaintingStyle.fill;
+
+    final stroke = Paint()
+      ..color = Colors.white.withValues(alpha: 0.9)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5
+      ..strokeWidth = 1.5
       ..strokeCap = StrokeCap.round;
-    final pf = Paint()..color = VsColors.sky.withValues(alpha: 0.2)..style = PaintingStyle.fill;
-    for (final (cx, cy) in [(20.0, 40.0), (40.0, 30.0), (60.0, 40.0)]) {
-      canvas.drawCircle(Offset(cx, cy - 12), 8, pf);
-      canvas.drawCircle(Offset(cx, cy - 12), 8, p);
-      canvas.drawArc(Rect.fromCenter(center: Offset(cx, cy + 4), width: 24, height: 16),
-          3.14, 3.14, false, p);
+
+    // Draw 3 person silhouettes at different x positions
+    void drawPerson(double cx, double baseY, double scale, Paint headFill) {
+      // Head
+      canvas.drawCircle(Offset(cx, baseY - 14 * scale), 5.5 * scale, headFill);
+      // Body arc
+      final bodyPath = Path();
+      bodyPath.moveTo(cx - 9 * scale, baseY + 2 * scale);
+      bodyPath.quadraticBezierTo(cx, baseY - 4 * scale, cx + 9 * scale, baseY + 2 * scale);
+      canvas.drawPath(bodyPath, stroke..strokeWidth = 1.5 * scale);
+      // Shoulders fill
+      canvas.drawOval(
+        Rect.fromCenter(center: Offset(cx, baseY), width: 16 * scale, height: 7 * scale),
+        headFill,
+      );
     }
+
+    final midY = h * 0.72;
+    // Left person (dimmer, behind)
+    drawPerson(w * 0.28, midY, 0.82, fillDim);
+    // Right person (dimmer, behind)
+    drawPerson(w * 0.72, midY, 0.82, fillDim);
+    // Center person (main, bright)
+    drawPerson(w * 0.50, midY - 2, 1.0, fill);
+
+    // Clipboard on the right
+    final clipX = w * 0.84, clipY = h * 0.28;
+    final clipRect = RRect.fromRectAndRadius(
+      Rect.fromCenter(center: Offset(clipX, clipY), width: 18, height: 22),
+      const Radius.circular(3),
+    );
+    canvas.drawRRect(clipRect, fillDim);
+    canvas.drawRRect(clipRect, stroke..strokeWidth = 1.2);
+    // Clip top
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(center: Offset(clipX, clipY - 11), width: 8, height: 4),
+        const Radius.circular(2),
+      ),
+      fill,
+    );
+    // Lines on clipboard
+    for (int i = 0; i < 3; i++) {
+      canvas.drawLine(
+        Offset(clipX - 5, clipY - 4 + i * 5.0),
+        Offset(clipX + 5, clipY - 4 + i * 5.0),
+        stroke..strokeWidth = 1.0..color = Colors.white.withValues(alpha: 0.6),
+      );
+    }
+
+    // Check mark badge
+    canvas.drawCircle(Offset(w * 0.16, h * 0.28), 8,
+        Paint()..color = Colors.white.withValues(alpha: 0.25)..style = PaintingStyle.fill);
+    final check = Path();
+    check.moveTo(w * 0.16 - 4, h * 0.28);
+    check.lineTo(w * 0.16 - 1, h * 0.28 + 3);
+    check.lineTo(w * 0.16 + 4, h * 0.28 - 3);
+    canvas.drawPath(check, stroke..strokeWidth = 1.8..color = Colors.white.withValues(alpha: 0.9));
   }
+
   @override
   bool shouldRepaint(_GroupPainter old) => false;
 }
 
+// ── 3. Training / Book — open book with graduation cap ──
 class _BookIllustration extends StatelessWidget {
   const _BookIllustration();
   @override
-  Widget build(BuildContext context) => CustomPaint(
-      size: const Size(80, 80), painter: _BookPainter());
+  Widget build(BuildContext context) =>
+      CustomPaint(size: const Size(double.infinity, 44), painter: _BookPainter());
 }
 
 class _BookPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = VsColors.amber
+    final w = size.width, h = size.height;
+    final cx = w * 0.46, cy = h * 0.60;
+
+    final fill = Paint()
+      ..color = Colors.white.withValues(alpha: 0.20)
+      ..style = PaintingStyle.fill;
+
+    final stroke = Paint()
+      ..color = Colors.white.withValues(alpha: 0.90)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5
+      ..strokeWidth = 1.8
       ..strokeCap = StrokeCap.round;
-    final pf = Paint()..color = VsColors.amber.withValues(alpha: 0.15)..style = PaintingStyle.fill;
-    final book = RRect.fromRectAndRadius(
-        Rect.fromCenter(center: Offset(size.width/2, size.height/2), width: 44, height: 52),
-        const Radius.circular(4));
-    canvas.drawRRect(book, pf);
-    canvas.drawRRect(book, p);
-    canvas.drawLine(Offset(size.width/2, size.height/2 - 26),
-        Offset(size.width/2, size.height/2 + 26), p..strokeWidth = 1.5);
+
+    final bright = Paint()
+      ..color = Colors.white.withValues(alpha: 0.85)
+      ..style = PaintingStyle.fill;
+
+    // Left page
+    final leftPage = Path();
+    leftPage.moveTo(cx, cy - 16);
+    leftPage.lineTo(cx - 20, cy - 14);
+    leftPage.lineTo(cx - 20, cy + 12);
+    leftPage.lineTo(cx, cy + 10);
+    leftPage.close();
+    canvas.drawPath(leftPage, fill);
+    canvas.drawPath(leftPage, stroke);
+
+    // Right page
+    final rightPage = Path();
+    rightPage.moveTo(cx, cy - 16);
+    rightPage.lineTo(cx + 20, cy - 14);
+    rightPage.lineTo(cx + 20, cy + 12);
+    rightPage.lineTo(cx, cy + 10);
+    rightPage.close();
+    canvas.drawPath(rightPage, fill);
+    canvas.drawPath(rightPage, stroke);
+
+    // Spine line
+    canvas.drawLine(Offset(cx, cy - 16), Offset(cx, cy + 10), stroke..strokeWidth = 2.0);
+
+    // Lines on left page
     for (int i = 0; i < 3; i++) {
       canvas.drawLine(
-          Offset(size.width/2 + 4, size.height/2 - 10 + i * 8.0),
-          Offset(size.width/2 + 18, size.height/2 - 10 + i * 8.0),
-          p..strokeWidth = 1.5);
+        Offset(cx - 16, cy - 8 + i * 6.0),
+        Offset(cx - 4, cy - 8 + i * 6.0),
+        stroke..strokeWidth = 1.0..color = Colors.white.withValues(alpha: 0.5),
+      );
     }
+    // Lines on right page
+    for (int i = 0; i < 3; i++) {
+      canvas.drawLine(
+        Offset(cx + 4, cy - 8 + i * 6.0),
+        Offset(cx + 16, cy - 8 + i * 6.0),
+        stroke..strokeWidth = 1.0..color = Colors.white.withValues(alpha: 0.5),
+      );
+    }
+
+    // Graduation cap (top right)
+    final capCx = w * 0.78, capCy = h * 0.22;
+    // Board (diamond)
+    final cap = Path();
+    cap.moveTo(capCx, capCy - 7);
+    cap.lineTo(capCx + 10, capCy - 2);
+    cap.lineTo(capCx, capCy + 3);
+    cap.lineTo(capCx - 10, capCy - 2);
+    cap.close();
+    canvas.drawPath(cap, bright);
+    // Tassel
+    canvas.drawLine(Offset(capCx + 10, capCy - 2), Offset(capCx + 10, capCy + 6), stroke..strokeWidth = 1.5..color = Colors.white.withValues(alpha: 0.7));
+    canvas.drawCircle(Offset(capCx + 10, capCy + 7), 2, bright);
   }
+
   @override
   bool shouldRepaint(_BookPainter old) => false;
 }
 
+// ── 4. Analytics — bar chart + trend line + data points ──
 class _ChartIllustration extends StatelessWidget {
   const _ChartIllustration();
   @override
-  Widget build(BuildContext context) => CustomPaint(
-      size: const Size(80, 80), painter: _ChartPainter());
+  Widget build(BuildContext context) =>
+      CustomPaint(size: const Size(double.infinity, 44), painter: _ChartPainter());
 }
 
 class _ChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = VsColors.violet
+    final w = size.width, h = size.height;
+    final baseY = h * 0.88;
+    final chartW = w * 0.72;
+    final startX = w * 0.08;
+
+    final barFill = Paint()
+      ..color = Colors.white.withValues(alpha: 0.25)
+      ..style = PaintingStyle.fill;
+
+    final barStroke = Paint()
+      ..color = Colors.white.withValues(alpha: 0.70)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5
-      ..strokeCap = StrokeCap.round;
-    final pf = Paint()..color = VsColors.violet.withValues(alpha: 0.2)..style = PaintingStyle.fill;
-    final bars = [0.4, 0.7, 0.5, 0.9, 0.6];
+      ..strokeWidth = 1.2;
+
+    final linePaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.90)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final dotFill = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+
+    // Bar heights (normalized 0–1)
+    final bars = [0.45, 0.70, 0.55, 0.85, 0.65];
+    final barW = (chartW / bars.length) * 0.55;
+    final gap  = chartW / bars.length;
+
+    // Draw bars
     for (int i = 0; i < bars.length; i++) {
-      final x = 10.0 + i * 14.0;
-      final h = bars[i] * 50;
+      final x = startX + i * gap + gap * 0.22;
+      final barH = bars[i] * h * 0.72;
       final rect = RRect.fromRectAndRadius(
-          Rect.fromLTWH(x, 60 - h, 10, h), const Radius.circular(3));
-      canvas.drawRRect(rect, pf);
-      canvas.drawRRect(rect, p..strokeWidth = 1.5);
+        Rect.fromLTWH(x, baseY - barH, barW, barH),
+        const Radius.circular(3),
+      );
+      canvas.drawRRect(rect, barFill);
+      canvas.drawRRect(rect, barStroke);
     }
-    // Trend line
-    final path = Path()..moveTo(15, 60 - 0.4 * 50);
-    for (int i = 1; i < bars.length; i++) {
-      path.lineTo(15 + i * 14.0, 60 - bars[i] * 50);
+
+    // Trend line over bars (connecting top-center of each bar)
+    final trendPath = Path();
+    for (int i = 0; i < bars.length; i++) {
+      final x = startX + i * gap + gap * 0.22 + barW / 2;
+      final y = baseY - bars[i] * h * 0.72;
+      if (i == 0) {
+        trendPath.moveTo(x, y);
+      } else {
+        // Smooth curve
+        final prevX = startX + (i - 1) * gap + gap * 0.22 + barW / 2;
+        final prevY = baseY - bars[i - 1] * h * 0.72;
+        trendPath.cubicTo(
+          prevX + gap * 0.4, prevY,
+          x - gap * 0.4, y,
+          x, y,
+        );
+      }
     }
-    canvas.drawPath(path, p..strokeWidth = 2.0..color = VsColors.violet.withValues(alpha: 0.7));
+    canvas.drawPath(trendPath, linePaint);
+
+    // Dots on trend line
+    for (int i = 0; i < bars.length; i++) {
+      final x = startX + i * gap + gap * 0.22 + barW / 2;
+      final y = baseY - bars[i] * h * 0.72;
+      canvas.drawCircle(Offset(x, y), 2.8, dotFill);
+    }
+
+    // Baseline
+    canvas.drawLine(
+      Offset(startX - 2, baseY),
+      Offset(startX + chartW + 2, baseY),
+      Paint()..color = Colors.white.withValues(alpha: 0.35)..strokeWidth = 1.0,
+    );
+
+    // Up arrow badge (top right)
+    final arrowCx = w * 0.90, arrowCy = h * 0.22;
+    canvas.drawCircle(Offset(arrowCx, arrowCy), 9,
+        Paint()..color = Colors.white.withValues(alpha: 0.22)..style = PaintingStyle.fill);
+    final arrow = Path();
+    arrow.moveTo(arrowCx, arrowCy + 4);
+    arrow.lineTo(arrowCx, arrowCy - 4);
+    arrow.moveTo(arrowCx - 3.5, arrowCy - 1);
+    arrow.lineTo(arrowCx, arrowCy - 5);
+    arrow.lineTo(arrowCx + 3.5, arrowCy - 1);
+    canvas.drawPath(arrow, linePaint..strokeWidth = 1.8..color = Colors.white.withValues(alpha: 0.9));
   }
+
   @override
   bool shouldRepaint(_ChartPainter old) => false;
 }

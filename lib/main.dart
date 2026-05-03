@@ -11,6 +11,8 @@ import 'screens/patients_screen.dart';
 import 'screens/new_screening_screen.dart';
 import 'screens/forgot_password_screen.dart';
 import 'utils/app_theme.dart';
+import 'utils/page_transitions.dart';
+import 'utils/haptics.dart';
 import 'widgets/vs_logo.dart';
 
 void main() async {
@@ -27,7 +29,6 @@ void main() async {
     GoogleFonts.inter(),
     GoogleFonts.plusJakartaSans(),
   ]);
-
   runApp(const VisionScreenApp());
 }
 
@@ -105,6 +106,7 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
 
   void _onNavTap(int i) {
     if (_index == i) return;
+    VsHaptics.selection();
     _itemCtrls[i].forward(from: 0).then((_) => _itemCtrls[i].reverse());
     setState(() => _index = i);
   }
@@ -112,20 +114,8 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
   void _startNewScreening() {
     Navigator.push(
       context,
-      PageRouteBuilder(
-        pageBuilder: (_, __, ___) =>
-            const NewScreeningScreen(startWithNewPatient: true),
-        transitionsBuilder: (_, anim, __, child) => FadeTransition(
-          opacity: CurvedAnimation(parent: anim, curve: Curves.easeOut),
-          child: SlideTransition(
-            position: Tween<Offset>(
-                    begin: const Offset(0, 0.06), end: Offset.zero)
-                .animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
-            child: child,
-          ),
-        ),
-        transitionDuration: const Duration(milliseconds: 320),
-      ),
+      VsPageRoute(builder: (_) =>
+          const NewScreeningScreen(startWithNewPatient: true)),
     );
   }
 
@@ -193,7 +183,7 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
           Positioned(
             top: -28,
             child: GestureDetector(
-              onTapDown: (_) => _fabCtrl.forward(),
+              onTapDown: (_) { VsHaptics.medium(); _fabCtrl.forward(); },
               onTapUp: (_) {
                 _fabCtrl.reverse();
                 _startNewScreening();
@@ -208,11 +198,7 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                   height: 72,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: const LinearGradient(
-                      colors: [VsColors.brand, VsColors.brandDark],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    color: Colors.transparent,
                     border: Border.all(color: Colors.white, width: 4),
                     boxShadow: [
                       BoxShadow(
@@ -229,8 +215,8 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                       ),
                     ],
                   ),
-                  child: const Center(
-                    child: VsLogo(size: 36, color: Colors.white, showRing: false),
+                  child: ClipOval(
+                    child: VsLogoAnimated(size: 72),
                   ),
                 ),
               ),

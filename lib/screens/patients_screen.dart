@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -9,8 +9,11 @@ import '../repositories/screening_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bulk_mode_screen.dart';
 import 'new_screening_screen.dart';
+import '../widgets/vs_skeleton.dart';
+import '../utils/page_transitions.dart';
+import '../utils/haptics.dart';
 
-// ── Colours (shared with the rest of the app) ──
+// -- Colours (shared with the rest of the app) --
 const _ink = Color(0xFF04091A);
 const _ink2 = Color(0xFF0B1530);
 const _teal = Color(0xFF0D9488);
@@ -21,7 +24,7 @@ const _amber = Color(0xFFF59E0B);
 const _red = Color(0xFFEF4444);
 const _blue = Color(0xFF3B82F6);
 
-// ── Screening history entry ──
+// -- Screening history entry --
 class _ScreeningEntry {
   const _ScreeningEntry({
     required this.date,
@@ -37,7 +40,7 @@ class _ScreeningEntry {
   final String chw;
 }
 
-// ── Patient model ──
+// -- Patient model --
 class _Patient {
   final String initials;
   final List<Color> avatarGradient;
@@ -87,7 +90,7 @@ class _Patient {
   List<String> get safeConditions => conditions.toList();
 }
 
-// Static mock data removed — patients loaded from SQLite
+// Static mock data removed � patients loaded from SQLite
 
 extension _Let<T> on T {
   R let<R>(R Function(T) block) => block(this);
@@ -124,7 +127,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
   Future<void> _loadPatients() async {
     final campaignRows = await CampaignRepository.instance.getAllCampaigns();
     setState(() => _loading = true);
-    // Use repository — fetches all non-campaign patients (no pagination needed
+    // Use repository � fetches all non-campaign patients (no pagination needed
     // here since we still build the full in-memory list for filtering; pagination
     // is applied at the DB level via PatientRepository.getPatients when the list
     // grows large enough to warrant it).
@@ -146,9 +149,9 @@ class _PatientsScreenState extends State<PatientsScreen> {
           .where((s) => s.isNotEmpty)
           .toList();
       final outcome = (latest?['outcome'] as String?) ?? 'pending';
-      final od = (latest?['od_snellen'] as String?) ?? '—';
-      final os = (latest?['os_snellen'] as String?) ?? '—';
-      final ou = (latest?['ou_near_snellen'] as String?) ?? '—';
+      final od = (latest?['od_snellen'] as String?) ?? '�';
+      final os = (latest?['os_snellen'] as String?) ?? '�';
+      final ou = (latest?['ou_near_snellen'] as String?) ?? '�';
       final screeningDate = latest?['screening_date'] as String?;
       list.add(_Patient(
         initials: (r['name'] as String)
@@ -191,9 +194,9 @@ class _PatientsScreenState extends State<PatientsScreen> {
         gender: r['gender'] as String,
         village: (r['village'] as String?) ?? '',
         ageGroup: age < 18 ? 'child' : age > 60 ? 'elderly' : 'adult',
-        od: (latest?['od_snellen'] as String?) ?? '—',
-        os: (latest?['os_snellen'] as String?) ?? '—',
-        ou: (latest?['ou_near_snellen'] as String?) ?? '—',
+        od: (latest?['od_snellen'] as String?) ?? '�',
+        os: (latest?['os_snellen'] as String?) ?? '�',
+        ou: (latest?['ou_near_snellen'] as String?) ?? '�',
         outcome: outcome,
         date: latest?['screening_date'] != null ? _formatDate(latest!['screening_date'] as String) : 'Not screened',
         id: r['id'] as String,
@@ -213,8 +216,8 @@ class _PatientsScreenState extends State<PatientsScreen> {
       final now = DateTime.now();
       if (dt.year == now.year && dt.month == now.month && dt.day == now.day) {
         final diff = now.difference(dt);
-        if (diff.inMinutes < 60) return 'Today · ${diff.inMinutes}m ago';
-        return 'Today · ${diff.inHours}hr ago';
+        if (diff.inMinutes < 60) return 'Today � ${diff.inMinutes}m ago';
+        return 'Today � ${diff.inHours}hr ago';
       }
       return '${dt.day} ${_month(dt.month)}';
     } catch (_) { return iso.substring(0, 10); }
@@ -292,13 +295,13 @@ class _PatientsScreenState extends State<PatientsScreen> {
           _buildHeader(total, passed, referred, pending),
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator(color: _teal))
+                ? const VsSkeletonList(count: 5)
                 : RefreshIndicator(
                     onRefresh: _loadPatients,
                     color: _teal,
                     child: () {
                       if (_query.isEmpty) {
-                        // No search — show campaigns + individual patients
+                        // No search � show campaigns + individual patients
                         if (_campaigns.isEmpty && list.isEmpty) return ListView(children: [_buildEmpty()]);
                         return ListView.builder(
                           physics: const AlwaysScrollableScrollPhysics(),
@@ -322,7 +325,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                           },
                         );
                       }
-                      // Has search query — show ONLY exact matches per section
+                      // Has search query � show ONLY exact matches per section
                       final mCampaigns = _filteredCampaigns;
                       final mCampPatients = _filteredCampaignPatients;
                       final mIndiv = list;
@@ -368,7 +371,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
     );
   }
 
-  // ── Header ──
+  // -- Header --
   Widget _buildHeader(int total, int passed, int referred, int pending) {
     final passRate = total > 0 ? (passed / total * 100).round() : 0;
 
@@ -397,7 +400,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
               child: CustomPaint(painter: _PatientsDotPainter()),
             ),
           ),
-          // Large decorative arc — top right
+          // Large decorative arc � top right
           Positioned(top: -80, right: -80,
             child: Container(width: 260, height: 260,
               decoration: BoxDecoration(shape: BoxShape.circle,
@@ -406,7 +409,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
             child: Container(width: 150, height: 150,
               decoration: BoxDecoration(shape: BoxShape.circle,
                 border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1)))),
-          // Small accent circle — bottom left
+          // Small accent circle � bottom left
           Positioned(bottom: 60, left: -20,
             child: Container(width: 80, height: 80,
               decoration: BoxDecoration(shape: BoxShape.circle,
@@ -420,7 +423,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
 
-                  // ── Top bar: title + total badge ──────────
+                  // -- Top bar: title + total badge ----------
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -511,7 +514,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
 
                   const SizedBox(height: 16),
 
-                  // ── Stats row ─────────────────────────────
+                  // -- Stats row -----------------------------
                   Row(children: [
                     _statChip('$passed',    'Passed',    const Color(0xFF34D399), Icons.check_circle_rounded,    passed   / (total == 0 ? 1 : total)),
                     const SizedBox(width: 8),
@@ -524,7 +527,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
 
                   const SizedBox(height: 14),
 
-                  // ── Search bar ────────────────────────────
+                  // -- Search bar ----------------------------
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -595,7 +598,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
 
                   const SizedBox(height: 10),
 
-                  // ── Filter chips ──────────────────────────
+                  // -- Filter chips --------------------------
                   SizedBox(
                     height: 32,
                     child: ListView(
@@ -678,7 +681,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
   Widget _filterChip(String label) {
     final active = _filter == label;
     return GestureDetector(
-      onTap: () => setState(() => _filter = label),
+      onTap: () { VsHaptics.selection(); setState(() => _filter = label); },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.only(right: 6),
@@ -712,7 +715,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
     );
   }
 
-  // ── Section label ──
+  // -- Section label --
   Widget _sectionLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10, top: 4),
@@ -740,7 +743,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
     );
   }
 
-  // ── Campaign card ──
+  // -- Campaign card --
   Widget _buildCampaignCard(Map<String,dynamic> c) {
     final name     = c['name'] as String;
     final location = c['location'] as String;
@@ -761,7 +764,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        onTap: () => Navigator.push(context, MaterialPageRoute(
+        onTap: () => Navigator.push(context, VsPageRoute(
           builder: (_) => _CampaignDetailScreen(campaign: c),
         )).then((_) => _loadPatients()),
         onLongPress: () => _confirmDeleteCampaign(c),
@@ -817,7 +820,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                               style: GoogleFonts.plusJakartaSans(
                                   fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white)),
                           const SizedBox(height: 2),
-                          Text('$location · $group',
+                          Text('$location � $group',
                               style: GoogleFonts.inter(
                                   fontSize: 11, color: Colors.white.withOpacity(0.65))),
                         ])),
@@ -950,12 +953,12 @@ class _PatientsScreenState extends State<PatientsScreen> {
   Widget _campStat(String value, String label, Color color) => Padding(
     padding: const EdgeInsets.only(right: 14),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(value, style: GoogleFonts.barlow(fontSize: 18, fontWeight: FontWeight.w900, color: color, height: 1.0)),
-      Text(label, style: GoogleFonts.ibmPlexSans(fontSize: 9, fontWeight: FontWeight.w600, color: const Color(0xFF8FA0B4))),
+      Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w900, color: color, height: 1.0)),
+      Text(label, style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w600, color: const Color(0xFF8FA0B4))),
     ]),
   );
 
-  // ── Patient card ──
+  // -- Patient card --
   Widget _buildCard(_Patient p) {
     final (badgeLabel, badgeBg, badgeText, badgeIcon, accentColor) =
         _badgeProps(p.outcome);
@@ -985,7 +988,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
           ),
           child: Column(
             children: [
-              // ── Top body ──
+              // -- Top body --
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
                 child: Row(
@@ -1078,7 +1081,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                             Icon(Icons.person_outline_rounded, size: 11, color: const Color(0xFF94A3B8)),
                             const SizedBox(width: 4),
                             Flexible(
-                              child: Text('${p.age} yrs · ${p.gender} · ${p.village}',
+                              child: Text('${p.age} yrs � ${p.gender} � ${p.village}',
                                   overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.inter(
                                       fontSize: 11, color: const Color(0xFF64748B))),
@@ -1150,7 +1153,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                 ),
               ),
 
-              // ── Bottom action strip ──
+              // -- Bottom action strip --
               Container(
                 decoration: BoxDecoration(
                   color: const Color(0xFFF8FAFC),
@@ -1304,7 +1307,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
             ),
             TextSpan(
               text: value,
-              style: GoogleFonts.spaceGrotesk(
+              style: GoogleFonts.inter(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 color: fg,
@@ -1639,7 +1642,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
             ),
             TextSpan(
               text: value,
-              style: GoogleFonts.spaceGrotesk(
+              style: GoogleFonts.inter(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 color: col,
@@ -1651,7 +1654,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
     );
   }
 
-  // ── Empty state ──
+  // -- Empty state --
   Widget _buildEmpty() {
     return SizedBox(
       height: 300,
@@ -1689,7 +1692,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
     );
   }
 
-  // ── Helpers ──
+  // -- Helpers --
   (String, Color, Color, IconData, Color) _badgeProps(String outcome) {
     return switch (outcome) {
       'pass' => (
@@ -1787,7 +1790,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              '${p.name} · ${p.facility ?? p.id}',
+              '${p.name} � ${p.facility ?? p.id}',
               style: GoogleFonts.inter(
                 fontSize: 12,
                 color: const Color(0xFF8FA0B4),
@@ -1897,8 +1900,8 @@ class _PatientsScreenState extends State<PatientsScreen> {
         if (eyeResults.isEmpty) {
           final ods = (latest['od_snellen'] as String? ?? '');
           final oss = (latest['os_snellen'] as String? ?? '');
-          if (ods.isNotEmpty && ods != '—') eyeResults.add({'eye': 'OD', 'logmar': _snellenToLogmar(ods), 'cantTell': 0});
-          if (oss.isNotEmpty && oss != '—') eyeResults.add({'eye': 'OS', 'logmar': _snellenToLogmar(oss), 'cantTell': 0});
+          if (ods.isNotEmpty && ods != '�') eyeResults.add({'eye': 'OD', 'logmar': _snellenToLogmar(ods), 'cantTell': 0});
+          if (oss.isNotEmpty && oss != '�') eyeResults.add({'eye': 'OS', 'logmar': _snellenToLogmar(oss), 'cantTell': 0});
         }
       }
       final patientMap = {'name': p.name, 'id': p.id, 'age': p.age.toString(),
@@ -1907,7 +1910,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
       final prefs = await SharedPreferences.getInstance();
       final chwName   = prefs.getString('chw_name')   ?? '';
       final chwCenter = prefs.getString('chw_center') ?? '';
-      final chwTitle  = chwCenter.isNotEmpty ? 'Community Health Worker · $chwCenter' : 'Community Health Worker';
+      final chwTitle  = chwCenter.isNotEmpty ? 'Community Health Worker � $chwCenter' : 'Community Health Worker';
       final language  = prefs.getString('referral_language') ?? 'English Only';
       if (p.outcome == 'pending') {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -1940,7 +1943,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
       }
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       if (mounted) await PdfService.openOrShare(context, filePath,
-          '${p.outcome == 'refer' ? 'Referral Letter' : 'Screening Result'} — ${p.name}');
+          '${p.outcome == 'refer' ? 'Referral Letter' : 'Screening Result'} � ${p.name}');
     } catch (e) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       if (mounted) _showErrorSnackBar('PDF failed', e.toString());
@@ -1970,7 +1973,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
         orElse: () => <String, dynamic>{},
       );
       if (!mounted) return;
-      await Navigator.push(context, MaterialPageRoute(
+      await Navigator.push(context, VsPageRoute(
         builder: (_) => BulkModeScreen(
           existingCampaignId: p.campaignId,
           existingCampaignName: campaign['name'] as String? ?? '',
@@ -1979,7 +1982,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
         ),
       ));
     } else {
-      await Navigator.push(context, MaterialPageRoute(
+      await Navigator.push(context, VsPageRoute(
         builder: (_) => NewScreeningScreen(existingPatientId: p.id),
       ));
     }
@@ -1988,16 +1991,16 @@ class _PatientsScreenState extends State<PatientsScreen> {
 
   Future<void> _shareToWhatsApp(_Patient p) async {
     final message =
-        '🏥 *VisionScreen ${p.outcome == 'refer' ? 'Referral' : 'Patient'} Update*\n\n'
-        '👤 *Patient:* ${p.name}\n'
-        '📊 *Demographics:* ${p.age} yrs · ${p.gender} · ${p.village}\n'
-        '🏥 *Facility:* ${p.facility ?? 'N/A'}\n'
-        '🔄 *Status:* ${p.referralStatus?.toUpperCase() ?? p.outcome.toUpperCase()}\n\n'
-        '👁️ *Visual Acuity:*\n'
-        '• OD (Right Eye): ${p.od}\n'
-        '• OS (Left Eye): ${p.os}\n'
-        '• OU (Both Eyes): ${p.ou}\n\n'
-        '📱 *Generated by VisionScreen*';
+        '?? *VisionScreen ${p.outcome == 'refer' ? 'Referral' : 'Patient'} Update*\n\n'
+        '?? *Patient:* ${p.name}\n'
+        '?? *Demographics:* ${p.age} yrs � ${p.gender} � ${p.village}\n'
+        '?? *Facility:* ${p.facility ?? 'N/A'}\n'
+        '?? *Status:* ${p.referralStatus?.toUpperCase() ?? p.outcome.toUpperCase()}\n\n'
+        '??? *Visual Acuity:*\n'
+        '� OD (Right Eye): ${p.od}\n'
+        '� OS (Left Eye): ${p.os}\n'
+        '� OU (Both Eyes): ${p.ou}\n\n'
+        '?? *Generated by VisionScreen*';
     final phone = _toWhatsAppPhone(p.phone);
     final encoded = Uri.encodeComponent(message);
     final uri = phone.isNotEmpty
@@ -2082,7 +2085,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
 }
 
 
-// ── Patient history bottom sheet — loads real screenings from SQLite ──
+// -- Patient history bottom sheet � loads real screenings from SQLite --
 class _PatientHistorySheet extends StatefulWidget {
   final _Patient patient;
   const _PatientHistorySheet({required this.patient});
@@ -2163,7 +2166,7 @@ class _PatientHistorySheetState extends State<_PatientHistorySheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(p.name, style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w800, color: const Color(0xFF1A2A3D))),
-                        Text('${p.id} · ${p.age} yrs · ${p.village}',
+                        Text('${p.id} � ${p.age} yrs � ${p.village}',
                             style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8FA0B4))),
                       ],
                     ),
@@ -2230,9 +2233,9 @@ class _PatientHistorySheetState extends State<_PatientHistorySheet> {
     final isLatest = index == 0;
     final outcome = r['outcome'] as String;
     final col = outcome == 'pass' ? _green : _red;
-    final od = (r['od_snellen'] as String?) ?? '—';
-    final os = (r['os_snellen'] as String?) ?? '—';
-    final ou = (r['ou_near_snellen'] as String?) ?? '—';
+    final od = (r['od_snellen'] as String?) ?? '�';
+    final os = (r['os_snellen'] as String?) ?? '�';
+    final ou = (r['ou_near_snellen'] as String?) ?? '�';
     final chw = (r['chw_name'] as String?) ?? '';
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2314,7 +2317,7 @@ class _PatientHistorySheetState extends State<_PatientHistorySheet> {
   }
 
   Widget _pill(String eye, String value) {
-    final isBad = value != '6/6' && value != '6/9' && value != '—';
+    final isBad = value != '6/6' && value != '6/9' && value != '�';
     final col = isBad ? _amber : _green;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
@@ -2326,7 +2329,7 @@ class _PatientHistorySheetState extends State<_PatientHistorySheet> {
       child: RichText(
         text: TextSpan(children: [
           TextSpan(text: '$eye ', style: GoogleFonts.inter(fontSize: 9, color: const Color(0xFF8FA0B4), fontWeight: FontWeight.w500)),
-          TextSpan(text: value, style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.w700, color: col)),
+          TextSpan(text: value, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: col)),
         ]),
       ),
     );
@@ -2334,7 +2337,7 @@ class _PatientHistorySheetState extends State<_PatientHistorySheet> {
 }
 
 
-// ── Campaign Detail Screen ────────────────────────────────────────────────────
+// -- Campaign Detail Screen ----------------------------------------------------
 class _CampaignDetailScreen extends StatefulWidget {
   final Map<String,dynamic> campaign;
   const _CampaignDetailScreen({required this.campaign});
@@ -2358,8 +2361,8 @@ class _CampaignDetailScreenState extends State<_CampaignDetailScreen> {
       final now = DateTime.now();
       if (dt.year == now.year && dt.month == now.month && dt.day == now.day) {
         final diff = now.difference(dt);
-        if (diff.inMinutes < 60) return 'Today · ${diff.inMinutes}m ago';
-        return 'Today · ${diff.inHours}hr ago';
+        if (diff.inMinutes < 60) return 'Today � ${diff.inMinutes}m ago';
+        return 'Today � ${diff.inHours}hr ago';
       }
       return '${dt.day} ${['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][dt.month]}';
     } catch (_) { return iso.substring(0, 10); }
@@ -2382,9 +2385,9 @@ class _CampaignDetailScreenState extends State<_CampaignDetailScreen> {
         gender: r['gender'] as String,
         village: (r['village'] as String?) ?? '',
         ageGroup: age < 18 ? 'child' : age > 60 ? 'elderly' : 'adult',
-        od: (r['od_snellen'] as String?) ?? '—',
-        os: (r['os_snellen'] as String?) ?? '—',
-        ou: (r['ou_near_snellen'] as String?) ?? '—',
+        od: (r['od_snellen'] as String?) ?? '�',
+        os: (r['os_snellen'] as String?) ?? '�',
+        ou: (r['ou_near_snellen'] as String?) ?? '�',
         outcome: outcome,
         date: screeningDate != null ? _formatDate(screeningDate) : 'Not screened',
         id: r['id'] as String,
@@ -2413,7 +2416,7 @@ class _CampaignDetailScreenState extends State<_CampaignDetailScreen> {
       backgroundColor: const Color(0xFFF8FAFB),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          await Navigator.push(context, MaterialPageRoute(
+          await Navigator.push(context, VsPageRoute(
             builder: (_) => BulkModeScreen(
               existingCampaignId: widget.campaign['id'] as String,
               existingCampaignName: widget.campaign['name'] as String,
@@ -2433,67 +2436,108 @@ class _CampaignDetailScreenState extends State<_CampaignDetailScreen> {
         // Header
         Container(
           decoration: const BoxDecoration(
-            gradient: LinearGradient(colors: [_ink, _ink2], begin: Alignment.topLeft, end: Alignment.bottomRight),
-            borderRadius: BorderRadius.only(bottomLeft: Radius.circular(28), bottomRight: Radius.circular(28)),
-          ),
-          child: SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 22),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    width: 38, height: 38,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(11),
-                      border: Border.all(color: Colors.white.withOpacity(0.12)),
-                    ),
-                    child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 15),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _teal.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(99),
-                        border: Border.all(color: _teal3.withOpacity(0.3)),
-                      ),
-                      child: Text('CAMPAIGN · $group', style: GoogleFonts.ibmPlexSans(fontSize: 9, fontWeight: FontWeight.w800, color: _teal3, letterSpacing: 1.0)),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(name, style: GoogleFonts.barlow(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -0.8, height: 1.1)),
-                    const SizedBox(height: 4),
-                    Text(location, style: GoogleFonts.ibmPlexSans(fontSize: 11, color: Colors.white.withOpacity(0.4))),
-                  ])),
-                  const SizedBox(width: 12),
-                  Container(
-                    width: 64, height: 64,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [_teal, _teal2], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                      borderRadius: BorderRadius.circular(18),
-                      boxShadow: [BoxShadow(color: _teal.withOpacity(0.45), blurRadius: 16, offset: const Offset(0, 6))],
-                    ),
-                    child: const Icon(Icons.groups_rounded, color: Colors.white, size: 28),
-                  ),
-                ]),
-                const SizedBox(height: 18),
-                // Stats
-                Row(children: [
-                  _hStat('$total',    'Screened', Colors.white),
-                  const SizedBox(width: 8),
-                  _hStat('$passed',   'Passed',   _green),
-                  const SizedBox(width: 8),
-                  _hStat('$referred', 'Referred', _red),
-                  const SizedBox(width: 8),
-                  _hStat('$passRate%','Pass Rate', _teal3),
-                ]),
-              ]),
+            gradient: LinearGradient(
+              colors: [Color(0xFF0F4C45), Color(0xFF0D9488)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(28),
+              bottomRight: Radius.circular(28),
+            ),
+          ),
+          child: Stack(
+            clipBehavior: Clip.hardEdge,
+            children: [
+              Positioned.fill(
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(28),
+                    bottomRight: Radius.circular(28),
+                  ),
+                  child: CustomPaint(painter: _PatientsDotPainter()),
+                ),
+              ),
+              Positioned(top: -50, right: -50,
+                child: Container(width: 180, height: 180,
+                  decoration: BoxDecoration(shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.07), width: 1)))),
+              Positioned(top: -10, right: -10,
+                child: Container(width: 100, height: 100,
+                  decoration: BoxDecoration(shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.10), width: 1)))),
+              SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 22),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        width: 38, height: 38,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(11),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                        ),
+                        child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 15),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Row(children: [
+                          Container(width: 6, height: 6,
+                            decoration: const BoxDecoration(color: Color(0xFF5EEAD4), shape: BoxShape.circle)),
+                          const SizedBox(width: 6),
+                          Text('CAMPAIGN \u00b7 $group',
+                              style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700,
+                                  color: Colors.white.withValues(alpha: 0.65), letterSpacing: 1.8)),
+                        ]),
+                        const SizedBox(height: 8),
+                        Text(name, style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.w800,
+                            color: Colors.white, letterSpacing: -0.5, height: 1.1)),
+                        const SizedBox(height: 4),
+                        Row(children: [
+                          Icon(Icons.location_on_rounded, size: 11, color: Colors.white.withValues(alpha: 0.65)),
+                          const SizedBox(width: 4),
+                          Text(location, style: GoogleFonts.inter(fontSize: 11, color: Colors.white.withValues(alpha: 0.65))),
+                        ]),
+                      ])),
+                      const SizedBox(width: 12),
+                      TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0.0, end: 1.0),
+                        duration: const Duration(milliseconds: 600),
+                        curve: Curves.elasticOut,
+                        builder: (_, t, child) => Transform.scale(scale: t, child: child),
+                        child: Container(
+                          width: 64, height: 64,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(alpha: 0.15),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 2),
+                          ),
+                          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                            Text('$total', style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white, height: 1.0)),
+                            Text('patients', style: GoogleFonts.inter(fontSize: 8, fontWeight: FontWeight.w500, color: Colors.white.withValues(alpha: 0.7))),
+                          ]),
+                        ),
+                      ),
+                    ]),
+                    const SizedBox(height: 16),
+                    Row(children: [
+                      _hStat('$total',     'Screened', Colors.white),
+                      const SizedBox(width: 8),
+                      _hStat('$passed',    'Passed',   const Color(0xFF34D399)),
+                      const SizedBox(width: 8),
+                      _hStat('$referred',  'Referred', const Color(0xFFF87171)),
+                      const SizedBox(width: 8),
+                      _hStat('$passRate%', 'Pass Rate', const Color(0xFF5EEAD4)),
+                    ]),
+                  ]),
+                ),
+              ),
+            ],
           ),
         ),
         // Patient list
@@ -2502,7 +2546,7 @@ class _CampaignDetailScreenState extends State<_CampaignDetailScreen> {
               ? const Center(child: CircularProgressIndicator(color: _teal))
               : _patients.isEmpty
                   ? Center(child: Text('No patients in this campaign yet.',
-                        style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF8FA0B4))))
+                        style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF94A3B8))))
                   : RefreshIndicator(
                       onRefresh: _load,
                       color: _teal,
@@ -2530,15 +2574,16 @@ class _CampaignDetailScreenState extends State<_CampaignDetailScreen> {
 
     Widget _hStat(String value, String label, Color color) => Expanded(
     child: Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+      padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: Colors.white.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.25)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(children: [
-        Text(value, style: GoogleFonts.barlow(fontSize: 20, fontWeight: FontWeight.w900, color: color, height: 1.0)),
-        Text(label.toUpperCase(), style: GoogleFonts.ibmPlexSans(fontSize: 7, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.35), letterSpacing: 0.8)),
+        Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white, height: 1.0)),
+        const SizedBox(height: 2),
+        Text(label.toUpperCase(), style: GoogleFonts.inter(fontSize: 7, fontWeight: FontWeight.w700, color: Colors.white.withValues(alpha: 0.55), letterSpacing: 0.8)),
       ]),
     ),
   );
@@ -2548,12 +2593,12 @@ class _CampaignDetailScreenState extends State<_CampaignDetailScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(color: col.withOpacity(0.08), borderRadius: BorderRadius.circular(7), border: Border.all(color: col.withOpacity(0.2))),
-      child: Text('$eye $snellen', style: GoogleFonts.spaceGrotesk(fontSize: 10, fontWeight: FontWeight.w700, color: col)),
+      child: Text('$eye $snellen', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: col)),
     );
   }
 }
 
-// ── Campaign Patient Card ────────────────────────────────────────────────────
+// -- Campaign Patient Card ----------------------------------------------------
 class _CampaignPatientCardState extends StatefulWidget {
   final _Patient patient;
   final VoidCallback onRefresh;
@@ -2696,7 +2741,7 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
                     Row(children: [
                       const Icon(Icons.person_outline_rounded, size: 11, color: Color(0xFF8FA0B4)),
                       const SizedBox(width: 4),
-                      Flexible(child: Text('${p.age} yrs · ${p.gender} · ${p.village}',
+                      Flexible(child: Text('${p.age} yrs � ${p.gender} � ${p.village}',
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8FA0B4)))),
                     ]),
@@ -2860,16 +2905,16 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
 
   Future<void> _shareToWhatsAppCampaign(_Patient p) async {
     final message =
-        '🏥 *VisionScreen ${p.outcome == 'refer' ? 'Referral' : 'Patient'} Update*\n\n'
-        '👤 *Patient:* ${p.name}\n'
-        '📊 *Demographics:* ${p.age} yrs · ${p.gender} · ${p.village}\n'
-        '🏥 *Facility:* ${p.facility ?? 'N/A'}\n'
-        '🔄 *Status:* ${p.referralStatus?.toUpperCase() ?? p.outcome.toUpperCase()}\n\n'
-        '👁️ *Visual Acuity:*\n'
-        '• OD (Right Eye): ${p.od}\n'
-        '• OS (Left Eye): ${p.os}\n'
-        '• OU (Both Eyes): ${p.ou}\n\n'
-        '📱 *Generated by VisionScreen*';
+        '?? *VisionScreen ${p.outcome == 'refer' ? 'Referral' : 'Patient'} Update*\n\n'
+        '?? *Patient:* ${p.name}\n'
+        '?? *Demographics:* ${p.age} yrs � ${p.gender} � ${p.village}\n'
+        '?? *Facility:* ${p.facility ?? 'N/A'}\n'
+        '?? *Status:* ${p.referralStatus?.toUpperCase() ?? p.outcome.toUpperCase()}\n\n'
+        '??? *Visual Acuity:*\n'
+        '� OD (Right Eye): ${p.od}\n'
+        '� OS (Left Eye): ${p.os}\n'
+        '� OU (Both Eyes): ${p.ou}\n\n'
+        '?? *Generated by VisionScreen*';
     final phone = _toWhatsAppPhone(p.phone);
     final encoded = Uri.encodeComponent(message);
     final uri = phone.isNotEmpty
@@ -2908,8 +2953,8 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
         if (od.isNotEmpty) eyeResults.add({'eye': 'OD', 'logmar': od, 'cantTell': 0});
         if (os.isNotEmpty) eyeResults.add({'eye': 'OS', 'logmar': os, 'cantTell': 0});
         if (eyeResults.isEmpty) {
-          if (p.od != '—') eyeResults.add({'eye': 'OD', 'logmar': _snellenToLogmar(p.od), 'cantTell': 0});
-          if (p.os != '—') eyeResults.add({'eye': 'OS', 'logmar': _snellenToLogmar(p.os), 'cantTell': 0});
+          if (p.od != '�') eyeResults.add({'eye': 'OD', 'logmar': _snellenToLogmar(p.od), 'cantTell': 0});
+          if (p.os != '�') eyeResults.add({'eye': 'OS', 'logmar': _snellenToLogmar(p.os), 'cantTell': 0});
         }
       }
       final patientMap = {'name': p.name, 'id': p.id, 'age': p.age.toString(),
@@ -2918,7 +2963,7 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
       final prefs = await SharedPreferences.getInstance();
       final chwName   = prefs.getString('chw_name')   ?? '';
       final chwCenter = prefs.getString('chw_center') ?? '';
-      final chwTitle  = chwCenter.isNotEmpty ? 'Community Health Worker · $chwCenter' : 'Community Health Worker';
+      final chwTitle  = chwCenter.isNotEmpty ? 'Community Health Worker � $chwCenter' : 'Community Health Worker';
       final language  = prefs.getString('referral_language') ?? 'English Only';
       if (p.outcome == 'pending') {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -2951,7 +2996,7 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
       }
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       if (mounted) await PdfService.openOrShare(context, filePath,
-          '${p.outcome == 'refer' ? 'Referral Letter' : 'Screening Result'} — ${p.name}');
+          '${p.outcome == 'refer' ? 'Referral Letter' : 'Screening Result'} � ${p.name}');
     } catch (e) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -2969,7 +3014,7 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
       decoration: BoxDecoration(color: fg.withOpacity(0.08), borderRadius: BorderRadius.circular(7), border: Border.all(color: fg.withOpacity(0.2))),
       child: RichText(text: TextSpan(children: [
         TextSpan(text: '$eye ', style: GoogleFonts.inter(fontSize: 9, color: const Color(0xFF8FA0B4), fontWeight: FontWeight.w500)),
-        TextSpan(text: value, style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.w700, color: fg)),
+        TextSpan(text: value, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: fg)),
       ])),
     );
   }
@@ -3004,7 +3049,7 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
       orElse: () => <String, dynamic>{},
     );
     if (!mounted) return;
-    await Navigator.push(context, MaterialPageRoute(
+    await Navigator.push(context, VsPageRoute(
       builder: (_) => BulkModeScreen(
         existingCampaignId: p.campaignId,
         existingCampaignName: campaign['name'] as String? ?? '',
@@ -3038,7 +3083,7 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
 }
 
 
-// ── Dot pattern painter for header ──────────────────────────
+// -- Dot pattern painter for header --------------------------
 class _PatientsDotPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -3056,7 +3101,7 @@ class _PatientsDotPainter extends CustomPainter {
   bool shouldRepaint(_PatientsDotPainter old) => false;
 }
 
-// ── Dot pattern painter for campaign cards ──────────────────
+// -- Dot pattern painter for campaign cards ------------------
 class _CampaignCardDotPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -3073,3 +3118,4 @@ class _CampaignCardDotPainter extends CustomPainter {
   @override
   bool shouldRepaint(_CampaignCardDotPainter old) => false;
 }
+

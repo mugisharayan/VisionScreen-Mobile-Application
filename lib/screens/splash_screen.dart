@@ -187,67 +187,41 @@ class _SplashScreenState extends State<SplashScreen>
                           // Pulsing rings + animated logo
                           VsPulsingRings(
                             color: Colors.white,
-                            size: 200,
+                            size: 320,
                             child: AnimatedBuilder(
                               animation: _logoScale,
                               builder: (_, __) => Transform.scale(
                                 scale: _logoScale.value,
-                                child: Container(
-                                  width: 100,
-                                  height: 100,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(28),
-                                    border: Border.all(
-                                        color: Colors.white.withValues(alpha: 0.4),
-                                        width: 1.5),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.2),
-                                        blurRadius: 30,
-                                        spreadRadius: 2,
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Center(
-                                    child: VsLogoAnimated(
-                                        size: 58, color: Colors.white),
-                                  ),
-                                ),
+                                child: VsLogoAnimated(size: 180),
                               ),
                             ),
                           ),
 
                           const SizedBox(height: 28),
 
-                          // App name with shimmer
-                          AnimatedBuilder(
-                            animation: _shimmerAnim,
-                            builder: (_, child) => ShaderMask(
-                              shaderCallback: (bounds) => LinearGradient(
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                                colors: [
-                                  Colors.white.withValues(alpha: 0.7),
-                                  Colors.white,
-                                  Colors.white.withValues(alpha: 0.7),
-                                ],
-                                stops: [
-                                  (_shimmerAnim.value - 0.3).clamp(0.0, 1.0),
-                                  _shimmerAnim.value.clamp(0.0, 1.0),
-                                  (_shimmerAnim.value + 0.3).clamp(0.0, 1.0),
-                                ],
-                              ).createShader(bounds),
-                              child: child!,
-                            ),
-                            child: Text(
-                              'VisionScreen',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 40,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                                letterSpacing: -1.0,
-                              ),
+                          // App name — "Vision" white, "Screen" black
+                          RichText(
+                            text: TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: 'Vision',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 40,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    letterSpacing: -1.0,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: 'Screen',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 40,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.black,
+                                    letterSpacing: -1.0,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
 
@@ -472,3 +446,4 @@ class AppColors {
   static const Color borderColor = Color(0xFFE2E8F0);
   static const Color cardShadow  = Color(0x200D9488);
 }
+
