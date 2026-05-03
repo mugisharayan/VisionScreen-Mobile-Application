@@ -13,6 +13,7 @@ import 'package:geocoding/geocoding.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'referral_letter_screen.dart';
+import 'face_distance_screen.dart';
 import '../repositories/patient_repository.dart';
 import '../repositories/screening_repository.dart';
 
@@ -2018,7 +2019,20 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           const SizedBox(height: 32),
           if (_checklistDone)
             GestureDetector(
-              onTap: () => setState(() => _step = 2),
+              onTap: () {
+                // Open face distance check before starting the test
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => FaceDistanceScreen(
+                      onDistanceConfirmed: () {
+                        Navigator.pop(context); // close face screen
+                        setState(() => _step = 2); // proceed to cover eye
+                      },
+                    ),
+                  ),
+                );
+              },
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 18),
