@@ -376,44 +376,36 @@ class _PatientsScreenState extends State<PatientsScreen> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF04091A), Color(0xFF0B1A2E)],
+          colors: [Color(0xFF134E4A), Color(0xFF0D9488)],
         ),
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(32),
-          bottomRight: Radius.circular(32),
+          bottomLeft: Radius.circular(28),
+          bottomRight: Radius.circular(28),
         ),
       ),
       child: Stack(
         clipBehavior: Clip.hardEdge,
         children: [
-          // Large teal glow top-right
-          Positioned(
-            top: -60, right: -60,
-            child: Container(
-              width: 260, height: 260,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(colors: [
-                  _teal.withOpacity(0.2),
-                  Colors.transparent,
-                ]),
+          // Dot pattern
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(28),
+                bottomRight: Radius.circular(28),
               ),
+              child: CustomPaint(painter: _PatientsDotPainter()),
             ),
           ),
-          // Small blue accent bottom-left
-          Positioned(
-            bottom: 40, left: -30,
-            child: Container(
-              width: 120, height: 120,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(colors: [
-                  _blue.withOpacity(0.1),
-                  Colors.transparent,
-                ]),
-              ),
-            ),
-          ),
+          // Decorative arcs
+          Positioned(top: -50, right: -50,
+            child: Container(width: 200, height: 200,
+              decoration: BoxDecoration(shape: BoxShape.circle,
+                border: Border.all(color: Colors.white.withValues(alpha: 0.07), width: 1)))),
+          Positioned(top: -10, right: -10,
+            child: Container(width: 110, height: 110,
+              decoration: BoxDecoration(shape: BoxShape.circle,
+                border: Border.all(color: Colors.white.withValues(alpha: 0.10), width: 1)))),
+
           SafeArea(
             bottom: false,
             child: Padding(
@@ -421,7 +413,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Top bar: label + icon ──
+                  // ── Top bar ──
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -430,76 +422,99 @@ class _PatientsScreenState extends State<PatientsScreen> {
                         children: [
                           Row(children: [
                             Container(
-                              width: 8, height: 8,
-                              decoration: const BoxDecoration(color: _teal3, shape: BoxShape.circle),
+                              width: 7, height: 7,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.7),
+                                shape: BoxShape.circle),
                             ),
-                            const SizedBox(width: 7),
-                            Text('PATIENT REGISTRY', style: GoogleFonts.ibmPlexSans(fontSize: 10, fontWeight: FontWeight.w800, color: _teal3.withOpacity(0.7), letterSpacing: 2.0)),
+                            const SizedBox(width: 6),
+                            Text('PATIENT REGISTRY',
+                                style: GoogleFonts.inter(
+                                    fontSize: 10, fontWeight: FontWeight.w700,
+                                    color: Colors.white.withValues(alpha: 0.65),
+                                    letterSpacing: 1.8)),
                           ]),
                           const SizedBox(height: 6),
-                          Text('Patients &', style: GoogleFonts.barlow(fontSize: 34, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -1.2, height: 1.0)),
-                          Text('Referrals', style: GoogleFonts.barlow(fontSize: 34, fontWeight: FontWeight.w900, color: _teal3, letterSpacing: -1.2, height: 1.0, fontStyle: FontStyle.italic)),
+                          Text('Patients &',
+                              style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 28, fontWeight: FontWeight.w800,
+                                  color: Colors.white, height: 1.1)),
+                          Text('Referrals',
+                              style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 28, fontWeight: FontWeight.w800,
+                                  color: Colors.white.withValues(alpha: 0.75),
+                                  height: 1.1)),
                         ],
                       ),
                       const Spacer(),
-                      // Hero number circle
-                      Container(
-                        width: 72, height: 72,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: const LinearGradient(
-                            colors: [_teal, _teal2],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
+                      // Total patients circle
+                      TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0.0, end: 1.0),
+                        duration: const Duration(milliseconds: 600),
+                        curve: Curves.elasticOut,
+                        builder: (_, t, child) => Transform.scale(scale: t, child: child),
+                        child: Container(
+                          width: 68, height: 68,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(alpha: 0.15),
+                            border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.3), width: 2),
                           ),
-                          boxShadow: [
-                            BoxShadow(color: _teal.withOpacity(0.5), blurRadius: 20, offset: const Offset(0, 8)),
-                          ],
-                          border: Border.all(color: Colors.white.withOpacity(0.2), width: 2),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text('$total', style: GoogleFonts.barlow(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.white, height: 1.0)),
-                            Text('patients', style: GoogleFonts.ibmPlexSans(fontSize: 8, fontWeight: FontWeight.w600, color: Colors.white.withOpacity(0.7), letterSpacing: 0.5)),
-                          ],
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text('$total',
+                                  style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 22, fontWeight: FontWeight.w800,
+                                      color: Colors.white, height: 1.0)),
+                              Text('patients',
+                                  style: GoogleFonts.inter(
+                                      fontSize: 8, fontWeight: FontWeight.w500,
+                                      color: Colors.white.withValues(alpha: 0.7))),
+                            ],
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
-                  // ── Stats cards row ──
+                  const SizedBox(height: 18),
+                  // ── Stats row ──
                   Row(children: [
-                    _statChip('$passed', 'Passed', _green, Icons.check_circle_rounded, passed / (total == 0 ? 1 : total)),
+                    _statChip('$passed', 'Passed', const Color(0xFF10B981), Icons.check_circle_rounded, passed / (total == 0 ? 1 : total)),
                     const SizedBox(width: 8),
-                    _statChip('$referred', 'Referred', _red, Icons.warning_rounded, referred / (total == 0 ? 1 : total)),
+                    _statChip('$referred', 'Referred', const Color(0xFFF43F5E), Icons.warning_rounded, referred / (total == 0 ? 1 : total)),
                     const SizedBox(width: 8),
-                    _statChip('$pending', 'Pending', _amber, Icons.schedule_rounded, pending / (total == 0 ? 1 : total)),
+                    _statChip('$pending', 'Pending', const Color(0xFFF59E0B), Icons.schedule_rounded, pending / (total == 0 ? 1 : total)),
                     const SizedBox(width: 8),
-                    _statChip('$passRate%', 'Pass Rate', _teal3, Icons.insights_rounded, passed / (total == 0 ? 1 : total)),
+                    _statChip('$passRate%', 'Pass Rate', const Color(0xFF5EEAD4), Icons.insights_rounded, passed / (total == 0 ? 1 : total)),
                   ]),
                   const SizedBox(height: 16),
                   // ── Search bar ──
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFEEF2F6)),
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 8, offset: const Offset(0, 2)),
+                      ],
                     ),
                     child: Row(
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.only(left: 14),
-                          child: Icon(Icons.search_rounded, size: 18, color: const Color(0xFF0D9488)),
+                        const Padding(
+                          padding: EdgeInsets.only(left: 14),
+                          child: Icon(Icons.search_rounded, size: 18, color: _teal),
                         ),
                         Expanded(
                           child: TextField(
                             controller: _searchCtrl,
                             onChanged: (v) => setState(() => _query = v.toLowerCase()),
-                            style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF1A2A3D)),
+                            style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF0F172A)),
                             decoration: InputDecoration(
                               hintText: 'Search name, ID, village...',
-                              hintStyle: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF8FA0B4)),
+                              hintStyle: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF94A3B8)),
                               border: InputBorder.none,
                               contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
                             ),
@@ -512,22 +527,11 @@ class _PatientsScreenState extends State<PatientsScreen> {
                               padding: const EdgeInsets.only(right: 12),
                               child: Container(
                                 width: 22, height: 22,
-                                decoration: BoxDecoration(color: const Color(0xFFEEF2F6), shape: BoxShape.circle),
-                                child: const Icon(Icons.close_rounded, size: 13, color: const Color(0xFF8FA0B4)),
+                                decoration: const BoxDecoration(
+                                    color: Color(0xFFF1F5F9), shape: BoxShape.circle),
+                                child: const Icon(Icons.close_rounded,
+                                    size: 13, color: Color(0xFF94A3B8)),
                               ),
-                            ),
-                          )
-                        else
-                          Padding(
-                            padding: const EdgeInsets.only(right: 12),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: _teal.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: _teal3.withOpacity(0.3)),
-                              ),
-                              child: Text('Search', style: GoogleFonts.ibmPlexSans(fontSize: 9, fontWeight: FontWeight.w700, color: _teal3)),
                             ),
                           ),
                       ],
@@ -559,31 +563,37 @@ class _PatientsScreenState extends State<PatientsScreen> {
       child: Container(
         padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.07),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withOpacity(0.22)),
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(children: [
-              Icon(icon, size: 11, color: color.withOpacity(0.8)),
+              Icon(icon, size: 11, color: color),
               const Spacer(),
-              Text(number, style: GoogleFonts.barlow(fontSize: 18, fontWeight: FontWeight.w900, color: color, height: 1.0)),
+              Text(number,
+                  style: GoogleFonts.plusJakartaSans(
+                      fontSize: 16, fontWeight: FontWeight.w800,
+                      color: Colors.white, height: 1.0)),
             ]),
             const SizedBox(height: 6),
-            // Progress bar
             ClipRRect(
               borderRadius: BorderRadius.circular(99),
               child: LinearProgressIndicator(
                 value: ratio.clamp(0.0, 1.0),
                 minHeight: 3,
-                backgroundColor: Colors.white.withOpacity(0.08),
+                backgroundColor: Colors.white.withValues(alpha: 0.12),
                 valueColor: AlwaysStoppedAnimation<Color>(color),
               ),
             ),
             const SizedBox(height: 5),
-            Text(label.toUpperCase(), style: GoogleFonts.ibmPlexSans(fontSize: 7, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.35), letterSpacing: 1.0)),
+            Text(label.toUpperCase(),
+                style: GoogleFonts.inter(
+                    fontSize: 7, fontWeight: FontWeight.w700,
+                    color: Colors.white.withValues(alpha: 0.55),
+                    letterSpacing: 0.8)),
           ],
         ),
       ),
@@ -600,11 +610,13 @@ class _PatientsScreenState extends State<PatientsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
           color: active
-              ? _teal.withOpacity(0.25)
-              : Colors.white.withOpacity(0.06),
+              ? Colors.white.withValues(alpha: 0.25)
+              : Colors.white.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(99),
           border: Border.all(
-            color: active ? _teal3 : Colors.white.withOpacity(0.15),
+            color: active
+                ? Colors.white.withValues(alpha: 0.6)
+                : Colors.white.withValues(alpha: 0.18),
             width: 1.5,
           ),
         ),
@@ -612,8 +624,10 @@ class _PatientsScreenState extends State<PatientsScreen> {
           label,
           style: GoogleFonts.inter(
             fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: active ? _teal3 : Colors.white.withOpacity(0.55),
+            fontWeight: FontWeight.w600,
+            color: active
+                ? Colors.white
+                : Colors.white.withValues(alpha: 0.6),
           ),
         ),
       ),
@@ -629,7 +643,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
         style: GoogleFonts.inter(
           fontSize: 10,
           fontWeight: FontWeight.w700,
-          color: const Color(0xFF8FA0B4),
+          color: const Color(0xFF94A3B8),
           letterSpacing: 1.2,
         ),
       ),
@@ -2910,3 +2924,21 @@ class __CampaignPatientCardStateState extends State<_CampaignPatientCardState> {
   }
 }
 
+
+// ── Dot pattern painter for header ──────────────────────────
+class _PatientsDotPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = Colors.white.withValues(alpha: 0.06)
+      ..style = PaintingStyle.fill;
+    const spacing = 26.0;
+    for (double y = 0; y < size.height; y += spacing) {
+      for (double x = 0; x < size.width; x += spacing) {
+        canvas.drawCircle(Offset(x, y), 1.8, p);
+      }
+    }
+  }
+  @override
+  bool shouldRepaint(_PatientsDotPainter old) => false;
+}

@@ -111,7 +111,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFB),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: Column(
         children: [
           _buildHeader(),
@@ -199,27 +199,89 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   // stubs
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 50, 12, 16),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF04091A), Color(0xFF0B1530)],
+          colors: [Color(0xFF134E4A), Color(0xFF0D9488)],
+        ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(24),
+          bottomRight: Radius.circular(24),
         ),
       ),
-      child: Row(
+      child: Stack(
+        clipBehavior: Clip.hardEdge,
         children: [
-          Expanded(
-            child: Text(
-              'Analytics',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
+          // Dot pattern
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(24),
+                bottomRight: Radius.circular(24),
+              ),
+              child: CustomPaint(painter: _AnalyticsDotPainter()),
+            ),
+          ),
+          // Decorative arc
+          Positioned(top: -40, right: -40,
+            child: Container(width: 160, height: 160,
+              decoration: BoxDecoration(shape: BoxShape.circle,
+                border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.08), width: 1)))),
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('PROGRAMME DATA',
+                              style: GoogleFonts.inter(
+                                  fontSize: 10, fontWeight: FontWeight.w700,
+                                  color: Colors.white.withValues(alpha: 0.65),
+                                  letterSpacing: 1.8)),
+                          const SizedBox(height: 4),
+                          Text('Analytics',
+                              style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 26, fontWeight: FontWeight.w800,
+                                  color: Colors.white)),
+                        ],
+                      ),
+                      const Spacer(),
+                      // Animated chart icon
+                      TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0.0, end: 1.0),
+                        duration: const Duration(milliseconds: 600),
+                        curve: Curves.elasticOut,
+                        builder: (_, t, child) =>
+                            Transform.scale(scale: t, child: child),
+                        child: Container(
+                          width: 44, height: 44,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.25)),
+                          ),
+                          child: const Icon(Icons.bar_chart_rounded,
+                              color: Colors.white, size: 22),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  // Period selector — full width segmented control
+                  _buildPeriodSelector(),
+                ],
               ),
             ),
           ),
-          _buildPeriodSelector(),
         ],
       ),
     );
@@ -227,34 +289,45 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   Widget _buildPeriodSelector() {
     return Container(
-      padding: const EdgeInsets.all(2),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: _periods.map((p) {
           final isSelected = p == _selectedPeriod;
-          return GestureDetector(
-            onTap: () {
-              setState(() => _selectedPeriod = p);
-              _loadStats();
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? Colors.white.withOpacity(0.2)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                p,
-                style: GoogleFonts.inter(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white.withOpacity(isSelected ? 1.0 : 0.7),
+          return Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() => _selectedPeriod = p);
+                _loadStats();
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 7),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Colors.white
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(9),
+                  boxShadow: isSelected ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 6, offset: const Offset(0, 2)),
+                  ] : null,
+                ),
+                child: Text(
+                  p,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isSelected
+                        ? const Color(0xFF0D9488)
+                        : Colors.white.withValues(alpha: 0.75),
+                  ),
                 ),
               ),
             ),
@@ -3846,4 +3919,23 @@ class _PassRateTrendPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_PassRateTrendPainter old) => old.passData != passData;
+}
+
+
+// ── Dot pattern painter for analytics header ────────────────
+class _AnalyticsDotPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = Colors.white.withValues(alpha: 0.06)
+      ..style = PaintingStyle.fill;
+    const spacing = 26.0;
+    for (double y = 0; y < size.height; y += spacing) {
+      for (double x = 0; x < size.width; x += spacing) {
+        canvas.drawCircle(Offset(x, y), 1.8, p);
+      }
+    }
+  }
+  @override
+  bool shouldRepaint(_AnalyticsDotPainter old) => false;
 }

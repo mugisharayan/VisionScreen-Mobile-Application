@@ -839,28 +839,40 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     final isNearChart = _step == 7;
     final isChecklist = _step == 1;
 
-    // On checklist step: show only back button, no dark bar
+    // Step labels for the progress bar
+    const stepLabels = ['Patient', 'Check', 'Cover', 'Test', 'Result', 'Summary'];
+    // Map internal step (0-8) to display step (0-5)
+    final displayStep = _step.clamp(0, 5);
+
+    // On checklist step: minimal header
     if (isChecklist) {
-      return SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: GestureDetector(
-              onTap: () {
-                _restoreBrightness();
-                Navigator.pop(context);
-              },
-              child: Container(
-                width: 38, height: 38,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEEF2F6),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFDDE4EC)),
+      return Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF134E4A), Color(0xFF0D9488)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    _backButton(),
+                    const SizedBox(width: 12),
+                    Text('Environment Check',
+                        style: GoogleFonts.plusJakartaSans(
+                            fontSize: 16, fontWeight: FontWeight.w700,
+                            color: Colors.white)),
+                  ],
                 ),
-                child: const Icon(Icons.arrow_back_rounded, color: _ink, size: 18),
-              ),
+                const SizedBox(height: 12),
+                _buildStepProgressBar(displayStep, stepLabels),
+              ],
             ),
           ),
         ),
@@ -870,133 +882,220 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [_ink, _ink2],
+          colors: [Color(0xFF134E4A), Color(0xFF0D9488)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
       ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-          child: Row(
-            children: [
-              GestureDetector(
-                onTap: () {
-                  _restoreBrightness();
-                  Navigator.pop(context);
-                },
-                child: Container(
-                  width: 38, height: 38,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-                  ),
-                  child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 18),
-                ),
-              ),
-              const SizedBox(width: 12),
-              if (isDistanceChart) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _teal.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(99),
-                    border: Border.all(color: _teal3.withValues(alpha: 0.3)),
-                  ),
-                  child: Text(_eyeOrder[_currentEyeIndex],
-                      style: GoogleFonts.spaceGrotesk(
-                          fontSize: 12, fontWeight: FontWeight.w800, color: _teal3)),
-                ),
-                const SizedBox(width: 8),
-                Text('LogMAR ${_rows[_currentRow]['logmar']}',
-                    style: GoogleFonts.spaceGrotesk(
-                        fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white)),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                  child: Text('$_letterIndex/5',
-                      style: GoogleFonts.spaceGrotesk(
-                          fontSize: 11, fontWeight: FontWeight.w700,
-                          color: Colors.white.withValues(alpha: 0.8))),
-                ),
-                const SizedBox(width: 8),
-                Icon(Icons.timer_rounded, size: 11, color: Colors.white.withValues(alpha: 0.5)),
-                const SizedBox(width: 3),
-                Text(_testDuration,
-                    style: GoogleFonts.spaceGrotesk(
-                        fontSize: 11, fontWeight: FontWeight.w600,
-                        color: Colors.white.withValues(alpha: 0.5))),
-              ] else if (isNearChart) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _teal.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(99),
-                    border: Border.all(color: _teal3.withValues(alpha: 0.3)),
-                  ),
-                  child: Text('OU — 40cm',
-                      style: GoogleFonts.spaceGrotesk(
-                          fontSize: 12, fontWeight: FontWeight.w800, color: _teal3)),
-                ),
-                const SizedBox(width: 8),
-                Text('LogMAR ${_rows[_nearRow]['logmar']}',
-                    style: GoogleFonts.spaceGrotesk(
-                        fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white)),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                  child: Text('$_nearLetterIndex/5',
-                      style: GoogleFonts.spaceGrotesk(
-                          fontSize: 11, fontWeight: FontWeight.w700,
-                          color: Colors.white.withValues(alpha: 0.8))),
-                ),
-                const SizedBox(width: 8),
-                Icon(Icons.timer_rounded, size: 11, color: Colors.white.withValues(alpha: 0.5)),
-                const SizedBox(width: 3),
-                Text(_testDuration,
-                    style: GoogleFonts.spaceGrotesk(
-                        fontSize: 11, fontWeight: FontWeight.w600,
-                        color: Colors.white.withValues(alpha: 0.5))),
-              ] else ...[
-                const Spacer(),
-                if (_unsyncedCount > 0)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: _amber.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(99),
-                      border: Border.all(color: _amber.withValues(alpha: 0.4)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.cloud_off_rounded, size: 11, color: _amber),
-                        const SizedBox(width: 4),
-                        Text('$_unsyncedCount unsynced',
-                            style: GoogleFonts.inter(
-                                fontSize: 10, fontWeight: FontWeight.w700, color: _amber)),
-                      ],
-                    ),
-                  ),
-              ],
-            ],
+      child: Stack(
+        children: [
+          // Dot pattern
+          Positioned.fill(
+            child: CustomPaint(painter: _ScreeningHeaderDotPainter()),
           ),
-        ),
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      _backButton(),
+                      const SizedBox(width: 12),
+                      if (isDistanceChart) ...[
+                        // Eye label
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(99),
+                            border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.35)),
+                          ),
+                          child: Text(_eyeOrder[_currentEyeIndex],
+                              style: GoogleFonts.inter(
+                                  fontSize: 12, fontWeight: FontWeight.w800,
+                                  color: Colors.white)),
+                        ),
+                        const SizedBox(width: 8),
+                        Text('LogMAR ${_rows[_currentRow]['logmar']}',
+                            style: GoogleFonts.inter(
+                                fontSize: 12, fontWeight: FontWeight.w600,
+                                color: Colors.white.withValues(alpha: 0.9))),
+                        const Spacer(),
+                        // Letter counter
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          child: Text('$_letterIndex/5',
+                              style: GoogleFonts.inter(
+                                  fontSize: 11, fontWeight: FontWeight.w700,
+                                  color: Colors.white)),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(Icons.timer_rounded,
+                            size: 12, color: Colors.white.withValues(alpha: 0.7)),
+                        const SizedBox(width: 3),
+                        Text(_testDuration,
+                            style: GoogleFonts.inter(
+                                fontSize: 11, fontWeight: FontWeight.w600,
+                                color: Colors.white.withValues(alpha: 0.7))),
+                      ] else if (isNearChart) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(99),
+                            border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.35)),
+                          ),
+                          child: Text('OU — 40cm',
+                              style: GoogleFonts.inter(
+                                  fontSize: 12, fontWeight: FontWeight.w800,
+                                  color: Colors.white)),
+                        ),
+                        const SizedBox(width: 8),
+                        Text('LogMAR ${_rows[_nearRow]['logmar']}',
+                            style: GoogleFonts.inter(
+                                fontSize: 12, fontWeight: FontWeight.w600,
+                                color: Colors.white.withValues(alpha: 0.9))),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          child: Text('$_nearLetterIndex/5',
+                              style: GoogleFonts.inter(
+                                  fontSize: 11, fontWeight: FontWeight.w700,
+                                  color: Colors.white)),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(Icons.timer_rounded,
+                            size: 12, color: Colors.white.withValues(alpha: 0.7)),
+                        const SizedBox(width: 3),
+                        Text(_testDuration,
+                            style: GoogleFonts.inter(
+                                fontSize: 11, fontWeight: FontWeight.w600,
+                                color: Colors.white.withValues(alpha: 0.7))),
+                      ] else ...[
+                        Text('Vision Screening',
+                            style: GoogleFonts.plusJakartaSans(
+                                fontSize: 16, fontWeight: FontWeight.w700,
+                                color: Colors.white)),
+                        const Spacer(),
+                        if (_unsyncedCount > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF59E0B).withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(99),
+                              border: Border.all(
+                                  color: const Color(0xFFF59E0B).withValues(alpha: 0.4)),
+                            ),
+                            child: Row(mainAxisSize: MainAxisSize.min, children: [
+                              const Icon(Icons.cloud_off_rounded,
+                                  size: 11, color: Color(0xFFF59E0B)),
+                              const SizedBox(width: 4),
+                              Text('$_unsyncedCount unsynced',
+                                  style: GoogleFonts.inter(
+                                      fontSize: 10, fontWeight: FontWeight.w700,
+                                      color: const Color(0xFFF59E0B))),
+                            ]),
+                          ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _buildStepProgressBar(displayStep, stepLabels),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  // ── Step indicator ────────────────────────────────────────────────────────
+  Widget _backButton() {
+    return GestureDetector(
+      onTap: () {
+        _restoreBrightness();
+        Navigator.pop(context);
+      },
+      child: Container(
+        width: 36, height: 36,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+        ),
+        child: const Icon(Icons.arrow_back_rounded,
+            color: Colors.white, size: 18),
+      ),
+    );
+  }
+
+  Widget _buildStepProgressBar(int current, List<String> labels) {
+    return Row(
+      children: List.generate(labels.length, (i) {
+        final done   = i < current;
+        final active = i == current;
+        return Expanded(
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  children: [
+                    // Bar segment
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 350),
+                      curve: Curves.easeOutCubic,
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: done || active
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    // Label
+                    AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 250),
+                      style: GoogleFonts.inter(
+                        fontSize: 8,
+                        fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+                        color: active
+                            ? Colors.white
+                            : done
+                                ? Colors.white.withValues(alpha: 0.7)
+                                : Colors.white.withValues(alpha: 0.35),
+                      ),
+                      child: Text(labels[i], textAlign: TextAlign.center),
+                    ),
+                  ],
+                ),
+              ),
+              if (i < labels.length - 1) const SizedBox(width: 4),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  // ── Step indicator (legacy — kept for compatibility) ──────────────────────
   Widget _stepBar(int current) {
     const total = 6;
     return Row(
@@ -1006,9 +1105,11 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             Expanded(
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
-                height: 4,
+                height: 3,
                 decoration: BoxDecoration(
-                  color: i < current ? _teal : const Color(0xFFEEF2F6),
+                  color: i < current
+                      ? Colors.white
+                      : Colors.white.withValues(alpha: 0.25),
                   borderRadius: BorderRadius.circular(99),
                 ),
               ),
@@ -3488,4 +3589,23 @@ class _ETumbleEPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_ETumbleEPainter old) => old.color != color;
+}
+
+
+// ── Dot pattern painter for screening header ────────────────
+class _ScreeningHeaderDotPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = Colors.white.withValues(alpha: 0.06)
+      ..style = PaintingStyle.fill;
+    const spacing = 24.0;
+    for (double y = 0; y < size.height; y += spacing) {
+      for (double x = 0; x < size.width; x += spacing) {
+        canvas.drawCircle(Offset(x, y), 1.6, p);
+      }
+    }
+  }
+  @override
+  bool shouldRepaint(_ScreeningHeaderDotPainter old) => false;
 }

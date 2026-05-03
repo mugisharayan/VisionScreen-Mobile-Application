@@ -61,7 +61,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final earlierNotifs = _notifications.where((n) => n['read'] == true).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4F7),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: Column(
         children: [
           _buildHeader(context, unread),
@@ -106,68 +106,60 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Widget _buildHeader(BuildContext context, int unread) {
-    final top = MediaQuery.of(context).padding.top;
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF04091A), Color(0xFF0B1A2E)],
+          colors: [Color(0xFF134E4A), Color(0xFF0D9488)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(32),
-          bottomRight: Radius.circular(32),
+          bottomLeft: Radius.circular(28),
+          bottomRight: Radius.circular(28),
         ),
       ),
       child: Stack(
         clipBehavior: Clip.hardEdge,
         children: [
-          // Large teal orb top-right
-          Positioned(
-            top: -40, right: -40,
-            child: Container(
-              width: 200, height: 200,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(colors: [
-                  const Color(0xFF0D9488).withOpacity(0.18),
-                  Colors.transparent,
-                ]),
+          // Dot pattern
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(28),
+                bottomRight: Radius.circular(28),
               ),
+              child: CustomPaint(painter: _NotifDotPainter()),
             ),
           ),
-          // Small accent orb bottom-left
-          Positioned(
-            bottom: -20, left: -20,
-            child: Container(
-              width: 100, height: 100,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(colors: [
-                  const Color(0xFF5EEAD4).withOpacity(0.08),
-                  Colors.transparent,
-                ]),
-              ),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(20, top + 14, 20, 22),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ── Top bar ──────────────────────────────────
-                Row(
-                  children: [
+          // Decorative arcs
+          Positioned(top: -50, right: -50,
+            child: Container(width: 200, height: 200,
+              decoration: BoxDecoration(shape: BoxShape.circle,
+                border: Border.all(color: Colors.white.withValues(alpha: 0.07), width: 1)))),
+          Positioned(top: -10, right: -10,
+            child: Container(width: 110, height: 110,
+              decoration: BoxDecoration(shape: BoxShape.circle,
+                border: Border.all(color: Colors.white.withValues(alpha: 0.10), width: 1)))),
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 22),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Top bar
+                  Row(children: [
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: Container(
-                        width: 38, height: 38,
+                        width: 36, height: 36,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.07),
-                          borderRadius: BorderRadius.circular(11),
-                          border: Border.all(color: Colors.white.withOpacity(0.12)),
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
                         ),
-                        child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 15),
+                        child: const Icon(Icons.arrow_back_ios_new_rounded,
+                            color: Colors.white, size: 15),
                       ),
                     ),
                     const Spacer(),
@@ -175,110 +167,139 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       GestureDetector(
                         onTap: _markAllRead,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(colors: [
-                              const Color(0xFF0D9488).withOpacity(0.3),
-                              const Color(0xFF14B8A6).withOpacity(0.15),
-                            ]),
+                            color: Colors.white.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(99),
-                            border: Border.all(color: const Color(0xFF5EEAD4).withOpacity(0.4)),
+                            border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.3)),
                           ),
                           child: Row(children: [
-                            const Icon(Icons.done_all_rounded, size: 13, color: Color(0xFF5EEAD4)),
+                            const Icon(Icons.done_all_rounded,
+                                size: 13, color: Colors.white),
                             const SizedBox(width: 6),
-                            Text('Mark all read', style: GoogleFonts.ibmPlexSans(fontSize: 11, fontWeight: FontWeight.w800, color: const Color(0xFF5EEAD4))),
+                            Text('Mark all read',
+                                style: GoogleFonts.inter(
+                                    fontSize: 11, fontWeight: FontWeight.w700,
+                                    color: Colors.white)),
                           ]),
                         ),
                       ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                // ── Hero title row ────────────────────────────
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(children: [
+                  ]),
+                  const SizedBox(height: 18),
+                  // Title row
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Unread badge
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF0D9488).withOpacity(0.2),
+                                color: Colors.white.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(99),
-                                border: Border.all(color: const Color(0xFF5EEAD4).withOpacity(0.3)),
                               ),
-                              child: Row(children: [
+                              child: Row(mainAxisSize: MainAxisSize.min, children: [
                                 Container(
                                   width: 6, height: 6,
                                   decoration: BoxDecoration(
-                                    color: unread > 0 ? const Color(0xFFF59E0B) : const Color(0xFF22C55E),
+                                    color: unread > 0
+                                        ? const Color(0xFFF59E0B)
+                                        : const Color(0xFF10B981),
                                     shape: BoxShape.circle,
                                   ),
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  unread > 0 ? '$unread unread' : 'All caught up ✓',
-                                  style: GoogleFonts.ibmPlexSans(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF5EEAD4)),
+                                  unread > 0 ? '$unread unread' : 'All caught up',
+                                  style: GoogleFonts.inter(
+                                      fontSize: 10, fontWeight: FontWeight.w700,
+                                      color: Colors.white),
                                 ),
                               ]),
                             ),
-                          ]),
-                          const SizedBox(height: 8),
-                          Text('Notifications', style: GoogleFonts.barlow(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -1.0, height: 1.0)),
-                          const SizedBox(height: 4),
-                          Text(
-                            unread > 0 ? 'You have $unread unread · swipe left to dismiss' : 'No new notifications right now',
-                            style: GoogleFonts.ibmPlexSans(fontSize: 11, color: Colors.white.withOpacity(0.4), fontWeight: FontWeight.w400),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Bell icon with badge
-                    Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Container(
-                          width: 56, height: 56,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(colors: [Color(0xFF0D9488), Color(0xFF14B8A6)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                            borderRadius: BorderRadius.circular(18),
-                            boxShadow: [BoxShadow(color: const Color(0xFF0D9488).withOpacity(0.45), blurRadius: 16, offset: const Offset(0, 6))],
-                          ),
-                          child: const Icon(Icons.notifications_active_rounded, color: Colors.white, size: 26),
-                        ),
-                        if (unread > 0)
-                          Positioned(
-                            top: -6, right: -6,
-                            child: Container(
-                              constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(colors: [Color(0xFFEF4444), Color(0xFFF97316)]),
-                                borderRadius: BorderRadius.circular(99),
-                                border: Border.all(color: const Color(0xFF04091A), width: 2),
-                                boxShadow: [BoxShadow(color: const Color(0xFFEF4444).withOpacity(0.5), blurRadius: 8)],
-                              ),
-                              child: Text('$unread', style: GoogleFonts.barlow(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.white)),
+                            const SizedBox(height: 8),
+                            Text('Notifications',
+                                style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 26, fontWeight: FontWeight.w800,
+                                    color: Colors.white, height: 1.1)),
+                            const SizedBox(height: 4),
+                            Text(
+                              unread > 0
+                                  ? 'You have $unread unread alerts'
+                                  : 'No new notifications right now',
+                              style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: Colors.white.withValues(alpha: 0.65),
+                                  fontWeight: FontWeight.w400),
                             ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Bell icon
+                      TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0.0, end: 1.0),
+                        duration: const Duration(milliseconds: 600),
+                        curve: Curves.elasticOut,
+                        builder: (_, t, child) =>
+                            Transform.scale(scale: t, child: child),
+                        child: Stack(clipBehavior: Clip.none, children: [
+                          Container(
+                            width: 54, height: 54,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.3)),
+                            ),
+                            child: const Icon(
+                                Icons.notifications_active_rounded,
+                                color: Colors.white, size: 26),
                           ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                // ── Stats row ─────────────────────────────────
-                Row(children: [
-                  _buildHeaderStat('Total', '${_notifications.length}', const Color(0xFF5EEAD4), Icons.list_alt_rounded),
-                  const SizedBox(width: 8),
-                  _buildHeaderStat('Unread', '$unread', const Color(0xFFF59E0B), Icons.mark_email_unread_rounded),
-                  const SizedBox(width: 8),
-                  _buildHeaderStat('Read', '${_notifications.length - unread}', const Color(0xFF22C55E), Icons.mark_email_read_rounded),
-                ]),
-              ],
+                          if (unread > 0)
+                            Positioned(
+                              top: -6, right: -6,
+                              child: Container(
+                                constraints: const BoxConstraints(
+                                    minWidth: 20, minHeight: 20),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 5, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF43F5E),
+                                  borderRadius: BorderRadius.circular(99),
+                                  border: Border.all(
+                                      color: const Color(0xFF134E4A), width: 2),
+                                ),
+                                child: Text('$unread',
+                                    style: GoogleFonts.inter(
+                                        fontSize: 9, fontWeight: FontWeight.w800,
+                                        color: Colors.white)),
+                              ),
+                            ),
+                        ]),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  // Stats row
+                  Row(children: [
+                    _buildHeaderStat('Total', '${_notifications.length}',
+                        Colors.white, Icons.list_alt_rounded),
+                    const SizedBox(width: 8),
+                    _buildHeaderStat('Unread', '$unread',
+                        const Color(0xFFF59E0B), Icons.mark_email_unread_rounded),
+                    const SizedBox(width: 8),
+                    _buildHeaderStat('Read', '${_notifications.length - unread}',
+                        const Color(0xFF10B981), Icons.mark_email_read_rounded),
+                  ]),
+                ],
+              ),
             ),
           ),
         ],
@@ -288,30 +309,27 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Widget _buildHeaderStat(String label, String value, Color color, IconData icon) {
     return Expanded(
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.06),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: color.withOpacity(0.25)),
-          ),
-          child: Column(children: [
-            Container(
-              width: 28, height: 28,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size: 13, color: color),
-            ),
-            const SizedBox(height: 6),
-            Text(value, style: GoogleFonts.barlow(fontSize: 22, fontWeight: FontWeight.w900, color: color, height: 1.0)),
-            const SizedBox(height: 2),
-            Text(label.toUpperCase(), style: GoogleFonts.ibmPlexSans(fontSize: 8, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.35), letterSpacing: 1.2)),
-          ]),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
         ),
+        child: Column(children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(height: 4),
+          Text(value,
+              style: GoogleFonts.plusJakartaSans(
+                  fontSize: 18, fontWeight: FontWeight.w800,
+                  color: Colors.white, height: 1.0)),
+          const SizedBox(height: 2),
+          Text(label.toUpperCase(),
+              style: GoogleFonts.inter(
+                  fontSize: 8, fontWeight: FontWeight.w600,
+                  color: Colors.white.withValues(alpha: 0.65),
+                  letterSpacing: 0.8)),
+        ]),
       ),
     );
   }
@@ -544,4 +562,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       ),
     );
   }
+}
+
+// ── Dot pattern painter for notifications header ────────────
+class _NotifDotPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = Colors.white.withValues(alpha: 0.06)
+      ..style = PaintingStyle.fill;
+    const spacing = 26.0;
+    for (double y = 0; y < size.height; y += spacing) {
+      for (double x = 0; x < size.width; x += spacing) {
+        canvas.drawCircle(Offset(x, y), 1.8, p);
+      }
+    }
+  }
+  @override
+  bool shouldRepaint(_NotifDotPainter old) => false;
 }

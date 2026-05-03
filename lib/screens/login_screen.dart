@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'splash_screen.dart' show AppColors;
 import '../repositories/auth_repository.dart';
+import '../utils/app_theme.dart';
+import '../widgets/vs_logo.dart';
 
 // ─────────────────────────────────────────────────────────────
 // Login Screen — Login + Sign Up tabs
@@ -447,6 +449,8 @@ class _LoginScreenState extends State<LoginScreen>
 // ─────────────────────────────────────────────────────────────
 // Auth Hero Zone — animated entry + logo bounce
 // ─────────────────────────────────────────────────────────────
+// Auth Hero Zone — teal gradient + Sight Mark logo + animations
+// ─────────────────────────────────────────────────────────────
 class _AuthHeroZone extends StatefulWidget {
   const _AuthHeroZone({required this.isSignUp});
   final bool isSignUp;
@@ -459,9 +463,11 @@ class _AuthHeroZoneState extends State<_AuthHeroZone>
     with TickerProviderStateMixin {
   late final AnimationController _entryCtrl;
   late final AnimationController _logoCtrl;
+  late final AnimationController _shimmerCtrl;
   late final Animation<Offset> _heroSlide;
   late final Animation<double> _heroOpacity;
   late final Animation<double> _logoScale;
+  late final Animation<double> _shimmerAnim;
 
   @override
   void initState() {
@@ -469,21 +475,25 @@ class _AuthHeroZoneState extends State<_AuthHeroZone>
     _entryCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 700));
     _heroSlide = Tween<Offset>(
-            begin: const Offset(0, -1), end: Offset.zero)
-        .animate(CurvedAnimation(
-            parent: _entryCtrl, curve: Curves.easeOutCubic));
+            begin: const Offset(0, -0.5), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic));
     _heroOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(
-            parent: _entryCtrl,
+        CurvedAnimation(parent: _entryCtrl,
             curve: const Interval(0.0, 0.6, curve: Curves.easeOut)));
 
     _logoCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 600));
+        vsync: this, duration: const Duration(milliseconds: 700));
     _logoScale = Tween<double>(begin: 0.0, end: 1.0).animate(
         CurvedAnimation(parent: _logoCtrl, curve: Curves.elasticOut));
 
+    _shimmerCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 2200))
+      ..repeat();
+    _shimmerAnim = Tween<double>(begin: -1.0, end: 2.0).animate(
+        CurvedAnimation(parent: _shimmerCtrl, curve: Curves.easeInOut));
+
     _entryCtrl.forward();
-    Future.delayed(const Duration(milliseconds: 300),
+    Future.delayed(const Duration(milliseconds: 280),
         () { if (mounted) _logoCtrl.forward(); });
   }
 
@@ -491,6 +501,7 @@ class _AuthHeroZoneState extends State<_AuthHeroZone>
   void dispose() {
     _entryCtrl.dispose();
     _logoCtrl.dispose();
+    _shimmerCtrl.dispose();
     super.dispose();
   }
 
@@ -502,61 +513,113 @@ class _AuthHeroZoneState extends State<_AuthHeroZone>
         opacity: _heroOpacity,
         child: ClipPath(
           clipper: _WaveClipper(),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 400),
+          child: Container(
             width: double.infinity,
-            height: 360,
-            decoration: BoxDecoration(
+            height: 300,
+            decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [AppColors.greenDark, AppColors.green],
+                colors: [Color(0xFF134E4A), Color(0xFF0D9488)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
             ),
-            child: SafeArea(
-              bottom: false,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ScaleTransition(
-                    scale: _logoScale,
-                    child: Container(
-                      width: 90, height: 90,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(26),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.4),
-                          width: 1.5,
+            child: Stack(
+              children: [
+                // Dot pattern
+                Positioned.fill(
+                  child: CustomPaint(painter: _HeroDotPainter()),
+                ),
+                // Decorative arcs
+                Positioned(top: -50, right: -50,
+                  child: Container(width: 180, height: 180,
+                    decoration: BoxDecoration(shape: BoxShape.circle,
+                      border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.07), width: 1)))),
+                Positioned(top: -10, right: -10,
+                  child: Container(width: 100, height: 100,
+                    decoration: BoxDecoration(shape: BoxShape.circle,
+                      border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.10), width: 1)))),
+                // Content
+                SafeArea(
+                  bottom: false,
+                  child: SizedBox.expand(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                      // Logo with elastic scale
+                      ScaleTransition(
+                        scale: _logoScale,
+                        child: Container(
+                          width: 88, height: 88,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.35),
+                                width: 1.5),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.18),
+                                blurRadius: 24,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          child: const Center(
+                            child: VsLogoAnimated(size: 50, color: Colors.white),
+                          ),
                         ),
                       ),
-                      child: Center(
-                        child: CustomPaint(
-                          size: const Size(52, 52),
-                          painter: _AuthEyePainter(color: Colors.white),
+                      const SizedBox(height: 16),
+                      // App name with shimmer
+                      AnimatedBuilder(
+                        animation: _shimmerAnim,
+                        builder: (_, child) => ShaderMask(
+                          shaderCallback: (bounds) => LinearGradient(
+                            colors: [
+                              Colors.white.withValues(alpha: 0.65),
+                              Colors.white,
+                              Colors.white.withValues(alpha: 0.65),
+                            ],
+                            stops: [
+                              (_shimmerAnim.value - 0.3).clamp(0.0, 1.0),
+                              _shimmerAnim.value.clamp(0.0, 1.0),
+                              (_shimmerAnim.value + 0.3).clamp(0.0, 1.0),
+                            ],
+                          ).createShader(bounds),
+                          child: child!,
+                        ),
+                        child: Text(
+                          'VisionScreen',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            letterSpacing: -0.8,
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  RichText(
-                    text: TextSpan(
-                      style: GoogleFonts.nunito(
-                          fontSize: 38, fontWeight: FontWeight.w900),
-                      children: const [
-                        TextSpan(
-                          text: 'Vision',
-                          style: TextStyle(color: Colors.white),
+                      const SizedBox(height: 6),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        child: Text(
+                          widget.isSignUp
+                              ? 'Create your CHW account'
+                              : 'Sign in to continue',
+                          key: ValueKey(widget.isSignUp),
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: Colors.white.withValues(alpha: 0.75),
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                        TextSpan(
-                          text: 'Screen',
-                          style: TextStyle(color: Colors.black),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ),  // SizedBox.expand
+              ],
             ),
           ),
         ),
@@ -565,33 +628,22 @@ class _AuthHeroZoneState extends State<_AuthHeroZone>
   }
 }
 
-// Eye painter for hero zone
-class _AuthEyePainter extends CustomPainter {
-  const _AuthEyePainter({required this.color});
-  final Color color;
-
+// Dot pattern for hero
+class _HeroDotPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2, cy = size.height / 2;
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0;
-    canvas.drawOval(
-      Rect.fromCenter(center: Offset(cx, cy),
-          width: size.width * 0.9, height: size.height * 0.52),
-      paint,
-    );
-    canvas.drawCircle(Offset(cx, cy), size.width * 0.18, paint);
-    canvas.drawCircle(
-        Offset(cx, cy), size.width * 0.09, Paint()..color = color);
-    canvas.drawCircle(
-        Offset(cx, cy), size.width * 0.04,
-        Paint()..color = Colors.white.withValues(alpha: 0.8));
+    final p = Paint()
+      ..color = Colors.white.withValues(alpha: 0.06)
+      ..style = PaintingStyle.fill;
+    const spacing = 24.0;
+    for (double y = 0; y < size.height; y += spacing) {
+      for (double x = 0; x < size.width; x += spacing) {
+        canvas.drawCircle(Offset(x, y), 1.6, p);
+      }
+    }
   }
-
   @override
-  bool shouldRepaint(_AuthEyePainter old) => old.color != color;
+  bool shouldRepaint(_HeroDotPainter old) => false;
 }
 
 // ─────────────────────────────────────────────────────────────

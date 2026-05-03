@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -134,7 +134,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F7),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -458,245 +458,112 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // â”€â”€ HEADER â€” Profile Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildHeader() {
     final initials = _chwName.trim().isNotEmpty
-        ? _chwName
-              .trim()
-              .split(' ')
+        ? _chwName.trim().split(' ')
               .map((w) => w.isEmpty ? '' : w[0])
-              .take(2)
-              .join()
-              .toUpperCase()
+              .take(2).join().toUpperCase()
         : 'VS';
     final roleLabel = _lastLoginRole == 'Administrator' ? 'Admin' : 'CHW';
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [_C.ink, _C.ink2],
+          colors: [Color(0xFF134E4A), Color(0xFF0D9488)],
         ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: _C.ink.withValues(alpha: 0.4),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(28),
+          bottomRight: Radius.circular(28),
+        ),
       ),
       child: Stack(
         clipBehavior: Clip.hardEdge,
         children: [
-          // Decorative blob top-right
-          Positioned(
-            top: -40,
-            right: -40,
-            child: Container(
-              width: 180,
-              height: 180,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [_C.teal.withValues(alpha: 0.22), Colors.transparent],
-                ),
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(28),
+                bottomRight: Radius.circular(28),
               ),
+              child: CustomPaint(painter: _SettingsDotPainter()),
             ),
           ),
-          // Decorative blob bottom-left
-          Positioned(
-            bottom: -30,
-            left: 40,
-            child: Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    _C.teal2.withValues(alpha: 0.15),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-          // Content
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Avatar â€” 64x64
-                    Container(
-                      width: 64,
-                      height: 64,
+          Positioned(top: -50, right: -50,
+            child: Container(width: 200, height: 200,
+              decoration: BoxDecoration(shape: BoxShape.circle,
+                border: Border.all(color: Colors.white.withValues(alpha: 0.07), width: 1)))),
+          Positioned(top: -10, right: -10,
+            child: Container(width: 110, height: 110,
+              decoration: BoxDecoration(shape: BoxShape.circle,
+                border: Border.all(color: Colors.white.withValues(alpha: 0.10), width: 1)))),
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.elasticOut,
+                    builder: (_, t, child) => Transform.scale(scale: t, child: child),
+                    child: Container(
+                      width: 68, height: 68,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [_C.teal, _C.teal2],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.3),
-                          width: 2.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: _C.teal.withValues(alpha: 0.55),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
+                        color: Colors.white.withValues(alpha: 0.15),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 2.5),
+                        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 16, offset: const Offset(0, 6))],
                       ),
                       child: _chwPhoto.isNotEmpty
-                          ? ClipOval(
-                              child: Image.file(
-                                File(_chwPhoto),
-                                width: 64,
-                                height: 64,
-                                fit: BoxFit.cover,
-                                errorBuilder: (ctx, err, stack) => Center(
-                                  child: Text(
-                                    initials,
-                                    style: GoogleFonts.barlow(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w900,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            )
-                          : Center(
-                              child: Text(
-                                initials,
-                                style: GoogleFonts.barlow(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
+                          ? ClipOval(child: Image.file(File(_chwPhoto), width: 68, height: 68, fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Center(child: Text(initials, style: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)))))
+                          : Center(child: Text(initials, style: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white))),
                     ),
-                    const SizedBox(width: 16),
-                    // Info
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _chwName.isNotEmpty
-                                ? _chwName
-                                : 'VisionScreen User',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            _chwCenter.isNotEmpty
-                                ? '$_chwCenter Â· $_chwDistrict'
-                                : 'Community Health Worker',
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(_chwName.isNotEmpty ? _chwName : 'VisionScreen User',
+                            style: GoogleFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white)),
+                        const SizedBox(height: 3),
+                        Text(_chwCenter.isNotEmpty ? '$_chwCenter \u00b7 $_chwDistrict' : 'Community Health Worker',
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.ibmPlexSans(
-                              fontSize: 12,
-                              color: Colors.white.withValues(alpha: 0.55),
-                            ),
-                          ),
-                          // Phone number
-                          if (_chwPhone.isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              '+256 $_chwPhone',
-                              style: GoogleFonts.ibmPlexSans(
-                                fontSize: 12,
-                                color: Colors.white.withValues(alpha: 0.45),
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              // Role chip
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: _C.teal.withValues(alpha: 0.3),
-                                  borderRadius: BorderRadius.circular(99),
-                                  border: Border.all(
-                                    color: _C.teal3.withValues(alpha: 0.4),
-                                  ),
-                                ),
-                                child: Text(
-                                  roleLabel,
-                                  style: GoogleFonts.ibmPlexSans(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                    color: _C.teal3,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              // CHW ID chip â€” always visible
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.08),
-                                  borderRadius: BorderRadius.circular(99),
-                                ),
-                                child: Text(
-                                  _chwId.isNotEmpty ? _chwId : 'No ID assigned',
-                                  style: GoogleFonts.ibmPlexSans(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    color: _chwId.isNotEmpty
-                                        ? Colors.white.withValues(alpha: 0.6)
-                                        : Colors.white.withValues(alpha: 0.3),
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                            style: GoogleFonts.inter(fontSize: 12, color: Colors.white.withValues(alpha: 0.7))),
+                        if (_chwPhone.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text('+256 $_chwPhone', style: GoogleFonts.inter(fontSize: 11, color: Colors.white.withValues(alpha: 0.55))),
                         ],
-                      ),
-                    ),
-                    // Edit button
-                    GestureDetector(
-                      onTap: _showEditProfileSheet,
-                      child: Container(
-                        width: 34,
-                        height: 34,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2),
+                        const SizedBox(height: 8),
+                        Row(children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(99), border: Border.all(color: Colors.white.withValues(alpha: 0.35))),
+                            child: Text(roleLabel, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
                           ),
-                        ),
-                        child: const Icon(
-                          Icons.edit_rounded,
-                          size: 16,
-                          color: Colors.white,
-                        ),
-                      ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(99)),
+                            child: Text(_chwId.isNotEmpty ? _chwId : 'No ID', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white.withValues(alpha: 0.7), letterSpacing: 0.4)),
+                          ),
+                        ]),
+                      ],
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                  GestureDetector(
+                    onTap: _showEditProfileSheet,
+                    child: Container(
+                      width: 36, height: 36,
+                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), shape: BoxShape.circle, border: Border.all(color: Colors.white.withValues(alpha: 0.3))),
+                      child: const Icon(Icons.edit_rounded, size: 16, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -4540,4 +4407,22 @@ class _LegalSheet extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Dot pattern painter for settings header ─────────────────
+class _SettingsDotPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = Colors.white.withValues(alpha: 0.06)
+      ..style = PaintingStyle.fill;
+    const spacing = 26.0;
+    for (double y = 0; y < size.height; y += spacing) {
+      for (double x = 0; x < size.width; x += spacing) {
+        canvas.drawCircle(Offset(x, y), 1.8, p);
+      }
+    }
+  }
+  @override
+  bool shouldRepaint(_SettingsDotPainter old) => false;
 }
