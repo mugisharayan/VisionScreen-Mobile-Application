@@ -72,7 +72,9 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
 
   // ── Focal length — set from first real CameraImage ──────────
   double _focalLengthPx = 0.0;
-  int _rawImageW = 0;
+
+  // ── Pending voice message — set from background, spoken on main thread ──
+  String? _pendingSpeak;
 
   // ── Text-to-Speech ──────────────────────────────────────────
   final FlutterTts _tts = FlutterTts();
@@ -106,27 +108,53 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
         CurvedAnimation(parent: _checkCtrl, curve: Curves.elasticOut));
 
     _initCamera();
-    _initTts().then((_) {
-      Future.delayed(const Duration(milliseconds: 800), () {
-        if (mounted) _speak('Position the patient two metres from the screen.');
-      });
-    });
+    _initTts();
+    // Clear buffer so old readings don't pollute this session
+    _distBuffer.clear();
   }
 
   Future<void> _initTts() async {
-    await _tts.setLanguage('en-US');
-    await _tts.setSpeechRate(0.45);
-    await _tts.setVolume(1.0);
-    await _tts.setPitch(1.0);
-    // Warm up the engine with a silent speak so first real call is instant
-    await _tts.speak(' ');
-    await _tts.stop();
+    try {
+      await _tts.setLanguage('en-US');
+      await _tts.setSpeechRate(0.42);
+      await _tts.setVolume(1.0);
+      await _tts.setPitch(1.0);
+      // On Android, set audio stream to STREAM_MUSIC for max volume
+      await _tts.setSharedInstance(true);
+
+      // Wait a moment then speak the welcome message
+      await Future.delayed(const Duration(milliseconds: 1200));
+      if (!mounted) return;
+
+      final isNear = widget.targetDistanceM < 1.0;
+      final cm = (widget.targetDistanceM * 100).round();
+      final msg = isNear
+          ? 'Position the device $cm centimetres from the patient\'s eyes.'
+          : 'Position the patient ${widget.targetDistanceM.toStringAsFixed(0)} metres from the screen.';
+
+      _lastSpoken = msg;
+      _lastSpeakTime = DateTime.now();
+      await _tts.speak(msg);
+    } catch (e) {
+      debugPrint('TTS init error: $e');
+    }
   }
 
-  // ── Speak with cooldown per unique message ───────────────────
-  // Different messages always play immediately.
-  // Same message repeats only after cooldown expires.
+  // ── Queue a speak from background thread ────────────────────
+  void _queueSpeak(String text) {
+    _pendingSpeak = text;
+    // Post to main thread via setState
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final msg = _pendingSpeak;
+      if (msg != null) {
+        _pendingSpeak = null;
+        _speak(msg);
+      }
+    });
+  }
   Future<void> _speak(String text) async {
+    if (text.trim().isEmpty) return;
     final now = DateTime.now();
     final sameMessage = text == _lastSpoken;
     final cooldownExpired = now.difference(_lastSpeakTime) >= _speakCooldown;
@@ -135,8 +163,12 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
 
     _lastSpoken = text;
     _lastSpeakTime = now;
-    await _tts.stop();
-    await _tts.speak(text);
+    try {
+      await _tts.stop();
+      await _tts.speak(text);
+    } catch (e) {
+      debugPrint('TTS speak error: $e');
+    }
   }
 
   @override
@@ -212,7 +244,6 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
     // Eyes are separated horizontally → use image.width (landscape).
     // HFOV 68° is the measured average for Android front cameras.
     if (_focalLengthPx == 0.0 && image.width > 0) {
-      _rawImageW = image.width;
       const hFovDeg = 68.0;
       final hFovRad = hFovDeg * pi / 180.0;
       _focalLengthPx = image.width / (2.0 * tan(hFovRad / 2.0));
@@ -272,9 +303,11 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
         }
       }
 
-      // Clamp to reasonable range (0.3m – 6m) then smooth
+      // Clamp to reasonable range then smooth
+      // For near vision (target < 1m), allow readings down to 0.1m
+      final minClamp = widget.targetDistanceM < 1.0 ? 0.1 : 0.3;
       if (distM != null) {
-        distM = distM.clamp(0.3, 6.0);
+        distM = distM.clamp(minClamp, 6.0);
         distM = _smoothedDistance(distM);
       }
 
@@ -285,25 +318,36 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
 
       // ── Voice guidance ───────────────────────────────────────
       if (distM != null) {
+        final isNear = widget.targetDistanceM < 1.0;
         if (_isAtTarget(distM)) {
-          if (_holdSeconds == 0) _speak('Perfect. Hold still.');
+          if (_holdSeconds == 0) _queueSpeak('Perfect. Hold still.');
         } else if (distM < widget.targetDistanceM - widget.toleranceM) {
-          final diff = (widget.targetDistanceM - distM);
-          if (diff > 0.5) {
-            _speak('Move back about ${diff.toStringAsFixed(1)} metres.');
+          final diff = widget.targetDistanceM - distM;
+          if (isNear) {
+            final cm = (diff * 100).round();
+            _queueSpeak(cm > 10
+                ? 'Move the device closer by $cm centimetres.'
+                : 'Just a little closer.');
           } else {
-            _speak('A little further back.');
+            _queueSpeak(diff > 0.5
+                ? 'Move back about ${diff.toStringAsFixed(1)} metres.'
+                : 'A little further back.');
           }
         } else {
-          final diff = (distM - widget.targetDistanceM);
-          if (diff > 0.5) {
-            _speak('Move closer about ${diff.toStringAsFixed(1)} metres.');
+          final diff = distM - widget.targetDistanceM;
+          if (isNear) {
+            final cm = (diff * 100).round();
+            _queueSpeak(cm > 10
+                ? 'Move the device back by $cm centimetres.'
+                : 'Just a little further.');
           } else {
-            _speak('A little closer.');
+            _queueSpeak(diff > 0.5
+                ? 'Move closer about ${diff.toStringAsFixed(1)} metres.'
+                : 'A little closer.');
           }
         }
       } else {
-        _speak('No face detected. Please look at the camera.');
+        _queueSpeak('No face detected. Please look at the camera.');
       }
 
       // ── Hold timer logic ─────────────────────────────────────
@@ -473,7 +517,10 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
                                     color: Colors.white.withValues(alpha: 0.6),
                                     letterSpacing: 1.8)),
                             const SizedBox(height: 2),
-                            Text('Position Patient at 2m',
+                            Text(
+                                widget.targetDistanceM < 1.0
+                                    ? 'Hold Device at ${(widget.targetDistanceM * 100).round()}cm'
+                                    : 'Position Patient at ${widget.targetDistanceM.toStringAsFixed(0)}m',
                                 style: GoogleFonts.plusJakartaSans(
                                     fontSize: 20,
                                     fontWeight: FontWeight.w800,
@@ -579,7 +626,9 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Ask the patient to stand ${widget.targetDistanceM.toStringAsFixed(0)} metres away\nfrom the screen for accurate vision testing',
+                    widget.targetDistanceM < 1.0
+                        ? 'Hold the device ${(widget.targetDistanceM * 100).round()} cm from the patient\'s eyes\nwith both eyes open for near vision testing'
+                        : 'Ask the patient to stand ${widget.targetDistanceM.toStringAsFixed(0)} metres away\nfrom the screen for accurate vision testing',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.inter(
                       fontSize: 12,
@@ -642,7 +691,7 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
           // ── Success checkmark overlay ────────────────────────
           AnimatedBuilder(
             animation: _checkScale,
-            builder: (_, __) {
+            builder: (_, child) {
               if (_checkScale.value == 0) return const SizedBox.shrink();
               return Container(
                 color: Colors.black.withValues(alpha: 0.5 * _checkScale.value),
@@ -680,13 +729,29 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
   Widget _buildDistanceMeter() {
     final target = widget.targetDistanceM;
     final current = _distanceM;
+    final isNear = target < 1.0;
 
-    // Meter range: 0m to 4m, target at 2m
-    const minM = 0.0, maxM = 4.0;
+    // Scale: for near (40cm) use 0–1m range; for distance use 0–4m
+    final maxM = isNear ? 1.0 : 4.0;
     final fillRatio = current == null
         ? 0.0
-        : ((current - minM) / (maxM - minM)).clamp(0.0, 1.0);
-    final targetRatio = (target - minM) / (maxM - minM);
+        : ((current) / maxM).clamp(0.0, 1.0);
+    final targetRatio = target / maxM;
+
+    // Display text
+    String displayDist;
+    if (current == null) {
+      displayDist = '— ${isNear ? 'cm' : 'm'}';
+    } else if (isNear) {
+      displayDist = '${(current * 100).toStringAsFixed(0)} cm';
+    } else {
+      displayDist = '${current.toStringAsFixed(2)} m';
+    }
+
+    // Scale labels
+    final scaleLabels = isNear
+        ? ['0', '25cm', '40cm', '75cm', '1m']
+        : ['0m', '1m', '2m', '3m', '4m'];
 
     return Column(
       children: [
@@ -694,8 +759,8 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 150),
           child: Text(
-            current == null ? '— m' : '${current.toStringAsFixed(2)} m',
-            key: ValueKey(current?.toStringAsFixed(1)),
+            displayDist,
+            key: ValueKey(current?.toStringAsFixed(isNear ? 0 : 1)),
             style: GoogleFonts.plusJakartaSans(
               fontSize: 48,
               fontWeight: FontWeight.w900,
@@ -706,7 +771,7 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
         ),
         const SizedBox(height: 4),
         Text(
-          'Target: ${target.toStringAsFixed(1)} m',
+          'Target: ${isNear ? '${(target * 100).round()} cm' : '${target.toStringAsFixed(1)} m'}',
           style: GoogleFonts.inter(
             fontSize: 11,
             color: Colors.white.withValues(alpha: 0.55),
@@ -745,13 +810,12 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
                   ],
                 ),
               ),
-              // Target marker line
+              // Target marker
               Positioned(
                 left: w * targetRatio - 1.5,
                 top: -4,
                 child: Container(
-                  width: 3,
-                  height: 18,
+                  width: 3, height: 18,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(99),
@@ -763,7 +827,7 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
                 left: (w * targetRatio - 16).clamp(0.0, w - 32),
                 top: 16,
                 child: Text(
-                  '${target.toStringAsFixed(0)}m',
+                  isNear ? '${(target * 100).round()}cm' : '${target.toStringAsFixed(0)}m',
                   style: GoogleFonts.inter(
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
@@ -774,23 +838,18 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
             ],
           );
         }),
-        const SizedBox(height: 8),
+        const SizedBox(height: 22),
         // Scale labels
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('0m', style: GoogleFonts.inter(
-                fontSize: 9, color: Colors.white.withValues(alpha: 0.4))),
-            Text('1m', style: GoogleFonts.inter(
-                fontSize: 9, color: Colors.white.withValues(alpha: 0.4))),
-            Text('2m', style: GoogleFonts.inter(
-                fontSize: 9, color: Colors.white.withValues(alpha: 0.7),
-                fontWeight: FontWeight.w700)),
-            Text('3m', style: GoogleFonts.inter(
-                fontSize: 9, color: Colors.white.withValues(alpha: 0.4))),
-            Text('4m', style: GoogleFonts.inter(
-                fontSize: 9, color: Colors.white.withValues(alpha: 0.4))),
-          ],
+          children: scaleLabels.map((l) => Text(l,
+              style: GoogleFonts.inter(
+                  fontSize: 9,
+                  color: Colors.white.withValues(
+                      alpha: l.contains(isNear ? '40' : '2') ? 0.7 : 0.4),
+                  fontWeight: l.contains(isNear ? '40' : '2')
+                      ? FontWeight.w700
+                      : FontWeight.w400))).toList(),
         ),
       ],
     );
