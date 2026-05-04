@@ -14,6 +14,7 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'referral_letter_screen.dart';
 import 'face_distance_screen.dart';
+import '../utils/patient_validators.dart';
 import '../repositories/patient_repository.dart';
 import '../repositories/screening_repository.dart';
 
@@ -1719,28 +1720,47 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () async {
-                final name = _newNameCtrl.text.trim();
-                final vil  = _newVillageCtrl.text.trim();
-                if (name.isEmpty || _newDob == null || vil.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        _newDob == null
-                            ? 'Please select a date of birth'
-                            : 'Please fill in all required fields',
-                        style: GoogleFonts.inter(
-                            fontSize: 12, color: Colors.white)),
-                      backgroundColor: _red,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
+                final name  = _newNameCtrl.text.trim();
+                final vil   = _newVillageCtrl.text.trim();
+                final phone = _newPhoneCtrl.text.trim();
+
+                // ── Validation ──────────────────────────────
+                final nameErr  = PatientValidators.validateName(name);
+                final dobErr   = PatientValidators.validateDob(_newDob);
+                final vilErr   = PatientValidators.validateVillage(vil);
+                final phoneErr = PatientValidators.validatePhone(phone);
+
+                final firstError = nameErr ?? dobErr ?? vilErr ?? phoneErr;
+                if (firstError != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(firstError,
+                        style: GoogleFonts.inter(fontSize: 12, color: Colors.white)),
+                    backgroundColor: _red,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    duration: const Duration(seconds: 3),
+                  ));
                   return;
                 }
+
                 final age = _calcAge(_newDob!);
-                final id  = 'PAT-${DateTime.now().millisecondsSinceEpoch}';
+
+                // ── Duplicate detection ──────────────────────
+                final duplicates = await PatientRepository.instance
+                    .findPotentialDuplicates(name: name, age: age, village: vil);
+
+                if (duplicates.isNotEmpty && mounted) {
+                  final proceed = await showDialog<bool>(
+                    context: context,
+                    builder: (_) => _DuplicateWarningDialog(
+                      newName: name,
+                      duplicates: duplicates,
+                    ),
+                  );
+                  if (proceed != true) return;
+                }
+
+                final id = 'PAT-${DateTime.now().millisecondsSinceEpoch}';
                 final newPatient = {
                   'id': id,
                   'name': name,
@@ -1748,13 +1768,14 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   'dob': '${_newDob!.day}/${_newDob!.month}/${_newDob!.year}',
                   'gender': _newGender,
                   'village': vil,
-                  'phone': _newPhoneCtrl.text.trim(),
+                  'phone': phone,
                   'conditions': _newConditions.join(', '),
                   'photo_path': _newPhotoPath ?? '',
                   'created_at': DateTime.now().toIso8601String(),
                 };
                 await PatientRepository.instance.insertPatient(newPatient);
                 await _loadPatients();
+                if (!mounted) return;
                 setState(() {
                   _selectedPatientId = id;
                   _showNewPatientForm = false;
@@ -3639,3 +3660,121 @@ class _ScreeningHeaderDotPainter extends CustomPainter {
   bool shouldRepaint(_ScreeningHeaderDotPainter old) => false;
 }
 
+
+// ─────────────────────────────────────────────────────────────
+// Duplicate patient warning dialog
+// ─────────────────────────────────────────────────────────────
+class _DuplicateWarningDialog extends StatelessWidget {
+  const _DuplicateWarningDialog({
+    required this.newName,
+    required this.duplicates,
+  });
+  final String newName;
+  final List<Map<String, dynamic>> duplicates;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Row(children: [
+        Container(
+          width: 36, height: 36,
+          decoration: BoxDecoration(
+            color: const Color(0xFFFEF3C7),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Icon(Icons.warning_amber_rounded,
+              color: Color(0xFFF59E0B), size: 20),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text('Possible Duplicate',
+              style: GoogleFonts.plusJakartaSans(
+                  fontSize: 16, fontWeight: FontWeight.w800,
+                  color: const Color(0xFF1A2A3D))),
+        ),
+      ]),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'A patient with a similar name and age already exists:',
+            style: GoogleFonts.inter(
+                fontSize: 13, color: const Color(0xFF5E7291), height: 1.5),
+          ),
+          const SizedBox(height: 12),
+          ...duplicates.take(3).map((p) => Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Row(children: [
+              Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0D9488).withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    (p['name'] as String).split(' ').map((w) => w.isEmpty ? '' : w[0]).take(2).join(),
+                    style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12, fontWeight: FontWeight.w800,
+                        color: const Color(0xFF0D9488)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(p['name'] as String,
+                      style: GoogleFonts.inter(
+                          fontSize: 13, fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1A2A3D))),
+                  Text(
+                    '${p['gender']} · ${p['age']} yrs · ${p['village']}',
+                    style: GoogleFonts.inter(
+                        fontSize: 11, color: const Color(0xFF8FA0B4)),
+                  ),
+                ]),
+              ),
+            ]),
+          )),
+          const SizedBox(height: 4),
+          Text(
+            'Is "$newName" a different person?',
+            style: GoogleFonts.inter(
+                fontSize: 13, fontWeight: FontWeight.w600,
+                color: const Color(0xFF1A2A3D)),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: Text('Cancel — Use Existing',
+              style: GoogleFonts.inter(
+                  fontSize: 13, fontWeight: FontWeight.w600,
+                  color: const Color(0xFF8FA0B4))),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(context, true),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF0D9488),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
+            elevation: 0,
+          ),
+          child: Text('Register as New Patient',
+              style: GoogleFonts.inter(
+                  fontSize: 13, fontWeight: FontWeight.w700,
+                  color: Colors.white)),
+        ),
+      ],
+    );
+  }
+}

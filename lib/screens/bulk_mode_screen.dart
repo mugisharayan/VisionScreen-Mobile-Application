@@ -10,6 +10,7 @@ import '../repositories/screening_repository.dart';
 import '../repositories/campaign_repository.dart';
 import 'referral_letter_screen.dart';
 import 'face_distance_screen.dart';
+import '../utils/patient_validators.dart';
 
 const _ink   = Color(0xFF04091A);
 const _ink2  = Color(0xFF0B1530);
@@ -884,18 +885,46 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
   }
 
   Future<void> _registerAndProceed() async {
-    final name = _nameCtrl.text.trim();
-    if (name.isEmpty) {
+    final name  = _nameCtrl.text.trim();
+    final phone = _phoneCtrl.text.trim();
+
+    // ── Validation ──────────────────────────────────────────
+    final nameErr  = PatientValidators.validateName(name);
+    final ageErr   = PatientValidators.validateAge(_quickAge);
+    final phoneErr = PatientValidators.validatePhone(phone);
+
+    final firstError = nameErr ?? ageErr ?? phoneErr;
+    if (firstError != null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Please enter the patient name.',
+        content: Text(firstError,
             style: GoogleFonts.inter(fontSize: 12, color: Colors.white)),
         backgroundColor: _red,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: const Duration(seconds: 2),
+        duration: const Duration(seconds: 3),
       ));
       return;
     }
+
+    // ── Duplicate detection ──────────────────────────────────
+    final duplicates = await PatientRepository.instance
+        .findPotentialDuplicates(
+          name: name,
+          age: _quickAge,
+          village: _locationCtrl.text.trim(),
+        );
+
+    if (duplicates.isNotEmpty && mounted) {
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (_) => _BulkDuplicateDialog(
+          newName: name,
+          duplicates: duplicates,
+        ),
+      );
+      if (proceed != true) return;
+    }
+
     setState(() => _registering = true);
     final pid = 'PAT-${DateTime.now().millisecondsSinceEpoch}';
     await PatientRepository.instance.insertPatient({
@@ -905,7 +934,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
       'dob':         '',
       'gender':      _quickGender,
       'village':     _locationCtrl.text.trim(),
-      'phone':       _phoneCtrl.text.trim(),
+      'phone':       phone,
       'conditions':  _quickConditions.join(', '),
       'photo_path':  '',
       'campaign_id': _campaignId,
@@ -1820,5 +1849,123 @@ class _BulkDotPainter extends CustomPainter {
   }
   @override
   bool shouldRepaint(_BulkDotPainter old) => false;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Duplicate patient warning dialog (bulk mode)
+// ─────────────────────────────────────────────────────────────
+class _BulkDuplicateDialog extends StatelessWidget {
+  const _BulkDuplicateDialog({
+    required this.newName,
+    required this.duplicates,
+  });
+  final String newName;
+  final List<Map<String, dynamic>> duplicates;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Row(children: [
+        Container(
+          width: 36, height: 36,
+          decoration: BoxDecoration(
+            color: const Color(0xFFFEF3C7),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Icon(Icons.warning_amber_rounded,
+              color: Color(0xFFF59E0B), size: 20),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text('Possible Duplicate',
+              style: GoogleFonts.plusJakartaSans(
+                  fontSize: 16, fontWeight: FontWeight.w800,
+                  color: const Color(0xFF1A2A3D))),
+        ),
+      ]),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'A patient with a similar name and age already exists:',
+            style: GoogleFonts.inter(
+                fontSize: 13, color: const Color(0xFF5E7291), height: 1.5),
+          ),
+          const SizedBox(height: 12),
+          ...duplicates.take(3).map((p) => Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Row(children: [
+              Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  color: _teal.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    (p['name'] as String).split(' ').map((w) => w.isEmpty ? '' : w[0]).take(2).join(),
+                    style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12, fontWeight: FontWeight.w800,
+                        color: _teal),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(p['name'] as String,
+                      style: GoogleFonts.inter(
+                          fontSize: 13, fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1A2A3D))),
+                  Text(
+                    '${p['gender']} · ${p['age']} yrs · ${p['village']}',
+                    style: GoogleFonts.inter(
+                        fontSize: 11, color: const Color(0xFF8FA0B4)),
+                  ),
+                ]),
+              ),
+            ]),
+          )),
+          const SizedBox(height: 4),
+          Text(
+            'Is "$newName" a different person?',
+            style: GoogleFonts.inter(
+                fontSize: 13, fontWeight: FontWeight.w600,
+                color: const Color(0xFF1A2A3D)),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: Text('Cancel',
+              style: GoogleFonts.inter(
+                  fontSize: 13, fontWeight: FontWeight.w600,
+                  color: const Color(0xFF8FA0B4))),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(context, true),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _teal,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
+            elevation: 0,
+          ),
+          child: Text('Register as New',
+              style: GoogleFonts.inter(
+                  fontSize: 13, fontWeight: FontWeight.w700,
+                  color: Colors.white)),
+        ),
+      ],
+    );
+  }
 }
 

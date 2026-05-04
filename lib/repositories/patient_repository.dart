@@ -70,5 +70,37 @@ class PatientRepository {
   Future<void> insertPatient(Map<String, dynamic> patient) =>
       _db.insertPatient(patient);
 
+  /// Check for potential duplicate patients by name similarity + age.
+  /// Returns list of existing patients that may be duplicates.
+  Future<List<Map<String, dynamic>>> findPotentialDuplicates({
+    required String name,
+    required int age,
+    String village = '',
+  }) async {
+    final database = await _db.db;
+    final nameParts = name.trim().toLowerCase().split(' ');
+    // Match on first name + last name (if available) + similar age (±2 years)
+    final firstName = nameParts.isNotEmpty ? nameParts.first : '';
+    final lastName  = nameParts.length > 1 ? nameParts.last : '';
+
+    final results = await database.rawQuery(
+      '''SELECT * FROM patients
+         WHERE (
+           LOWER(name) LIKE ? OR
+           (? != '' AND LOWER(name) LIKE ?)
+         )
+         AND ABS(age - ?) <= 2
+         ORDER BY created_at DESC
+         LIMIT 5''',
+      [
+        '%$firstName%',
+        lastName,
+        '%$lastName%',
+        age,
+      ],
+    );
+    return results;
+  }
+
   Future<void> deletePatient(String patientId) => _db.deletePatient(patientId);
 }
