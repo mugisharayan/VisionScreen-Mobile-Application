@@ -500,7 +500,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [

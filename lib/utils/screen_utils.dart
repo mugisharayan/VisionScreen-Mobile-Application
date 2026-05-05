@@ -25,8 +25,10 @@ class ScreenUtils {
   static const double _refHeight = 844.0;
 
   // Clamp scale so extreme phones don't go too big or too small
-  static const double _minScale = 0.75;
-  static const double _maxScale = 1.25;
+  // 0.85 min — small phones (320px) don't get too tiny
+  // 1.10 max — large Samsung/Tecno phones don't get too big
+  static const double _minScale = 0.85;
+  static const double _maxScale = 1.10;
 
   static void init(BuildContext context) {
     final size = MediaQuery.of(context).size;

@@ -859,7 +859,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
         child: SafeArea(
           bottom: false,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
             child: Column(
               children: [
                 Row(
@@ -898,7 +898,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
               child: Column(
                 children: [
                   Row(

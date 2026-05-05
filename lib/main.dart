@@ -14,7 +14,6 @@ import 'utils/app_theme.dart';
 import 'utils/page_transitions.dart';
 import 'utils/haptics.dart';
 import 'widgets/vs_logo.dart';
-import 'utils/screen_utils.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -50,17 +49,14 @@ class VisionScreenApp extends StatelessWidget {
         '/forgot-password': (_) => const ForgotPasswordScreen(),
         '/home':            (_) => const MainShell(),
       },
-      // ── Consistent layout across all devices ───────────────
+      // ── Lock text scaling only ─────────────────────────────
+      // Prevents accessibility font size from breaking layouts.
+      // Flutter's own layout system handles different screen sizes
+      // correctly through logical pixels — no manual scaling needed.
       builder: (context, child) {
-        // Initialise scale factors once per build
-        ScreenUtils.init(context);
-        final mq = MediaQuery.of(context);
         return MediaQuery(
-          data: mq.copyWith(
-            // Lock font scaling — ignores phone accessibility font size
+          data: MediaQuery.of(context).copyWith(
             textScaler: TextScaler.noScaling,
-            // Clamp pixel ratio to prevent extreme density differences
-            devicePixelRatio: mq.devicePixelRatio.clamp(1.5, 3.0),
           ),
           child: child!,
         );

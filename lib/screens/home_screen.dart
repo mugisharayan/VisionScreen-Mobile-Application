@@ -398,59 +398,60 @@ class _HomeScreenState extends State<HomeScreen>
               SafeArea(
                 bottom: false,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // -- Top bar --
                       Row(
                         children: [
-                          // Logo wordmark
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              VsPulsingRings(
-                                color: Colors.white,
-                                size: 52,
-                                child: VsLogoAnimated(size: 26),
-                              ),
-                              const SizedBox(width: 8),
-                              RichText(
-                                text: TextSpan(children: [
-                                  TextSpan(
-                                    text: 'Vision',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 17, fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                    ),
+                          // Logo wordmark — takes remaining space
+                          Expanded(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                VsPulsingRings(
+                                  color: Colors.white,
+                                  size: 40,
+                                  child: VsLogoAnimated(size: 20),
+                                ),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: RichText(
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                    text: TextSpan(children: [
+                                      TextSpan(
+                                        text: 'Vision',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 14, fontWeight: FontWeight.w800,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      TextSpan(
+                                        text: 'Screen',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 14, fontWeight: FontWeight.w800,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                    ]),
                                   ),
-                                  TextSpan(
-                                    text: 'Screen',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 17, fontWeight: FontWeight.w800,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                ]),
-                              ),
-                            ],
+                                ),
+                              ],
+                            ),
                           ),
-                          const Spacer(),
-                          // Online pill
-                          _buildOnlinePill(),
-                          const SizedBox(width: 8),
-                          // Sync button
+                          // Right side — compact fixed items
+                          const SizedBox(width: 6),
                           _buildSyncButton(),
-                          const SizedBox(width: 8),
-                          // Notification bell
+                          const SizedBox(width: 6),
                           _buildNotifBell(),
-                          const SizedBox(width: 8),
-                          // Avatar
+                          const SizedBox(width: 6),
                           _buildAvatar(),
                         ],
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 12),
 
                       // -- Greeting + illustration row --
                       Row(
@@ -460,48 +461,59 @@ class _HomeScreenState extends State<HomeScreen>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(_greeting,
-                                    style: GoogleFonts.inter(
-                                        fontSize: 17,
-                                        color: Colors.white.withValues(alpha: 0.80),
-                                        fontWeight: FontWeight.w500)),
-                                const SizedBox(height: 4),
+                                // Greeting + online pill on same row
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(_greeting,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: GoogleFonts.inter(
+                                              fontSize: 12,
+                                              color: Colors.white.withValues(alpha: 0.80),
+                                              fontWeight: FontWeight.w500)),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    _buildOnlinePill(),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
                                 Text('$_firstName 👋',
                                     overflow: TextOverflow.ellipsis,
                                     maxLines: 1,
                                     style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 32,
+                                        fontSize: 20,
                                         fontWeight: FontWeight.w800,
                                         color: Colors.white,
                                         height: 1.1)),
                                 const SizedBox(height: 8),
                                 // Location + time
                                 Row(children: [
-                                  GestureDetector(
-                                    onTap: _fetchLocation,
-                                    child: Row(children: [
-                                      Icon(Icons.location_on_rounded,
-                                          size: 12, color: Colors.white.withValues(alpha: 0.8)),
-                                      const SizedBox(width: 4),
-                                      ConstrainedBox(
-                                        constraints: const BoxConstraints(maxWidth: 140),
-                                        child: Text(_locationLabel,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: GoogleFonts.inter(
-                                                fontSize: 11,
-                                                color: Colors.white.withValues(alpha: 0.8),
-                                                fontWeight: FontWeight.w500)),
-                                      ),
-                                    ]),
+                                  Flexible(
+                                    child: GestureDetector(
+                                      onTap: _fetchLocation,
+                                      child: Row(children: [
+                                        Icon(Icons.location_on_rounded,
+                                            size: 12, color: Colors.white.withValues(alpha: 0.8)),
+                                        const SizedBox(width: 4),
+                                        Flexible(
+                                          child: Text(_locationLabel,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: GoogleFonts.inter(
+                                                  fontSize: 11,
+                                                  color: Colors.white.withValues(alpha: 0.8),
+                                                  fontWeight: FontWeight.w500)),
+                                        ),
+                                      ]),
+                                    ),
                                   ),
-                                  const SizedBox(width: 12),
+                                  const SizedBox(width: 8),
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                     decoration: BoxDecoration(
                                       color: Colors.white.withValues(alpha: 0.15),
                                       borderRadius: BorderRadius.circular(99),
                                     ),
-                                    child: Row(children: [
+                                    child: Row(mainAxisSize: MainAxisSize.min, children: [
                                       Icon(Icons.access_time_rounded,
                                           size: 10, color: Colors.white.withValues(alpha: 0.9)),
                                       const SizedBox(width: 4),
@@ -518,11 +530,14 @@ class _HomeScreenState extends State<HomeScreen>
                                   Icon(Icons.calendar_today_rounded,
                                       size: 11, color: Colors.white.withValues(alpha: 0.7)),
                                   const SizedBox(width: 4),
-                                  Text(_fmtDate(_now),
-                                      style: GoogleFonts.inter(
-                                          fontSize: 11,
-                                          color: Colors.white.withValues(alpha: 0.7),
-                                          fontWeight: FontWeight.w500)),
+                                  Flexible(
+                                    child: Text(_fmtDate(_now),
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.inter(
+                                            fontSize: 11,
+                                            color: Colors.white.withValues(alpha: 0.7),
+                                            fontWeight: FontWeight.w500)),
+                                  ),
                                 ]),
                               ],
                             ),
@@ -532,7 +547,7 @@ class _HomeScreenState extends State<HomeScreen>
                         ],
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 12),
 
                       // -- Stats row --
                       _buildStatsRow(),
@@ -722,11 +737,11 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildHeaderIllustration() {
     return SizedBox(
-      width: 110, height: 110,
+      width: 72, height: 72,
       child: VsPulsingRings(
         color: Colors.white,
-        size: 110,
-        child: VsLogoAnimated(size: 56),
+        size: 72,
+        child: VsLogoAnimated(size: 36),
       ),
     );
   }
@@ -784,7 +799,7 @@ class _HomeScreenState extends State<HomeScreen>
   }) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(14),
@@ -936,17 +951,17 @@ class _HomeScreenState extends State<HomeScreen>
       builder: (_, t, child) => Opacity(opacity: t,
           child: Transform.translate(offset: Offset(0, 20 * (1 - t)), child: child)),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: VsColors.card,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(color: VsColors.border),
           boxShadow: VsShadows.card,
         ),
         child: Row(children: [
-          // Circular progress
+          // Circular progress — smaller
           SizedBox(
-            width: 56, height: 56,
+            width: 44, height: 44,
             child: Stack(fit: StackFit.expand, children: [
               TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0.0,
@@ -955,59 +970,64 @@ class _HomeScreenState extends State<HomeScreen>
                 curve: Curves.easeOutCubic,
                 builder: (_, v, __) => CircularProgressIndicator(
                   value: v,
-                  strokeWidth: 5,
+                  strokeWidth: 4,
                   backgroundColor: VsColors.slate200,
                   valueColor: const AlwaysStoppedAnimation(VsColors.emerald),
                 ),
               ),
               Center(
                 child: Text(
-                  _totalScreened == 0 ? '�' : '$passRate%',
+                  _totalScreened == 0 ? '—' : '$passRate%',
                   style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12, fontWeight: FontWeight.w800,
+                      fontSize: 10, fontWeight: FontWeight.w800,
                       color: VsColors.slate900),
                 ),
               ),
             ]),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('Today\'s Impact',
                   style: GoogleFonts.plusJakartaSans(
-                      fontSize: 14, fontWeight: FontWeight.w700,
+                      fontSize: 12, fontWeight: FontWeight.w700,
                       color: VsColors.slate900)),
-              const SizedBox(height: 2),
-              Text(
-                _totalScreened == 0
-                    ? 'No screenings yet — start your first test!'
-                    : '$passed passed · $_totalReferred referred · $_totalScreened total',
-                overflow: TextOverflow.ellipsis,
-                maxLines: 2,
-                style: GoogleFonts.inter(
-                    fontSize: 12, color: VsColors.slate500,
-                    fontWeight: FontWeight.w400),
+              const SizedBox(height: 1),
+              // Stats on ONE line — use FittedBox to shrink if needed
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _totalScreened == 0
+                      ? 'No screenings yet — start your first test!'
+                      : '$passed passed · $_totalReferred referred · $_totalScreened total',
+                  maxLines: 1,
+                  style: GoogleFonts.inter(
+                      fontSize: 11, color: VsColors.slate500,
+                      fontWeight: FontWeight.w400),
+                ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               Row(children: [
                 Icon(Icons.location_on_rounded,
-                    size: 11, color: VsColors.slate400),
-                const SizedBox(width: 4),
+                    size: 10, color: VsColors.slate400),
+                const SizedBox(width: 3),
                 Flexible(
                   child: Text(_locationLabel,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                          fontSize: 11, color: VsColors.slate400,
+                          fontSize: 10, color: VsColors.slate400,
                           fontWeight: FontWeight.w500)),
                 ),
               ]),
             ]),
           ),
-          // Sight mark mini
+          const SizedBox(width: 8),
+          // Sight mark — smaller
           VsPulsingRings(
             color: VsColors.brand,
-            size: 64,
-            child: VsLogoAnimated(size: 32),
+            size: 48,
+            child: VsLogoAnimated(size: 24),
           ),
         ]),
       ),

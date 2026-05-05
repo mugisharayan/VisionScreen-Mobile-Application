@@ -459,7 +459,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
           SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 22),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -477,7 +477,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                           color: Colors.white, size: 15),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 10),
                   // Title row
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -501,12 +501,12 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                             const SizedBox(height: 8),
                             Text('Bulk',
                                 style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 30, fontWeight: FontWeight.w800,
+                                    fontSize: 22, fontWeight: FontWeight.w800,
                                     color: Colors.white, height: 1.0,
                                     letterSpacing: -0.5)),
                             Text('Screening',
                                 style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 30, fontWeight: FontWeight.w800,
+                                    fontSize: 22, fontWeight: FontWeight.w800,
                                     color: const Color(0xFF5EEAD4),
                                     height: 1.0, letterSpacing: -0.5)),
                             const SizedBox(height: 4),
@@ -538,7 +538,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 10),
                   // Step indicator
                   Row(children: [
                     _stepDot(1, 'Setup',   _section >= 0),

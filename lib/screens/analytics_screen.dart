@@ -236,7 +236,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -253,7 +253,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           const SizedBox(height: 4),
                           Text('Analytics',
                               style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 26, fontWeight: FontWeight.w800,
+                                  fontSize: 22, fontWeight: FontWeight.w800,
                                   color: Colors.white)),
                         ],
                       ),
@@ -279,7 +279,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 8),
                   // Period selector — full width segmented control
                   _buildPeriodSelector(),
                 ],

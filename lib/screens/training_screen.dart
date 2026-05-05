@@ -163,7 +163,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
           SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -234,7 +234,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                       ),
                     ),
                   ]),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 8),
                   // Progress bar
                   Row(children: [
                     Expanded(

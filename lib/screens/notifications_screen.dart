@@ -143,7 +143,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 22),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -187,7 +187,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         ),
                       ),
                   ]),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 10),
                   // Title row
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -226,7 +226,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             const SizedBox(height: 8),
                             Text('Notifications',
                                 style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 26, fontWeight: FontWeight.w800,
+                                    fontSize: 22, fontWeight: FontWeight.w800,
                                     color: Colors.white, height: 1.1)),
                             const SizedBox(height: 4),
                             Text(
@@ -286,7 +286,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 10),
                   // Stats row
                   Row(children: [
                     _buildHeaderStat('Total', '${_notifications.length}',

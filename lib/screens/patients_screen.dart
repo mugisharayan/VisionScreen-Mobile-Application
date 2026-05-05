@@ -418,7 +418,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
           SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -452,12 +452,12 @@ class _PatientsScreenState extends State<PatientsScreen> {
                             // Title
                             Text('Patients',
                                 style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 30, fontWeight: FontWeight.w800,
+                                    fontSize: 22, fontWeight: FontWeight.w800,
                                     color: Colors.white, height: 1.0,
                                     letterSpacing: -0.5)),
                             Text('& Referrals',
                                 style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 30, fontWeight: FontWeight.w800,
+                                    fontSize: 22, fontWeight: FontWeight.w800,
                                     color: const Color(0xFF5EEAD4),
                                     height: 1.0, letterSpacing: -0.5)),
                           ],
@@ -512,7 +512,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                     ],
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 10),
 
                   // -- Stats row -----------------------------
                   Row(children: [
