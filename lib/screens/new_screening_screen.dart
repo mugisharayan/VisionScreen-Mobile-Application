@@ -1846,10 +1846,14 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(children: [
-                    Text(p['name']!,
-                        style: GoogleFonts.plusJakartaSans(
-                            fontSize: 13, fontWeight: FontWeight.w700,
-                            color: isSelected ? _teal : const Color(0xFF1A2A3D))),
+                    Flexible(
+                      child: Text(p['name']!,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13, fontWeight: FontWeight.w700,
+                              color: isSelected ? _teal : const Color(0xFF1A2A3D))),
+                    ),
                     if (isNew) ...[
                       const SizedBox(width: 6),
                       Container(
@@ -1866,6 +1870,8 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   ]),
                   const SizedBox(height: 3),
                   Text('${p['gender']} · ${p['age']} yrs · ${p['village']}',
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                       style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8FA0B4))),
                 ],
               ),

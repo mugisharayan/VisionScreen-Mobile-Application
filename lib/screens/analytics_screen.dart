@@ -693,13 +693,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  '${periodPassRate.toStringAsFixed(0)}%',
-                  style: GoogleFonts.inter(
-                    fontSize: 44,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    height: 1.0,
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '${periodPassRate.toStringAsFixed(0)}%',
+                      style: GoogleFonts.inter(
+                        fontSize: 44,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        height: 1.0,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -707,6 +713,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Text(
                     'pass rate \u00b7 ${_selectedPeriod.toLowerCase()}',
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       color: Colors.white.withValues(alpha: 0.6),

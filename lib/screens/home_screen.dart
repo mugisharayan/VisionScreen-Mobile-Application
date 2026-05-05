@@ -467,6 +467,8 @@ class _HomeScreenState extends State<HomeScreen>
                                         fontWeight: FontWeight.w500)),
                                 const SizedBox(height: 4),
                                 Text('$_firstName 👋',
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
                                     style: GoogleFonts.plusJakartaSans(
                                         fontSize: 32,
                                         fontWeight: FontWeight.w800,
@@ -805,6 +807,8 @@ class _HomeScreenState extends State<HomeScreen>
                     color: Colors.white, height: 1.0)),
             const SizedBox(height: 2),
             Text(label,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
                 style: GoogleFonts.inter(
                     fontSize: 9, color: Colors.white.withValues(alpha: 0.8),
                     fontWeight: FontWeight.w500)),
@@ -978,6 +982,8 @@ class _HomeScreenState extends State<HomeScreen>
                 _totalScreened == 0
                     ? 'No screenings yet — start your first test!'
                     : '$passed passed · $_totalReferred referred · $_totalScreened total',
+                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
                 style: GoogleFonts.inter(
                     fontSize: 12, color: VsColors.slate500,
                     fontWeight: FontWeight.w400),
@@ -1013,10 +1019,14 @@ class _HomeScreenState extends State<HomeScreen>
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title,
-            style: GoogleFonts.plusJakartaSans(
-                fontSize: 16, fontWeight: FontWeight.w700,
-                color: VsColors.slate900)),
+        Flexible(
+          child: Text(title,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              style: GoogleFonts.plusJakartaSans(
+                  fontSize: 16, fontWeight: FontWeight.w700,
+                  color: VsColors.slate900)),
+        ),
         if (trailing != null) trailing,
       ],
     );
@@ -1074,27 +1084,38 @@ class _HomeScreenState extends State<HomeScreen>
       ),
     ];
 
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: EdgeInsets.zero,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: 1.35,
-      children: actions.asMap().entries.map((e) {
-        final delay = e.key * 90;
-        return TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0.0, end: 1.0),
-          duration: Duration(milliseconds: 450 + delay),
-          curve: Curves.easeOutBack,
-          builder: (_, t, child) => Opacity(
-            opacity: t.clamp(0.0, 1.0),
-            child: Transform.scale(scale: 0.7 + 0.3 * t, child: child),
-          ),
-          child: _buildActionCard(e.value),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Dynamically calculate aspect ratio based on available width
+        // Card width = (screen - spacing) / 2 columns
+        final cardW = (constraints.maxWidth - 12) / 2;
+        // Fixed content height: icon(40) + illus(36) + text(36) + padding(22) + gaps(14) = 148
+        const cardH = 148.0;
+        final ratio = cardW / cardH;
+
+        return GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: ratio,
+          children: actions.asMap().entries.map((e) {
+            final delay = e.key * 90;
+            return TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: Duration(milliseconds: 450 + delay),
+              curve: Curves.easeOutBack,
+              builder: (_, t, child) => Opacity(
+                opacity: t.clamp(0.0, 1.0),
+                child: Transform.scale(scale: 0.7 + 0.3 * t, child: child),
+              ),
+              child: _buildActionCard(e.value),
+            );
+          }).toList(),
         );
-      }).toList(),
+      },
     );
   }
 
@@ -1691,7 +1712,7 @@ class _PressableActionCardState extends State<_PressableActionCard>
                 ),
                 // -- Content --
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(13, 12, 13, 12),
+                  padding: const EdgeInsets.fromLTRB(11, 10, 11, 10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1703,10 +1724,10 @@ class _PressableActionCardState extends State<_PressableActionCard>
                         children: [
                           // Icon with glow container
                           Container(
-                            width: 40, height: 40,
+                            width: 34, height: 34,
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.22),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(10),
                               border: Border.all(
                                   color: Colors.white.withValues(alpha: 0.35),
                                   width: 1.5),
@@ -1718,7 +1739,7 @@ class _PressableActionCardState extends State<_PressableActionCard>
                                 ),
                               ],
                             ),
-                            child: Icon(a.icon, color: Colors.white, size: 20),
+                            child: Icon(a.icon, color: Colors.white, size: 17),
                           ),
                           // Tag pill
                           Container(
@@ -1740,9 +1761,9 @@ class _PressableActionCardState extends State<_PressableActionCard>
                         ],
                       ),
 
-                      // Middle: illustration (visible, full opacity)
+                      // Middle: illustration
                       SizedBox(
-                        height: 44,
+                        height: 36,
                         child: a.illustration,
                       ),
 
@@ -1755,6 +1776,8 @@ class _PressableActionCardState extends State<_PressableActionCard>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(a.title,
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
                                     style: GoogleFonts.plusJakartaSans(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w800,
@@ -1762,6 +1785,8 @@ class _PressableActionCardState extends State<_PressableActionCard>
                                         height: 1.1)),
                                 const SizedBox(height: 2),
                                 Text(a.subtitle,
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
                                     style: GoogleFonts.inter(
                                         fontSize: 10,
                                         color: Colors.white.withValues(alpha: 0.75),

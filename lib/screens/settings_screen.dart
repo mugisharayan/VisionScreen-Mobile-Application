@@ -1202,6 +1202,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     Text(
                       label,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
@@ -1212,6 +1214,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                         style: GoogleFonts.inter(fontSize: 12, color: _C.g400),
                       ),
                     ],

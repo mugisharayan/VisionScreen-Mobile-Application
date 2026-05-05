@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'screen_utils.dart';
 
 // ─────────────────────────────────────────────────────────────
 // VisionScreen Design System — "Clinical Teal"
@@ -55,47 +56,47 @@ class VsText {
   // Display — hero numbers, splash title
   static TextStyle display({Color color = VsColors.slate900}) =>
       GoogleFonts.plusJakartaSans(
-        fontSize: 28, fontWeight: FontWeight.w800, color: color, height: 1.1);
+        fontSize: ScreenUtils.sp(28), fontWeight: FontWeight.w800, color: color, height: 1.1);
 
   // H1 — screen titles
   static TextStyle h1({Color color = VsColors.slate900}) =>
       GoogleFonts.plusJakartaSans(
-        fontSize: 22, fontWeight: FontWeight.w700, color: color, height: 1.2);
+        fontSize: ScreenUtils.sp(22), fontWeight: FontWeight.w700, color: color, height: 1.2);
 
   // H2 — section headers
   static TextStyle h2({Color color = VsColors.slate900}) =>
       GoogleFonts.plusJakartaSans(
-        fontSize: 17, fontWeight: FontWeight.w700, color: color, height: 1.3);
+        fontSize: ScreenUtils.sp(17), fontWeight: FontWeight.w700, color: color, height: 1.3);
 
   // H3 — card titles
   static TextStyle h3({Color color = VsColors.slate900}) =>
       GoogleFonts.plusJakartaSans(
-        fontSize: 15, fontWeight: FontWeight.w600, color: color, height: 1.3);
+        fontSize: ScreenUtils.sp(15), fontWeight: FontWeight.w600, color: color, height: 1.3);
 
   // Body — main content
   static TextStyle body({Color color = VsColors.slate700}) =>
       GoogleFonts.inter(
-        fontSize: 14, fontWeight: FontWeight.w400, color: color, height: 1.5);
+        fontSize: ScreenUtils.sp(14), fontWeight: FontWeight.w400, color: color, height: 1.5);
 
   // Body medium
   static TextStyle bodyMd({Color color = VsColors.slate700}) =>
       GoogleFonts.inter(
-        fontSize: 14, fontWeight: FontWeight.w500, color: color, height: 1.5);
+        fontSize: ScreenUtils.sp(14), fontWeight: FontWeight.w500, color: color, height: 1.5);
 
   // Label — metadata, subtitles
   static TextStyle label({Color color = VsColors.slate500}) =>
       GoogleFonts.inter(
-        fontSize: 12, fontWeight: FontWeight.w500, color: color, height: 1.4);
+        fontSize: ScreenUtils.sp(12), fontWeight: FontWeight.w500, color: color, height: 1.4);
 
   // Caption — timestamps, hints
   static TextStyle caption({Color color = VsColors.slate400}) =>
       GoogleFonts.inter(
-        fontSize: 11, fontWeight: FontWeight.w400, color: color, height: 1.4);
+        fontSize: ScreenUtils.sp(11), fontWeight: FontWeight.w400, color: color, height: 1.4);
 
   // Micro — badges, chips
   static TextStyle micro({Color color = VsColors.slate600}) =>
       GoogleFonts.inter(
-        fontSize: 10, fontWeight: FontWeight.w600, color: color,
+        fontSize: ScreenUtils.sp(10), fontWeight: FontWeight.w600, color: color,
         letterSpacing: 0.3);
 
   // Number — stat display
