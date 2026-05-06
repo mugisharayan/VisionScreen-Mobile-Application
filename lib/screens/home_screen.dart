@@ -1334,11 +1334,13 @@ class _HomeScreenState extends State<HomeScreen>
                         color: VsColors.slate900)),
                 const SizedBox(height: 3),
                 Text('$gender · $age yrs',
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                     style: GoogleFonts.inter(
                         fontSize: 11, color: VsColors.slate500)),
                 const SizedBox(height: 6),
                 if (outcome != 'pending')
-                  Row(children: [
+                  Row(mainAxisSize: MainAxisSize.min, children: [
                     _vaPill('OD', od, accent),
                     const SizedBox(width: 4),
                     _vaPill('OS', os, accent),
@@ -1509,6 +1511,8 @@ class _HomeScreenState extends State<HomeScreen>
                             color: VsColors.slate900)),
                     const SizedBox(height: 2),
                     Text('$gender · $age yrs',
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                         style: GoogleFonts.inter(
                             fontSize: 11, color: VsColors.slate500)),
                     const SizedBox(height: 4),

@@ -817,10 +817,14 @@ class _PatientsScreenState extends State<PatientsScreen> {
                         const SizedBox(width: 12),
                         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Text(name,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                               style: GoogleFonts.plusJakartaSans(
                                   fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white)),
                           const SizedBox(height: 2),
                           Text('$location � $group',
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                               style: GoogleFonts.inter(
                                   fontSize: 11, color: Colors.white.withValues(alpha: 0.65))),
                         ])),
@@ -891,6 +895,8 @@ class _PatientsScreenState extends State<PatientsScreen> {
     padding: const EdgeInsets.only(right: 16),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(value,
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
           style: GoogleFonts.plusJakartaSans(
               fontSize: 18, fontWeight: FontWeight.w800, color: color, height: 1.0)),
       Text(label,
@@ -1090,13 +1096,15 @@ class _PatientsScreenState extends State<PatientsScreen> {
                           const SizedBox(height: 8),
                           // VA pills or pending badge
                           if (p.outcome != 'pending')
-                            Row(mainAxisSize: MainAxisSize.min, children: [
-                              _vaPill('OD', p.od, p.outcome),
-                              const SizedBox(width: 4),
-                              _vaPill('OS', p.os, p.outcome),
-                              const SizedBox(width: 4),
-                              _vaPill('OU', p.ou, p.outcome),
-                            ])
+                            Flexible(
+                              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                _vaPill('OD', p.od, p.outcome),
+                                const SizedBox(width: 4),
+                                _vaPill('OS', p.os, p.outcome),
+                                const SizedBox(width: 4),
+                                _vaPill('OU', p.ou, p.outcome),
+                              ]),
+                            )
                           else
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1124,7 +1132,8 @@ class _PatientsScreenState extends State<PatientsScreen> {
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(color: _amber.withValues(alpha: 0.25)),
                                 ),
-                                child: Text(c, style: GoogleFonts.inter(
+                                child: Text(c, overflow: TextOverflow.ellipsis, maxLines: 1,
+                                    style: GoogleFonts.inter(
                                     fontSize: 9, fontWeight: FontWeight.w600, color: _amber)),
                               )).toList()),
                           ],
@@ -2495,13 +2504,17 @@ class _CampaignDetailScreenState extends State<_CampaignDetailScreen> {
                                   color: Colors.white.withValues(alpha: 0.65), letterSpacing: 1.8)),
                         ]),
                         const SizedBox(height: 8),
-                        Text(name, style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.w800,
+                        Text(name, overflow: TextOverflow.ellipsis, maxLines: 2,
+                            style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.w800,
                             color: Colors.white, letterSpacing: -0.5, height: 1.1)),
                         const SizedBox(height: 4),
                         Row(children: [
                           Icon(Icons.location_on_rounded, size: 11, color: Colors.white.withValues(alpha: 0.65)),
                           const SizedBox(width: 4),
-                          Text(location, style: GoogleFonts.inter(fontSize: 11, color: Colors.white.withValues(alpha: 0.65))),
+                          Flexible(
+                            child: Text(location, overflow: TextOverflow.ellipsis, maxLines: 1,
+                                style: GoogleFonts.inter(fontSize: 11, color: Colors.white.withValues(alpha: 0.65))),
+                          ),
                         ]),
                       ])),
                       const SizedBox(width: 12),
