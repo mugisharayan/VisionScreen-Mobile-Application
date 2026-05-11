@@ -16,5 +16,9 @@ void main() {
 
     // Verify that the app loads without crashing.
     expect(find.byType(MaterialApp), findsOneWidget);
+
+    // Dispose timers created by the splash screen before the test ends.
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
   });
 }

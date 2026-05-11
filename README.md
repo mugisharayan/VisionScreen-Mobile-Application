@@ -1,17 +1,62 @@
-# visionscreen
+# VisionScreen
 
-A new Flutter project.
+VisionScreen is an offline-first Flutter app for community health workers to register patients, run visual acuity screenings, manage campaigns, produce referrals, and export local records.
 
-## Getting Started
+## Current Architecture
 
-This project is a starting point for a Flutter application.
+- Flutter UI in `lib/screens/`
+- Local SQLite persistence in `lib/db/database_helper.dart`
+- Thin repositories in `lib/repositories/`
+- Manual JSON backup/restore in `lib/services/backup_service.dart`
+- Optional MongoDB workspace sync in `lib/services/sync/`
 
-A few resources to get you started if this is your first Flutter project:
+The refactor in progress removes misleading cloud/security claims and routes writes through explicit database helpers so sync, backup, analytics, and exports all use the same source of truth.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Workspace Sync
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+MongoDB sync is optional and build-configured. When configured, local writes still land in SQLite first and are pushed later through the queued sync pipeline.
+
+Build with:
+
+```bash
+flutter run \
+  --dart-define=VS_MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>/<db> \
+  --dart-define=VS_MONGODB_DB=<db-name>
+```
+
+If the sync variables are omitted, the app remains local-only and exposes honest "not configured" states in the UI.
+
+## Local Development
+
+```bash
+flutter pub get
+flutter test
+dart analyze \
+  lib/db/database_helper.dart \
+  lib/repositories/auth_repository.dart \
+  lib/repositories/campaign_repository.dart \
+  lib/repositories/patient_repository.dart \
+  lib/repositories/screening_repository.dart \
+  lib/screens/splash_screen.dart \
+  lib/services/backup_service.dart \
+  lib/services/sync \
+  lib/utils/app_constants.dart \
+  lib/utils/id_utils.dart \
+  test/widget_test.dart
+```
+
+## Platform Notes
+
+- iOS requires camera, photo library, and location permissions for the current screening flows.
+- Android includes native channels for brightness and ambient light access.
+
+## Product Areas
+
+- Authentication and session restore
+- Patient registration and duplicate detection
+- Individual screening
+- Bulk campaign screening
+- Referral tracking
+- Analytics and PDF export
+- Manual backup/restore
+- Optional facility workspace sync

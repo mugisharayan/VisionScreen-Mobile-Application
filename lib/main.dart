@@ -17,6 +17,7 @@ import 'widgets/vs_logo.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  GoogleFonts.config.allowRuntimeFetching = false;
 
   // Status bar: transparent so the teal header bleeds through
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
@@ -24,11 +25,6 @@ void main() async {
     statusBarIconBrightness: Brightness.light,
   ));
 
-  // Pre-load only the 2 fonts we actually use
-  await GoogleFonts.pendingFonts([
-    GoogleFonts.inter(),
-    GoogleFonts.plusJakartaSans(),
-  ]);
   runApp(const VisionScreenApp());
 }
 

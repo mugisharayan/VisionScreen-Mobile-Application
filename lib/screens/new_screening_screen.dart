@@ -1,5 +1,5 @@
-﻿import 'dart:async';
-import 'dart:math';
+import 'dart:async';
+import 'dart:math' show Random, sqrt;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,24 +7,24 @@ import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'referral_letter_screen.dart';
 import 'face_distance_screen.dart';
+import '../services/chw_profile_preferences.dart';
 import '../utils/patient_validators.dart';
+import '../utils/visual_acuity.dart';
 import '../repositories/patient_repository.dart';
 import '../repositories/screening_repository.dart';
 
 // ── Colours ──────────────────────────────────────────────────────────────────
-const _ink  = Color(0xFF04091A);
-const _ink2 = Color(0xFF0B1530);
+const _ink = Color(0xFF04091A);
 const _teal = Color(0xFF0D9488);
 const _teal3 = Color(0xFF5EEAD4);
 const _amber = Color(0xFFF59E0B);
-const _red   = Color(0xFFEF4444);
+const _red = Color(0xFFEF4444);
 const _green = Color(0xFF22C55E);
 const double _kMinLux = 80.0;
 
@@ -46,12 +46,12 @@ const _rows = [
   {'logmar': '0.8', 'mm': 18.36},
   {'logmar': '0.7', 'mm': 14.59},
   {'logmar': '0.6', 'mm': 11.59},
-  {'logmar': '0.5', 'mm':  9.21},
-  {'logmar': '0.4', 'mm':  7.31},
-  {'logmar': '0.3', 'mm':  5.81},
-  {'logmar': '0.2', 'mm':  4.61},
-  {'logmar': '0.1', 'mm':  3.66},
-  {'logmar': '0.0', 'mm':  2.91},
+  {'logmar': '0.5', 'mm': 9.21},
+  {'logmar': '0.4', 'mm': 7.31},
+  {'logmar': '0.3', 'mm': 5.81},
+  {'logmar': '0.2', 'mm': 4.61},
+  {'logmar': '0.1', 'mm': 3.66},
+  {'logmar': '0.0', 'mm': 2.91},
 ];
 
 // Convert mm to logical pixels using device DPI
@@ -80,14 +80,17 @@ double _mmToPx(double mm, BuildContext context) {
 class NewScreeningScreen extends StatefulWidget {
   final bool startWithNewPatient;
   final String? existingPatientId;
-  const NewScreeningScreen({super.key, this.startWithNewPatient = false, this.existingPatientId});
+  const NewScreeningScreen({
+    super.key,
+    this.startWithNewPatient = false,
+    this.existingPatientId,
+  });
   @override
   State<NewScreeningScreen> createState() => _NewScreeningScreenState();
 }
 
 class _NewScreeningScreenState extends State<NewScreeningScreen>
     with TickerProviderStateMixin {
-
   // ── Step ──────────────────────────────────────────────────────────────────
   int _step = 0;
 
@@ -96,9 +99,9 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   final _patientSearchCtrl = TextEditingController();
   String _patientQuery = '';
   bool _showNewPatientForm = false; // set in initState
-  final _newNameCtrl    = TextEditingController();
+  final _newNameCtrl = TextEditingController();
   final _newVillageCtrl = TextEditingController();
-  final _newPhoneCtrl   = TextEditingController();
+  final _newPhoneCtrl = TextEditingController();
   String _newGender = 'M';
   DateTime? _newDob;
   bool _detectingLocation = false;
@@ -115,7 +118,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   double _currentLux = 0.0;
   bool _luxChecked = false;
   bool _luxOk = false;
-  final int _selectedDistance = 2;
   // brightness
   bool _brightnessSet = false;
   double? _originalBrightness;
@@ -123,12 +125,12 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 
   // ── Feature: Eye test ─────────────────────────────────────────────────────
   int _currentEyeIndex = 0;
-  int _currentRow = 0;       // index into _rows
+  int _currentRow = 0; // index into _rows
   int _currentRotation = 0;
   int _lastPassedRow = 0;
   // Staircase state
-  int _letterIndex = 0;       // 0-4, which of the 5 letters in current row
-  int _correctCount = 0;      // correct answers in current row
+  int _letterIndex = 0; // 0-4, which of the 5 letters in current row
+  int _correctCount = 0; // correct answers in current row
   int _staircaseJumpIndex = 0; // where we are in _staircaseJumps
   bool _staircasePhase = true; // true=initial jumps, false=fine search
   final List<Map<String, dynamic>> _eyeResults = [];
@@ -149,7 +151,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   Timer? _testTimer;
   int _testSeconds = 0;
 
-// ── Feature: Offline / unsynced ───────────────────────────────────────────
+  // ── Feature: Offline / unsynced ───────────────────────────────────────────
   bool _isOffline = false;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   int _unsyncedCount = 0;
@@ -163,11 +165,13 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   void initState() {
     super.initState();
     _pulseCtrl = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 1200),
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
-    _pulseAnim = Tween<double>(begin: 0.85, end: 1.0).animate(
-      CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
-    );
+    _pulseAnim = Tween<double>(
+      begin: 0.85,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
     _showNewPatientForm = widget.startWithNewPatient;
     if (widget.existingPatientId != null) {
       _selectedPatientId = widget.existingPatientId;
@@ -189,15 +193,19 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     final rows = await PatientRepository.instance.getPatients(pageSize: 500);
     if (!mounted) return;
     setState(() {
-      _patientListRuntime = rows.map((r) => {
-        'id': r['id'] as String,
-        'name': r['name'] as String,
-        'age': r['age'].toString(),
-        'gender': r['gender'] as String,
-        'village': r['village'] as String,
-        'dob': (r['dob'] as String?) ?? '',
-        'conditions': (r['conditions'] as String?) ?? '',
-      }).toList();
+      _patientListRuntime = rows
+          .map(
+            (r) => {
+              'id': r['id'] as String,
+              'name': r['name'] as String,
+              'age': r['age'].toString(),
+              'gender': r['gender'] as String,
+              'village': r['village'] as String,
+              'dob': (r['dob'] as String?) ?? '',
+              'conditions': (r['conditions'] as String?) ?? '',
+            },
+          )
+          .toList();
     });
   }
 
@@ -225,7 +233,11 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       (c) => c.lensDirection == CameraLensDirection.front,
       orElse: () => cameras.first,
     );
-    _photoCtrl = CameraController(front, ResolutionPreset.medium, enableAudio: false);
+    _photoCtrl = CameraController(
+      front,
+      ResolutionPreset.medium,
+      enableAudio: false,
+    );
     await _photoCtrl!.initialize();
     if (!mounted) return;
     setState(() => _showPhotoCamera = true);
@@ -237,7 +249,8 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       final file = await _photoCtrl!.takePicture();
       // Copy to permanent app documents directory so it survives camera disposal
       final appDir = await getApplicationDocumentsDirectory();
-      final fileName = 'patient_photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final fileName =
+          'patient_photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final permanentPath = '${appDir.path}/$fileName';
       await File(file.path).copy(permanentPath);
       final ctrl = _photoCtrl;
@@ -262,7 +275,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     ctrl?.dispose();
   }
 
-
   void _showPhotoOptions() => _openPhotoCamera();
 
   // ── Checklist logic ───────────────────────────────────────────────────────
@@ -272,7 +284,10 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   }
 
   void _checkLight() {
-    setState(() { _luxChecked = false; _luxOk = false; });
+    setState(() {
+      _luxChecked = false;
+      _luxOk = false;
+    });
     final channel = EventChannel('visionscreen/light');
     StreamSubscription? sub;
     bool received = false;
@@ -529,23 +544,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     });
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   void _goToFinalSummary() => setState(() => _step = 5);
 
   void _generateNearRotation() =>
@@ -635,8 +633,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 
   Future<void> _saveScreening() async {
     if (_selectedPatientId == null) return;
-    final prefs = await SharedPreferences.getInstance();
-    final chwName = prefs.getString('chw_name') ?? '';
+    final profile = await ChwProfilePreferences.load();
 
     String odLogmar = '';
     String osLogmar = '';
@@ -669,9 +666,9 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       'od_logmar': odLogmar,
       'os_logmar': osLogmar,
       'ou_near_logmar': nearLogmar,
-      'od_snellen': odLogmar.isNotEmpty ? _toSnellen(odLogmar) : '',
-      'os_snellen': osLogmar.isNotEmpty ? _toSnellen(osLogmar) : '',
-      'ou_near_snellen': nearLogmar.isNotEmpty ? _toSnellen(nearLogmar) : '',
+      'od_snellen': odLogmar.isNotEmpty ? VisualAcuity.toSnellen(odLogmar) : '',
+      'os_snellen': osLogmar.isNotEmpty ? VisualAcuity.toSnellen(osLogmar) : '',
+      'ou_near_snellen': nearLogmar.isNotEmpty ? VisualAcuity.toSnellen(nearLogmar) : '',
       'od_cant_tell': odCantTell,
       'os_cant_tell': osCantTell,
       'near_cant_tell': nearCantTell,
@@ -681,8 +678,8 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       'outcome': outcome,
       'referral_facility': '',
       'referral_status': outcome == 'refer' ? 'pending' : '',
-      'chw_name': chwName,
-      'synced': _isOffline ? 0 : 0,
+      'chw_name': profile.name,
+      'synced': 0,
     });
     if (mounted) setState(() => _savedScreeningId = id);
 
@@ -695,26 +692,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     if (mounted) setState(() => _unsyncedCount = count);
   }
 
-
   // ── VA helpers ────────────────────────────────────────────────────────────
-  String _toSnellen(String logmar) {
-    final v = double.tryParse(logmar);
-    if (v == null) return logmar;
-    const snaps = [6, 9, 12, 18, 24, 36, 48, 60, 120];
-    final second = (6 * pow(10, v)).round();
-    return '6/${snaps.reduce((a, b) => (a - second).abs() < (b - second).abs() ? a : b)}';
-  }
-
-  String _vaClass(String logmar) {
-    final v = double.tryParse(logmar);
-    if (v == null) return logmar; // LV level string
-    if (v <= 0.0) return 'Normal';
-    if (v <= 0.3) return 'Near Normal';
-    if (v <= 0.5) return 'Moderate VI';
-    if (v <= 1.0) return 'Severe VI';
-    return 'Blind';
-  }
-
   Color _vaColor(String logmar) {
     final v = double.tryParse(logmar);
     if (v == null) return _red;
@@ -738,7 +716,8 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       final v = double.tryParse(r['logmar'] as String);
       return v == null || v > 0.3;
     });
-    final nearPoor = _nearResult != null &&
+    final nearPoor =
+        _nearResult != null &&
         (double.tryParse(_nearResult!['logmar'] as String) ?? 1.0) > 0.3;
     return distancePoor || nearPoor;
   }
@@ -746,7 +725,9 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   // ── Build ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    if (_showPhotoCamera && _photoCtrl != null && _photoCtrl!.value.isInitialized) {
+    if (_showPhotoCamera &&
+        _photoCtrl != null &&
+        _photoCtrl!.value.isInitialized) {
       return Scaffold(
         backgroundColor: Colors.black,
         body: Stack(
@@ -760,31 +741,41 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   onTap: _closePhotoCamera,
                   child: Container(
                     margin: const EdgeInsets.all(16),
-                    width: 40, height: 40,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.5),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.close_rounded,
-                        color: Colors.white, size: 20),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
                 ),
               ),
             ),
             Positioned(
-              bottom: 40, left: 0, right: 0,
+              bottom: 40,
+              left: 0,
+              right: 0,
               child: Center(
                 child: GestureDetector(
                   onTap: _takePhoto,
                   child: Container(
-                    width: 72, height: 72,
+                    width: 72,
+                    height: 72,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 4),
                       color: Colors.white.withValues(alpha: 0.2),
                     ),
-                    child: const Icon(Icons.camera_alt_rounded,
-                        color: Colors.white, size: 32),
+                    child: const Icon(
+                      Icons.camera_alt_rounded,
+                      color: Colors.white,
+                      size: 32,
+                    ),
                   ),
                 ),
               ),
@@ -807,16 +798,26 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 
   Widget _buildStep() {
     switch (_step) {
-      case 0: return _buildPatientSelector();
-      case 1: return _buildChecklist();
-      case 2: return _buildCoverEyeReminder();
-      case 3: return _buildEChart();
-      case 4: return _buildEyeResult();
-      case 5: return _buildSummary();
-      case 6: return _buildNearVisionIntro();
-      case 7: return _buildNearChart();
-      case 8: return _buildNearResult();
-      default: return const SizedBox();
+      case 0:
+        return _buildPatientSelector();
+      case 1:
+        return _buildChecklist();
+      case 2:
+        return _buildCoverEyeReminder();
+      case 3:
+        return _buildEChart();
+      case 4:
+        return _buildEyeResult();
+      case 5:
+        return _buildSummary();
+      case 6:
+        return _buildNearVisionIntro();
+      case 7:
+        return _buildNearChart();
+      case 8:
+        return _buildNearResult();
+      default:
+        return const SizedBox();
     }
   }
 
@@ -828,9 +829,14 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       children: [
         const Icon(Icons.wifi_off_rounded, size: 14, color: _amber),
         const SizedBox(width: 8),
-        Text('No internet — results will be saved locally',
-            style: GoogleFonts.inter(
-                fontSize: 11, fontWeight: FontWeight.w600, color: _amber)),
+        Text(
+          'No internet — results will be saved locally',
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: _amber,
+          ),
+        ),
       ],
     ),
   );
@@ -842,7 +848,14 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     final isChecklist = _step == 1;
 
     // Step labels for the progress bar
-    const stepLabels = ['Patient', 'Check', 'Cover', 'Test', 'Result', 'Summary'];
+    const stepLabels = [
+      'Patient',
+      'Check',
+      'Cover',
+      'Test',
+      'Result',
+      'Summary',
+    ];
     // Map internal step (0-8) to display step (0-5)
     final displayStep = _step.clamp(0, 5);
 
@@ -866,10 +879,14 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   children: [
                     _backButton(),
                     const SizedBox(width: 12),
-                    Text('Environment Check',
-                        style: GoogleFonts.plusJakartaSans(
-                            fontSize: 16, fontWeight: FontWeight.w700,
-                            color: Colors.white)),
+                    Text(
+                      'Environment Check',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -909,111 +926,180 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                         // Eye label
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(99),
                             border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.35)),
+                              color: Colors.white.withValues(alpha: 0.35),
+                            ),
                           ),
-                          child: Text(_eyeOrder[_currentEyeIndex],
-                              style: GoogleFonts.inter(
-                                  fontSize: 12, fontWeight: FontWeight.w800,
-                                  color: Colors.white)),
+                          child: Text(
+                            _eyeOrder[_currentEyeIndex],
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                         const SizedBox(width: 8),
-                        Text('LogMAR ${_rows[_currentRow]['logmar']}',
-                            style: GoogleFonts.inter(
-                                fontSize: 12, fontWeight: FontWeight.w600,
-                                color: Colors.white.withValues(alpha: 0.9))),
+                        Text(
+                          'LogMAR ${_rows[_currentRow]['logmar']}',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.9),
+                          ),
+                        ),
                         const Spacer(),
                         // Letter counter
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(99),
                           ),
-                          child: Text('$_letterIndex/5',
-                              style: GoogleFonts.inter(
-                                  fontSize: 11, fontWeight: FontWeight.w700,
-                                  color: Colors.white)),
+                          child: Text(
+                            '$_letterIndex/5',
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                         const SizedBox(width: 8),
-                        Icon(Icons.timer_rounded,
-                            size: 12, color: Colors.white.withValues(alpha: 0.7)),
+                        Icon(
+                          Icons.timer_rounded,
+                          size: 12,
+                          color: Colors.white.withValues(alpha: 0.7),
+                        ),
                         const SizedBox(width: 3),
-                        Text(_testDuration,
-                            style: GoogleFonts.inter(
-                                fontSize: 11, fontWeight: FontWeight.w600,
-                                color: Colors.white.withValues(alpha: 0.7))),
+                        Text(
+                          _testDuration,
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.7),
+                          ),
+                        ),
                       ] else if (isNearChart) ...[
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(99),
                             border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.35)),
+                              color: Colors.white.withValues(alpha: 0.35),
+                            ),
                           ),
-                          child: Text('OU — 40cm',
-                              style: GoogleFonts.inter(
-                                  fontSize: 12, fontWeight: FontWeight.w800,
-                                  color: Colors.white)),
+                          child: Text(
+                            'OU — 40cm',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                         const SizedBox(width: 8),
-                        Text('LogMAR ${_rows[_nearRow]['logmar']}',
-                            style: GoogleFonts.inter(
-                                fontSize: 12, fontWeight: FontWeight.w600,
-                                color: Colors.white.withValues(alpha: 0.9))),
+                        Text(
+                          'LogMAR ${_rows[_nearRow]['logmar']}',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.9),
+                          ),
+                        ),
                         const Spacer(),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(99),
                           ),
-                          child: Text('$_nearLetterIndex/5',
-                              style: GoogleFonts.inter(
-                                  fontSize: 11, fontWeight: FontWeight.w700,
-                                  color: Colors.white)),
+                          child: Text(
+                            '$_nearLetterIndex/5',
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                         const SizedBox(width: 8),
-                        Icon(Icons.timer_rounded,
-                            size: 12, color: Colors.white.withValues(alpha: 0.7)),
+                        Icon(
+                          Icons.timer_rounded,
+                          size: 12,
+                          color: Colors.white.withValues(alpha: 0.7),
+                        ),
                         const SizedBox(width: 3),
-                        Text(_testDuration,
-                            style: GoogleFonts.inter(
-                                fontSize: 11, fontWeight: FontWeight.w600,
-                                color: Colors.white.withValues(alpha: 0.7))),
+                        Text(
+                          _testDuration,
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.7),
+                          ),
+                        ),
                       ] else ...[
-                        Text('Vision Screening',
-                            style: GoogleFonts.plusJakartaSans(
-                                fontSize: 16, fontWeight: FontWeight.w700,
-                                color: Colors.white)),
+                        Text(
+                          'Vision Screening',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
                         const Spacer(),
                         if (_unsyncedCount > 0)
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 5),
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF59E0B).withValues(alpha: 0.2),
+                              color: const Color(
+                                0xFFF59E0B,
+                              ).withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(99),
                               border: Border.all(
-                                  color: const Color(0xFFF59E0B).withValues(alpha: 0.4)),
+                                color: const Color(
+                                  0xFFF59E0B,
+                                ).withValues(alpha: 0.4),
+                              ),
                             ),
-                            child: Row(mainAxisSize: MainAxisSize.min, children: [
-                              const Icon(Icons.cloud_off_rounded,
-                                  size: 11, color: Color(0xFFF59E0B)),
-                              const SizedBox(width: 4),
-                              Text('$_unsyncedCount unsynced',
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.cloud_off_rounded,
+                                  size: 11,
+                                  color: Color(0xFFF59E0B),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '$_unsyncedCount unsynced',
                                   style: GoogleFonts.inter(
-                                      fontSize: 10, fontWeight: FontWeight.w700,
-                                      color: const Color(0xFFF59E0B))),
-                            ]),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFFF59E0B),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                       ],
                     ],
@@ -1036,14 +1122,18 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
         Navigator.pop(context);
       },
       child: Container(
-        width: 36, height: 36,
+        width: 36,
+        height: 36,
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
         ),
-        child: const Icon(Icons.arrow_back_rounded,
-            color: Colors.white, size: 18),
+        child: const Icon(
+          Icons.arrow_back_rounded,
+          color: Colors.white,
+          size: 18,
+        ),
       ),
     );
   }
@@ -1051,7 +1141,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   Widget _buildStepProgressBar(int current, List<String> labels) {
     return Row(
       children: List.generate(labels.length, (i) {
-        final done   = i < current;
+        final done = i < current;
         final active = i == current;
         return Expanded(
           child: Row(
@@ -1081,8 +1171,8 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                         color: active
                             ? Colors.white
                             : done
-                                ? Colors.white.withValues(alpha: 0.7)
-                                : Colors.white.withValues(alpha: 0.35),
+                            ? Colors.white.withValues(alpha: 0.7)
+                            : Colors.white.withValues(alpha: 0.35),
                       ),
                       child: Text(labels[i], textAlign: TextAlign.center),
                     ),
@@ -1101,25 +1191,28 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   Widget _stepBar(int current) {
     const total = 6;
     return Row(
-      children: List.generate(total, (i) => Expanded(
-        child: Row(
-          children: [
-            Expanded(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                height: 3,
-                decoration: BoxDecoration(
-                  color: i < current
-                      ? Colors.white
-                      : Colors.white.withValues(alpha: 0.25),
-                  borderRadius: BorderRadius.circular(99),
+      children: List.generate(
+        total,
+        (i) => Expanded(
+          child: Row(
+            children: [
+              Expanded(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  height: 3,
+                  decoration: BoxDecoration(
+                    color: i < current
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
                 ),
               ),
-            ),
-            if (i < total - 1) const SizedBox(width: 4),
-          ],
+              if (i < total - 1) const SizedBox(width: 4),
+            ],
+          ),
         ),
-      )),
+      ),
     );
   }
 
@@ -1138,9 +1231,13 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       }
       final pos = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.medium));
+          accuracy: LocationAccuracy.medium,
+        ),
+      );
       final placemarks = await placemarkFromCoordinates(
-          pos.latitude, pos.longitude);
+        pos.latitude,
+        pos.longitude,
+      );
       if (!mounted) return;
       if (placemarks.isNotEmpty) {
         final p = placemarks.first;
@@ -1158,8 +1255,8 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   int _calcAge(DateTime dob) {
     final now = DateTime.now();
     int age = now.year - dob.year;
-    if (now.month < dob.month ||
-        (now.month == dob.month && now.day < dob.day)) age--;
+    if (now.month < dob.month || (now.month == dob.month && now.day < dob.day))
+      age--;
     return age;
   }
 
@@ -1181,13 +1278,22 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           children: [
             _stepBar(1),
             const SizedBox(height: 20),
-            Text('Select Patient',
-                style: GoogleFonts.plusJakartaSans(
-                    fontSize: 22, fontWeight: FontWeight.w800,
-                    color: const Color(0xFF1A2A3D))),
+            Text(
+              'Select Patient',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF1A2A3D),
+              ),
+            ),
             const SizedBox(height: 6),
-            Text('Search for a registered patient or add a new one.',
-                style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF5E7291))),
+            Text(
+              'Search for a registered patient or add a new one.',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: const Color(0xFF5E7291),
+              ),
+            ),
             const SizedBox(height: 16),
             _searchBar(),
             const SizedBox(height: 10),
@@ -1195,10 +1301,12 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             const SizedBox(height: 12),
             _newPatientForm(),
             const SizedBox(height: 16),
-            ...filtered.map((p) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _patientCard(p),
-            )),
+            ...filtered.map(
+              (p) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _patientCard(p),
+              ),
+            ),
             if (_selectedPatientId != null) ...[
               const SizedBox(height: 8),
               GestureDetector(
@@ -1230,27 +1338,37 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Container(
-                            width: 36, height: 36,
+                            width: 36,
+                            height: 36,
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.2),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.arrow_forward_rounded,
-                                color: Colors.white, size: 20),
+                            child: const Icon(
+                              Icons.arrow_forward_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                           ),
                           const SizedBox(width: 12),
-                          Text('Continue to Setup',
-                              style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white)),
+                          Text(
+                            'Continue to Setup',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 6),
-                      Text('Patient selected — proceed to checklist',
-                          style: GoogleFonts.inter(
-                              fontSize: 11,
-                              color: Colors.white.withValues(alpha: 0.7))),
+                      Text(
+                        'Patient selected — proceed to checklist',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: Colors.white.withValues(alpha: 0.7),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -1270,13 +1388,22 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             children: [
               _stepBar(1),
               const SizedBox(height: 20),
-              Text('Select Patient',
-                  style: GoogleFonts.plusJakartaSans(
-                      fontSize: 22, fontWeight: FontWeight.w800,
-                      color: const Color(0xFF1A2A3D))),
+              Text(
+                'Select Patient',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF1A2A3D),
+                ),
+              ),
               const SizedBox(height: 6),
-              Text('Search for a registered patient or add a new one.',
-                  style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF5E7291))),
+              Text(
+                'Search for a registered patient or add a new one.',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: const Color(0xFF5E7291),
+                ),
+              ),
               const SizedBox(height: 16),
               _searchBar(),
               const SizedBox(height: 10),
@@ -1287,8 +1414,15 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
         ),
         Expanded(
           child: filtered.isEmpty
-              ? Center(child: Text('No patients found',
-                  style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF8FA0B4))))
+              ? Center(
+                  child: Text(
+                    'No patients found',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: const Color(0xFF8FA0B4),
+                    ),
+                  ),
+                )
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
                   itemCount: filtered.length,
@@ -1328,27 +1462,37 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
-                          width: 36, height: 36,
+                          width: 36,
+                          height: 36,
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.2),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.arrow_forward_rounded,
-                              color: Colors.white, size: 20),
+                          child: const Icon(
+                            Icons.arrow_forward_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                         ),
                         const SizedBox(width: 12),
-                        Text('Continue to Setup',
-                            style: GoogleFonts.plusJakartaSans(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white)),
+                        Text(
+                          'Continue to Setup',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 6),
-                    Text('Patient selected — proceed to checklist',
-                        style: GoogleFonts.inter(
-                            fontSize: 11,
-                            color: Colors.white.withValues(alpha: 0.7))),
+                    Text(
+                      'Patient selected — proceed to checklist',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: Colors.white.withValues(alpha: 0.7),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -1370,10 +1514,20 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF1A2A3D)),
       decoration: InputDecoration(
         hintText: 'Search by name, ID or village...',
-        hintStyle: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF8FA0B4)),
-        prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Color(0xFF8FA0B4)),
+        hintStyle: GoogleFonts.inter(
+          fontSize: 13,
+          color: const Color(0xFF8FA0B4),
+        ),
+        prefixIcon: const Icon(
+          Icons.search_rounded,
+          size: 18,
+          color: Color(0xFF8FA0B4),
+        ),
         border: InputBorder.none,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
+        ),
       ),
     ),
   );
@@ -1383,7 +1537,9 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: _showNewPatientForm ? _teal.withValues(alpha: 0.08) : Colors.white,
+        color: _showNewPatientForm
+            ? _teal.withValues(alpha: 0.08)
+            : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: _showNewPatientForm ? _teal : const Color(0xFFEEF2F6),
@@ -1392,13 +1548,22 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       ),
       child: Row(
         children: [
-          Icon(_showNewPatientForm
-              ? Icons.remove_circle_outline_rounded
-              : Icons.person_add_rounded, size: 18, color: _teal),
+          Icon(
+            _showNewPatientForm
+                ? Icons.remove_circle_outline_rounded
+                : Icons.person_add_rounded,
+            size: 18,
+            color: _teal,
+          ),
           const SizedBox(width: 10),
-          Text(_showNewPatientForm ? 'Cancel new patient' : 'Add new patient',
-              style: GoogleFonts.inter(
-                  fontSize: 13, fontWeight: FontWeight.w600, color: _teal)),
+          Text(
+            _showNewPatientForm ? 'Cancel new patient' : 'Add new patient',
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: _teal,
+            ),
+          ),
         ],
       ),
     ),
@@ -1406,15 +1571,15 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 
   Widget _newPatientForm() {
     const conditions = [
-      {'label': 'Red Eyes',          'icon': Icons.remove_red_eye_rounded},
-      {'label': 'Swollen Eyes',      'icon': Icons.visibility_off_rounded},
-      {'label': 'Eye Discharge',     'icon': Icons.water_drop_rounded},
-      {'label': 'Blurred Vision',    'icon': Icons.blur_on_rounded},
-      {'label': 'Eye Pain',          'icon': Icons.warning_amber_rounded},
-      {'label': 'Previous Surgery',  'icon': Icons.medical_services_rounded},
-      {'label': 'Wears Glasses',     'icon': Icons.remove_red_eye_outlined},
-      {'label': 'Diabetes',          'icon': Icons.monitor_heart_rounded},
-      {'label': 'Hypertension',      'icon': Icons.favorite_rounded},
+      {'label': 'Red Eyes', 'icon': Icons.remove_red_eye_rounded},
+      {'label': 'Swollen Eyes', 'icon': Icons.visibility_off_rounded},
+      {'label': 'Eye Discharge', 'icon': Icons.water_drop_rounded},
+      {'label': 'Blurred Vision', 'icon': Icons.blur_on_rounded},
+      {'label': 'Eye Pain', 'icon': Icons.warning_amber_rounded},
+      {'label': 'Previous Surgery', 'icon': Icons.medical_services_rounded},
+      {'label': 'Wears Glasses', 'icon': Icons.remove_red_eye_outlined},
+      {'label': 'Diabetes', 'icon': Icons.monitor_heart_rounded},
+      {'label': 'Hypertension', 'icon': Icons.favorite_rounded},
     ];
 
     return Container(
@@ -1427,10 +1592,14 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('New Patient Details',
-              style: GoogleFonts.plusJakartaSans(
-                  fontSize: 13, fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1A2A3D))),
+          Text(
+            'New Patient Details',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF1A2A3D),
+            ),
+          ),
           const SizedBox(height: 12),
           // Photo capture
           GestureDetector(
@@ -1439,7 +1608,8 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               child: Stack(
                 children: [
                   Container(
-                    width: 90, height: 90,
+                    width: 90,
+                    height: 90,
                     decoration: BoxDecoration(
                       color: _newPhotoPath != null
                           ? Colors.transparent
@@ -1447,26 +1617,37 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: _newPhotoPath != null
-                            ? _teal : const Color(0xFFDDE4EC),
+                            ? _teal
+                            : const Color(0xFFDDE4EC),
                         width: 2,
                       ),
                     ),
-                    child: _newPhotoPath != null && File(_newPhotoPath!).existsSync()
+                    child:
+                        _newPhotoPath != null &&
+                            File(_newPhotoPath!).existsSync()
                         ? ClipOval(
                             child: Image.file(
                               File(_newPhotoPath!),
                               fit: BoxFit.cover,
-                              width: 90, height: 90,
+                              width: 90,
+                              height: 90,
                               errorBuilder: (_, __, ___) => Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.camera_alt_rounded,
-                                      size: 24, color: _teal),
+                                  const Icon(
+                                    Icons.camera_alt_rounded,
+                                    size: 24,
+                                    color: _teal,
+                                  ),
                                   const SizedBox(height: 4),
-                                  Text('Photo',
-                                      style: GoogleFonts.inter(
-                                          fontSize: 10, fontWeight: FontWeight.w600,
-                                          color: _teal)),
+                                  Text(
+                                    'Photo',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: _teal,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -1474,27 +1655,39 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                         : Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.camera_alt_rounded,
-                                  size: 24, color: _teal),
+                              const Icon(
+                                Icons.camera_alt_rounded,
+                                size: 24,
+                                color: _teal,
+                              ),
                               const SizedBox(height: 4),
-                              Text('Photo',
-                                  style: GoogleFonts.inter(
-                                      fontSize: 10, fontWeight: FontWeight.w600,
-                                      color: _teal)),
+                              Text(
+                                'Photo',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: _teal,
+                                ),
+                              ),
                             ],
                           ),
                   ),
                   Positioned(
-                    bottom: 0, right: 0,
+                    bottom: 0,
+                    right: 0,
                     child: Container(
-                      width: 26, height: 26,
+                      width: 26,
+                      height: 26,
                       decoration: BoxDecoration(
                         color: _teal,
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 2),
                       ),
-                      child: const Icon(Icons.edit_rounded,
-                          size: 12, color: Colors.white),
+                      child: const Icon(
+                        Icons.edit_rounded,
+                        size: 12,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ],
@@ -1514,7 +1707,8 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                     final picked = await showDatePicker(
                       context: context,
                       initialDate: DateTime.now().subtract(
-                          const Duration(days: 365 * 25)),
+                        const Duration(days: 365 * 25),
+                      ),
                       firstDate: DateTime(1920),
                       lastDate: DateTime.now(),
                       helpText: 'Select Date of Birth',
@@ -1532,7 +1726,9 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 12),
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(10),
@@ -1545,36 +1741,49 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.cake_rounded,
-                            size: 16,
-                            color: _newDob != null
-                                ? _teal : const Color(0xFF8FA0B4)),
+                        Icon(
+                          Icons.cake_rounded,
+                          size: 16,
+                          color: _newDob != null
+                              ? _teal
+                              : const Color(0xFF8FA0B4),
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: _newDob == null
-                              ? Text('Date of Birth',
+                              ? Text(
+                                  'Date of Birth',
                                   style: GoogleFonts.inter(
-                                      fontSize: 13,
-                                      color: const Color(0xFF8FA0B4)))
+                                    fontSize: 13,
+                                    color: const Color(0xFF8FA0B4),
+                                  ),
+                                )
                               : Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       '${_newDob!.day}/${_newDob!.month}/${_newDob!.year}',
                                       style: GoogleFonts.inter(
-                                          fontSize: 13,
-                                          color: const Color(0xFF1A2A3D),
-                                          fontWeight: FontWeight.w600)),
+                                        fontSize: 13,
+                                        color: const Color(0xFF1A2A3D),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
                                     Text(
                                       '${_calcAge(_newDob!)} years old',
                                       style: GoogleFonts.inter(
-                                          fontSize: 10,
-                                          color: _teal)),
+                                        fontSize: 10,
+                                        color: _teal,
+                                      ),
+                                    ),
                                   ],
                                 ),
                         ),
-                        const Icon(Icons.calendar_today_rounded,
-                            size: 14, color: Color(0xFF8FA0B4)),
+                        const Icon(
+                          Icons.calendar_today_rounded,
+                          size: 14,
+                          color: Color(0xFF8FA0B4),
+                        ),
                       ],
                     ),
                   ),
@@ -1586,7 +1795,9 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                      color: const Color(0xFFEEF2F6), width: 1.5),
+                    color: const Color(0xFFEEF2F6),
+                    width: 1.5,
+                  ),
                 ),
                 child: Row(
                   children: ['M', 'F'].map((g) {
@@ -1596,17 +1807,23 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         decoration: BoxDecoration(
                           color: active ? _teal : Colors.transparent,
                           borderRadius: BorderRadius.circular(9),
                         ),
-                        child: Text(g,
-                            style: GoogleFonts.inter(
-                                fontSize: 13, fontWeight: FontWeight.w700,
-                                color: active
-                                    ? Colors.white
-                                    : const Color(0xFF8FA0B4))),
+                        child: Text(
+                          g,
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: active
+                                ? Colors.white
+                                : const Color(0xFF8FA0B4),
+                          ),
+                        ),
                       ),
                     );
                   }).toList(),
@@ -1620,15 +1837,18 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             children: [
               Expanded(
                 child: _newField(
-                    _newVillageCtrl, 'Village / Area',
-                    Icons.location_on_rounded),
+                  _newVillageCtrl,
+                  'Village / Area',
+                  Icons.location_on_rounded,
+                ),
               ),
               const SizedBox(width: 8),
               GestureDetector(
                 onTap: _detectingLocation ? null : _detectLocation,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  width: 46, height: 46,
+                  width: 46,
+                  height: 46,
                   decoration: BoxDecoration(
                     color: _detectingLocation
                         ? const Color(0xFFEEF2F6)
@@ -1645,69 +1865,92 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                       ? const Padding(
                           padding: EdgeInsets.all(12),
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: _teal))
-                      : const Icon(Icons.my_location_rounded,
-                          size: 20, color: _teal),
+                            strokeWidth: 2,
+                            color: _teal,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.my_location_rounded,
+                          size: 20,
+                          color: _teal,
+                        ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
           // Phone number
-          _newField(_newPhoneCtrl, 'Phone Number', Icons.phone_rounded,
-              inputType: TextInputType.phone),
+          _newField(
+            _newPhoneCtrl,
+            'Phone Number',
+            Icons.phone_rounded,
+            inputType: TextInputType.phone,
+          ),
           const SizedBox(height: 16),
           // Current conditions
-          Text('Current Eye Conditions',
-              style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12, fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1A2A3D))),
+          Text(
+            'Current Eye Conditions',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF1A2A3D),
+            ),
+          ),
           const SizedBox(height: 4),
-          Text('Select all that apply',
-              style: GoogleFonts.inter(
-                  fontSize: 11, color: const Color(0xFF8FA0B4))),
+          Text(
+            'Select all that apply',
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              color: const Color(0xFF8FA0B4),
+            ),
+          ),
           const SizedBox(height: 10),
           Wrap(
-            spacing: 8, runSpacing: 8,
+            spacing: 8,
+            runSpacing: 8,
             children: conditions.map((c) {
               final label = c['label'] as String;
-              final icon  = c['icon'] as IconData;
+              final icon = c['icon'] as IconData;
               final selected = _newConditions.contains(label);
               return GestureDetector(
-                onTap: () => setState(() => selected
-                    ? _newConditions.remove(label)
-                    : _newConditions.add(label)),
+                onTap: () => setState(
+                  () => selected
+                      ? _newConditions.remove(label)
+                      : _newConditions.add(label),
+                ),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 7),
+                    horizontal: 10,
+                    vertical: 7,
+                  ),
                   decoration: BoxDecoration(
                     color: selected
                         ? _teal.withValues(alpha: 0.1)
                         : Colors.white,
                     borderRadius: BorderRadius.circular(99),
                     border: Border.all(
-                      color: selected
-                          ? _teal
-                          : const Color(0xFFDDE4EC),
+                      color: selected ? _teal : const Color(0xFFDDE4EC),
                       width: 1.5,
                     ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(icon,
-                          size: 13,
-                          color: selected
-                              ? _teal : const Color(0xFF8FA0B4)),
+                      Icon(
+                        icon,
+                        size: 13,
+                        color: selected ? _teal : const Color(0xFF8FA0B4),
+                      ),
                       const SizedBox(width: 5),
-                      Text(label,
-                          style: GoogleFonts.inter(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: selected
-                                  ? _teal
-                                  : const Color(0xFF5E7291))),
+                      Text(
+                        label,
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: selected ? _teal : const Color(0xFF5E7291),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -1720,26 +1963,35 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () async {
-                final name  = _newNameCtrl.text.trim();
-                final vil   = _newVillageCtrl.text.trim();
+                final name = _newNameCtrl.text.trim();
+                final vil = _newVillageCtrl.text.trim();
                 final phone = _newPhoneCtrl.text.trim();
 
                 // ── Validation ──────────────────────────────
-                final nameErr  = PatientValidators.validateName(name);
-                final dobErr   = PatientValidators.validateDob(_newDob);
-                final vilErr   = PatientValidators.validateVillage(vil);
+                final nameErr = PatientValidators.validateName(name);
+                final dobErr = PatientValidators.validateDob(_newDob);
+                final vilErr = PatientValidators.validateVillage(vil);
                 final phoneErr = PatientValidators.validatePhone(phone);
 
                 final firstError = nameErr ?? dobErr ?? vilErr ?? phoneErr;
                 if (firstError != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text(firstError,
-                        style: GoogleFonts.inter(fontSize: 12, color: Colors.white)),
-                    backgroundColor: _red,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    duration: const Duration(seconds: 3),
-                  ));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        firstError,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: Colors.white,
+                        ),
+                      ),
+                      backgroundColor: _red,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
                   return;
                 }
 
@@ -1747,7 +1999,11 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 
                 // ── Duplicate detection ──────────────────────
                 final duplicates = await PatientRepository.instance
-                    .findPotentialDuplicates(name: name, age: age, village: vil);
+                    .findPotentialDuplicates(
+                      name: name,
+                      age: age,
+                      village: vil,
+                    );
 
                 if (duplicates.isNotEmpty && mounted) {
                   final proceed = await showDialog<bool>(
@@ -1787,17 +2043,25 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   _newPhotoPath = null;
                 });
               },
-              icon: const Icon(Icons.check_rounded,
-                  size: 16, color: Colors.white),
-              label: Text('Register & Select',
-                  style: GoogleFonts.inter(
-                      fontSize: 13, fontWeight: FontWeight.w700,
-                      color: Colors.white)),
+              icon: const Icon(
+                Icons.check_rounded,
+                size: 16,
+                color: Colors.white,
+              ),
+              label: Text(
+                'Register & Select',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _teal,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                  borderRadius: BorderRadius.circular(10),
+                ),
                 elevation: 0,
               ),
             ),
@@ -1826,17 +2090,22 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
         child: Row(
           children: [
             Container(
-              width: 42, height: 42,
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
-                color: isSelected ? _teal.withValues(alpha: 0.12) : const Color(0xFFF0F4F7),
+                color: isSelected
+                    ? _teal.withValues(alpha: 0.12)
+                    : const Color(0xFFF0F4F7),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Center(
                 child: Text(
                   p['name']!.split(' ').map((w) => w[0]).take(2).join(),
                   style: GoogleFonts.plusJakartaSans(
-                      fontSize: 14, fontWeight: FontWeight.w800,
-                      color: isSelected ? _teal : const Color(0xFF8FA0B4)),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: isSelected ? _teal : const Color(0xFF8FA0B4),
+                  ),
                 ),
               ),
             ),
@@ -1845,34 +2114,53 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(children: [
-                    Flexible(
-                      child: Text(p['name']!,
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          p['name']!,
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
                           style: GoogleFonts.plusJakartaSans(
-                              fontSize: 13, fontWeight: FontWeight.w700,
-                              color: isSelected ? _teal : const Color(0xFF1A2A3D))),
-                    ),
-                    if (isNew) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: _amber.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(99),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: isSelected ? _teal : const Color(0xFF1A2A3D),
+                          ),
                         ),
-                        child: Text('New',
-                            style: GoogleFonts.inter(
-                                fontSize: 9, fontWeight: FontWeight.w700, color: _amber)),
                       ),
+                      if (isNew) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _amber.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          child: Text(
+                            'New',
+                            style: GoogleFonts.inter(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: _amber,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
-                  ]),
+                  ),
                   const SizedBox(height: 3),
-                  Text('${p['gender']} · ${p['age']} yrs · ${p['village']}',
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                      style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF8FA0B4))),
+                  Text(
+                    '${p['gender']} · ${p['age']} yrs · ${p['village']}',
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: const Color(0xFF8FA0B4),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1880,7 +2168,8 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               const Icon(Icons.check_circle_rounded, color: _teal, size: 20)
             else
               Container(
-                width: 20, height: 20,
+                width: 20,
+                height: 20,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: const Color(0xFFDDE4EC), width: 2),
@@ -1892,37 +2181,55 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     );
   }
 
-  Widget _newField(TextEditingController ctrl, String hint, IconData icon,
-      {TextInputType inputType = TextInputType.text}) =>
-    Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
-      ),
-      child: TextField(
-        controller: ctrl,
-        keyboardType: inputType,
-        style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF1A2A3D)),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF8FA0B4)),
-          prefixIcon: Icon(icon, size: 16, color: const Color(0xFF8FA0B4)),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+  Widget _newField(
+    TextEditingController ctrl,
+    String hint,
+    IconData icon, {
+    TextInputType inputType = TextInputType.text,
+  }) => Container(
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
+    ),
+    child: TextField(
+      controller: ctrl,
+      keyboardType: inputType,
+      style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF1A2A3D)),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: GoogleFonts.inter(
+          fontSize: 13,
+          color: const Color(0xFF8FA0B4),
+        ),
+        prefixIcon: Icon(icon, size: 16, color: const Color(0xFF8FA0B4)),
+        border: InputBorder.none,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
         ),
       ),
-    );
+    ),
+  );
 
   // ── Shared continue button ────────────────────────────────────────────────
   Widget _continueBtn(String label, VoidCallback onTap) => SizedBox(
     width: double.infinity,
     child: ElevatedButton.icon(
       onPressed: onTap,
-      icon: const Icon(Icons.arrow_forward_rounded, size: 18, color: Colors.white),
-      label: Text(label,
-          style: GoogleFonts.inter(
-              fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
+      icon: const Icon(
+        Icons.arrow_forward_rounded,
+        size: 18,
+        color: Colors.white,
+      ),
+      label: Text(
+        label,
+        style: GoogleFonts.inter(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+        ),
+      ),
       style: ElevatedButton.styleFrom(
         backgroundColor: _teal,
         padding: const EdgeInsets.symmetric(vertical: 15),
@@ -1956,7 +2263,10 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   child: Text(
                     'Mark the floor at exactly 2 metres from the screen before starting.',
                     style: GoogleFonts.inter(
-                        fontSize: 11, color: const Color(0xFF5E7291))),
+                      fontSize: 11,
+                      color: const Color(0xFF5E7291),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -1968,10 +2278,12 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             title: 'Ambient Light',
             subtitle: _luxChecked
                 ? (_luxOk
-                    ? '${_currentLux.toStringAsFixed(0)} lux — meets WHO threshold'
-                    : '${_currentLux.toStringAsFixed(0)} lux — too low (min ${_kMinLux.toInt()} lux)')
+                      ? '${_currentLux.toStringAsFixed(0)} lux — meets screening threshold'
+                      : '${_currentLux.toStringAsFixed(0)} lux — too low (min ${_kMinLux.toInt()} lux)')
                 : 'Measuring ambient light...',
-            state: _luxChecked ? (_luxOk ? _CheckState.pass : _CheckState.fail) : _CheckState.loading,
+            state: _luxChecked
+                ? (_luxOk ? _CheckState.pass : _CheckState.fail)
+                : _CheckState.loading,
           ),
           if (_luxChecked && !_luxOk) ...[
             const SizedBox(height: 8),
@@ -1985,47 +2297,72 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Improve lighting before proceeding:',
-                      style: GoogleFonts.inter(
-                          fontSize: 11, fontWeight: FontWeight.w700,
-                          color: const Color(0xFF1A2A3D))),
+                  Text(
+                    'Improve lighting before proceeding:',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1A2A3D),
+                    ),
+                  ),
                   const SizedBox(height: 6),
                   ...[
                     'Move to a room with natural daylight',
                     'Turn on all available lights',
                     'Ensure patient faces the light source',
-                  ].map((t) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          margin: const EdgeInsets.only(top: 5),
-                          width: 4, height: 4,
-                          decoration: const BoxDecoration(
-                              color: _red, shape: BoxShape.circle),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(child: Text(t,
-                            style: GoogleFonts.inter(
-                                fontSize: 11, color: const Color(0xFF5E7291)))),
-                      ],
+                  ].map(
+                    (t) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            margin: const EdgeInsets.only(top: 5),
+                            width: 4,
+                            height: 4,
+                            decoration: const BoxDecoration(
+                              color: _red,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              t,
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                color: const Color(0xFF5E7291),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  )),
+                  ),
                   const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: _checkLight,
-                      icon: const Icon(Icons.refresh_rounded, size: 14, color: _teal),
-                      label: Text('Re-check Lighting',
-                          style: GoogleFonts.inter(
-                              fontSize: 12, fontWeight: FontWeight.w700, color: _teal)),
+                      icon: const Icon(
+                        Icons.refresh_rounded,
+                        size: 14,
+                        color: _teal,
+                      ),
+                      label: Text(
+                        'Re-check Lighting',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: _teal,
+                        ),
+                      ),
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: _teal),
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                   ),
@@ -2084,27 +2421,37 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
-                          width: 36, height: 36,
+                          width: 36,
+                          height: 36,
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.2),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.check_circle_rounded,
-                              color: Colors.white, size: 20),
+                          child: const Icon(
+                            Icons.check_circle_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                         ),
                         const SizedBox(width: 12),
-                        Text('Proceed to Eye Test',
-                            style: GoogleFonts.plusJakartaSans(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white)),
+                        Text(
+                          'Proceed to Eye Test',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 6),
-                    Text('All checks passed — ready to begin',
-                        style: GoogleFonts.inter(
-                            fontSize: 11,
-                            color: Colors.white.withValues(alpha: 0.7))),
+                    Text(
+                      'All checks passed — ready to begin',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: Colors.white.withValues(alpha: 0.7),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -2122,9 +2469,13 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   const Icon(Icons.lock_rounded, color: _amber, size: 16),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text('Complete all checks above to proceed.',
-                        style: GoogleFonts.inter(
-                            fontSize: 11, color: const Color(0xFF5E7291))),
+                    child: Text(
+                      'Complete all checks above to proceed.',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: const Color(0xFF5E7291),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -2143,8 +2494,8 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     final color = state == _CheckState.pass
         ? _green
         : state == _CheckState.fail
-            ? _red
-            : _amber;
+        ? _red
+        : _amber;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -2154,21 +2505,23 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           color: state == _CheckState.pass
               ? _green.withValues(alpha: 0.3)
               : state == _CheckState.fail
-                  ? _red.withValues(alpha: 0.3)
-                  : const Color(0xFFEEF2F6),
+              ? _red.withValues(alpha: 0.3)
+              : const Color(0xFFEEF2F6),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8, offset: const Offset(0, 2),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Row(
         children: [
           Container(
-            width: 44, height: 44,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
@@ -2180,21 +2533,30 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: GoogleFonts.plusJakartaSans(
-                        fontSize: 14, fontWeight: FontWeight.w700,
-                        color: const Color(0xFF1A2A3D))),
+                Text(
+                  title,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF1A2A3D),
+                  ),
+                ),
                 const SizedBox(height: 3),
-                Text(subtitle,
-                    style: GoogleFonts.inter(
-                        fontSize: 11, color: const Color(0xFF5E7291))),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: const Color(0xFF5E7291),
+                  ),
+                ),
               ],
             ),
           ),
           const SizedBox(width: 12),
           if (state == _CheckState.loading)
             const SizedBox(
-              width: 20, height: 20,
+              width: 20,
+              height: 20,
               child: CircularProgressIndicator(strokeWidth: 2, color: _amber),
             )
           else
@@ -2202,24 +2564,38 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               state == _CheckState.pass
                   ? Icons.check_circle_rounded
                   : Icons.cancel_rounded,
-              color: color, size: 22,
+              color: color,
+              size: 22,
             ),
         ],
       ),
     );
   }
+
   Widget _buildCoverEyeReminder() {
     final eye = _eyeOrder[_currentEyeIndex];
     final isOD = eye == 'OD';
     final isOU = eye == 'OU';
-    final label = isOU ? 'Both Eyes Open' : isOD ? 'Cover Left Eye' : 'Cover Right Eye';
+    final label = isOU
+        ? 'Both Eyes Open'
+        : isOD
+        ? 'Cover Left Eye'
+        : 'Cover Right Eye';
     final sub = isOU
         ? 'Test both eyes together — no cover needed'
         : isOD
-            ? 'Ask the patient to cover their LEFT eye with their palm'
-            : 'Ask the patient to cover their RIGHT eye with their palm';
-    final eyeLabel = isOU ? 'OU' : isOD ? 'OD' : 'OS';
-    final eyeFull  = isOU ? 'Both Eyes' : isOD ? 'Right Eye' : 'Left Eye';
+        ? 'Ask the patient to cover their LEFT eye with their palm'
+        : 'Ask the patient to cover their RIGHT eye with their palm';
+    final eyeLabel = isOU
+        ? 'OU'
+        : isOD
+        ? 'OD'
+        : 'OS';
+    final eyeFull = isOU
+        ? 'Both Eyes'
+        : isOD
+        ? 'Right Eye'
+        : 'Left Eye';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -2231,23 +2607,35 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(_eyeOrder.length, (i) {
-              final done   = i < _currentEyeIndex;
+              final done = i < _currentEyeIndex;
               final active = i == _currentEyeIndex;
               return AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 margin: const EdgeInsets.symmetric(horizontal: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
-                  color: done ? _green.withValues(alpha: 0.12)
-                      : active ? _teal : const Color(0xFFEEF2F6),
+                  color: done
+                      ? _green.withValues(alpha: 0.12)
+                      : active
+                      ? _teal
+                      : const Color(0xFFEEF2F6),
                   borderRadius: BorderRadius.circular(99),
                 ),
-                child: Text(_eyeOrder[i],
-                    style: GoogleFonts.inter(
-                        fontSize: 13, fontWeight: FontWeight.w700,
-                        color: done ? _green
-                            : active ? Colors.white
-                            : const Color(0xFF8FA0B4))),
+                child: Text(
+                  _eyeOrder[i],
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: done
+                        ? _green
+                        : active
+                        ? Colors.white
+                        : const Color(0xFF8FA0B4),
+                  ),
+                ),
               );
             }),
           ),
@@ -2258,29 +2646,40 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             builder: (_, __) => Transform.scale(
               scale: _pulseAnim.value,
               child: Container(
-                width: 160, height: 160,
+                width: 160,
+                height: 160,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: _teal.withValues(alpha: 0.08),
-                  border: Border.all(color: _teal.withValues(alpha: 0.25), width: 2),
+                  border: Border.all(
+                    color: _teal.withValues(alpha: 0.25),
+                    width: 2,
+                  ),
                 ),
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    Icon(Icons.remove_red_eye_rounded,
-                        size: 72, color: _teal.withValues(alpha: 0.3)),
+                    Icon(
+                      Icons.remove_red_eye_rounded,
+                      size: 72,
+                      color: _teal.withValues(alpha: 0.3),
+                    ),
                     if (!isOU)
                       Positioned(
                         left: isOD ? 16 : null,
                         right: isOD ? null : 16,
                         child: Container(
-                          width: 52, height: 52,
+                          width: 52,
+                          height: 52,
                           decoration: BoxDecoration(
                             color: _ink.withValues(alpha: 0.75),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(Icons.back_hand_rounded,
-                              size: 28, color: Colors.white),
+                          child: const Icon(
+                            Icons.back_hand_rounded,
+                            size: 28,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                   ],
@@ -2295,21 +2694,35 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               color: _teal.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(99),
             ),
-            child: Text('Testing: $eyeLabel — $eyeFull',
-                style: GoogleFonts.inter(
-                    fontSize: 13, fontWeight: FontWeight.w700, color: _teal)),
+            child: Text(
+              'Testing: $eyeLabel — $eyeFull',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: _teal,
+              ),
+            ),
           ),
           const SizedBox(height: 16),
-          Text(label,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(
-                  fontSize: 22, fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1A2A3D))),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF1A2A3D),
+            ),
+          ),
           const SizedBox(height: 10),
-          Text(sub,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                  fontSize: 13, color: const Color(0xFF5E7291), height: 1.6)),
+          Text(
+            sub,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              color: const Color(0xFF5E7291),
+              height: 1.6,
+            ),
+          ),
           const SizedBox(height: 32),
           if (_countdown > 0)
             Center(
@@ -2323,7 +2736,8 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                 ),
                 child: Container(
                   key: ValueKey(_countdown),
-                  width: 120, height: 120,
+                  width: 120,
+                  height: 120,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: _teal.withValues(alpha: 0.1),
@@ -2333,9 +2747,10 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                     child: Text(
                       '$_countdown',
                       style: GoogleFonts.inter(
-                          fontSize: 64,
-                          fontWeight: FontWeight.w900,
-                          color: _teal),
+                        fontSize: 64,
+                        fontWeight: FontWeight.w900,
+                        color: _teal,
+                      ),
                     ),
                   ),
                 ),
@@ -2368,21 +2783,26 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
-                          width: 36, height: 36,
+                          width: 36,
+                          height: 36,
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.2),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.remove_red_eye_rounded,
-                              color: Colors.white, size: 20),
+                          child: const Icon(
+                            Icons.remove_red_eye_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Text(
                           isOD ? 'Begin Right Eye Test' : 'Begin Left Eye Test',
                           style: GoogleFonts.plusJakartaSans(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
                         ),
                       ],
                     ),
@@ -2390,8 +2810,9 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                     Text(
                       'Patient is ready — tap to start 3s countdown',
                       style: GoogleFonts.inter(
-                          fontSize: 11,
-                          color: Colors.white.withValues(alpha: 0.7)),
+                        fontSize: 11,
+                        color: Colors.white.withValues(alpha: 0.7),
+                      ),
                     ),
                   ],
                 ),
@@ -2401,13 +2822,12 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       ),
     );
   }
+
   Widget _buildEChart() {
-    final eye    = _eyeOrder[_currentEyeIndex];
-    final row    = _rows[_currentRow];
-    final logmar = row['logmar'] as String;
+    final row = _rows[_currentRow];
     // Size based on fixed 2m testing distance
     final baseMm = row['mm'] as double;
-    final size   = _mmToPx(baseMm, context);
+    final size = _mmToPx(baseMm, context);
 
     // ── Normal chart ─────────────────────────────────────────────────────
     return Column(
@@ -2416,7 +2836,8 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
         LinearProgressIndicator(
           value: (_currentRow + 1) / _rows.length,
           backgroundColor: const Color(0xFFEEF2F6),
-          color: _teal, minHeight: 3,
+          color: _teal,
+          minHeight: 3,
         ),
         // Single E display with bounding box + 5-dot progress
         Expanded(
@@ -2452,24 +2873,26 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                 ),
                 const Spacer(),
                 // E with ETDRS bounding box (hidden when examiner masking on)
-                LayoutBuilder(builder: (ctx, constraints) {
-                  final maxH = constraints.maxHeight * 0.9;
-                  final maxW = constraints.maxWidth  * 0.45;
-                  final s = size.clamp(0.0, maxH < maxW ? maxH : maxW);
-                  return CustomPaint(
-                    painter: _BoundingBoxPainter(size: s),
-                    child: Padding(
-                      padding: EdgeInsets.all(s * 0.6),
-                      child: RotatedBox(
-                              quarterTurns: _currentRotation,
-                              child: CustomPaint(
-                                size: Size(s * 0.8, s),
-                                painter: _ETumbleEPainter(color: _ink),
-                              ),
-                            ),
-                    ),
-                  );
-                }),
+                LayoutBuilder(
+                  builder: (ctx, constraints) {
+                    final maxH = constraints.maxHeight * 0.9;
+                    final maxW = constraints.maxWidth * 0.45;
+                    final s = size.clamp(0.0, maxH < maxW ? maxH : maxW);
+                    return CustomPaint(
+                      painter: _BoundingBoxPainter(size: s),
+                      child: Padding(
+                        padding: EdgeInsets.all(s * 0.6),
+                        child: RotatedBox(
+                          quarterTurns: _currentRotation,
+                          child: CustomPaint(
+                            size: Size(s * 0.8, s),
+                            painter: _ETumbleEPainter(color: _ink),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
 
                 const Spacer(),
               ],
@@ -2484,9 +2907,13 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Which way is the E facing?',
-                    style: GoogleFonts.inter(
-                        fontSize: 11, color: const Color(0xFF8FA0B4))),
+                Text(
+                  'Which way is the E facing?',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: const Color(0xFF8FA0B4),
+                  ),
+                ),
                 const SizedBox(height: 5),
                 _dirBtn(Icons.arrow_upward_rounded, 3),
                 const SizedBox(height: 5),
@@ -2496,13 +2923,17 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                     _dirBtn(Icons.arrow_back_rounded, 2),
                     const SizedBox(width: 10),
                     Container(
-                      width: 50, height: 50,
+                      width: 50,
+                      height: 50,
                       decoration: BoxDecoration(
                         color: const Color(0xFFEEF2F6),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.remove_red_eye_rounded,
-                          size: 20, color: Color(0xFF8FA0B4)),
+                      child: const Icon(
+                        Icons.remove_red_eye_rounded,
+                        size: 20,
+                        color: Color(0xFF8FA0B4),
+                      ),
                     ),
                     const SizedBox(width: 10),
                     _dirBtn(Icons.arrow_forward_rounded, 0),
@@ -2515,17 +2946,28 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   width: double.infinity,
                   child: OutlinedButton.icon(
                     onPressed: _recordCantTell,
-                    icon: const Icon(Icons.help_outline_rounded,
-                        size: 16, color: Color(0xFF8FA0B4)),
-                    label: Text("Can't Tell",
-                        style: GoogleFonts.inter(
-                            fontSize: 13, fontWeight: FontWeight.w700,
-                            color: const Color(0xFF5E7291))),
+                    icon: const Icon(
+                      Icons.help_outline_rounded,
+                      size: 16,
+                      color: Color(0xFF8FA0B4),
+                    ),
+                    label: Text(
+                      "Can't Tell",
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF5E7291),
+                      ),
+                    ),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 7),
-                      side: const BorderSide(color: Color(0xFFDDE4EC), width: 1.5),
+                      side: const BorderSide(
+                        color: Color(0xFFDDE4EC),
+                        width: 1.5,
+                      ),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
                 ),
@@ -2541,7 +2983,8 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     return GestureDetector(
       onTap: () => _recordResponse(quarterTurns == _currentRotation),
       child: Container(
-        width: 48, height: 48,
+        width: 48,
+        height: 48,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -2549,7 +2992,8 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 6, offset: const Offset(0, 2),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -2557,15 +3001,16 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       ),
     );
   }
+
   Widget _buildEyeResult() {
     if (_eyeResults.isEmpty) return const SizedBox();
-    final r       = _eyeResults.last;
-    final eye     = r['eye'] as String;
-    final logmar  = r['logmar'] as String;
-    final dur     = r['duration'] as String;
+    final r = _eyeResults.last;
+    final eye = r['eye'] as String;
+    final logmar = r['logmar'] as String;
+    final dur = r['duration'] as String;
     final cantTel = r['cantTell'] as int;
-    final cls     = _vaClass(logmar);
-    final col     = _vaColor(logmar);
+    final cls = VisualAcuity.classification(logmar);
+    final col = _vaColor(logmar);
     final isLastEye = _currentEyeIndex >= _eyeOrder.length - 1;
 
     return SingleChildScrollView(
@@ -2579,22 +3024,30 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(_eyeOrder.length, (i) {
-              final done   = i <= _currentEyeIndex;
+              final done = i <= _currentEyeIndex;
               final active = i == _currentEyeIndex;
               return AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 margin: const EdgeInsets.symmetric(horizontal: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
-                  color: done ? _green.withValues(alpha: 0.12)
+                  color: done
+                      ? _green.withValues(alpha: 0.12)
                       : const Color(0xFFEEF2F6),
                   borderRadius: BorderRadius.circular(99),
                   border: active ? Border.all(color: _green, width: 1.5) : null,
                 ),
-                child: Text(_eyeOrder[i],
-                    style: GoogleFonts.inter(
-                        fontSize: 13, fontWeight: FontWeight.w700,
-                        color: done ? _green : const Color(0xFF8FA0B4))),
+                child: Text(
+                  _eyeOrder[i],
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: done ? _green : const Color(0xFF8FA0B4),
+                  ),
+                ),
               );
             }),
           ),
@@ -2610,49 +3063,84 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               boxShadow: [
                 BoxShadow(
                   color: col.withValues(alpha: 0.1),
-                  blurRadius: 20, offset: const Offset(0, 4),
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
             child: Column(
               children: [
                 Container(
-                  width: 64, height: 64,
+                  width: 64,
+                  height: 64,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: col.withValues(alpha: 0.1),
-                    border: Border.all(color: col.withValues(alpha: 0.3), width: 2),
+                    border: Border.all(
+                      color: col.withValues(alpha: 0.3),
+                      width: 2,
+                    ),
                   ),
                   child: Center(
-                    child: Text(eye,
-                        style: GoogleFonts.inter(
-                            fontSize: 16, fontWeight: FontWeight.w800, color: col)),
+                    child: Text(
+                      eye,
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: col,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  eye == 'OD' ? 'Right Eye' : eye == 'OS' ? 'Left Eye' : 'Both Eyes',
+                  eye == 'OD'
+                      ? 'Right Eye'
+                      : eye == 'OS'
+                      ? 'Left Eye'
+                      : 'Both Eyes',
                   style: GoogleFonts.inter(
-                      fontSize: 12, color: const Color(0xFF8FA0B4))),
+                    fontSize: 12,
+                    color: const Color(0xFF8FA0B4),
+                  ),
+                ),
                 const SizedBox(height: 6),
                 Text(
-                  double.tryParse(logmar) != null ? _toSnellen(logmar) : logmar,
+                  double.tryParse(logmar) != null
+                      ? VisualAcuity.toSnellen(logmar)
+                      : logmar,
                   style: GoogleFonts.inter(
-                      fontSize: 48, fontWeight: FontWeight.w900, color: col)),
+                    fontSize: 48,
+                    fontWeight: FontWeight.w900,
+                    color: col,
+                  ),
+                ),
                 if (double.tryParse(logmar) != null)
-                  Text('LogMAR $logmar',
-                      style: GoogleFonts.inter(
-                          fontSize: 13, color: col.withValues(alpha: 0.7))),
+                  Text(
+                    'LogMAR $logmar',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: col.withValues(alpha: 0.7),
+                    ),
+                  ),
                 const SizedBox(height: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: col.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(99),
                   ),
-                  child: Text(cls,
-                      style: GoogleFonts.inter(
-                          fontSize: 12, fontWeight: FontWeight.w700, color: col)),
+                  child: Text(
+                    cls,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: col,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 20),
                 Row(
@@ -2660,8 +3148,11 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   children: [
                     _statChip(Icons.timer_rounded, dur, 'Duration'),
                     const SizedBox(width: 12),
-                    _statChip(Icons.help_outline_rounded,
-                        '$cantTel', "Can't Tell"),
+                    _statChip(
+                      Icons.help_outline_rounded,
+                      '$cantTel',
+                      "Can't Tell",
+                    ),
                   ],
                 ),
               ],
@@ -2677,7 +3168,10 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               () => setState(() => _step = 2),
             )
           else
-            _continueBtn('View Near Vision Test', () => setState(() => _step = 6)),
+            _continueBtn(
+              'View Near Vision Test',
+              () => setState(() => _step = 6),
+            ),
         ],
       ),
     );
@@ -2695,13 +3189,21 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
         children: [
           Icon(icon, size: 16, color: const Color(0xFF8FA0B4)),
           const SizedBox(height: 4),
-          Text(value,
-              style: GoogleFonts.inter(
-                  fontSize: 14, fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1A2A3D))),
-          Text(label,
-              style: GoogleFonts.inter(
-                  fontSize: 10, color: const Color(0xFF8FA0B4))),
+          Text(
+            value,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF1A2A3D),
+            ),
+          ),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              color: const Color(0xFF8FA0B4),
+            ),
+          ),
         ],
       ),
     );
@@ -2709,18 +3211,26 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 
   Widget _blurPreview(String logmar) {
     final sigma = _blurSigma(logmar);
-    final cls   = _vaClass(logmar);
+    final cls = VisualAcuity.classification(logmar);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Visual Simulation',
-            style: GoogleFonts.plusJakartaSans(
-                fontSize: 14, fontWeight: FontWeight.w800,
-                color: const Color(0xFF1A2A3D))),
+        Text(
+          'Visual Simulation',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF1A2A3D),
+          ),
+        ),
         const SizedBox(height: 4),
-        Text('Approximate view at this acuity level',
-            style: GoogleFonts.inter(
-                fontSize: 11, color: const Color(0xFF8FA0B4))),
+        Text(
+          'Approximate view at this acuity level',
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            color: const Color(0xFF8FA0B4),
+          ),
+        ),
         const SizedBox(height: 12),
         ClipRRect(
           borderRadius: BorderRadius.circular(14),
@@ -2732,41 +3242,73 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                 color: Colors.white,
                 child: Center(
                   child: sigma == 0
-                      ? Text('E',
+                      ? Text(
+                          'E',
                           style: TextStyle(
-                              fontSize: 64, fontWeight: FontWeight.w900,
-                              color: _ink, fontFamily: 'Courier'))
+                            fontSize: 64,
+                            fontWeight: FontWeight.w900,
+                            color: _ink,
+                            fontFamily: 'Courier',
+                          ),
+                        )
                       : ImageFiltered(
                           imageFilter: ColorFilter.matrix([
-                            1, 0, 0, 0, 0,
-                            0, 1, 0, 0, 0,
-                            0, 0, 1, 0, 0,
-                            0, 0, 0, 1, 0,
+                            1,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            1,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            1,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            1,
+                            0,
                           ]),
                           child: ImageFiltered(
                             imageFilter: _blurFilter(sigma),
-                            child: Text('E',
-                                style: TextStyle(
-                                    fontSize: 64,
-                                    fontWeight: FontWeight.w900,
-                                    color: _ink,
-                                    fontFamily: 'Courier')),
+                            child: Text(
+                              'E',
+                              style: TextStyle(
+                                fontSize: 64,
+                                fontWeight: FontWeight.w900,
+                                color: _ink,
+                                fontFamily: 'Courier',
+                              ),
+                            ),
                           ),
                         ),
                 ),
               ),
               Positioned(
-                bottom: 8, right: 8,
+                bottom: 8,
+                right: 8,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(cls,
-                      style: GoogleFonts.inter(
-                          fontSize: 10, fontWeight: FontWeight.w700,
-                          color: Colors.white)),
+                  child: Text(
+                    cls,
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -2781,10 +3323,26 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     // Darken + desaturate proportional to blur level as visual proxy
     final f = (sigma / 18.0).clamp(0.0, 1.0);
     return ColorFilter.matrix([
-      1 - f * 0.3, 0, 0, 0, f * 30,
-      0, 1 - f * 0.3, 0, 0, f * 30,
-      0, 0, 1 - f * 0.3, 0, f * 30,
-      0, 0, 0, 1 - f * 0.5, 0,
+      1 - f * 0.3,
+      0,
+      0,
+      0,
+      f * 30,
+      0,
+      1 - f * 0.3,
+      0,
+      0,
+      f * 30,
+      0,
+      0,
+      1 - f * 0.3,
+      0,
+      f * 30,
+      0,
+      0,
+      0,
+      1 - f * 0.5,
+      0,
     ]);
   }
 
@@ -2801,14 +3359,21 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             builder: (_, __) => Transform.scale(
               scale: _pulseAnim.value,
               child: Container(
-                width: 140, height: 140,
+                width: 140,
+                height: 140,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: _teal.withValues(alpha: 0.08),
-                  border: Border.all(color: _teal.withValues(alpha: 0.25), width: 2),
+                  border: Border.all(
+                    color: _teal.withValues(alpha: 0.25),
+                    width: 2,
+                  ),
                 ),
-                child: Icon(Icons.menu_book_rounded,
-                    size: 64, color: _teal.withValues(alpha: 0.5)),
+                child: Icon(
+                  Icons.menu_book_rounded,
+                  size: 64,
+                  color: _teal.withValues(alpha: 0.5),
+                ),
               ),
             ),
           ),
@@ -2819,16 +3384,25 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               color: _teal.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(99),
             ),
-            child: Text('Near Vision — Both Eyes Open',
-                style: GoogleFonts.inter(
-                    fontSize: 13, fontWeight: FontWeight.w700, color: _teal)),
+            child: Text(
+              'Near Vision — Both Eyes Open',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: _teal,
+              ),
+            ),
           ),
           const SizedBox(height: 16),
-          Text('Near Vision Test',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(
-                  fontSize: 22, fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1A2A3D))),
+          Text(
+            'Near Vision Test',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF1A2A3D),
+            ),
+          ),
           const SizedBox(height: 10),
           Text(
             'Distance tests are complete. Now test near vision.\n'
@@ -2836,7 +3410,11 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             'with BOTH eyes open.',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
-                fontSize: 13, color: const Color(0xFF5E7291), height: 1.6)),
+              fontSize: 13,
+              color: const Color(0xFF5E7291),
+              height: 1.6,
+            ),
+          ),
           const SizedBox(height: 24),
           Container(
             padding: const EdgeInsets.all(16),
@@ -2848,14 +3426,24 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(children: [
-                  const Icon(Icons.tips_and_updates_rounded, size: 15, color: _amber),
-                  const SizedBox(width: 8),
-                  Text('Setup instructions',
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.tips_and_updates_rounded,
+                      size: 15,
+                      color: _amber,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Setup instructions',
                       style: GoogleFonts.inter(
-                          fontSize: 12, fontWeight: FontWeight.w700,
-                          color: const Color(0xFF1A2A3D))),
-                ]),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF1A2A3D),
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 10),
                 ...[
                   'Patient keeps BOTH eyes open — no covering needed',
@@ -2863,25 +3451,36 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   'Device should be at eye level',
                   'Patient wears reading glasses if they use them',
                   'Ensure screen brightness is at maximum',
-                ].map((t) => Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        margin: const EdgeInsets.only(top: 5),
-                        width: 5, height: 5,
-                        decoration: const BoxDecoration(
-                            color: _amber, shape: BoxShape.circle),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(child: Text(t,
-                          style: GoogleFonts.inter(
-                              fontSize: 11, color: const Color(0xFF5E7291),
-                              height: 1.5))),
-                    ],
+                ].map(
+                  (t) => Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          margin: const EdgeInsets.only(top: 5),
+                          width: 5,
+                          height: 5,
+                          decoration: const BoxDecoration(
+                            color: _amber,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            t,
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: const Color(0xFF5E7291),
+                              height: 1.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                )),
+                ),
               ],
             ),
           ),
@@ -2898,7 +3497,8 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                 ),
                 child: Container(
                   key: ValueKey(_nearCountdown),
-                  width: 120, height: 120,
+                  width: 120,
+                  height: 120,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: _teal.withValues(alpha: 0.1),
@@ -2908,9 +3508,10 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                     child: Text(
                       '$_nearCountdown',
                       style: GoogleFonts.inter(
-                          fontSize: 64,
-                          fontWeight: FontWeight.w900,
-                          color: _teal),
+                        fontSize: 64,
+                        fontWeight: FontWeight.w900,
+                        color: _teal,
+                      ),
                     ),
                   ),
                 ),
@@ -2958,21 +3559,26 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
-                          width: 36, height: 36,
+                          width: 36,
+                          height: 36,
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.2),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.check_circle_rounded,
-                              color: Colors.white, size: 20),
+                          child: const Icon(
+                            Icons.check_circle_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Text(
                           'Distance Confirmed — Begin Test',
                           style: GoogleFonts.plusJakartaSans(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
                         ),
                       ],
                     ),
@@ -2980,8 +3586,9 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                     Text(
                       'Tap when device is at 40 cm from eyes',
                       style: GoogleFonts.inter(
-                          fontSize: 11,
-                          color: Colors.white.withValues(alpha: 0.7)),
+                        fontSize: 11,
+                        color: Colors.white.withValues(alpha: 0.7),
+                      ),
                     ),
                   ],
                 ),
@@ -2996,19 +3603,19 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   // -- Step 7: Near Vision Chart
   Widget _buildNearChart() {
     // ── Near chart (40cm confirmed) ───────────────────────────────────────────────
-    final row    = _rows[_nearRow];
-    final logmar = row['logmar'] as String;
+    final row = _rows[_nearRow];
     // Near vision at 40cm = 0.4m (base measurements at 2m, scale by 0.4/2.0)
     final baseMm = row['mm'] as double;
     final scaledMm = baseMm * (400.0 / 2000.0);
-    final size   = _mmToPx(scaledMm, context);
+    final size = _mmToPx(scaledMm, context);
 
     return Column(
       children: [
         LinearProgressIndicator(
           value: (_nearRow + 1) / _rows.length,
           backgroundColor: const Color(0xFFEEF2F6),
-          color: _teal, minHeight: 3,
+          color: _teal,
+          minHeight: 3,
         ),
         Expanded(
           child: Container(
@@ -3020,9 +3627,12 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(5, (i) {
                     Color dotColor;
-                    if (i < _nearLetterIndex) dotColor = _green;
-                    else if (i == _nearLetterIndex) dotColor = _teal;
-                    else dotColor = const Color(0xFFEEF2F6);
+                    if (i < _nearLetterIndex)
+                      dotColor = _green;
+                    else if (i == _nearLetterIndex)
+                      dotColor = _teal;
+                    else
+                      dotColor = const Color(0xFFEEF2F6);
                     return AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -3062,9 +3672,13 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Which way is the E facing?',
-                    style: GoogleFonts.inter(
-                        fontSize: 11, color: const Color(0xFF8FA0B4))),
+                Text(
+                  'Which way is the E facing?',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: const Color(0xFF8FA0B4),
+                  ),
+                ),
                 const SizedBox(height: 5),
                 _nearDirBtn(Icons.arrow_upward_rounded, 3),
                 const SizedBox(height: 5),
@@ -3074,13 +3688,17 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                     _nearDirBtn(Icons.arrow_back_rounded, 2),
                     const SizedBox(width: 10),
                     Container(
-                      width: 50, height: 50,
+                      width: 50,
+                      height: 50,
                       decoration: BoxDecoration(
                         color: const Color(0xFFEEF2F6),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.remove_red_eye_rounded,
-                          size: 20, color: Color(0xFF8FA0B4)),
+                      child: const Icon(
+                        Icons.remove_red_eye_rounded,
+                        size: 20,
+                        color: Color(0xFF8FA0B4),
+                      ),
                     ),
                     const SizedBox(width: 10),
                     _nearDirBtn(Icons.arrow_forward_rounded, 0),
@@ -3093,17 +3711,28 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   width: double.infinity,
                   child: OutlinedButton.icon(
                     onPressed: _recordNearCantTell,
-                    icon: const Icon(Icons.help_outline_rounded,
-                        size: 16, color: Color(0xFF8FA0B4)),
-                    label: Text("Can't Tell",
-                        style: GoogleFonts.inter(
-                            fontSize: 13, fontWeight: FontWeight.w700,
-                            color: const Color(0xFF5E7291))),
+                    icon: const Icon(
+                      Icons.help_outline_rounded,
+                      size: 16,
+                      color: Color(0xFF8FA0B4),
+                    ),
+                    label: Text(
+                      "Can't Tell",
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF5E7291),
+                      ),
+                    ),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 7),
-                      side: const BorderSide(color: Color(0xFFDDE4EC), width: 1.5),
+                      side: const BorderSide(
+                        color: Color(0xFFDDE4EC),
+                        width: 1.5,
+                      ),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
                 ),
@@ -3115,34 +3744,35 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     );
   }
 
-  Widget _nearDirBtn(IconData icon, int quarterTurns) =>
-    GestureDetector(
-      onTap: () => _recordNearResponse(quarterTurns == _nearRotation),
-      child: Container(
-        width: 48, height: 48,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFDDE4EC), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 6, offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Icon(icon, size: 20, color: _ink),
+  Widget _nearDirBtn(IconData icon, int quarterTurns) => GestureDetector(
+    onTap: () => _recordNearResponse(quarterTurns == _nearRotation),
+    child: Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFDDE4EC), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-    );
+      child: Icon(icon, size: 20, color: _ink),
+    ),
+  );
 
   // ── Step 8: Near Vision Result ──────────────────────────────────────────────────
   Widget _buildNearResult() {
     if (_nearResult == null) return const SizedBox();
     final logmar = _nearResult!['logmar'] as String;
-    final dur    = _nearResult!['duration'] as String;
-    final ct     = _nearResult!['cantTell'] as int;
-    final cls    = _vaClass(logmar);
-    final col    = _vaColor(logmar);
+    final dur = _nearResult!['duration'] as String;
+    final ct = _nearResult!['cantTell'] as int;
+    final cls = VisualAcuity.classification(logmar);
+    final col = _vaColor(logmar);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -3161,50 +3791,79 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               boxShadow: [
                 BoxShadow(
                   color: col.withValues(alpha: 0.1),
-                  blurRadius: 20, offset: const Offset(0, 4),
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
             child: Column(
               children: [
                 Container(
-                  width: 64, height: 64,
+                  width: 64,
+                  height: 64,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: col.withValues(alpha: 0.1),
-                    border: Border.all(color: col.withValues(alpha: 0.3), width: 2),
+                    border: Border.all(
+                      color: col.withValues(alpha: 0.3),
+                      width: 2,
+                    ),
                   ),
                   child: const Center(
-                    child: Text('OU',
-                        style: TextStyle(fontSize: 16,
-                            fontWeight: FontWeight.w800)),
+                    child: Text(
+                      'OU',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
-                Text('Near Vision — Both Eyes',
-                    style: GoogleFonts.inter(
-                        fontSize: 12, color: const Color(0xFF8FA0B4))),
+                Text(
+                  'Near Vision — Both Eyes',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: const Color(0xFF8FA0B4),
+                  ),
+                ),
                 const SizedBox(height: 6),
-                Text(double.tryParse(logmar) != null
-                    ? _toSnellen(logmar) : logmar,
-                    style: GoogleFonts.inter(
-                        fontSize: 48, fontWeight: FontWeight.w900, color: col)),
+                Text(
+                  double.tryParse(logmar) != null
+                      ? VisualAcuity.toSnellen(logmar)
+                      : logmar,
+                  style: GoogleFonts.inter(
+                    fontSize: 48,
+                    fontWeight: FontWeight.w900,
+                    color: col,
+                  ),
+                ),
                 if (double.tryParse(logmar) != null)
-                  Text('LogMAR $logmar',
-                      style: GoogleFonts.inter(
-                          fontSize: 13, color: col.withValues(alpha: 0.7))),
+                  Text(
+                    'LogMAR $logmar',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: col.withValues(alpha: 0.7),
+                    ),
+                  ),
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 5),
+                    horizontal: 14,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: col.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(99),
                   ),
-                  child: Text(cls,
-                      style: GoogleFonts.inter(
-                          fontSize: 12, fontWeight: FontWeight.w700,
-                          color: col)),
+                  child: Text(
+                    cls,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: col,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 20),
                 Row(
@@ -3212,8 +3871,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   children: [
                     _statChip(Icons.timer_rounded, dur, 'Duration'),
                     const SizedBox(width: 12),
-                    _statChip(Icons.help_outline_rounded,
-                        '$ct', "Can't Tell"),
+                    _statChip(Icons.help_outline_rounded, '$ct', "Can't Tell"),
                   ],
                 ),
               ],
@@ -3251,16 +3909,24 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               child: Row(
                 children: [
                   Container(
-                    width: 44, height: 44,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
                       color: _teal.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Center(
                       child: Text(
-                        patient['name']!.split(' ').map((w) => w[0]).take(2).join(),
+                        patient['name']!
+                            .split(' ')
+                            .map((w) => w[0])
+                            .take(2)
+                            .join(),
                         style: GoogleFonts.plusJakartaSans(
-                            fontSize: 14, fontWeight: FontWeight.w800, color: _teal3),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: _teal3,
+                        ),
                       ),
                     ),
                   ),
@@ -3269,53 +3935,73 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(patient['name']!,
-                            style: GoogleFonts.plusJakartaSans(
-                                fontSize: 14, fontWeight: FontWeight.w700,
-                                color: Colors.white)),
+                        Text(
+                          patient['name']!,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
                         Text(
                           '${patient['gender']} · ${patient['age']} yrs · ${patient['village']}',
                           style: GoogleFonts.inter(
-                              fontSize: 11,
-                              color: Colors.white.withValues(alpha: 0.5)),
+                            fontSize: 11,
+                            color: Colors.white.withValues(alpha: 0.5),
+                          ),
                         ),
                       ],
                     ),
                   ),
                   if (_isOffline)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: _amber.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text('Offline',
-                          style: GoogleFonts.inter(
-                              fontSize: 10, fontWeight: FontWeight.w700,
-                              color: _amber)),
+                      child: Text(
+                        'Offline',
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: _amber,
+                        ),
+                      ),
                     ),
                 ],
               ),
             ),
           const SizedBox(height: 24),
-          Text('Screening Results',
-              style: GoogleFonts.plusJakartaSans(
-                  fontSize: 18, fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1A2A3D))),
+          Text(
+            'Screening Results',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF1A2A3D),
+            ),
+          ),
           const SizedBox(height: 6),
-          Text('Distance Vision (Monocular)',
-              style: GoogleFonts.inter(
-                  fontSize: 11, fontWeight: FontWeight.w600,
-                  color: const Color(0xFF8FA0B4))),
+          Text(
+            'Distance Vision (Monocular)',
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF8FA0B4),
+            ),
+          ),
           const SizedBox(height: 12),
           // Per-eye result cards
           ..._eyeResults.map((r) {
-            final eye    = r['eye'] as String;
+            final eye = r['eye'] as String;
             final logmar = r['logmar'] as String;
-            final dur    = r['duration'] as String;
-            final ct     = r['cantTell'] as int;
-            final cls    = _vaClass(logmar);
-            final col    = _vaColor(logmar);
+            final dur = r['duration'] as String;
+            final ct = r['cantTell'] as int;
+            final cls = VisualAcuity.classification(logmar);
+            final col = _vaColor(logmar);
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(16),
@@ -3326,22 +4012,29 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 8, offset: const Offset(0, 2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
               child: Row(
                 children: [
                   Container(
-                    width: 44, height: 44,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
                       color: col.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Center(
-                      child: Text(eye,
-                          style: GoogleFonts.inter(
-                              fontSize: 13, fontWeight: FontWeight.w800, color: col)),
+                      child: Text(
+                        eye,
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: col,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -3350,19 +4043,33 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          eye == 'OD' ? 'Right Eye'
-                              : eye == 'OS' ? 'Left Eye' : 'Both Eyes',
+                          eye == 'OD'
+                              ? 'Right Eye'
+                              : eye == 'OS'
+                              ? 'Left Eye'
+                              : 'Both Eyes',
                           style: GoogleFonts.inter(
-                              fontSize: 11, color: const Color(0xFF8FA0B4))),
+                            fontSize: 11,
+                            color: const Color(0xFF8FA0B4),
+                          ),
+                        ),
                         const SizedBox(height: 2),
-                        Text(cls,
-                            style: GoogleFonts.plusJakartaSans(
-                                fontSize: 14, fontWeight: FontWeight.w700,
-                                color: const Color(0xFF1A2A3D))),
+                        Text(
+                          cls,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF1A2A3D),
+                          ),
+                        ),
                         if (ct > 0)
-                          Text("$ct can't tell response${ct > 1 ? 's' : ''}",
-                              style: GoogleFonts.inter(
-                                  fontSize: 10, color: _amber)),
+                          Text(
+                            "$ct can't tell response${ct > 1 ? 's' : ''}",
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              color: _amber,
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -3371,16 +4078,29 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                     children: [
                       Text(
                         double.tryParse(logmar) != null
-                            ? _toSnellen(logmar) : logmar,
+                            ? VisualAcuity.toSnellen(logmar)
+                            : logmar,
                         style: GoogleFonts.inter(
-                            fontSize: 16, fontWeight: FontWeight.w800, color: col)),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: col,
+                        ),
+                      ),
                       if (double.tryParse(logmar) != null)
-                        Text('LogMAR $logmar',
-                            style: GoogleFonts.inter(
-                                fontSize: 10, color: col.withValues(alpha: 0.7))),
-                      Text(dur,
+                        Text(
+                          'LogMAR $logmar',
                           style: GoogleFonts.inter(
-                              fontSize: 10, color: const Color(0xFF8FA0B4))),
+                            fontSize: 10,
+                            color: col.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      Text(
+                        dur,
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          color: const Color(0xFF8FA0B4),
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -3390,89 +4110,126 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           // Near vision result card
           if (_nearResult != null) ...[
             const SizedBox(height: 16),
-            Text('Near Vision (Binocular — 40cm)',
-                style: GoogleFonts.inter(
-                    fontSize: 11, fontWeight: FontWeight.w600,
-                    color: const Color(0xFF8FA0B4))),
+            Text(
+              'Near Vision (Binocular — 40cm)',
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF8FA0B4),
+              ),
+            ),
             const SizedBox(height: 10),
-            Builder(builder: (_) {
-              final logmar = _nearResult!['logmar'] as String;
-              final dur    = _nearResult!['duration'] as String;
-              final ct     = _nearResult!['cantTell'] as int;
-              final cls    = _vaClass(logmar);
-              final col    = _vaColor(logmar);
-              return Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 8, offset: const Offset(0, 2),
+            Builder(
+              builder: (_) {
+                final logmar = _nearResult!['logmar'] as String;
+                final dur = _nearResult!['duration'] as String;
+                final ct = _nearResult!['cantTell'] as int;
+                final cls = VisualAcuity.classification(logmar);
+                final col = _vaColor(logmar);
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFFEEF2F6),
+                      width: 1.5,
                     ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 44, height: 44,
-                      decoration: BoxDecoration(
-                        color: col.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
-                      child: Center(
-                        child: Text('OU',
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: col.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'OU',
                             style: GoogleFonts.inter(
-                                fontSize: 12, fontWeight: FontWeight.w800,
-                                color: col)),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: col,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Both Eyes — Near',
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Both Eyes — Near',
                               style: GoogleFonts.inter(
-                                  fontSize: 11, color: const Color(0xFF8FA0B4))),
-                          const SizedBox(height: 2),
-                          Text(cls,
+                                fontSize: 11,
+                                color: const Color(0xFF8FA0B4),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              cls,
                               style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 14, fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF1A2A3D))),
-                          if (ct > 0)
-                            Text("$ct can't tell",
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF1A2A3D),
+                              ),
+                            ),
+                            if (ct > 0)
+                              Text(
+                                "$ct can't tell",
                                 style: GoogleFonts.inter(
-                                    fontSize: 10, color: _amber)),
+                                  fontSize: 10,
+                                  color: _amber,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            double.tryParse(logmar) != null
+                                ? VisualAcuity.toSnellen(logmar)
+                                : logmar,
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: col,
+                            ),
+                          ),
+                          if (double.tryParse(logmar) != null)
+                            Text(
+                              'LogMAR $logmar',
+                              style: GoogleFonts.inter(
+                                fontSize: 10,
+                                color: col.withValues(alpha: 0.7),
+                              ),
+                            ),
+                          Text(
+                            dur,
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              color: const Color(0xFF8FA0B4),
+                            ),
+                          ),
                         ],
                       ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          double.tryParse(logmar) != null
-                              ? _toSnellen(logmar) : logmar,
-                          style: GoogleFonts.inter(
-                              fontSize: 16, fontWeight: FontWeight.w800,
-                              color: col)),
-                        if (double.tryParse(logmar) != null)
-                          Text('LogMAR $logmar',
-                              style: GoogleFonts.inter(
-                                  fontSize: 10,
-                                  color: col.withValues(alpha: 0.7))),
-                        Text(dur,
-                            style: GoogleFonts.inter(
-                                fontSize: 10,
-                                color: const Color(0xFF8FA0B4))),
-                      ],
-                    ),
-                  ],
-                ),
-              );
-            }),
+                    ],
+                  ),
+                );
+              },
+            ),
           ],
           // Referral banner
           if (_needsReferral) ...[
@@ -3486,23 +4243,34 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.local_hospital_rounded, color: _red, size: 22),
+                  const Icon(
+                    Icons.local_hospital_rounded,
+                    color: _red,
+                    size: 22,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Referral Recommended',
-                            style: GoogleFonts.plusJakartaSans(
-                                fontSize: 13, fontWeight: FontWeight.w800,
-                                color: _red)),
+                        Text(
+                          'Referral Recommended',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: _red,
+                          ),
+                        ),
                         const SizedBox(height: 2),
                         Text(
                           'Vision below 6/12 in one or more eyes. '
                           'Refer to nearest eye clinic.',
                           style: GoogleFonts.inter(
-                              fontSize: 11, color: const Color(0xFF5E7291),
-                              height: 1.5)),
+                            fontSize: 11,
+                            color: const Color(0xFF5E7291),
+                            height: 1.5,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -3529,24 +4297,34 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                           patient: patient,
                           eyeResults: _eyeResults,
                           nearResult: _nearResult,
-                          screeningDate: DateTime.now()
-                              .toString().substring(0, 10),
+                          screeningDate: DateTime.now().toString().substring(
+                            0,
+                            10,
+                          ),
                           screeningId: _savedScreeningId,
                         ),
                       ),
                     );
                   },
-                  icon: const Icon(Icons.description_rounded,
-                      size: 18, color: Colors.white),
-                  label: Text('Generate Referral Letter',
-                      style: GoogleFonts.inter(
-                          fontSize: 14, fontWeight: FontWeight.w700,
-                          color: Colors.white)),
+                  icon: const Icon(
+                    Icons.description_rounded,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                  label: Text(
+                    'Generate Referral Letter',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _red,
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     elevation: 0,
                   ),
                 ),
@@ -3559,17 +4337,25 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                 _restoreBrightness();
                 if (mounted) Navigator.pop(context);
               },
-              icon: const Icon(Icons.save_rounded, size: 18, color: Colors.white),
+              icon: const Icon(
+                Icons.save_rounded,
+                size: 18,
+                color: Colors.white,
+              ),
               label: Text(
                 _isOffline ? 'Save Locally & Finish' : 'Save & Finish',
                 style: GoogleFonts.inter(
-                    fontSize: 14, fontWeight: FontWeight.w700,
-                    color: Colors.white)),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _teal,
                 padding: const EdgeInsets.symmetric(vertical: 15),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 elevation: 0,
               ),
             ),
@@ -3578,11 +4364,14 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           Center(
             child: Text(
               _isOffline
-                  ? 'Will sync automatically when connection is restored'
+                  ? 'Saved locally. Use Sync Now from Home or Settings to upload when ready.'
                   : 'Results will be saved to the patient record',
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
-                  fontSize: 11, color: const Color(0xFF8FA0B4))),
+                fontSize: 11,
+                color: const Color(0xFF8FA0B4),
+              ),
+            ),
           ),
         ],
       ),
@@ -3599,13 +4388,16 @@ class _BoundingBoxPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size canvasSize) {
-    final strokeW = size / 5;          // arm thickness = 1 unit
-    final gap     = size / 2;          // gap between E and box
-    final cx = canvasSize.width  / 2;
+    final strokeW = size / 5; // arm thickness = 1 unit
+    final gap = size / 2; // gap between E and box
+    final cx = canvasSize.width / 2;
     final cy = canvasSize.height / 2;
     final half = size / 2 + gap + strokeW / 2;
     final rect = Rect.fromCenter(
-        center: Offset(cx, cy), width: half * 2, height: half * 2);
+      center: Offset(cx, cy),
+      width: half * 2,
+      height: half * 2,
+    );
     final paint = Paint()
       ..color = const Color(0xFF04091A)
       ..style = PaintingStyle.stroke
@@ -3647,7 +4439,6 @@ class _ETumbleEPainter extends CustomPainter {
   bool shouldRepaint(_ETumbleEPainter old) => old.color != color;
 }
 
-
 // ── Dot pattern painter for screening header ────────────────
 class _ScreeningHeaderDotPainter extends CustomPainter {
   @override
@@ -3662,10 +4453,10 @@ class _ScreeningHeaderDotPainter extends CustomPainter {
       }
     }
   }
+
   @override
   bool shouldRepaint(_ScreeningHeaderDotPainter old) => false;
 }
-
 
 // ─────────────────────────────────────────────────────────────
 // Duplicate patient warning dialog
@@ -3682,24 +4473,34 @@ class _DuplicateWarningDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Row(children: [
-        Container(
-          width: 36, height: 36,
-          decoration: BoxDecoration(
-            color: const Color(0xFFFEF3C7),
-            borderRadius: BorderRadius.circular(10),
+      title: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF3C7),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.warning_amber_rounded,
+              color: Color(0xFFF59E0B),
+              size: 20,
+            ),
           ),
-          child: const Icon(Icons.warning_amber_rounded,
-              color: Color(0xFFF59E0B), size: 20),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text('Possible Duplicate',
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Possible Duplicate',
               style: GoogleFonts.plusJakartaSans(
-                  fontSize: 16, fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1A2A3D))),
-        ),
-      ]),
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF1A2A3D),
+              ),
+            ),
+          ),
+        ],
+      ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3707,78 +4508,114 @@ class _DuplicateWarningDialog extends StatelessWidget {
           Text(
             'A patient with a similar name and age already exists:',
             style: GoogleFonts.inter(
-                fontSize: 13, color: const Color(0xFF5E7291), height: 1.5),
+              fontSize: 13,
+              color: const Color(0xFF5E7291),
+              height: 1.5,
+            ),
           ),
           const SizedBox(height: 12),
-          ...duplicates.take(3).map((p) => Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: Row(children: [
-              Container(
-                width: 36, height: 36,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0D9488).withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    (p['name'] as String).split(' ').map((w) => w.isEmpty ? '' : w[0]).take(2).join(),
-                    style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12, fontWeight: FontWeight.w800,
-                        color: const Color(0xFF0D9488)),
+          ...duplicates
+              .take(3)
+              .map(
+                (p) => Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0D9488).withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            (p['name'] as String)
+                                .split(' ')
+                                .map((w) => w.isEmpty ? '' : w[0])
+                                .take(2)
+                                .join(),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF0D9488),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              p['name'] as String,
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF1A2A3D),
+                              ),
+                            ),
+                            Text(
+                              '${p['gender']} · ${p['age']} yrs · ${p['village']}',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                color: const Color(0xFF8FA0B4),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(p['name'] as String,
-                      style: GoogleFonts.inter(
-                          fontSize: 13, fontWeight: FontWeight.w700,
-                          color: const Color(0xFF1A2A3D))),
-                  Text(
-                    '${p['gender']} · ${p['age']} yrs · ${p['village']}',
-                    style: GoogleFonts.inter(
-                        fontSize: 11, color: const Color(0xFF8FA0B4)),
-                  ),
-                ]),
-              ),
-            ]),
-          )),
           const SizedBox(height: 4),
           Text(
             'Is "$newName" a different person?',
             style: GoogleFonts.inter(
-                fontSize: 13, fontWeight: FontWeight.w600,
-                color: const Color(0xFF1A2A3D)),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF1A2A3D),
+            ),
           ),
         ],
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: Text('Cancel — Use Existing',
-              style: GoogleFonts.inter(
-                  fontSize: 13, fontWeight: FontWeight.w600,
-                  color: const Color(0xFF8FA0B4))),
+          child: Text(
+            'Cancel — Use Existing',
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF8FA0B4),
+            ),
+          ),
         ),
         ElevatedButton(
           onPressed: () => Navigator.pop(context, true),
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF0D9488),
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10)),
+              borderRadius: BorderRadius.circular(10),
+            ),
             elevation: 0,
           ),
-          child: Text('Register as New Patient',
-              style: GoogleFonts.inter(
-                  fontSize: 13, fontWeight: FontWeight.w700,
-                  color: Colors.white)),
+          child: Text(
+            'Register as New Patient',
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
         ),
       ],
     );

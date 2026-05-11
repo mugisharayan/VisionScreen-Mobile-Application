@@ -19,6 +19,7 @@ class PatientRepository {
     final database = await _db.db;
     return database.query(
       'patients',
+      where: 'deleted_at IS NULL',
       orderBy: 'created_at DESC',
       limit: pageSize,
       offset: page * pageSize,
@@ -28,7 +29,9 @@ class PatientRepository {
   /// Returns the total number of patients (for pagination UI).
   Future<int> getPatientCount() async {
     final database = await _db.db;
-    final result = await database.rawQuery('SELECT COUNT(*) as count FROM patients');
+    final result = await database.rawQuery(
+      'SELECT COUNT(*) as count FROM patients WHERE deleted_at IS NULL',
+    );
     return (result.first['count'] as int?) ?? 0;
   }
 
@@ -45,7 +48,8 @@ class PatientRepository {
     final q = '%${query.toLowerCase()}%';
     return database.rawQuery(
       '''SELECT * FROM patients
-         WHERE LOWER(name) LIKE ? OR LOWER(id) LIKE ? OR LOWER(village) LIKE ?
+         WHERE deleted_at IS NULL
+         AND (LOWER(name) LIKE ? OR LOWER(id) LIKE ? OR LOWER(village) LIKE ?)
          ORDER BY created_at DESC
          LIMIT ? OFFSET ?''',
       [q, q, q, pageSize, page * pageSize],
@@ -59,7 +63,8 @@ class PatientRepository {
     final q = '%${query.toLowerCase()}%';
     final result = await database.rawQuery(
       '''SELECT COUNT(*) as count FROM patients
-         WHERE LOWER(name) LIKE ? OR LOWER(id) LIKE ? OR LOWER(village) LIKE ?''',
+         WHERE deleted_at IS NULL
+         AND (LOWER(name) LIKE ? OR LOWER(id) LIKE ? OR LOWER(village) LIKE ?)''',
       [q, q, q],
     );
     return (result.first['count'] as int?) ?? 0;
@@ -85,7 +90,8 @@ class PatientRepository {
 
     final results = await database.rawQuery(
       '''SELECT * FROM patients
-         WHERE (
+         WHERE deleted_at IS NULL
+         AND (
            LOWER(name) LIKE ? OR
            (? != '' AND LOWER(name) LIKE ?)
          )

@@ -1,10 +1,11 @@
-
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
-import 'package:crypto/crypto.dart';
 import 'dart:convert';
-// ignore: unused_import — kept for legacy hashPassword compatibility
-import '../utils/security_utils.dart';
+
+import 'package:path/path.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite/sqflite.dart';
+
+import '../utils/app_constants.dart';
+import '../utils/id_utils.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._();
@@ -21,79 +22,16 @@ class DatabaseHelper {
     final path = join(await getDatabasesPath(), 'visionscreen.db');
     return openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: (db, _) async {
-        await db.execute('''
-          CREATE TABLE chw_profiles (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            center TEXT NOT NULL,
-            district TEXT NOT NULL,
-            email TEXT NOT NULL UNIQUE,
-            phone TEXT NOT NULL,
-            password TEXT NOT NULL,
-            role TEXT NOT NULL DEFAULT 'chw',
-            created_at TEXT NOT NULL
-          )
-        ''');
-        await db.execute('''
-          CREATE TABLE campaigns (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            location TEXT NOT NULL,
-            target_group TEXT NOT NULL,
-            created_at TEXT NOT NULL,
-            total INTEGER DEFAULT 0,
-            passed INTEGER DEFAULT 0,
-            referred INTEGER DEFAULT 0
-          )
-        ''');
-        await db.execute('''
-          CREATE TABLE patients (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            age INTEGER NOT NULL,
-            dob TEXT,
-            gender TEXT NOT NULL,
-            village TEXT NOT NULL,
-            phone TEXT,
-            conditions TEXT,
-            photo_path TEXT,
-            campaign_id TEXT,
-            created_at TEXT NOT NULL,
-            FOREIGN KEY (campaign_id) REFERENCES campaigns(id)
-          )
-        ''');
-        await db.execute('''
-          CREATE TABLE screenings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            patient_id TEXT NOT NULL,
-            screening_date TEXT NOT NULL,
-            od_logmar TEXT,
-            os_logmar TEXT,
-            ou_near_logmar TEXT,
-            od_snellen TEXT,
-            os_snellen TEXT,
-            ou_near_snellen TEXT,
-            od_cant_tell INTEGER DEFAULT 0,
-            os_cant_tell INTEGER DEFAULT 0,
-            near_cant_tell INTEGER DEFAULT 0,
-            od_duration TEXT,
-            os_duration TEXT,
-            near_duration TEXT,
-            outcome TEXT NOT NULL,
-            referral_facility TEXT,
-            referral_status TEXT,
-            appointment_date TEXT,
-            chw_name TEXT,
-            synced INTEGER DEFAULT 0,
-            FOREIGN KEY (patient_id) REFERENCES patients(id)
-          )
-        ''');
+        await _createBaseTables(db);
+        await _createSyncTables(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
-          await db.execute('ALTER TABLE screenings ADD COLUMN appointment_date TEXT');
+          await db.execute(
+            'ALTER TABLE screenings ADD COLUMN appointment_date TEXT',
+          );
         }
         if (oldVersion < 3) {
           await db.execute('''
@@ -125,29 +63,402 @@ class DatabaseHelper {
             )
           ''');
         }
+        if (oldVersion < 5) {
+          await _createSyncTables(db);
+          await _ensureColumn(
+            db,
+            'chw_profiles',
+            'chw_id',
+            "TEXT NOT NULL DEFAULT ''",
+          );
+          await _ensureColumn(
+            db,
+            'chw_profiles',
+            'facility_id',
+            "TEXT NOT NULL DEFAULT ''",
+          );
+          await _ensureColumn(
+            db,
+            'chw_profiles',
+            'updated_at',
+            "TEXT NOT NULL DEFAULT ''",
+          );
+          await _ensureColumn(db, 'chw_profiles', 'last_synced_at', 'TEXT');
+          await _ensureColumn(
+            db,
+            'chw_profiles',
+            'sync_state',
+            "TEXT NOT NULL DEFAULT '${AppStrings.syncPendingUpsert}'",
+          );
+          await _ensureColumn(
+            db,
+            'chw_profiles',
+            'version',
+            'INTEGER NOT NULL DEFAULT 1',
+          );
+
+          await _ensureSyncColumns(db, 'campaigns', idColumn: 'id');
+          await _ensureSyncColumns(db, 'patients', idColumn: 'id');
+          await _ensureColumn(
+            db,
+            'screenings',
+            'record_id',
+            "TEXT NOT NULL DEFAULT ''",
+          );
+          await _ensureSyncColumns(db, 'screenings', idColumn: 'record_id');
+          await _backfillScreeningRecordIds(db);
+          await _backfillOwnership(db);
+        }
       },
     );
+  }
+
+  Future<void> _createBaseTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE chw_profiles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        chw_id TEXT NOT NULL,
+        facility_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        center TEXT NOT NULL,
+        district TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        phone TEXT NOT NULL,
+        password TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'chw',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        last_synced_at TEXT,
+        sync_state TEXT NOT NULL DEFAULT '${AppStrings.syncPendingUpsert}',
+        version INTEGER NOT NULL DEFAULT 1
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE campaigns (
+        id TEXT PRIMARY KEY,
+        facility_id TEXT NOT NULL,
+        created_by TEXT NOT NULL,
+        updated_by TEXT NOT NULL,
+        name TEXT NOT NULL,
+        location TEXT NOT NULL,
+        target_group TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        deleted_at TEXT,
+        last_synced_at TEXT,
+        sync_state TEXT NOT NULL DEFAULT '${AppStrings.syncPendingUpsert}',
+        version INTEGER NOT NULL DEFAULT 1,
+        total INTEGER DEFAULT 0,
+        passed INTEGER DEFAULT 0,
+        referred INTEGER DEFAULT 0
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE patients (
+        id TEXT PRIMARY KEY,
+        facility_id TEXT NOT NULL,
+        created_by TEXT NOT NULL,
+        updated_by TEXT NOT NULL,
+        name TEXT NOT NULL,
+        age INTEGER NOT NULL,
+        dob TEXT,
+        gender TEXT NOT NULL,
+        village TEXT NOT NULL,
+        phone TEXT,
+        conditions TEXT,
+        photo_path TEXT,
+        campaign_id TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        deleted_at TEXT,
+        last_synced_at TEXT,
+        sync_state TEXT NOT NULL DEFAULT '${AppStrings.syncPendingUpsert}',
+        version INTEGER NOT NULL DEFAULT 1,
+        FOREIGN KEY (campaign_id) REFERENCES campaigns(id)
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE screenings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        record_id TEXT NOT NULL UNIQUE,
+        facility_id TEXT NOT NULL,
+        created_by TEXT NOT NULL,
+        updated_by TEXT NOT NULL,
+        patient_id TEXT NOT NULL,
+        screening_date TEXT NOT NULL,
+        od_logmar TEXT,
+        os_logmar TEXT,
+        ou_near_logmar TEXT,
+        od_snellen TEXT,
+        os_snellen TEXT,
+        ou_near_snellen TEXT,
+        od_cant_tell INTEGER DEFAULT 0,
+        os_cant_tell INTEGER DEFAULT 0,
+        near_cant_tell INTEGER DEFAULT 0,
+        od_duration TEXT,
+        os_duration TEXT,
+        near_duration TEXT,
+        outcome TEXT NOT NULL,
+        referral_facility TEXT,
+        referral_status TEXT,
+        appointment_date TEXT,
+        chw_name TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        deleted_at TEXT,
+        last_synced_at TEXT,
+        sync_state TEXT NOT NULL DEFAULT '${AppStrings.syncPendingUpsert}',
+        version INTEGER NOT NULL DEFAULT 1,
+        synced INTEGER DEFAULT 0,
+        FOREIGN KEY (patient_id) REFERENCES patients(id)
+      )
+    ''');
+  }
+
+  Future<void> _createSyncTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS workspace_facilities (
+        id TEXT PRIMARY KEY,
+        center TEXT NOT NULL,
+        district TEXT NOT NULL,
+        display_name TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS facility_memberships (
+        id TEXT PRIMARY KEY,
+        facility_id TEXT NOT NULL,
+        user_email TEXT NOT NULL,
+        role TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS sync_queue (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        entity_type TEXT NOT NULL,
+        entity_id TEXT NOT NULL,
+        operation TEXT NOT NULL,
+        payload TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        last_error TEXT,
+        synced_at TEXT
+      )
+    ''');
+  }
+
+  Future<void> _ensureSyncColumns(
+    Database db,
+    String table, {
+    required String idColumn,
+  }) async {
+    await _ensureColumn(db, table, 'facility_id', "TEXT NOT NULL DEFAULT ''");
+    await _ensureColumn(db, table, 'created_by', "TEXT NOT NULL DEFAULT ''");
+    await _ensureColumn(db, table, 'updated_by', "TEXT NOT NULL DEFAULT ''");
+    await _ensureColumn(db, table, 'updated_at', "TEXT NOT NULL DEFAULT ''");
+    await _ensureColumn(db, table, 'deleted_at', 'TEXT');
+    await _ensureColumn(db, table, 'last_synced_at', 'TEXT');
+    await _ensureColumn(
+      db,
+      table,
+      'sync_state',
+      "TEXT NOT NULL DEFAULT '${AppStrings.syncPendingUpsert}'",
+    );
+    await _ensureColumn(db, table, 'version', 'INTEGER NOT NULL DEFAULT 1');
+    if (idColumn == 'record_id') {
+      final existing = await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_screenings_record_id'",
+      );
+      if (existing.isEmpty) {
+        await db.execute(
+          'CREATE UNIQUE INDEX IF NOT EXISTS idx_screenings_record_id ON screenings(record_id)',
+        );
+      }
+    }
+  }
+
+  Future<void> _ensureColumn(
+    Database db,
+    String table,
+    String column,
+    String definition,
+  ) async {
+    final rows = await db.rawQuery("PRAGMA table_info($table)");
+    final exists = rows.any((row) => row['name'] == column);
+    if (!exists) {
+      await db.execute('ALTER TABLE $table ADD COLUMN $column $definition');
+    }
+  }
+
+  Future<void> _backfillScreeningRecordIds(Database db) async {
+    final rows = await db.query('screenings', columns: ['id', 'record_id']);
+    for (final row in rows) {
+      final existing = (row['record_id'] as String?) ?? '';
+      if (existing.isNotEmpty) continue;
+      await db.update(
+        'screenings',
+        {'record_id': IdUtils.generate('screening')},
+        where: 'id = ?',
+        whereArgs: [row['id']],
+      );
+    }
+  }
+
+  Future<void> _backfillOwnership(Database db) async {
+    final prefs = await SharedPreferences.getInstance();
+    final email = prefs.getString(AppStrings.prefChwEmail) ?? '';
+    final center = prefs.getString(AppStrings.prefChwCenter) ?? '';
+    final district = prefs.getString(AppStrings.prefChwDistrict) ?? '';
+    final facilityId =
+        prefs.getString(AppStrings.prefFacilityId) ??
+        IdUtils.facilityId(center: center, district: district);
+    final now = DateTime.now().toUtc().toIso8601String();
+
+    for (final table in const ['campaigns', 'patients', 'screenings']) {
+      await db.update(table, {
+        'facility_id': facilityId,
+        'created_by': email,
+        'updated_by': email,
+        'updated_at': now,
+        'sync_state': AppStrings.syncPendingUpsert,
+      }, where: "facility_id = '' OR updated_at = ''");
+    }
+    await db.update('chw_profiles', {
+      'facility_id': facilityId,
+      'updated_at': now,
+      'sync_state': AppStrings.syncPendingUpsert,
+    }, where: "facility_id = '' OR updated_at = ''");
+  }
+
+  Future<({String email, String facilityId})> _currentActorContext() async {
+    final prefs = await SharedPreferences.getInstance();
+    final email = prefs.getString(AppStrings.prefChwEmail) ?? '';
+    final facilityId = prefs.getString(AppStrings.prefFacilityId) ?? '';
+    return (email: email, facilityId: facilityId);
+  }
+
+  String _isoNow() => DateTime.now().toUtc().toIso8601String();
+
+  Map<String, dynamic> _decorateSyncableRow(
+    Map<String, dynamic> row, {
+    required String facilityId,
+    required String actorEmail,
+    required String createdAtFallback,
+  }) {
+    final createdAt = (row['created_at'] as String?)?.isNotEmpty == true
+        ? row['created_at'] as String
+        : createdAtFallback;
+    final updatedAt = (row['updated_at'] as String?)?.isNotEmpty == true
+        ? row['updated_at'] as String
+        : createdAtFallback;
+
+    return {
+      ...row,
+      'facility_id': (row['facility_id'] as String?)?.isNotEmpty == true
+          ? row['facility_id']
+          : facilityId,
+      'created_by': (row['created_by'] as String?)?.isNotEmpty == true
+          ? row['created_by']
+          : actorEmail,
+      'updated_by': actorEmail,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
+      'deleted_at': row['deleted_at'],
+      'last_synced_at': row['last_synced_at'],
+      'sync_state': AppStrings.syncPendingUpsert,
+      'version': (row['version'] as int?) ?? 1,
+    };
+  }
+
+  Future<void> _queueOperation(
+    DatabaseExecutor database, {
+    required String entityType,
+    required String entityId,
+    required String operation,
+    required Map<String, dynamic> payload,
+  }) async {
+    await database.insert('sync_queue', {
+      'entity_type': entityType,
+      'entity_id': entityId,
+      'operation': operation,
+      'payload': jsonEncode(payload),
+      'created_at': _isoNow(),
+      'attempts': 0,
+      'last_error': null,
+      'synced_at': null,
+    });
   }
 
   // ── PATIENTS ──────────────────────────────────────────────
 
   Future<void> insertPatient(Map<String, dynamic> patient) async {
     final database = await db;
+    final ctx = await _currentActorContext();
+    final now = _isoNow();
+    final row = _decorateSyncableRow(
+      patient,
+      facilityId: ctx.facilityId,
+      actorEmail: ctx.email,
+      createdAtFallback: now,
+    );
     await database.insert(
       'patients',
-      patient,
+      row,
       conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    await _queueOperation(
+      database,
+      entityType: AppStrings.entityPatient,
+      entityId: row['id'] as String,
+      operation: AppStrings.syncPendingUpsert,
+      payload: row,
     );
   }
 
   Future<void> deletePatient(String patientId) async {
     final database = await db;
-    // Get campaign_id before deleting
     final patient = await getPatient(patientId);
-    final campaignId = patient?['campaign_id'] as String?;
-    await database.delete('screenings', where: 'patient_id = ?', whereArgs: [patientId]);
+    if (patient == null) return;
+    final campaignId = patient['campaign_id'] as String?;
+    final screenings = await getScreeningsForPatient(patientId);
+    for (final screening in screenings) {
+      await _queueOperation(
+        database,
+        entityType: AppStrings.entityScreening,
+        entityId:
+            screening['record_id'] as String? ??
+            IdUtils.generate('screening-delete'),
+        operation: AppStrings.syncPendingDelete,
+        payload: {
+          'record_id': screening['record_id'],
+          'facility_id': screening['facility_id'],
+          'updated_at': _isoNow(),
+          'deleted_at': _isoNow(),
+        },
+      );
+    }
+    await _queueOperation(
+      database,
+      entityType: AppStrings.entityPatient,
+      entityId: patientId,
+      operation: AppStrings.syncPendingDelete,
+      payload: {
+        'id': patientId,
+        'facility_id': patient['facility_id'],
+        'updated_at': _isoNow(),
+        'deleted_at': _isoNow(),
+      },
+    );
+    await database.delete(
+      'screenings',
+      where: 'patient_id = ?',
+      whereArgs: [patientId],
+    );
     await database.delete('patients', where: 'id = ?', whereArgs: [patientId]);
-    // Update campaign stats if this patient belonged to a campaign
     if (campaignId != null && campaignId.isNotEmpty) {
       await updateCampaignStats(campaignId);
     }
@@ -155,14 +466,18 @@ class DatabaseHelper {
 
   Future<List<Map<String, dynamic>>> getAllPatients() async {
     final database = await db;
-    return database.query('patients', orderBy: 'created_at DESC');
+    return database.query(
+      'patients',
+      where: 'deleted_at IS NULL',
+      orderBy: 'created_at DESC',
+    );
   }
 
   Future<Map<String, dynamic>?> getPatient(String id) async {
     final database = await db;
     final rows = await database.query(
       'patients',
-      where: 'id = ?',
+      where: 'id = ? AND deleted_at IS NULL',
       whereArgs: [id],
       limit: 1,
     );
@@ -173,7 +488,7 @@ class DatabaseHelper {
     final database = await db;
     final q = '%${query.toLowerCase()}%';
     return database.rawQuery(
-      'SELECT * FROM patients WHERE LOWER(name) LIKE ? OR LOWER(id) LIKE ? OR LOWER(village) LIKE ? ORDER BY created_at DESC',
+      'SELECT * FROM patients WHERE deleted_at IS NULL AND (LOWER(name) LIKE ? OR LOWER(id) LIKE ? OR LOWER(village) LIKE ?) ORDER BY created_at DESC',
       [q, q, q],
     );
   }
@@ -182,18 +497,46 @@ class DatabaseHelper {
 
   Future<String> insertCampaign(Map<String, dynamic> campaign) async {
     final database = await db;
-    await database.insert('campaigns', campaign, conflictAlgorithm: ConflictAlgorithm.replace);
-    return campaign['id'] as String;
+    final ctx = await _currentActorContext();
+    final now = _isoNow();
+    final row = _decorateSyncableRow(
+      campaign,
+      facilityId: ctx.facilityId,
+      actorEmail: ctx.email,
+      createdAtFallback: now,
+    );
+    await database.insert(
+      'campaigns',
+      row,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    await _queueOperation(
+      database,
+      entityType: AppStrings.entityCampaign,
+      entityId: row['id'] as String,
+      operation: AppStrings.syncPendingUpsert,
+      payload: row,
+    );
+    return row['id'] as String;
   }
 
   Future<List<Map<String, dynamic>>> getAllCampaigns() async {
     final database = await db;
-    final campaigns = await database.query('campaigns', orderBy: 'created_at DESC');
+    final campaigns = await database.query(
+      'campaigns',
+      where: 'deleted_at IS NULL',
+      orderBy: 'created_at DESC',
+    );
     // Recalculate stats for each campaign fresh
     final result = <Map<String, dynamic>>[];
     for (final c in campaigns) {
       await updateCampaignStats(c['id'] as String);
-      final updated = await database.query('campaigns', where: 'id = ?', whereArgs: [c['id']], limit: 1);
+      final updated = await database.query(
+        'campaigns',
+        where: 'id = ?',
+        whereArgs: [c['id']],
+        limit: 1,
+      );
       if (updated.isNotEmpty) result.add(updated.first);
     }
     return result;
@@ -201,14 +544,20 @@ class DatabaseHelper {
 
   Future<Map<String, dynamic>?> getCampaign(String id) async {
     final database = await db;
-    final rows = await database.query('campaigns', where: 'id = ?', whereArgs: [id], limit: 1);
+    final rows = await database.query(
+      'campaigns',
+      where: 'id = ? AND deleted_at IS NULL',
+      whereArgs: [id],
+      limit: 1,
+    );
     return rows.isEmpty ? null : rows.first;
   }
 
   Future<void> updateCampaignStats(String campaignId) async {
     final database = await db;
     // Count distinct patients, and their latest screening outcome
-    final result = await database.rawQuery('''
+    final result = await database.rawQuery(
+      '''
       SELECT
         COUNT(DISTINCT p.id) AS total,
         SUM(CASE WHEN latest.outcome = 'pass'  THEN 1 ELSE 0 END) AS passed,
@@ -218,60 +567,172 @@ class DatabaseHelper {
         SELECT patient_id, outcome
         FROM screenings
         WHERE id IN (
-          SELECT MAX(id) FROM screenings GROUP BY patient_id
+          SELECT MAX(id)
+          FROM screenings
+          WHERE deleted_at IS NULL
+          GROUP BY patient_id
         )
       ) latest ON latest.patient_id = p.id
       WHERE p.campaign_id = ?
-    ''', [campaignId]);
+        AND p.deleted_at IS NULL
+    ''',
+      [campaignId],
+    );
     if (result.isNotEmpty) {
-      await database.update('campaigns', {
-        'total':    (result.first['total']    as int?) ?? 0,
-        'passed':   (result.first['passed']   as num?)?.toInt() ?? 0,
-        'referred': (result.first['referred'] as num?)?.toInt() ?? 0,
-      }, where: 'id = ?', whereArgs: [campaignId]);
+      final ctx = await _currentActorContext();
+      final now = _isoNow();
+      final current = await getCampaign(campaignId);
+      final nextVersion = ((current?['version'] as int?) ?? 0) + 1;
+      await database.update(
+        'campaigns',
+        {
+          'total': (result.first['total'] as int?) ?? 0,
+          'passed': (result.first['passed'] as num?)?.toInt() ?? 0,
+          'referred': (result.first['referred'] as num?)?.toInt() ?? 0,
+          'updated_at': now,
+          'updated_by': ctx.email,
+          'sync_state': AppStrings.syncPendingUpsert,
+          'version': nextVersion,
+        },
+        where: 'id = ?',
+        whereArgs: [campaignId],
+      );
+      final updated = await getCampaign(campaignId);
+      if (updated != null) {
+        await _queueOperation(
+          database,
+          entityType: AppStrings.entityCampaign,
+          entityId: campaignId,
+          operation: AppStrings.syncPendingUpsert,
+          payload: updated,
+        );
+      }
     }
   }
 
   Future<void> deleteCampaign(String campaignId) async {
     final database = await db;
-    // Delete all screenings for patients in this campaign
-    final patients = await database.query('patients', where: 'campaign_id = ?', whereArgs: [campaignId]);
+    final campaign = await getCampaign(campaignId);
+    if (campaign == null) return;
+    final patients = await database.query(
+      'patients',
+      where: 'campaign_id = ?',
+      whereArgs: [campaignId],
+    );
     for (final p in patients) {
-      await database.delete('screenings', where: 'patient_id = ?', whereArgs: [p['id']]);
+      final patientId = p['id'] as String;
+      final screenings = await getScreeningsForPatient(patientId);
+      for (final screening in screenings) {
+        await _queueOperation(
+          database,
+          entityType: AppStrings.entityScreening,
+          entityId: screening['record_id'] as String,
+          operation: AppStrings.syncPendingDelete,
+          payload: {
+            'record_id': screening['record_id'],
+            'facility_id': screening['facility_id'],
+            'updated_at': _isoNow(),
+            'deleted_at': _isoNow(),
+          },
+        );
+      }
+      await _queueOperation(
+        database,
+        entityType: AppStrings.entityPatient,
+        entityId: patientId,
+        operation: AppStrings.syncPendingDelete,
+        payload: {
+          'id': patientId,
+          'facility_id': p['facility_id'],
+          'updated_at': _isoNow(),
+          'deleted_at': _isoNow(),
+        },
+      );
+      await database.delete(
+        'screenings',
+        where: 'patient_id = ?',
+        whereArgs: [patientId],
+      );
     }
-    // Delete all patients in this campaign
-    await database.delete('patients', where: 'campaign_id = ?', whereArgs: [campaignId]);
-    // Delete the campaign
-    await database.delete('campaigns', where: 'id = ?', whereArgs: [campaignId]);
+    await database.delete(
+      'patients',
+      where: 'campaign_id = ?',
+      whereArgs: [campaignId],
+    );
+    await _queueOperation(
+      database,
+      entityType: AppStrings.entityCampaign,
+      entityId: campaignId,
+      operation: AppStrings.syncPendingDelete,
+      payload: {
+        'id': campaignId,
+        'facility_id': campaign['facility_id'],
+        'updated_at': _isoNow(),
+        'deleted_at': _isoNow(),
+      },
+    );
+    await database.delete(
+      'campaigns',
+      where: 'id = ?',
+      whereArgs: [campaignId],
+    );
   }
 
-  Future<List<Map<String, dynamic>>> getPatientsForCampaign(String campaignId) async {
+  Future<List<Map<String, dynamic>>> getPatientsForCampaign(
+    String campaignId,
+  ) async {
     final database = await db;
-    return database.rawQuery('''
+    return database.rawQuery(
+      '''
       SELECT p.*, s.outcome, s.od_snellen, s.os_snellen, s.ou_near_snellen,
              s.referral_facility, s.referral_status, s.screening_date
       FROM patients p
       LEFT JOIN screenings s ON s.id = (
-        SELECT id FROM screenings WHERE patient_id = p.id ORDER BY screening_date DESC LIMIT 1
+        SELECT id FROM screenings WHERE patient_id = p.id AND deleted_at IS NULL ORDER BY screening_date DESC LIMIT 1
       )
-      WHERE p.campaign_id = ?
+      WHERE p.campaign_id = ? AND p.deleted_at IS NULL
       ORDER BY p.created_at ASC
-    ''', [campaignId]);
+    ''',
+      [campaignId],
+    );
   }
 
   // ── SCREENINGS ────────────────────────────────────────────
 
   Future<int> insertScreening(Map<String, dynamic> screening) async {
     final database = await db;
-    return database.insert('screenings', screening);
+    final ctx = await _currentActorContext();
+    final now = _isoNow();
+    final row = _decorateSyncableRow(
+      {
+        ...screening,
+        'record_id': (screening['record_id'] as String?)?.isNotEmpty == true
+            ? screening['record_id']
+            : IdUtils.generate('screening'),
+        'synced': 0,
+      },
+      facilityId: ctx.facilityId,
+      actorEmail: ctx.email,
+      createdAtFallback: now,
+    );
+    final id = await database.insert('screenings', row);
+    await _queueOperation(
+      database,
+      entityType: AppStrings.entityScreening,
+      entityId: row['record_id'] as String,
+      operation: AppStrings.syncPendingUpsert,
+      payload: row,
+    );
+    return id;
   }
 
   Future<List<Map<String, dynamic>>> getScreeningsForPatient(
-      String patientId) async {
+    String patientId,
+  ) async {
     final database = await db;
     return database.query(
       'screenings',
-      where: 'patient_id = ?',
+      where: 'patient_id = ? AND deleted_at IS NULL',
       whereArgs: [patientId],
       orderBy: 'screening_date DESC',
     );
@@ -279,14 +740,18 @@ class DatabaseHelper {
 
   Future<List<Map<String, dynamic>>> getAllScreenings() async {
     final database = await db;
-    return database.query('screenings', orderBy: 'screening_date DESC');
+    return database.query(
+      'screenings',
+      where: 'deleted_at IS NULL',
+      orderBy: 'screening_date DESC',
+    );
   }
 
   Future<Map<String, dynamic>?> getLatestScreening(String patientId) async {
     final database = await db;
     final rows = await database.query(
       'screenings',
-      where: 'patient_id = ?',
+      where: 'patient_id = ? AND deleted_at IS NULL',
       whereArgs: [patientId],
       orderBy: 'screening_date DESC',
       limit: 1,
@@ -296,26 +761,92 @@ class DatabaseHelper {
 
   Future<void> updateReferralStatus(int screeningId, String status) async {
     final database = await db;
+    final ctx = await _currentActorContext();
+    final current = await database.query(
+      'screenings',
+      where: 'id = ?',
+      whereArgs: [screeningId],
+      limit: 1,
+    );
+    if (current.isEmpty) return;
+    final row = current.first;
     await database.update(
       'screenings',
-      {'referral_status': status.toLowerCase().trim()},
+      {
+        'referral_status': status.toLowerCase().trim(),
+        'updated_at': _isoNow(),
+        'updated_by': ctx.email,
+        'sync_state': AppStrings.syncPendingUpsert,
+        'version': ((row['version'] as int?) ?? 0) + 1,
+        'synced': 0,
+      },
       where: 'id = ?',
       whereArgs: [screeningId],
     );
+    final updated = await database.query(
+      'screenings',
+      where: 'id = ?',
+      whereArgs: [screeningId],
+      limit: 1,
+    );
+    if (updated.isNotEmpty) {
+      await _queueOperation(
+        database,
+        entityType: AppStrings.entityScreening,
+        entityId: updated.first['record_id'] as String,
+        operation: AppStrings.syncPendingUpsert,
+        payload: updated.first,
+      );
+    }
   }
 
-  Future<void> updateReferralDetails(int screeningId, {
+  Future<void> updateReferralDetails(
+    int screeningId, {
     String? facility,
     String? appointmentDate,
     String? status,
   }) async {
     final database = await db;
+    final ctx = await _currentActorContext();
+    final current = await database.query(
+      'screenings',
+      where: 'id = ?',
+      whereArgs: [screeningId],
+      limit: 1,
+    );
+    if (current.isEmpty) return;
+    final row = current.first;
     final data = <String, dynamic>{};
     if (facility != null) data['referral_facility'] = facility;
     if (appointmentDate != null) data['appointment_date'] = appointmentDate;
     if (status != null) data['referral_status'] = status.toLowerCase().trim();
     if (data.isEmpty) return;
-    await database.update('screenings', data, where: 'id = ?', whereArgs: [screeningId]);
+    data['updated_at'] = _isoNow();
+    data['updated_by'] = ctx.email;
+    data['sync_state'] = AppStrings.syncPendingUpsert;
+    data['version'] = ((row['version'] as int?) ?? 0) + 1;
+    data['synced'] = 0;
+    await database.update(
+      'screenings',
+      data,
+      where: 'id = ?',
+      whereArgs: [screeningId],
+    );
+    final updated = await database.query(
+      'screenings',
+      where: 'id = ?',
+      whereArgs: [screeningId],
+      limit: 1,
+    );
+    if (updated.isNotEmpty) {
+      await _queueOperation(
+        database,
+        entityType: AppStrings.entityScreening,
+        entityId: updated.first['record_id'] as String,
+        operation: AppStrings.syncPendingUpsert,
+        payload: updated.first,
+      );
+    }
   }
 
   Future<List<Map<String, dynamic>>> getReferredPatients() async {
@@ -326,19 +857,20 @@ class DatabaseHelper {
              p.name, p.age, p.gender, p.photo_path
       FROM screenings s
       JOIN patients p ON s.patient_id = p.id
-      WHERE s.outcome = 'refer'
+      WHERE s.outcome = 'refer' AND s.deleted_at IS NULL
       ORDER BY s.appointment_date ASC
     ''');
   }
 
   /// Patients registered but not yet screened (no row in screenings table)
   Future<int> getPendingCount() async {
-    final database = await this.db;
+    final database = await db;
     final result = await database.rawQuery('''
       SELECT COUNT(*) as count FROM patients p
       WHERE NOT EXISTS (
-        SELECT 1 FROM screenings s WHERE s.patient_id = p.id
+        SELECT 1 FROM screenings s WHERE s.patient_id = p.id AND s.deleted_at IS NULL
       )
+      AND p.deleted_at IS NULL
     ''');
     return (result.first['count'] as int?) ?? 0;
   }
@@ -346,7 +878,7 @@ class DatabaseHelper {
   Future<int> getUnsyncedCount() async {
     final database = await db;
     final result = await database.rawQuery(
-      'SELECT COUNT(*) as count FROM screenings WHERE synced = 0',
+      "SELECT COUNT(*) as count FROM sync_queue WHERE synced_at IS NULL",
     );
     return (result.first['count'] as int?) ?? 0;
   }
@@ -355,7 +887,11 @@ class DatabaseHelper {
     final database = await db;
     await database.update(
       'screenings',
-      {'synced': 1},
+      {
+        'synced': 1,
+        'sync_state': AppStrings.syncSynced,
+        'last_synced_at': _isoNow(),
+      },
       where: 'id = ?',
       whereArgs: [screeningId],
     );
@@ -450,19 +986,19 @@ class DatabaseHelper {
     String whereClause;
     switch (period) {
       case 'Today':
-        groupExpr   = "strftime('%H:00', screening_date)";
+        groupExpr = "strftime('%H:00', screening_date)";
         whereClause = "DATE(screening_date) = DATE('now')";
         break;
       case 'Month':
-        groupExpr   = "DATE(screening_date)";
+        groupExpr = "DATE(screening_date)";
         whereClause = "screening_date >= DATE('now', '-29 days')";
         break;
       case 'Year':
-        groupExpr   = "strftime('%Y-%m', screening_date)";
+        groupExpr = "strftime('%Y-%m', screening_date)";
         whereClause = "screening_date >= DATE('now', '-364 days')";
         break;
       default: // Week
-        groupExpr   = "DATE(screening_date)";
+        groupExpr = "DATE(screening_date)";
         whereClause = "screening_date >= DATE('now', '-6 days')";
     }
     final rows = await database.rawQuery('''
@@ -476,27 +1012,31 @@ class DatabaseHelper {
       ORDER BY $groupExpr ASC
     ''');
     final points = rows
-        .map((r) => {
-              'label':       r['label'] as String? ?? '',
-              'pass_count':  (r['pass_count']  as num?)?.toInt() ?? 0,
-              'refer_count': (r['refer_count'] as num?)?.toInt() ?? 0,
-            })
+        .map(
+          (r) => {
+            'label': r['label'] as String? ?? '',
+            'pass_count': (r['pass_count'] as num?)?.toInt() ?? 0,
+            'refer_count': (r['refer_count'] as num?)?.toInt() ?? 0,
+          },
+        )
         .toList();
 
     // Append a period-total summary so the chart headline shows
     // the overall rate for the whole period, not just the last bucket.
-    final totalPass  = points.fold(0, (s, r) => s + (r['pass_count']  as int));
+    final totalPass = points.fold(0, (s, r) => s + (r['pass_count'] as int));
     final totalRefer = points.fold(0, (s, r) => s + (r['refer_count'] as int));
     points.add({
-      'label':       '__total__',
-      'pass_count':  totalPass,
+      'label': '__total__',
+      'pass_count': totalPass,
       'refer_count': totalRefer,
     });
     return points;
   }
 
   /// Buckets worst-eye Snellen per patient into 5 acuity levels.
-  Future<Map<String, int>> getVisualAcuityDistribution({String period = 'All'}) async {
+  Future<Map<String, int>> getVisualAcuityDistribution({
+    String period = 'All',
+  }) async {
     final database = await db;
     final where = _periodWhere(period);
     final periodFilter = where.isEmpty ? '' : 'AND $where';
@@ -512,7 +1052,11 @@ class DatabaseHelper {
       AND (od_snellen IS NOT NULL OR os_snellen IS NOT NULL)
     ''');
     final counts = <String, int>{
-      'Normal': 0, 'Near Normal': 0, 'Moderate': 0, 'Severe': 0, 'Blind Range': 0,
+      'Normal': 0,
+      'Near Normal': 0,
+      'Moderate': 0,
+      'Severe': 0,
+      'Blind Range': 0,
     };
     for (final row in rows) {
       final od = row['od_snellen'] as String?;
@@ -534,6 +1078,7 @@ class DatabaseHelper {
       if (s.contains('6/36') || s.contains('6/60')) return 3;
       return 4; // CF / HM / PL / <6/60
     }
+
     final rOd = rank(od);
     final rOs = rank(os);
     // Both unrecorded — skip this row
@@ -552,7 +1097,8 @@ class DatabaseHelper {
     final where = _periodWhere(period);
     final rows = where.isEmpty
         ? await database.rawQuery(
-            "SELECT conditions FROM patients WHERE conditions IS NOT NULL AND conditions != ''")
+            "SELECT conditions FROM patients WHERE conditions IS NOT NULL AND conditions != ''",
+          )
         : await database.rawQuery('''
             SELECT p.conditions
             FROM patients p
@@ -578,7 +1124,9 @@ class DatabaseHelper {
   /// Moderate: logMAR 0.6–1.0
   /// Severe: logMAR > 1.0
   /// Critical: cant_tell on both eyes (unable to assess)
-  Future<Map<String, int>> getSeverityClassification({String period = 'All'}) async {
+  Future<Map<String, int>> getSeverityClassification({
+    String period = 'All',
+  }) async {
     final database = await db;
     final where = _periodWhere(period);
     final periodFilter = where.isEmpty ? '' : 'AND $where';
@@ -595,14 +1143,18 @@ class DatabaseHelper {
     ''');
 
     final counts = <String, int>{
-      'Normal': 0, 'Mild': 0, 'Moderate': 0, 'Severe': 0, 'Critical': 0,
+      'Normal': 0,
+      'Mild': 0,
+      'Moderate': 0,
+      'Severe': 0,
+      'Critical': 0,
     };
 
     for (final row in rows) {
-      final odLogmar    = double.tryParse((row['od_logmar'] as String?) ?? '');
-      final osLogmar    = double.tryParse((row['os_logmar'] as String?) ?? '');
-      final odCantTell  = (row['od_cant_tell'] as int?) ?? 0;
-      final osCantTell  = (row['os_cant_tell'] as int?) ?? 0;
+      final odLogmar = double.tryParse((row['od_logmar'] as String?) ?? '');
+      final osLogmar = double.tryParse((row['os_logmar'] as String?) ?? '');
+      final odCantTell = (row['od_cant_tell'] as int?) ?? 0;
+      final osCantTell = (row['os_cant_tell'] as int?) ?? 0;
 
       // Both eyes unable to assess
       if (odLogmar == null && osLogmar == null) {
@@ -614,21 +1166,30 @@ class DatabaseHelper {
       }
 
       // Use the worse (higher logMAR) of the two recorded eyes
-      final worst = [odLogmar, osLogmar]
-          .whereType<double>()
-          .fold<double>(-1, (m, v) => v > m ? v : m);
+      final worst = [
+        odLogmar,
+        osLogmar,
+      ].whereType<double>().fold<double>(-1, (m, v) => v > m ? v : m);
 
-      if (worst <= 0.3)      counts['Normal']   = counts['Normal']!   + 1;
-      else if (worst <= 0.5) counts['Mild']     = counts['Mild']!     + 1;
-      else if (worst <= 1.0) counts['Moderate'] = counts['Moderate']! + 1;
-      else if (worst <= 2.0) counts['Severe']   = counts['Severe']!   + 1;
-      else                   counts['Critical'] = counts['Critical']! + 1;
+      if (worst <= 0.3) {
+        counts['Normal'] = counts['Normal']! + 1;
+      } else if (worst <= 0.5) {
+        counts['Mild'] = counts['Mild']! + 1;
+      } else if (worst <= 1.0) {
+        counts['Moderate'] = counts['Moderate']! + 1;
+      } else if (worst <= 2.0) {
+        counts['Severe'] = counts['Severe']! + 1;
+      } else {
+        counts['Critical'] = counts['Critical']! + 1;
+      }
     }
     return counts;
   }
 
   /// Referral status breakdown for all referred screenings.
-  Future<Map<String, int>> getReferralStatusCounts({String period = 'All'}) async {
+  Future<Map<String, int>> getReferralStatusCounts({
+    String period = 'All',
+  }) async {
     final database = await db;
     final where = _periodWhere(period);
     final periodFilter = where.isEmpty ? '' : 'AND $where';
@@ -652,18 +1213,22 @@ class DatabaseHelper {
   }
 
   /// Follow-up compliance: maps referral_status to attendance buckets.
-  Future<Map<String, int>> getFollowUpCompliance({String period = 'All'}) async {
+  Future<Map<String, int>> getFollowUpCompliance({
+    String period = 'All',
+  }) async {
     final statuses = await getReferralStatusCounts(period: period);
     return {
-      'Attended':    statuses['completed']   ?? 0,
+      'Attended': statuses['completed'] ?? 0,
       'Rescheduled': statuses['rescheduled'] ?? 0,
-      'Pending':     (statuses['pending'] ?? 0) + (statuses['notified'] ?? 0),
-      'Missed':      statuses['overdue']     ?? 0,
+      'Pending': (statuses['pending'] ?? 0) + (statuses['notified'] ?? 0),
+      'Missed': statuses['overdue'] ?? 0,
     };
   }
 
   /// Conditions broken down by age group.
-  Future<Map<String, Map<String, int>>> getConditionsByAgeGroup({String period = 'All'}) async {
+  Future<Map<String, Map<String, int>>> getConditionsByAgeGroup({
+    String period = 'All',
+  }) async {
     final database = await db;
     final where = _periodWhere(period);
     final periodFilter = where.isEmpty ? '' : 'AND $where';
@@ -686,7 +1251,7 @@ class DatabaseHelper {
     final result = <String, Map<String, int>>{};
     for (final row in rows) {
       final ageGroup = row['age_group'] as String;
-      final raw      = row['conditions'] as String? ?? '';
+      final raw = row['conditions'] as String? ?? '';
       for (final tag in raw.split(',')) {
         final t = tag.trim();
         if (t.isEmpty) continue;
@@ -698,7 +1263,9 @@ class DatabaseHelper {
   }
 
   /// Village breakdown: total patients + referred count per village.
-  Future<List<Map<String, dynamic>>> getVillageBreakdown({String period = 'All'}) async {
+  Future<List<Map<String, dynamic>>> getVillageBreakdown({
+    String period = 'All',
+  }) async {
     final database = await db;
     final where = _periodWhere(period);
 
@@ -721,7 +1288,8 @@ class DatabaseHelper {
         ORDER BY total DESC
       ''';
     } else {
-      sql = '''
+      sql =
+          '''
         SELECT
           p.village,
           COUNT(DISTINCT p.id) AS total,
@@ -735,41 +1303,81 @@ class DatabaseHelper {
 
     final rows = await database.rawQuery(sql);
     return rows
-        .map((r) => {
-              'village':  r['village']  as String? ?? 'Unknown',
-              'total':    (r['total']   as int?)          ?? 0,
-              'referred': (r['referred'] as num?)?.toInt() ?? 0,
-            })
+        .map(
+          (r) => {
+            'village': r['village'] as String? ?? 'Unknown',
+            'total': (r['total'] as int?) ?? 0,
+            'referred': (r['referred'] as num?)?.toInt() ?? 0,
+          },
+        )
         .toList();
   }
 
-  Future<List<Map<String, dynamic>>> getRecentScreeningsWithPatient(
-      {int limit = 10}) async {
+  Future<List<Map<String, dynamic>>> getRecentScreeningsWithPatient({
+    int limit = 10,
+  }) async {
     final database = await db;
-    return database.rawQuery('''
+    return database.rawQuery(
+      '''
       SELECT s.*, p.name, p.age, p.gender, p.village, p.photo_path, p.conditions
       FROM screenings s
       JOIN patients p ON s.patient_id = p.id
+      WHERE s.deleted_at IS NULL AND p.deleted_at IS NULL
       ORDER BY s.screening_date DESC
       LIMIT ?
-    ''', [limit]);
+    ''',
+      [limit],
+    );
   }
 
   // ── NOTIFICATIONS ─────────────────────────────────────────
 
   // ── CHW PROFILES ──────────────────────────────────────────
 
-  /// Legacy unsalted SHA-256 hash — kept for backward compatibility only.
-  /// New code should use [SecurityUtils.hashPassword] / [SecurityUtils.verifyPassword].
-  @Deprecated('Use SecurityUtils.hashPassword instead')
-  static String hashPassword(String password) {
-    final bytes = utf8.encode(password);
-    return sha256.convert(bytes).toString();
-  }
-
   Future<void> insertChwProfile(Map<String, dynamic> profile) async {
     final database = await db;
-    await database.insert('chw_profiles', profile, conflictAlgorithm: ConflictAlgorithm.replace);
+    final now = _isoNow();
+    final facilityId = (profile['facility_id'] as String?)?.isNotEmpty == true
+        ? profile['facility_id'] as String
+        : IdUtils.facilityId(
+            center: profile['center'] as String? ?? '',
+            district: profile['district'] as String? ?? '',
+          );
+    final row = {
+      ...profile,
+      'chw_id': (profile['chw_id'] as String?)?.isNotEmpty == true
+          ? profile['chw_id']
+          : IdUtils.generate('chw'),
+      'facility_id': facilityId,
+      'created_at': (profile['created_at'] as String?)?.isNotEmpty == true
+          ? profile['created_at']
+          : now,
+      'updated_at': now,
+      'last_synced_at': profile['last_synced_at'],
+      'sync_state': profile['sync_state'] ?? AppStrings.syncPendingUpsert,
+      'version': (profile['version'] as int?) ?? 1,
+    };
+    await database.insert(
+      'chw_profiles',
+      row,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    await _queueOperation(
+      database,
+      entityType: AppStrings.entityChwProfile,
+      entityId: row['email'] as String,
+      operation: AppStrings.syncPendingUpsert,
+      payload: row,
+    );
+  }
+
+  Future<void> cacheSyncedChwProfile(Map<String, dynamic> profile) async {
+    final database = await db;
+    await database.insert('chw_profiles', {
+      ...profile,
+      'last_synced_at': profile['last_synced_at'] ?? _isoNow(),
+      'sync_state': AppStrings.syncSynced,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<Map<String, dynamic>?> getChwProfileByEmail(String email) async {
@@ -783,21 +1391,226 @@ class DatabaseHelper {
     return rows.isEmpty ? null : rows.first;
   }
 
-  Future<void> updateChwPassword(String email, String newHashedPassword) async {
+  Future<void> updateChwProfile(
+    String email,
+    Map<String, dynamic> updates,
+  ) async {
     final database = await db;
+    final normalised = email.trim().toLowerCase();
+    final existing = await getChwProfileByEmail(normalised);
+    if (existing == null) return;
+
+    final ctx = await _currentActorContext();
+    final center =
+        (updates['center'] as String?)?.trim() ??
+        existing['center'] as String? ??
+        '';
+    final district =
+        (updates['district'] as String?)?.trim() ??
+        existing['district'] as String? ??
+        '';
+    final nextVersion = ((existing['version'] as int?) ?? 0) + 1;
+    final data = <String, dynamic>{
+      ...updates,
+      'center': center,
+      'district': district,
+      'facility_id': IdUtils.facilityId(center: center, district: district),
+      'updated_at': _isoNow(),
+      'updated_by': ctx.email,
+      'sync_state': AppStrings.syncPendingUpsert,
+      'version': nextVersion,
+    };
+
     await database.update(
       'chw_profiles',
-      {'password': newHashedPassword},
+      data,
+      where: 'email = ?',
+      whereArgs: [normalised],
+    );
+
+    final updated = await getChwProfileByEmail(normalised);
+    if (updated != null) {
+      await _queueOperation(
+        database,
+        entityType: AppStrings.entityChwProfile,
+        entityId: updated['email'] as String,
+        operation: AppStrings.syncPendingUpsert,
+        payload: updated,
+      );
+    }
+  }
+
+  Future<void> updateChwPassword(String email, String newHashedPassword) async {
+    final database = await db;
+    final existing = await getChwProfileByEmail(email);
+    final nextVersion = ((existing?['version'] as int?) ?? 0) + 1;
+    final ctx = await _currentActorContext();
+    await database.update(
+      'chw_profiles',
+      {
+        'password': newHashedPassword,
+        'updated_at': _isoNow(),
+        'updated_by': ctx.email,
+        'sync_state': AppStrings.syncPendingUpsert,
+        'version': nextVersion,
+      },
       where: 'email = ?',
       whereArgs: [email.trim().toLowerCase()],
     );
+    final updated = await getChwProfileByEmail(email);
+    if (updated != null) {
+      await _queueOperation(
+        database,
+        entityType: AppStrings.entityChwProfile,
+        entityId: updated['email'] as String,
+        operation: AppStrings.syncPendingUpsert,
+        payload: updated,
+      );
+    }
   }
 
   Future<void> clearAllData() async {
     final database = await db;
-    await database.delete('screenings');
-    await database.delete('patients');
-    await database.delete('campaigns');
+    await clearWorkspaceData(database: database);
+  }
+
+  Future<void> clearWorkspaceData({DatabaseExecutor? database}) async {
+    final target = database ?? await db;
+    await target.delete('sync_queue');
+    await target.delete('screenings');
+    await target.delete('patients');
+    await target.delete('campaigns');
+    await target.delete('facility_memberships');
+    await target.delete('workspace_facilities');
+  }
+
+  Future<void> upsertWorkspaceFacility(Map<String, dynamic> facility) async {
+    final database = await db;
+    await database.insert('workspace_facilities', {
+      'id': facility['id'],
+      'center': facility['center'],
+      'district': facility['district'],
+      'display_name': facility['display_name'],
+      'created_at': facility['created_at'],
+      'updated_at': facility['updated_at'],
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> upsertFacilityMembership(Map<String, dynamic> membership) async {
+    final database = await db;
+    await database.insert('facility_memberships', {
+      'id': membership['id'],
+      'facility_id': membership['facility_id'],
+      'user_email': membership['user_email'],
+      'role': membership['role'],
+      'created_at': membership['created_at'],
+      'updated_at': membership['updated_at'],
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<List<Map<String, dynamic>>> getPendingSyncOperations({
+    int limit = 100,
+  }) async {
+    final database = await db;
+    return database.query(
+      'sync_queue',
+      where: 'synced_at IS NULL',
+      orderBy: 'created_at ASC',
+      limit: limit,
+    );
+  }
+
+  Future<void> markSyncOperationSucceeded(
+    int queueId, {
+    required String entityType,
+    required String entityId,
+    String? screeningRecordId,
+  }) async {
+    final database = await db;
+    final syncedAt = _isoNow();
+    await database.update(
+      'sync_queue',
+      {'synced_at': syncedAt, 'last_error': null},
+      where: 'id = ?',
+      whereArgs: [queueId],
+    );
+    await _markEntitySynced(
+      database,
+      entityType: entityType,
+      entityId: entityId,
+      screeningRecordId: screeningRecordId,
+      syncedAt: syncedAt,
+    );
+  }
+
+  Future<void> markSyncOperationFailed(int queueId, String error) async {
+    final database = await db;
+    await database.rawUpdate(
+      'UPDATE sync_queue SET attempts = attempts + 1, last_error = ? WHERE id = ?',
+      [error, queueId],
+    );
+  }
+
+  Future<void> markEntitySyncedFromRemote(
+    String entityType,
+    String entityId, {
+    String? screeningRecordId,
+  }) async {
+    final database = await db;
+    await _markEntitySynced(
+      database,
+      entityType: entityType,
+      entityId: entityId,
+      screeningRecordId: screeningRecordId,
+      syncedAt: _isoNow(),
+    );
+  }
+
+  Future<void> _markEntitySynced(
+    DatabaseExecutor database, {
+    required String entityType,
+    required String entityId,
+    required String syncedAt,
+    String? screeningRecordId,
+  }) async {
+    switch (entityType) {
+      case AppStrings.entityPatient:
+        await database.update(
+          'patients',
+          {'sync_state': AppStrings.syncSynced, 'last_synced_at': syncedAt},
+          where: 'id = ?',
+          whereArgs: [entityId],
+        );
+        break;
+      case AppStrings.entityCampaign:
+        await database.update(
+          'campaigns',
+          {'sync_state': AppStrings.syncSynced, 'last_synced_at': syncedAt},
+          where: 'id = ?',
+          whereArgs: [entityId],
+        );
+        break;
+      case AppStrings.entityScreening:
+        await database.update(
+          'screenings',
+          {
+            'sync_state': AppStrings.syncSynced,
+            'last_synced_at': syncedAt,
+            'synced': 1,
+          },
+          where: 'record_id = ?',
+          whereArgs: [screeningRecordId ?? entityId],
+        );
+        break;
+      case AppStrings.entityChwProfile:
+        await database.update(
+          'chw_profiles',
+          {'sync_state': AppStrings.syncSynced, 'last_synced_at': syncedAt},
+          where: 'email = ?',
+          whereArgs: [entityId],
+        );
+        break;
+    }
   }
 
   Future<List<Map<String, dynamic>>> getNotifications() async {
@@ -840,7 +1653,8 @@ class DatabaseHelper {
         'icon': 'reminder',
         'color': 0xFF8B5CF6,
         'title': 'Appointment Reminder',
-        'body': '${r['name']} — ${r['referral_facility']} on ${r['appointment_date']}.',
+        'body':
+            '${r['name']} — ${r['referral_facility']} on ${r['appointment_date']}.',
         'time': r['appointment_date'],
         'read': false,
         'tag': 'REMINDER',

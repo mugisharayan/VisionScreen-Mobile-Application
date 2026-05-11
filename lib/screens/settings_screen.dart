@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -14,7 +14,10 @@ import '../db/database_helper.dart';
 import '../repositories/auth_repository.dart';
 import '../repositories/screening_repository.dart';
 import '../repositories/campaign_repository.dart';
+import '../services/sync/sync_service.dart';
+import '../utils/app_constants.dart';
 import '../utils/haptics.dart';
+import '../utils/id_utils.dart';
 
 // â”€â”€ Colours â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _C {
@@ -53,6 +56,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _lastLoginRole = '';
   String _chwPhoto = '';
   int _unsyncedCount = 0;
+  bool _syncConfigured = false;
+  String _lastSyncAt = '';
+  String _lastSyncError = '';
+  String _lastBackupPath = '';
 
   @override
   void initState() {
@@ -64,19 +71,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final p = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() {
-      _chwName = p.getString('chw_name') ?? '';
-      _chwCenter = p.getString('chw_center') ?? '';
-      _chwDistrict = p.getString('chw_district') ?? '';
-      _chwEmail = p.getString('chw_email') ?? '';
-      _chwPhone = p.getString('chw_phone') ?? '';
-      _chwId = p.getString('chw_id') ?? '';
-      _lastLoginTime = p.getString('last_login_time') ?? '';
-      _lastLoginRole = p.getString('last_login_role') ?? '';
-      _brightnessLock = p.getBool('brightness_lock') ?? true;
-      _eyeOrder = p.getString('eye_order') ?? 'Right â†’ Left';
-      _hapticFeedback = p.getBool('haptic_feedback') ?? true;
-      _language = p.getString('referral_language') ?? 'English Only';
-      _chwPhoto = p.getString('chw_photo') ?? '';
+      _chwName = p.getString(AppStrings.prefChwName) ?? '';
+      _chwCenter = p.getString(AppStrings.prefChwCenter) ?? '';
+      _chwDistrict = p.getString(AppStrings.prefChwDistrict) ?? '';
+      _chwEmail = p.getString(AppStrings.prefChwEmail) ?? '';
+      _chwPhone = p.getString(AppStrings.prefChwPhone) ?? '';
+      _chwId = p.getString(AppStrings.prefChwId) ?? '';
+      _lastLoginTime = p.getString(AppStrings.prefLastLoginTime) ?? '';
+      _lastLoginRole = p.getString(AppStrings.prefLastLoginRole) ?? '';
+      _brightnessLock = p.getBool(AppStrings.prefBrightnessLock) ?? true;
+      _hapticFeedback = p.getBool(AppStrings.prefHapticFeedback) ?? true;
+      _language =
+          p.getString(AppStrings.prefReferralLanguage) ?? 'English Only';
+      _chwPhoto = p.getString(AppStrings.prefChwPhoto) ?? '';
+      _syncConfigured =
+          p.getBool(AppStrings.prefSyncConfigured) ??
+          SyncService.instance.isConfigured;
+      _lastSyncAt = p.getString(AppStrings.prefLastSyncAt) ?? '';
+      _lastSyncError = p.getString(AppStrings.prefLastSyncError) ?? '';
+      _lastBackupPath = p.getString(AppStrings.prefBackupPath) ?? '';
     });
     final count = await ScreeningRepository.instance.getUnsyncedCount();
     if (!mounted) return;
@@ -86,7 +99,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _setHapticFeedback(bool value) async {
     setState(() => _hapticFeedback = value);
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('haptic_feedback', value);
+    await prefs.setBool(AppStrings.prefHapticFeedback, value);
   }
 
   void _haptic() {
@@ -96,10 +109,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (_) {}
   }
 
+  String _formatLastLoginLabel(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return trimmed;
+
+    final parsed = DateTime.tryParse(trimmed);
+    if (parsed == null) return trimmed;
+
+    final local = parsed.isUtc ? parsed.toLocal() : parsed;
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    final hh = local.hour.toString().padLeft(2, '0');
+    final mm = local.minute.toString().padLeft(2, '0');
+    return '${days[local.weekday - 1]}, ${local.day} ${months[local.month - 1]} $hh:$mm';
+  }
+
   Future<void> _setBrightnessLock(bool value) async {
     setState(() => _brightnessLock = value);
     final p = await SharedPreferences.getInstance();
-    await p.setBool('brightness_lock', value);
+    await p.setBool(AppStrings.prefBrightnessLock, value);
     try {
       if (value) {
         await ScreenBrightness().setScreenBrightness(1.0);
@@ -109,10 +151,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (_) {}
   }
 
+  Future<void> _runSync() async {
+    final result = await SyncService.instance.syncNow();
+    await _loadProfile();
+    if (!mounted) return;
+    _showSnack(
+      result.success
+          ? 'Sync finished: ${result.appliedChanges} pushed, ${result.restoredRecords} restored.'
+          : result.errorMessage ?? 'Sync failed.',
+      result.success ? _C.green : _C.red,
+    );
+  }
+
+  Future<void> _createBackup() async {
+    try {
+      final path = await SyncService.instance.exportBackup();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(AppStrings.prefBackupPath, path);
+      if (!mounted) return;
+      setState(() => _lastBackupPath = path);
+      _showSnack('Backup saved: ${path.split('/').last}', _C.teal);
+    } catch (error) {
+      _showSnack('Backup failed: $error', _C.red);
+    }
+  }
+
+  Future<void> _restoreLatestBackup() async {
+    if (_lastBackupPath.isEmpty) {
+      _showSnack('No backup has been created on this device yet.', _C.amber);
+      return;
+    }
+    try {
+      await SyncService.instance.restoreBackup(_lastBackupPath);
+      await _loadProfile();
+      if (!mounted) return;
+      _showSnack(
+        'Backup restored from ${_lastBackupPath.split('/').last}.',
+        _C.teal,
+      );
+    } catch (error) {
+      _showSnack('Restore failed: $error', _C.red);
+    }
+  }
+
   // â”€â”€ Toggles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   bool _hapticFeedback = true;
   bool _brightnessLock = true;
-  String _eyeOrder = 'Right â†’ Left';
 
   String _language = 'English Only';
   static const _languages = [
@@ -206,7 +290,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           badgeColor: const Color(0xFF22C55E),
                           badgeIcon: Icons.access_time_rounded,
                           label: _lastLoginTime.isNotEmpty
-                              ? _lastLoginTime
+                              ? _formatLastLoginLabel(_lastLoginTime)
                               : 'Not recorded yet',
                           subtitle: 'Last login',
                           showChevron: false,
@@ -295,9 +379,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           badgeColor: const Color(0xFF22C55E),
                           badgeIcon: Icons.cloud_outlined,
                           label: 'Sync Status',
-                          subtitle: _unsyncedCount == 0
-                              ? 'All records synced'
-                              : '$_unsyncedCount record${_unsyncedCount == 1 ? '' : 's'} pending sync',
+                          subtitle: !_syncConfigured
+                              ? 'Cloud sync is not configured for this build'
+                              : _lastSyncError.isNotEmpty
+                              ? 'Last sync failed. Tap Sync Now to retry.'
+                              : _unsyncedCount == 0
+                              ? (_lastSyncAt.isEmpty
+                                    ? 'No pending changes'
+                                    : 'Last synced ${_lastSyncAt.replaceFirst('T', ' ').substring(0, 16)} UTC')
+                              : '$_unsyncedCount change${_unsyncedCount == 1 ? '' : 's'} pending upload',
                           showChevron: false,
                           isFirst: true,
                           trailing: Container(
@@ -306,17 +396,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: _unsyncedCount == 0
+                              color: !_syncConfigured
+                                  ? _C.red.withValues(alpha: 0.1)
+                                  : _unsyncedCount == 0
                                   ? _C.green.withValues(alpha: 0.1)
                                   : _C.amber.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(99),
                             ),
                             child: Text(
-                              _unsyncedCount == 0 ? 'Synced' : 'Pending',
+                              !_syncConfigured
+                                  ? 'Offline'
+                                  : _unsyncedCount == 0
+                                  ? 'Synced'
+                                  : 'Pending',
                               style: GoogleFonts.inter(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
-                                color: _unsyncedCount == 0
+                                color: !_syncConfigured
+                                    ? _C.red
+                                    : _unsyncedCount == 0
                                     ? _C.green
                                     : _C.amber,
                               ),
@@ -324,10 +422,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                         _buildRow(
+                          badgeColor: const Color(0xFF0EA5E9),
+                          badgeIcon: Icons.sync_rounded,
+                          label: 'Sync Now',
+                          subtitle:
+                              'Push queued changes and restore workspace data',
+                          onTap: _runSync,
+                        ),
+                        _buildRow(
+                          badgeColor: const Color(0xFF14B8A6),
+                          badgeIcon: Icons.save_alt_rounded,
+                          label: 'Create Backup',
+                          subtitle:
+                              'Save a JSON snapshot of all local workspace data',
+                          onTap: _createBackup,
+                        ),
+                        _buildRow(
+                          badgeColor: const Color(0xFFF59E0B),
+                          badgeIcon: Icons.restore_rounded,
+                          label: 'Restore Latest Backup',
+                          subtitle: _lastBackupPath.isEmpty
+                              ? 'No local backup file recorded yet'
+                              : _lastBackupPath.split('/').last,
+                          onTap: _restoreLatestBackup,
+                        ),
+                        _buildRow(
                           badgeColor: const Color(0xFF3B82F6),
                           badgeIcon: Icons.picture_as_pdf_outlined,
                           label: 'Export as PDF',
-                          subtitle: 'Printable report Â· MOH audit format',
+                          subtitle:
+                              'Printable reports for patient, campaign and analytics data',
                           isLast: true,
                           onTap: () => _showExportSheet(),
                         ),
@@ -440,7 +564,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Made for Community Health Workers Â· Uganda',
+                      'Made for Community Health Workers - Uganda',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.inter(fontSize: 10, color: _C.g400),
                     ),
@@ -459,9 +583,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // â”€â”€ HEADER â€” Profile Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildHeader() {
     final initials = _chwName.trim().isNotEmpty
-        ? _chwName.trim().split(' ')
+        ? _chwName
+              .trim()
+              .split(' ')
               .map((w) => w.isEmpty ? '' : w[0])
-              .take(2).join().toUpperCase()
+              .take(2)
+              .join()
+              .toUpperCase()
         : 'VS';
     final roleLabel = _lastLoginRole == 'Administrator' ? 'Admin' : 'CHW';
 
@@ -489,14 +617,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: CustomPaint(painter: _SettingsDotPainter()),
             ),
           ),
-          Positioned(top: -50, right: -50,
-            child: Container(width: 200, height: 200,
-              decoration: BoxDecoration(shape: BoxShape.circle,
-                border: Border.all(color: Colors.white.withValues(alpha: 0.07), width: 1)))),
-          Positioned(top: -10, right: -10,
-            child: Container(width: 110, height: 110,
-              decoration: BoxDecoration(shape: BoxShape.circle,
-                border: Border.all(color: Colors.white.withValues(alpha: 0.10), width: 1)))),
+          Positioned(
+            top: -50,
+            right: -50,
+            child: Container(
+              width: 200,
+              height: 200,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.07),
+                  width: 1,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: -10,
+            right: -10,
+            child: Container(
+              width: 110,
+              height: 110,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.10),
+                  width: 1,
+                ),
+              ),
+            ),
+          ),
           SafeArea(
             bottom: false,
             child: Padding(
@@ -508,19 +658,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     tween: Tween(begin: 0.0, end: 1.0),
                     duration: const Duration(milliseconds: 500),
                     curve: Curves.elasticOut,
-                    builder: (_, t, child) => Transform.scale(scale: t, child: child),
+                    builder: (_, t, child) =>
+                        Transform.scale(scale: t, child: child),
                     child: Container(
-                      width: 68, height: 68,
+                      width: 68,
+                      height: 68,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: Colors.white.withValues(alpha: 0.15),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 2.5),
-                        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 16, offset: const Offset(0, 6))],
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.4),
+                          width: 2.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
                       ),
                       child: _chwPhoto.isNotEmpty
-                          ? ClipOval(child: Image.file(File(_chwPhoto), width: 68, height: 68, fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Center(child: Text(initials, style: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)))))
-                          : Center(child: Text(initials, style: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white))),
+                          ? ClipOval(
+                              child: Image.file(
+                                File(_chwPhoto),
+                                width: 68,
+                                height: 68,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Center(
+                                  child: Text(
+                                    initials,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            )
+                          : Center(
+                              child: Text(
+                                initials,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -528,39 +714,101 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(_chwName.isNotEmpty ? _chwName : 'VisionScreen User',
-                            style: GoogleFonts.plusJakartaSans(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white)),
+                        Text(
+                          _chwName.isNotEmpty ? _chwName : 'VisionScreen User',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
                         const SizedBox(height: 3),
-                        Text(_chwCenter.isNotEmpty ? '$_chwCenter \u00b7 $_chwDistrict' : 'Community Health Worker',
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(fontSize: 12, color: Colors.white.withValues(alpha: 0.7))),
+                        Text(
+                          _chwCenter.isNotEmpty
+                              ? '$_chwCenter \u00b7 $_chwDistrict'
+                              : 'Community Health Worker',
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: Colors.white.withValues(alpha: 0.7),
+                          ),
+                        ),
                         if (_chwPhone.isNotEmpty) ...[
                           const SizedBox(height: 2),
-                          Text('+256 $_chwPhone', style: GoogleFonts.inter(fontSize: 11, color: Colors.white.withValues(alpha: 0.55))),
+                          Text(
+                            '+256 $_chwPhone',
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: Colors.white.withValues(alpha: 0.55),
+                            ),
+                          ),
                         ],
                         const SizedBox(height: 8),
-                        Row(children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(99), border: Border.all(color: Colors.white.withValues(alpha: 0.35))),
-                            child: Text(roleLabel, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
-                          ),
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(99)),
-                            child: Text(_chwId.isNotEmpty ? _chwId : 'No ID', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white.withValues(alpha: 0.7), letterSpacing: 0.4)),
-                          ),
-                        ]),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(99),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.35),
+                                ),
+                              ),
+                              child: Text(
+                                roleLabel,
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.10),
+                                borderRadius: BorderRadius.circular(99),
+                              ),
+                              child: Text(
+                                _chwId.isNotEmpty ? _chwId : 'No ID',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                  letterSpacing: 0.4,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
                   GestureDetector(
                     onTap: _showEditProfileSheet,
                     child: Container(
-                      width: 36, height: 36,
-                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), shape: BoxShape.circle, border: Border.all(color: Colors.white.withValues(alpha: 0.3))),
-                      child: const Icon(Icons.edit_rounded, size: 16, color: Colors.white),
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.edit_rounded,
+                        size: 16,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ],
@@ -839,11 +1087,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                                           .take(2)
                                                           .join()
                                                           .toUpperCase(),
-                                                style: GoogleFonts.plusJakartaSans(
-                                                  fontSize: 24,
-                                                  fontWeight: FontWeight.w900,
-                                                  color: Colors.white,
-                                                ),
+                                                style:
+                                                    GoogleFonts.plusJakartaSans(
+                                                      fontSize: 24,
+                                                      fontWeight:
+                                                          FontWeight.w900,
+                                                      color: Colors.white,
+                                                    ),
                                               ),
                                             ),
                                       ),
@@ -917,9 +1167,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 12),
                   _editField(
                     emailCtrl,
-                    'Email',
+                    'Email (Sign-In ID)',
                     Icons.mail_outline_rounded,
                     keyboard: TextInputType.emailAddress,
+                    enabled: false,
                   ),
                   const SizedBox(height: 12),
                   _editField(
@@ -939,42 +1190,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               final prefs =
                                   await SharedPreferences.getInstance();
                               await prefs.setString(
-                                'chw_name',
+                                AppStrings.prefChwName,
                                 nameCtrl.text.trim(),
                               );
                               await prefs.setString(
-                                'chw_center',
+                                AppStrings.prefChwCenter,
                                 centerCtrl.text.trim(),
                               );
                               await prefs.setString(
-                                'chw_district',
+                                AppStrings.prefChwDistrict,
                                 districtCtrl.text.trim(),
                               );
                               await prefs.setString(
-                                'chw_email',
-                                emailCtrl.text.trim(),
-                              );
-                              await prefs.setString(
-                                'chw_phone',
+                                AppStrings.prefChwPhone,
                                 phoneCtrl.text.trim(),
                               );
-                              await prefs.setString('chw_photo', photoPath);
+                              await prefs.setString(
+                                AppStrings.prefFacilityId,
+                                IdUtils.facilityId(
+                                  center: centerCtrl.text.trim(),
+                                  district: districtCtrl.text.trim(),
+                                ),
+                              );
+                              await prefs.setString(
+                                AppStrings.prefChwPhoto,
+                                photoPath,
+                              );
                               if (_chwEmail.isNotEmpty) {
-                                final db = await DatabaseHelper.instance.db;
-                                await db.update(
-                                  'chw_profiles',
-                                  {
-                                    'name': nameCtrl.text.trim(),
-                                    'center': centerCtrl.text.trim(),
-                                    'district': districtCtrl.text.trim(),
-                                    'email': emailCtrl.text
-                                        .trim()
-                                        .toLowerCase(),
-                                    'phone': phoneCtrl.text.trim(),
-                                  },
-                                  where: 'email = ?',
-                                  whereArgs: [_chwEmail.toLowerCase()],
-                                );
+                                await DatabaseHelper.instance
+                                    .updateChwProfile(_chwEmail, {
+                                      'name': nameCtrl.text.trim(),
+                                      'center': centerCtrl.text.trim(),
+                                      'district': districtCtrl.text.trim(),
+                                      'phone': phoneCtrl.text.trim(),
+                                    });
+                                if (SyncService.instance.isConfigured) {
+                                  final updated = await DatabaseHelper.instance
+                                      .getChwProfileByEmail(
+                                        _chwEmail.toLowerCase(),
+                                      );
+                                  if (updated != null) {
+                                    await SyncService.instance.mirrorProfile(
+                                      updated,
+                                    );
+                                    await SyncService.instance.syncNow();
+                                  }
+                                }
                               }
                               await _loadProfile();
                               if (mounted) {
@@ -1029,6 +1290,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     String label,
     IconData icon, {
     TextInputType keyboard = TextInputType.text,
+    bool enabled = true,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1051,6 +1313,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           child: TextField(
             controller: ctrl,
+            enabled: enabled,
             keyboardType: keyboard,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 14,
@@ -1092,25 +1355,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.only(left: 2, bottom: 8),
-            child: Row(children: [
-              Container(
-                width: 3, height: 13,
-                decoration: BoxDecoration(
-                  color: _C.teal,
-                  borderRadius: BorderRadius.circular(99),
+            child: Row(
+              children: [
+                Container(
+                  width: 3,
+                  height: 13,
+                  decoration: BoxDecoration(
+                    color: _C.teal,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 7),
-              Text(
-                title.toUpperCase(),
-                style: GoogleFonts.inter(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF475569),
-                  letterSpacing: 1.4,
+                const SizedBox(width: 7),
+                Text(
+                  title.toUpperCase(),
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF475569),
+                    letterSpacing: 1.4,
+                  ),
                 ),
-              ),
-            ]),
+              ],
+            ),
           ),
           Container(
             decoration: BoxDecoration(
@@ -1176,7 +1442,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       color: Colors.white,
       borderRadius: radius,
       child: InkWell(
-        onTap: onTap != null ? () { VsHaptics.light(); onTap(); } : null,
+        onTap: onTap != null
+            ? () {
+                VsHaptics.light();
+                onTap();
+              }
+            : null,
         borderRadius: radius,
         splashColor: _C.teal.withValues(alpha: 0.06),
         highlightColor: _C.g100.withValues(alpha: 0.5),
@@ -1282,7 +1553,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'CHW Badge ID Â· Prints on referrals',
+                    'CHW Badge ID - Prints on referrals',
                     style: GoogleFonts.inter(fontSize: 12, color: _C.g400),
                   ),
                 ],
@@ -1722,11 +1993,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         sections: const [
           _LegalSection(
             '1. Purpose',
-            'VisionScreen is a clinical-grade mobile application for trained Community Health Workers (CHWs) under the Uganda Ministry of Health (MOH) framework.',
+            'VisionScreen is a mobile screening application for trained Community Health Workers (CHWs) and organised community eye-health programmes.',
           ),
           _LegalSection(
             '2. Authorised Use',
-            'This application is authorised only for registered CHWs under a recognised Ugandan Health Centre (HC IIâ€“HC IV) and health administrators with valid MOH credentials.',
+            'This application is intended for registered CHWs, supervised trainees, and authorised programme administrators working within recognised health facilities and screening programmes.',
           ),
           _LegalSection(
             '3. Patient Data',
@@ -1765,7 +2036,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           _LegalSection(
             '3. Storage & Security',
-            'Data is stored locally using SQLite encryption and synced to MongoDB Atlas (ISO/IEC 27001) with AES-256 encryption and TLS 1.3 in transit.',
+            'Data is stored locally on the device in SQLite and may be synchronized to the configured workspace database when cloud sync is enabled for the build. VisionScreen does not claim encryption or compliance guarantees unless they are explicitly configured and verified in the deployment environment.',
           ),
           _LegalSection(
             '4. Your Rights',
@@ -1773,7 +2044,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           _LegalSection(
             '5. Contact',
-            'For privacy concerns, contact the VisionScreen Programme Coordinator through your district health office or Uganda MOH Community Health Division.',
+            'For privacy concerns, contact the VisionScreen programme coordinator or your district health office.',
           ),
         ],
       ),
@@ -1849,18 +2120,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Column(
                   children: [
                     _aboutRow(
-                      'ðŸ¥',
+                      'CHW',
                       'Built for',
-                      'Community Health Workers Â· Uganda',
+                      'Community Health Workers | Uganda',
                     ),
                     _aboutRow(
-                      'ðŸ‘ï¸',
+                      'EYE',
                       'Test Method',
-                      'Tumbling E Â· LogMAR Scale',
+                      'Tumbling E | LogMAR Scale',
                     ),
-                    _aboutRow('ðŸ“±', 'Storage', 'SQLite (offline-first)'),
-                    _aboutRow('â˜ï¸', 'Cloud Sync', 'MongoDB Atlas'),
-                    _aboutRow('ðŸ“ž', 'Support', 'support@visionscreen.ug'),
+                    _aboutRow('DATA', 'Storage', 'SQLite (offline-first)'),
+                    _aboutRow(
+                      'SYNC',
+                      'Cloud Sync',
+                      _syncConfigured
+                          ? 'MongoDB workspace enabled'
+                          : 'Not configured in this build',
+                    ),
+                    _aboutRow('HELP', 'Support', 'support@visionscreen.ug'),
                     const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
@@ -1950,14 +2227,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Initial release Â· March 2026',
+              'Initial release - March 2026',
               style: GoogleFonts.inter(fontSize: 11, color: _C.g400),
             ),
             const SizedBox(height: 16),
             ...[
               'Tumbling E vision test with LogMAR scale',
               'Offline-first SQLite storage',
-              'MongoDB Atlas cloud sync',
+              'Workspace sync and backup foundation',
               'Age-based clinical thresholds',
               'Structured referral document generation',
               'Bulk campaign screening mode',
@@ -2129,11 +2406,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               }
                               setSheet(() => loading = true);
                               // Verify current password and update via AuthRepository
-                              final error = await AuthRepository.instance.changePassword(
-                                email: _chwEmail,
-                                currentPassword: currentCtrl.text,
-                                newPassword: newCtrl.text,
-                              );
+                              final error = await AuthRepository.instance
+                                  .changePassword(
+                                    email: _chwEmail,
+                                    currentPassword: currentCtrl.text,
+                                    newPassword: newCtrl.text,
+                                  );
                               if (error != null) {
                                 setSheet(() {
                                   loading = false;
@@ -2429,9 +2707,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                s.appointment_date, s.screening_date, s.chw_name
         FROM patients p
         LEFT JOIN screenings s ON s.id = (
-          SELECT id FROM screenings WHERE patient_id = p.id
+          SELECT id FROM screenings WHERE patient_id = p.id AND deleted_at IS NULL
           ORDER BY screening_date DESC LIMIT 1
         )
+        WHERE p.deleted_at IS NULL
         ORDER BY p.created_at DESC
       ''');
 
@@ -2454,7 +2733,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final redL = PdfColor.fromHex('#FEE2E2');
       final amber = PdfColor.fromHex('#D97706');
       final amberL = PdfColor.fromHex('#FEF3C7');
-      final blue = PdfColor.fromHex('#2563EB');
       final white = PdfColors.white;
 
       // â”€â”€ Embedded fonts â”€â”€
@@ -2763,7 +3041,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               pw.Divider(color: g200, thickness: 1),
               pw.SizedBox(height: 3),
               pw.Text(
-                'VisionScreen  |  Uganda MOH  |  WHO Compliant  |  Generated $dateStr at $timeStr',
+                'VisionScreen | Community Screening | Generated $dateStr at $timeStr',
                 style: ts(8, g500),
                 textAlign: pw.TextAlign.center,
               ),
@@ -2862,6 +3140,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final database = await DatabaseHelper.instance.db;
       final campaigns = await database.query(
         'campaigns',
+        where: 'deleted_at IS NULL',
         orderBy: 'created_at DESC',
       );
 
@@ -2873,7 +3152,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final pdf = pw.Document();
 
       final teal = PdfColor.fromHex('#0D9488');
-      final teal2 = PdfColor.fromHex('#14B8A6');
       final ink = PdfColor.fromHex('#04091A');
       final g400 = PdfColor.fromHex('#8FA0B4');
       final g800 = PdfColor.fromHex('#1A2A3D');
@@ -2930,25 +3208,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     children: [
                       _pdfInfoRow(
                         'CHW Name',
-                        _chwName.isNotEmpty ? _chwName : 'â€”',
+                        _chwName.isNotEmpty ? _chwName : '-',
                         g400,
                         white,
                       ),
                       _pdfInfoRow(
                         'Health Center',
-                        _chwCenter.isNotEmpty ? _chwCenter : 'â€”',
+                        _chwCenter.isNotEmpty ? _chwCenter : '-',
                         g400,
                         white,
                       ),
                       _pdfInfoRow(
                         'District',
-                        _chwDistrict.isNotEmpty ? _chwDistrict : 'â€”',
+                        _chwDistrict.isNotEmpty ? _chwDistrict : '-',
                         g400,
                         white,
                       ),
                       _pdfInfoRow(
                         'Badge ID',
-                        _chwId.isNotEmpty ? _chwId : 'â€”',
+                        _chwId.isNotEmpty ? _chwId : '-',
                         g400,
                         white,
                       ),
@@ -2984,9 +3262,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             : '0.0';
 
         // Fetch patients for this campaign
-        final patients = await CampaignRepository.instance.getPatientsForCampaign(
-          campaignId,
-        );
+        final patients = await CampaignRepository.instance
+            .getPatientsForCampaign(campaignId);
 
         pdf.addPage(
           pw.Page(
@@ -3007,7 +3284,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
                       pw.Text(
-                        c['name'] as String? ?? 'â€”',
+                        c['name'] as String? ?? '-',
                         style: pw.TextStyle(
                           fontSize: 18,
                           fontWeight: pw.FontWeight.bold,
@@ -3016,7 +3293,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       pw.SizedBox(height: 4),
                       pw.Text(
-                        '${c['location']} Â· ${c['target_group']} Â· ${c['created_at'].toString().substring(0, 10)}',
+                        '${c['location']} - ${c['target_group']} - ${c['created_at'].toString().substring(0, 10)}',
                         style: pw.TextStyle(fontSize: 11, color: white),
                       ),
                     ],
@@ -3137,7 +3414,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         pw.Expanded(
                           flex: 3,
                           child: pw.Text(
-                            p['name'] as String? ?? 'â€”',
+                            p['name'] as String? ?? '-',
                             style: pw.TextStyle(fontSize: 10, color: g800),
                           ),
                         ),
@@ -3151,14 +3428,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         pw.Expanded(
                           flex: 1,
                           child: pw.Text(
-                            p['od_snellen'] as String? ?? 'â€”',
+                            p['od_snellen'] as String? ?? '-',
                             style: pw.TextStyle(fontSize: 10, color: g800),
                           ),
                         ),
                         pw.Expanded(
                           flex: 1,
                           child: pw.Text(
-                            p['os_snellen'] as String? ?? 'â€”',
+                            p['os_snellen'] as String? ?? '-',
                             style: pw.TextStyle(fontSize: 10, color: g800),
                           ),
                         ),
@@ -3184,7 +3461,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
                     pw.Text(
-                      'VisionScreen Â· Uganda MOH',
+                      'VisionScreen | Community Screening',
                       style: pw.TextStyle(fontSize: 9, color: g400),
                     ),
                     pw.Text(
@@ -3254,16 +3531,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       _showSnack('Generating analytics report...', _C.teal);
 
-      final outcomes   = await ScreeningRepository.instance.getOutcomeCounts();
-      final ageGroups  = await ScreeningRepository.instance.getAgeGroupCounts();
-      final genders    = await ScreeningRepository.instance.getGenderCounts();
-      final acuity     = await ScreeningRepository.instance.getVisualAcuityDistribution();
-      final referrals  = await ScreeningRepository.instance.getReferralStatusCounts();
-      final conditions = await ScreeningRepository.instance.getConditionCounts();
-      final villages   = await ScreeningRepository.instance.getVillageBreakdown();
-      final severity   = await ScreeningRepository.instance.getSeverityClassification();
-      final campaigns  = await CampaignRepository.instance.getAllCampaigns();
-      final condByAge  = await ScreeningRepository.instance.getConditionsByAgeGroup();
+      final outcomes = await ScreeningRepository.instance.getOutcomeCounts();
+      final ageGroups = await ScreeningRepository.instance.getAgeGroupCounts();
+      final genders = await ScreeningRepository.instance.getGenderCounts();
+      final acuity = await ScreeningRepository.instance
+          .getVisualAcuityDistribution();
+      final referrals = await ScreeningRepository.instance
+          .getReferralStatusCounts();
+      final conditions = await ScreeningRepository.instance
+          .getConditionCounts();
+      final villages = await ScreeningRepository.instance.getVillageBreakdown();
+      final severity = await ScreeningRepository.instance
+          .getSeverityClassification();
+      final campaigns = await CampaignRepository.instance.getAllCampaigns();
+      final condByAge = await ScreeningRepository.instance
+          .getConditionsByAgeGroup();
 
       final passed = outcomes['pass'] ?? 0;
       final referred = outcomes['refer'] ?? 0;
@@ -3545,7 +3827,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               pw.Divider(color: g200, thickness: 1),
               pw.SizedBox(height: 4),
               pw.Text(
-                'VisionScreen  |  Uganda MOH  |  WHO Compliant  |  Generated $dateStr at $timeStr',
+                'VisionScreen | Community Screening | Generated $dateStr at $timeStr',
                 style: ts(8, g500),
                 textAlign: pw.TextAlign.center,
               ),
@@ -4039,77 +4321,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  pw.Widget _pdfSectionTitle(String title, PdfColor color) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: pw.BoxDecoration(
-        color: color,
-        borderRadius: pw.BorderRadius.circular(6),
-      ),
-      child: pw.Text(
-        title,
-        style: pw.TextStyle(
-          fontSize: 12,
-          fontWeight: pw.FontWeight.bold,
-          color: PdfColors.white,
-        ),
-      ),
-    );
-  }
-
-  pw.Widget _pdfBarTable(
-    Map<String, int> data,
-    int total,
-    PdfColor color,
-    PdfColor bg,
-    PdfColor textColor,
-    PdfColor labelColor,
-    PdfColor white,
-  ) {
-    if (data.isEmpty) {
-      return pw.Text(
-        'No data available.',
-        style: pw.TextStyle(fontSize: 11, color: labelColor),
-      );
-    }
-    return pw.Column(
-      children: data.entries.map((e) {
-        final pct = total > 0 ? e.value / total : 0.0;
-        return pw.Padding(
-          padding: const pw.EdgeInsets.only(bottom: 6),
-          child: pw.Row(
-            children: [
-              pw.SizedBox(
-                width: 110,
-                child: pw.Text(
-                  e.key,
-                  style: pw.TextStyle(fontSize: 10, color: textColor),
-                ),
-              ),
-              pw.Expanded(
-                child: pw.Stack(
-                  children: [
-                    pw.Container(height: 14, color: bg),
-                    pw.Container(height: 14, width: pct * 300, color: color),
-                  ],
-                ),
-              ),
-              pw.SizedBox(width: 8),
-              pw.Text(
-                '${e.value} (${(pct * 100).toStringAsFixed(0)}%)',
-                style: pw.TextStyle(
-                  fontSize: 10,
-                  fontWeight: pw.FontWeight.bold,
-                  color: textColor,
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
-
   pw.Widget _pdfInfoRow(
     String label,
     String value,
@@ -4133,77 +4344,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               fontSize: 11,
               fontWeight: pw.FontWeight.bold,
               color: valueColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  pw.Widget _pdfVaBox(
-    String eye,
-    String snellen,
-    String logmar,
-    PdfColor teal,
-    PdfColor white,
-    PdfColor bg,
-  ) {
-    return pw.Expanded(
-      child: pw.Container(
-        padding: const pw.EdgeInsets.all(10),
-        decoration: pw.BoxDecoration(
-          color: bg,
-          borderRadius: pw.BorderRadius.circular(8),
-        ),
-        child: pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.center,
-          children: [
-            pw.Text(eye, style: pw.TextStyle(fontSize: 9, color: teal)),
-            pw.SizedBox(height: 4),
-            pw.Text(
-              snellen,
-              style: pw.TextStyle(
-                fontSize: 16,
-                fontWeight: pw.FontWeight.bold,
-                color: teal,
-              ),
-            ),
-            pw.Text(
-              'LogMAR: $logmar',
-              style: pw.TextStyle(fontSize: 9, color: teal),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  pw.Widget _pdfDetailRow(
-    String label,
-    String value,
-    PdfColor valueColor,
-    PdfColor labelColor,
-  ) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 6),
-      child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.SizedBox(
-            width: 130,
-            child: pw.Text(
-              label,
-              style: pw.TextStyle(fontSize: 11, color: labelColor),
-            ),
-          ),
-          pw.Expanded(
-            child: pw.Text(
-              value,
-              style: pw.TextStyle(
-                fontSize: 11,
-                fontWeight: pw.FontWeight.bold,
-                color: valueColor,
-              ),
             ),
           ),
         ],
@@ -4349,8 +4489,11 @@ class _LegalSheet extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          'VisionScreen Â· Uganda MOH',
-                          style: GoogleFonts.inter(fontSize: 11, color: _C.g400),
+                          'VisionScreen | Community Screening',
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: _C.g400,
+                          ),
                         ),
                       ],
                     ),
@@ -4438,7 +4581,7 @@ class _SettingsDotPainter extends CustomPainter {
       }
     }
   }
+
   @override
   bool shouldRepaint(_SettingsDotPainter old) => false;
 }
-

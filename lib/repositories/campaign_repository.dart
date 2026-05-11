@@ -26,6 +26,7 @@ class CampaignRepository {
           SELECT COUNT(DISTINCT p.id)
           FROM patients p
           WHERE p.campaign_id = campaigns.id
+            AND p.deleted_at IS NULL
         ),
         passed = (
           SELECT COUNT(DISTINCT p.id)
@@ -33,9 +34,16 @@ class CampaignRepository {
           INNER JOIN (
             SELECT patient_id, outcome
             FROM screenings
-            WHERE id IN (SELECT MAX(id) FROM screenings GROUP BY patient_id)
+            WHERE id IN (
+              SELECT MAX(id)
+              FROM screenings
+              WHERE deleted_at IS NULL
+              GROUP BY patient_id
+            )
           ) latest ON latest.patient_id = p.id
-          WHERE p.campaign_id = campaigns.id AND latest.outcome = 'pass'
+          WHERE p.campaign_id = campaigns.id
+            AND p.deleted_at IS NULL
+            AND latest.outcome = 'pass'
         ),
         referred = (
           SELECT COUNT(DISTINCT p.id)
@@ -43,19 +51,32 @@ class CampaignRepository {
           INNER JOIN (
             SELECT patient_id, outcome
             FROM screenings
-            WHERE id IN (SELECT MAX(id) FROM screenings GROUP BY patient_id)
+            WHERE id IN (
+              SELECT MAX(id)
+              FROM screenings
+              WHERE deleted_at IS NULL
+              GROUP BY patient_id
+            )
           ) latest ON latest.patient_id = p.id
-          WHERE p.campaign_id = campaigns.id AND latest.outcome = 'refer'
+          WHERE p.campaign_id = campaigns.id
+            AND p.deleted_at IS NULL
+            AND latest.outcome = 'refer'
         )
+      WHERE deleted_at IS NULL
     ''');
 
-    return database.query('campaigns', orderBy: 'created_at DESC');
+    return database.query(
+      'campaigns',
+      where: 'deleted_at IS NULL',
+      orderBy: 'created_at DESC',
+    );
   }
 
   Future<Map<String, dynamic>?> getCampaign(String id) => _db.getCampaign(id);
 
-  Future<List<Map<String, dynamic>>> getPatientsForCampaign(String campaignId) =>
-      _db.getPatientsForCampaign(campaignId);
+  Future<List<Map<String, dynamic>>> getPatientsForCampaign(
+    String campaignId,
+  ) => _db.getPatientsForCampaign(campaignId);
 
   // ── Write ──────────────────────────────────────────────────────────────────
 

@@ -1,15 +1,13 @@
-﻿import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../repositories/screening_repository.dart';
+import '../services/chw_profile_preferences.dart';
+import '../utils/visual_acuity.dart';
 
-const _ink  = Color(0xFF04091A);
-const _ink2 = Color(0xFF0B1530);
 const _teal = Color(0xFF0D9488);
 const _teal3 = Color(0xFF5EEAD4);
-const _red  = Color(0xFFEF4444);
+const _red = Color(0xFFEF4444);
 const _green = Color(0xFF22C55E);
 const _amber = Color(0xFFF59E0B);
 
@@ -17,7 +15,8 @@ const _amber = Color(0xFFF59E0B);
 const _translations = <String, Map<String, String>>{
   'Luganda': {
     'referral_letter': 'EBBALUWA EYA OKUKEBERA AMAASO / REFERRAL LETTER',
-    'vision_screening': 'Pulogulaamu ya Okukebera Amaaso / Vision Screening Programme',
+    'vision_screening':
+        'Pulogulaamu ya Okukebera Amaaso / Vision Screening Programme',
     'to': 'Eri / To',
     'from': 'Okuva / From',
     'eye_specialist': 'Omusawo wa Maaso / Eye Specialist',
@@ -35,7 +34,8 @@ const _translations = <String, Map<String, String>>{
     'right_eye': 'Jjelo Ddyo (OD) / Right Eye',
     'left_eye': 'Jjelo Kkono (OS) / Left Eye',
     'reason': 'ENSONGA Y\'OKUKEBERA / REASON FOR REFERRAL',
-    'reason_body': 'Okulaba okw\'omulwadde kuli wansi wa 6/12 mu jjelo emu oba zombi. Okukebera nate n\'okulabirirwa bikwatagana. / Visual acuity below 6/12 detected. Further examination recommended.',
+    'reason_body':
+        'Okulaba okw\'omulwadde kuli wansi wa 6/12 mu jjelo emu oba zombi. Okukebera nate n\'okulabirirwa bikwatagana. / Visual acuity below 6/12 detected. Further examination recommended.',
     'male': 'Musajja / Male',
     'female': 'Mukazi / Female',
     'years': 'emyaka / years',
@@ -44,7 +44,8 @@ const _translations = <String, Map<String, String>>{
   },
   'Runyankole/Rukiga': {
     'referral_letter': 'EBBARUWA Y\'OKWEGYEREKA / REFERRAL LETTER',
-    'vision_screening': 'Pulogulaamu y\'Okwegyereka Amaisho / Vision Screening Programme',
+    'vision_screening':
+        'Pulogulaamu y\'Okwegyereka Amaisho / Vision Screening Programme',
     'to': 'Kuri / To',
     'from': 'Kuva / From',
     'eye_specialist': 'Omushaija w\'Amaisho / Eye Specialist',
@@ -62,7 +63,8 @@ const _translations = <String, Map<String, String>>{
     'right_eye': 'Iisho Ry\'Ekuruumi (OD) / Right Eye',
     'left_eye': 'Iisho Ry\'Eibumba (OS) / Left Eye',
     'reason': 'EMPANDURA Y\'OKWEGYEREKA / REASON FOR REFERRAL',
-    'reason_body': 'Kurora kw\'omurwaire kuri hasi ya 6/12 mu isho rimwe oba abiri. Okwegyereka nate n\'okulabirirwa bikweterana. / Visual acuity below 6/12 detected. Further examination recommended.',
+    'reason_body':
+        'Kurora kw\'omurwaire kuri hasi ya 6/12 mu isho rimwe oba abiri. Okwegyereka nate n\'okulabirirwa bikweterana. / Visual acuity below 6/12 detected. Further examination recommended.',
     'male': 'Omushaija / Male',
     'female': 'Omukazi / Female',
     'years': 'emyaka / years',
@@ -89,7 +91,8 @@ const _translations = <String, Map<String, String>>{
     'right_eye': 'Wan Acuc (OD) / Right Eye',
     'left_eye': 'Wan Acam (OS) / Left Eye',
     'reason': 'POKO ME CWINYA / REASON FOR REFERRAL',
-    'reason_body': 'Neno pa lacen tye piny 6/12 i wan acel onyo aryo. Neno odoco ki jami me tic mite. / Visual acuity below 6/12 detected. Further examination recommended.',
+    'reason_body':
+        'Neno pa lacen tye piny 6/12 i wan acel onyo aryo. Neno odoco ki jami me tic mite. / Visual acuity below 6/12 detected. Further examination recommended.',
     'male': 'Laco / Male',
     'female': 'Dako / Female',
     'years': 'mwaka / years',
@@ -98,7 +101,8 @@ const _translations = <String, Map<String, String>>{
   },
   'Ateso': {
     'referral_letter': 'AKWAP KA ILOSIT / REFERRAL LETTER',
-    'vision_screening': 'Aprogramu ka Ilosit Aimaran / Vision Screening Programme',
+    'vision_screening':
+        'Aprogramu ka Ilosit Aimaran / Vision Screening Programme',
     'to': 'Kos / To',
     'from': 'Ijo / From',
     'eye_specialist': 'Adokon ka Aimaran / Eye Specialist',
@@ -116,7 +120,8 @@ const _translations = <String, Map<String, String>>{
     'right_eye': 'Aimaran Akuret (OD) / Right Eye',
     'left_eye': 'Aimaran Abwor (OS) / Left Eye',
     'reason': 'AKWAP KA ILOSIT / REASON FOR REFERRAL',
-    'reason_body': 'Ilosit ka aipean tun piny 6/12 i aimaran aone o eare. Ilosit noi ki aprogramu mite. / Visual acuity below 6/12 detected. Further examination recommended.',
+    'reason_body':
+        'Ilosit ka aipean tun piny 6/12 i aimaran aone o eare. Ilosit noi ki aprogramu mite. / Visual acuity below 6/12 detected. Further examination recommended.',
     'male': 'Ekimat / Male',
     'female': 'Ekimat / Female',
     'years': 'iboit / years',
@@ -143,7 +148,8 @@ const _translations = <String, Map<String, String>>{
     'right_eye': 'Azi Ri Kua (OD) / Right Eye',
     'left_eye': 'Azi Ri Oku (OS) / Left Eye',
     'reason': 'ENSONGA RI OKURU / REASON FOR REFERRAL',
-    'reason_body': 'Oku azi ri onzi kua piny 6/12 i azi ama arua. Oku nate ki okulabirirwa bikweterana. / Visual acuity below 6/12 detected. Further examination recommended.',
+    'reason_body':
+        'Oku azi ri onzi kua piny 6/12 i azi ama arua. Oku nate ki okulabirirwa bikweterana. / Visual acuity below 6/12 detected. Further examination recommended.',
     'male': 'Oku / Male',
     'female': 'Oku / Female',
     'years': 'ovu / years',
@@ -170,7 +176,8 @@ const _translations = <String, Map<String, String>>{
     'right_eye': 'Wang Korachwich (OD) / Right Eye',
     'left_eye': 'Wang Korachiel (OS) / Left Eye',
     'reason': 'POKO MAR REFERRAL / REASON FOR REFERRAL',
-    'reason_body': 'Neno mar jatuo ni piny 6/12 e wang achiel kata ariyo. Neno odoco ki tich mite. / Visual acuity below 6/12 detected. Further examination recommended.',
+    'reason_body':
+        'Neno mar jatuo ni piny 6/12 e wang achiel kata ariyo. Neno odoco ki tich mite. / Visual acuity below 6/12 detected. Further examination recommended.',
     'male': 'Dichuo / Male',
     'female': 'Dhako / Female',
     'years': 'higni / years',
@@ -179,7 +186,8 @@ const _translations = <String, Map<String, String>>{
   },
   'Runyoro': {
     'referral_letter': 'EBBARUWA Y\'OKWEGYEREKA / REFERRAL LETTER',
-    'vision_screening': 'Pulogulaamu y\'Okwegyereka Amaisho / Vision Screening Programme',
+    'vision_screening':
+        'Pulogulaamu y\'Okwegyereka Amaisho / Vision Screening Programme',
     'to': 'Kuri / To',
     'from': 'Kuva / From',
     'eye_specialist': 'Omusawo w\'Amaisho / Eye Specialist',
@@ -197,7 +205,8 @@ const _translations = <String, Map<String, String>>{
     'right_eye': 'Iisho Ry\'Ekuruumi (OD) / Right Eye',
     'left_eye': 'Iisho Ry\'Eibumba (OS) / Left Eye',
     'reason': 'EMPANDURA Y\'OKWEGYEREKA / REASON FOR REFERRAL',
-    'reason_body': 'Kurora kw\'omurwaire kuri hasi ya 6/12 mu isho rimwe oba abiri. Okwegyereka nate n\'okulabirirwa bikweterana. / Visual acuity below 6/12 detected. Further examination recommended.',
+    'reason_body':
+        'Kurora kw\'omurwaire kuri hasi ya 6/12 mu isho rimwe oba abiri. Okwegyereka nate n\'okulabirirwa bikweterana. / Visual acuity below 6/12 detected. Further examination recommended.',
     'male': 'Omushaija / Male',
     'female': 'Omukazi / Female',
     'years': 'emyaka / years',
@@ -206,7 +215,8 @@ const _translations = <String, Map<String, String>>{
   },
   'Swahili': {
     'referral_letter': 'BARUA YA RUFAA / REFERRAL LETTER',
-    'vision_screening': 'Mpango wa Uchunguzi wa Macho / Vision Screening Programme',
+    'vision_screening':
+        'Mpango wa Uchunguzi wa Macho / Vision Screening Programme',
     'to': 'Kwa / To',
     'from': 'Kutoka / From',
     'eye_specialist': 'Daktari wa Macho / Eye Specialist',
@@ -224,7 +234,8 @@ const _translations = <String, Map<String, String>>{
     'right_eye': 'Jicho la Kulia (OD) / Right Eye',
     'left_eye': 'Jicho la Kushoto (OS) / Left Eye',
     'reason': 'SABABU YA RUFAA / REASON FOR REFERRAL',
-    'reason_body': 'Uoni wa mgonjwa uko chini ya 6/12 katika jicho moja au mawili. Uchunguzi zaidi unapendekezwa. / Visual acuity below 6/12 detected. Further examination recommended.',
+    'reason_body':
+        'Uoni wa mgonjwa uko chini ya 6/12 katika jicho moja au mawili. Uchunguzi zaidi unapendekezwa. / Visual acuity below 6/12 detected. Further examination recommended.',
     'male': 'Mwanaume / Male',
     'female': 'Mwanamke / Female',
     'years': 'miaka / years',
@@ -269,8 +280,8 @@ class ReferralLetterScreen extends StatefulWidget {
 }
 
 class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
-  final _chwNameCtrl       = TextEditingController();
-  final _chwTitleCtrl      = TextEditingController(text: 'Community Health Worker');
+  final _chwNameCtrl = TextEditingController();
+  final _chwTitleCtrl = TextEditingController(text: 'Community Health Worker');
   final _facilityOtherCtrl = TextEditingController();
   String _selectedFacility = _facilities[0];
   String _chwId = '';
@@ -293,23 +304,24 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
   }
 
   Future<void> _loadChwProfile() async {
-    final p = await SharedPreferences.getInstance();
+    final profile = await ChwProfilePreferences.load();
     if (!mounted) return;
-    final name     = p.getString('chw_name')        ?? '';
-    final center   = p.getString('chw_center')       ?? '';
-    final chwId    = p.getString('chw_id')            ?? '';
-    final language = p.getString('referral_language') ?? 'English Only';
     setState(() {
-      if (name.isNotEmpty)   _chwNameCtrl.text  = name;
-      if (center.isNotEmpty) _chwTitleCtrl.text = 'Community Health Worker · $center';
-      _chwId         = chwId;
-      _language      = language;
+      if (profile.name.isNotEmpty) _chwNameCtrl.text = profile.name;
+      _chwTitleCtrl.text = profile.title;
+      _chwId = profile.chwId;
+      _language = profile.referralLanguage;
       _profileLoaded = true;
-      final match = _facilities.where((f) =>
-        center.isNotEmpty &&
-        (f.toLowerCase().contains(center.toLowerCase()) ||
-         center.toLowerCase().contains(f.toLowerCase().split(' ').first))
-      ).firstOrNull;
+      final match = _facilities
+          .where(
+            (f) =>
+                profile.center.isNotEmpty &&
+                (f.toLowerCase().contains(profile.center.toLowerCase()) ||
+                    profile.center.toLowerCase().contains(
+                      f.toLowerCase().split(' ').first,
+                    )),
+          )
+          .firstOrNull;
       if (match != null) _selectedFacility = match;
     });
   }
@@ -337,48 +349,35 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
     if (mounted) setState(() => _saved = true);
   }
 
-  String _toSnellen(String logmar) {
-    final v = double.tryParse(logmar);
-    if (v == null) return logmar;
-    const snaps = [6, 9, 12, 18, 24, 36, 48, 60, 120];
-    final second = (6 * pow(10, v)).round();
-    return '6/${snaps.reduce((a, b) => (a - second).abs() < (b - second).abs() ? a : b)}';
-  }
-
-  String _vaClass(String logmar) {
-    final v = double.tryParse(logmar);
-    if (v == null) return logmar;
-    if (v <= 0.0) return 'Normal';
-    if (v <= 0.3) return 'Near Normal';
-    if (v <= 0.5) return 'Moderate Visual Impairment';
-    if (v <= 1.0) return 'Severe Visual Impairment';
-    return 'Blind';
-  }
-
   // Returns translated string for key, falls back to English fallback value.
   String _t(String key, String fallback) =>
       _translations[_language]?[key] ?? fallback;
 
   String get _facilityName => _selectedFacility == 'Other (specify below)'
       ? (_facilityOtherCtrl.text.trim().isEmpty
-          ? 'Nearest Eye Clinic'
-          : _facilityOtherCtrl.text.trim())
+            ? 'Nearest Eye Clinic'
+            : _facilityOtherCtrl.text.trim())
       : _selectedFacility;
 
   String get _letterText {
-    final p   = widget.patient;
+    final p = widget.patient;
     final buf = StringBuffer();
-    final chwName = _chwNameCtrl.text.trim().isEmpty ? '[CHW Name]' : _chwNameCtrl.text.trim();
+    final chwName = _chwNameCtrl.text.trim().isEmpty
+        ? '[CHW Name]'
+        : _chwNameCtrl.text.trim();
     buf.writeln(_t('referral_letter', 'REFERRAL LETTER'));
     buf.writeln('=' * 50);
     buf.writeln('${_t('date', 'Date')}: ${widget.screeningDate}');
     buf.writeln('');
-    buf.writeln('${_t('to', 'TO')}: ${_t('eye_specialist', 'The Eye Specialist')}');
+    buf.writeln(
+      '${_t('to', 'TO')}: ${_t('eye_specialist', 'The Eye Specialist')}',
+    );
     buf.writeln('    $_facilityName');
     buf.writeln('');
     buf.writeln('${_t('from', 'FROM')}: $chwName');
     buf.writeln('      ${_chwTitleCtrl.text.trim()}');
-    if (_chwId.isNotEmpty) buf.writeln('      ${_t('badge_id', 'Badge ID')}: $_chwId');
+    if (_chwId.isNotEmpty)
+      buf.writeln('      ${_t('badge_id', 'Badge ID')}: $_chwId');
     buf.writeln('');
     buf.writeln('RE: ${_t('referral_letter', 'VISION SCREENING REFERRAL')}');
     buf.writeln('-' * 50);
@@ -386,30 +385,38 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
     buf.writeln(_t('patient_details', 'PATIENT DETAILS'));
     buf.writeln('${_t('name', 'Name')}   : ${p['name']}');
     buf.writeln('ID     : ${p['id']}');
-    buf.writeln('${_t('age_sex', 'Age / Sex')} : ${p['age']} ${_t('years', 'years')} · ${p['gender'] == 'M' ? _t('male', 'Male') : _t('female', 'Female')}');
+    buf.writeln(
+      '${_t('age_sex', 'Age / Sex')} : ${p['age']} ${_t('years', 'years')} · ${p['gender'] == 'M' ? _t('male', 'Male') : _t('female', 'Female')}',
+    );
     buf.writeln('${_t('village', 'Village')}: ${p['village']}');
     if (widget.conditions.isNotEmpty) {
-      buf.writeln('${_t('conditions', 'Conditions')}: ${widget.conditions.join(', ')}');
+      buf.writeln(
+        '${_t('conditions', 'Conditions')}: ${widget.conditions.join(', ')}',
+      );
     }
     if (_appointmentDate != null) {
       buf.writeln('${_t('appointment', 'Appointment')}: $_appointmentDateStr');
     }
     buf.writeln('');
-    buf.writeln(_t('va_results', 'VISUAL ACUITY RESULTS (Tumbling E, LogMAR Scale)'));
+    buf.writeln(
+      _t('va_results', 'VISUAL ACUITY RESULTS (Tumbling E, LogMAR Scale)'),
+    );
     buf.writeln('-' * 50);
     buf.writeln('${_t('distance_vision', 'Distance Vision (Monocular)')}:');
     for (final r in widget.eyeResults) {
-      final eye     = r['eye'] as String;
-      final logmar  = r['logmar'] as String;
+      final eye = r['eye'] as String;
+      final logmar = r['logmar'] as String;
       final eyeFull = eye == 'OD'
           ? _t('right_eye', 'Right Eye (OD)')
           : _t('left_eye', 'Left Eye (OS)');
       buf.writeln('$eyeFull:');
-      buf.writeln('  Snellen : ${_toSnellen(logmar)}');
+      buf.writeln('  Snellen : ${VisualAcuity.toSnellen(logmar)}');
       buf.writeln('  LogMAR  : $logmar');
-      buf.writeln('  Class   : ${_vaClass(logmar)}');
+      buf.writeln('  Class   : ${VisualAcuity.classification(logmar)}');
       if ((r['cantTell'] as int) > 0) {
-        buf.writeln('  Note    : ${r['cantTell']} "Can\'t Tell" responses recorded');
+        buf.writeln(
+          '  Note    : ${r['cantTell']} "Can\'t Tell" responses recorded',
+        );
       }
       buf.writeln('');
     }
@@ -417,22 +424,30 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
       final logmar = widget.nearResult!['logmar'] as String;
       buf.writeln('${_t('near_vision', 'Near Vision (Binocular — 40cm)')}:');
       buf.writeln('${_t('both_eyes', 'Both Eyes (OU)')}:');
-      buf.writeln('  Snellen : ${_toSnellen(logmar)}');
+      buf.writeln('  Snellen : ${VisualAcuity.toSnellen(logmar)}');
       buf.writeln('  LogMAR  : $logmar');
-      buf.writeln('  Class   : ${_vaClass(logmar)}');
+      buf.writeln('  Class   : ${VisualAcuity.classification(logmar)}');
       if ((widget.nearResult!['cantTell'] as int) > 0) {
-        buf.writeln('  Note    : ${widget.nearResult!['cantTell']} "Can\'t Tell" responses recorded');
+        buf.writeln(
+          '  Note    : ${widget.nearResult!['cantTell']} "Can\'t Tell" responses recorded',
+        );
       }
       buf.writeln('');
     }
     buf.writeln(_t('reason', 'REASON FOR REFERRAL'));
     buf.writeln('-' * 50);
-    buf.writeln(_t('reason_body', 'Visual acuity below 6/12 detected in one or more eyes. Further examination and management recommended.'));
+    buf.writeln(
+      _t(
+        'reason_body',
+        'Visual acuity below 6/12 detected in one or more eyes. Further examination and management recommended.',
+      ),
+    );
     buf.writeln('');
     buf.writeln('_' * 30);
     buf.writeln(chwName);
     buf.writeln(_chwTitleCtrl.text.trim());
-    if (_chwId.isNotEmpty) buf.writeln('${_t('badge_id', 'Badge ID')}: $_chwId');
+    if (_chwId.isNotEmpty)
+      buf.writeln('${_t('badge_id', 'Badge ID')}: $_chwId');
     buf.writeln('${_t('date', 'Date')}: ${widget.screeningDate}');
     return buf.toString();
   }
@@ -444,9 +459,7 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
       body: Column(
         children: [
           _buildHeader(),
-          Expanded(
-            child: _showLetter ? _buildLetterPreview() : _buildForm(),
-          ),
+          Expanded(child: _showLetter ? _buildLetterPreview() : _buildForm()),
         ],
       ),
     );
@@ -477,77 +490,123 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
               child: CustomPaint(painter: _ReferralDotPainter()),
             ),
           ),
-          Positioned(top: -40, right: -40,
-            child: Container(width: 160, height: 160,
-              decoration: BoxDecoration(shape: BoxShape.circle,
-                border: Border.all(color: Colors.white.withValues(alpha: 0.07), width: 1)))),
+          Positioned(
+            top: -40,
+            right: -40,
+            child: Container(
+              width: 160,
+              height: 160,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.07),
+                  width: 1,
+                ),
+              ),
+            ),
+          ),
           SafeArea(
             bottom: false,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
-              child: Row(children: [
-                GestureDetector(
-                  onTap: () => _showLetter
-                      ? setState(() => _showLetter = false)
-                      : Navigator.pop(context),
-                  child: Container(
-                    width: 38, height: 38,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
-                    ),
-                    child: const Icon(Icons.arrow_back_rounded,
-                        color: Colors.white, size: 18),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(
-                      _showLetter ? 'REFERRAL LETTER' : 'GENERATE REFERRAL',
-                      style: GoogleFonts.inter(
-                          fontSize: 9, fontWeight: FontWeight.w700,
-                          color: Colors.white.withValues(alpha: 0.65),
-                          letterSpacing: 1.8),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _showLetter ? 'Referral Letter' : 'Generate Referral',
-                      style: GoogleFonts.plusJakartaSans(
-                          fontSize: 18, fontWeight: FontWeight.w800,
-                          color: Colors.white),
-                    ),
-                    Text(
-                      widget.patient['name']!,
-                      style: GoogleFonts.inter(
-                          fontSize: 11,
-                          color: Colors.white.withValues(alpha: 0.7)),
-                    ),
-                  ]),
-                ),
-                if (_showLetter)
+              child: Row(
+                children: [
                   GestureDetector(
-                    onTap: () => Share.share(_letterText,
-                        subject: 'Vision Screening Referral — ${widget.patient['name']}'),
+                    onTap: () => _showLetter
+                        ? setState(() => _showLetter = false)
+                        : Navigator.pop(context),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      width: 38,
+                      height: 38,
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(99),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.25),
+                        ),
                       ),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        const Icon(Icons.share_rounded, size: 14, color: Colors.white),
-                        const SizedBox(width: 5),
-                        Text('Share',
-                            style: GoogleFonts.inter(
-                                fontSize: 11, fontWeight: FontWeight.w700,
-                                color: Colors.white)),
-                      ]),
+                      child: const Icon(
+                        Icons.arrow_back_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     ),
                   ),
-              ]),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _showLetter ? 'REFERRAL LETTER' : 'GENERATE REFERRAL',
+                          style: GoogleFonts.inter(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white.withValues(alpha: 0.65),
+                            letterSpacing: 1.8,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _showLetter ? 'Referral Letter' : 'Generate Referral',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          widget.patient['name']!,
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: Colors.white.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_showLetter)
+                    GestureDetector(
+                      onTap: () => Share.share(
+                        _letterText,
+                        subject:
+                            'Vision Screening Referral — ${widget.patient['name']}',
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.share_rounded,
+                              size: 14,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              'Share',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ],
@@ -576,7 +635,9 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
               boxShadow: [
                 BoxShadow(
                   color: const Color(0xFF0D9488).withValues(alpha: 0.25),
-                  blurRadius: 12, offset: const Offset(0, 4)),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
               ],
             ),
             child: Column(
@@ -585,7 +646,8 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                 Row(
                   children: [
                     Container(
-                      width: 44, height: 44,
+                      width: 44,
+                      height: 44,
                       decoration: BoxDecoration(
                         color: _teal.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
@@ -594,8 +656,10 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                         child: Text(
                           p['name']!.split(' ').map((w) => w[0]).take(2).join(),
                           style: GoogleFonts.plusJakartaSans(
-                              fontSize: 14, fontWeight: FontWeight.w800,
-                              color: _teal3),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: _teal3,
+                          ),
                         ),
                       ),
                     ),
@@ -604,14 +668,21 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(p['name']!,
-                              style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 14, fontWeight: FontWeight.w700,
-                                  color: Colors.white)),
-                          Text('${p['id']} · ${p['gender'] == 'M' ? 'Male' : 'Female'} · ${p['age']} yrs',
-                              style: GoogleFonts.inter(
-                                  fontSize: 11,
-                                  color: Colors.white.withValues(alpha: 0.5))),
+                          Text(
+                            p['name']!,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                          Text(
+                            '${p['id']} · ${p['gender'] == 'M' ? 'Male' : 'Female'} · ${p['age']} yrs',
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: Colors.white.withValues(alpha: 0.5),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -620,19 +691,33 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                 if (widget.conditions.isNotEmpty) ...[
                   const SizedBox(height: 10),
                   Wrap(
-                    spacing: 6, runSpacing: 6,
-                    children: widget.conditions.map((c) => Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: _amber.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(99),
-                        border: Border.all(color: _amber.withValues(alpha: 0.3)),
-                      ),
-                      child: Text(c,
-                          style: GoogleFonts.inter(
-                              fontSize: 10, fontWeight: FontWeight.w600,
-                              color: _amber)),
-                    )).toList(),
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: widget.conditions
+                        .map(
+                          (c) => Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _amber.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(99),
+                              border: Border.all(
+                                color: _amber.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Text(
+                              c,
+                              style: GoogleFonts.inter(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: _amber,
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
                   ),
                 ],
               ],
@@ -640,22 +725,35 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
           ),
           const SizedBox(height: 20),
           // VA results summary
-          Text('VA Results',
-              style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14, fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1A2A3D))),
+          Text(
+            'VA Results',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF1A2A3D),
+            ),
+          ),
           const SizedBox(height: 6),
-          Text('Distance Vision',
-              style: GoogleFonts.inter(
-                  fontSize: 11, fontWeight: FontWeight.w600,
-                  color: const Color(0xFF8FA0B4))),
+          Text(
+            'Distance Vision',
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF8FA0B4),
+            ),
+          ),
           const SizedBox(height: 8),
           ...widget.eyeResults.map((r) {
-            final eye    = r['eye'] as String;
+            final eye = r['eye'] as String;
             final logmar = r['logmar'] as String;
-            final v      = double.tryParse(logmar);
-            final col    = v == null ? _red
-                : v <= 0.3 ? _green : v <= 0.5 ? _amber : _red;
+            final v = double.tryParse(logmar);
+            final col = v == null
+                ? _red
+                : v <= 0.3
+                ? _green
+                : v <= 0.5
+                ? _amber
+                : _red;
             return Container(
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -666,84 +764,156 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
               ),
               child: Row(
                 children: [
-                  Text(eye,
-                      style: GoogleFonts.inter(
-                          fontSize: 13, fontWeight: FontWeight.w800, color: col)),
+                  Text(
+                    eye,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: col,
+                    ),
+                  ),
                   const SizedBox(width: 10),
-                  Text(eye == 'OD' ? 'Right Eye' : 'Left Eye',
-                      style: GoogleFonts.inter(
-                          fontSize: 12, color: const Color(0xFF8FA0B4))),
+                  Text(
+                    eye == 'OD' ? 'Right Eye' : 'Left Eye',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: const Color(0xFF8FA0B4),
+                    ),
+                  ),
                   const Spacer(),
-                  Text(_toSnellen(logmar),
-                      style: GoogleFonts.inter(
-                          fontSize: 14, fontWeight: FontWeight.w800, color: col)),
+                  Text(
+                    VisualAcuity.toSnellen(logmar),
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: col,
+                    ),
+                  ),
                   const SizedBox(width: 6),
-                  Text('(LogMAR $logmar)',
-                      style: GoogleFonts.inter(
-                          fontSize: 10, color: const Color(0xFF8FA0B4))),
+                  Text(
+                    '(LogMAR $logmar)',
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      color: const Color(0xFF8FA0B4),
+                    ),
+                  ),
                 ],
               ),
             );
           }),
           if (widget.nearResult != null) ...[
             const SizedBox(height: 8),
-            Text('Near Vision (40cm)',
-                style: GoogleFonts.inter(
-                    fontSize: 11, fontWeight: FontWeight.w600,
-                    color: const Color(0xFF8FA0B4))),
+            Text(
+              'Near Vision (40cm)',
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF8FA0B4),
+              ),
+            ),
             const SizedBox(height: 8),
-            Builder(builder: (_) {
-              final logmar = widget.nearResult!['logmar'] as String;
-              final v = double.tryParse(logmar);
-              final col = v == null ? _red : v <= 0.3 ? _green : v <= 0.5 ? _amber : _red;
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
-                ),
-                child: Row(
-                  children: [
-                    Text('OU',
+            Builder(
+              builder: (_) {
+                final logmar = widget.nearResult!['logmar'] as String;
+                final v = double.tryParse(logmar);
+                final col = v == null
+                    ? _red
+                    : v <= 0.3
+                    ? _green
+                    : v <= 0.5
+                    ? _amber
+                    : _red;
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFEEF2F6),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        'OU',
                         style: GoogleFonts.inter(
-                            fontSize: 13, fontWeight: FontWeight.w800, color: col)),
-                    const SizedBox(width: 10),
-                    Text('Both Eyes — Near',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: col,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Both Eyes — Near',
                         style: GoogleFonts.inter(
-                            fontSize: 12, color: const Color(0xFF8FA0B4))),
-                    const Spacer(),
-                    Text(_toSnellen(logmar),
+                          fontSize: 12,
+                          color: const Color(0xFF8FA0B4),
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        VisualAcuity.toSnellen(logmar),
                         style: GoogleFonts.inter(
-                            fontSize: 14, fontWeight: FontWeight.w800, color: col)),
-                    const SizedBox(width: 6),
-                    Text('(LogMAR $logmar)',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: col,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '(LogMAR $logmar)',
                         style: GoogleFonts.inter(
-                            fontSize: 10, color: const Color(0xFF8FA0B4))),
-                  ],
-                ),
-              );
-            }),
+                          fontSize: 10,
+                          color: const Color(0xFF8FA0B4),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
           ],
           const SizedBox(height: 24),
           // CHW details
-          Text('CHW Details',
-              style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14, fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1A2A3D))),
+          Text(
+            'CHW Details',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF1A2A3D),
+            ),
+          ),
           const SizedBox(height: 10),
-          _infoRow(Icons.person_rounded, 'CHW Name',
-              _chwNameCtrl.text.isEmpty ? '[Not set in Settings]' : _chwNameCtrl.text),
+          _infoRow(
+            Icons.person_rounded,
+            'CHW Name',
+            _chwNameCtrl.text.isEmpty
+                ? '[Not set in Settings]'
+                : _chwNameCtrl.text,
+          ),
           const SizedBox(height: 8),
-          _infoRow(Icons.badge_rounded, 'Title / Role',
-              _chwTitleCtrl.text.isEmpty ? '[Not set in Settings]' : _chwTitleCtrl.text),
+          _infoRow(
+            Icons.badge_rounded,
+            'Title / Role',
+            _chwTitleCtrl.text.isEmpty
+                ? '[Not set in Settings]'
+                : _chwTitleCtrl.text,
+          ),
           const SizedBox(height: 24),
           // Facility selector
-          Text('Refer To',
-              style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14, fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1A2A3D))),
+          Text(
+            'Refer To',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF1A2A3D),
+            ),
+          ),
           const SizedBox(height: 10),
           Container(
             decoration: BoxDecoration(
@@ -758,25 +928,39 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 borderRadius: BorderRadius.circular(12),
                 style: GoogleFonts.inter(
-                    fontSize: 13, color: const Color(0xFF1A2A3D)),
-                items: _facilities.map((f) => DropdownMenuItem(
-                  value: f,
-                  child: Text(f, style: GoogleFonts.inter(fontSize: 13)),
-                )).toList(),
+                  fontSize: 13,
+                  color: const Color(0xFF1A2A3D),
+                ),
+                items: _facilities
+                    .map(
+                      (f) => DropdownMenuItem(
+                        value: f,
+                        child: Text(f, style: GoogleFonts.inter(fontSize: 13)),
+                      ),
+                    )
+                    .toList(),
                 onChanged: (v) => setState(() => _selectedFacility = v!),
               ),
             ),
           ),
           if (_selectedFacility == 'Other (specify below)') ...[
             const SizedBox(height: 8),
-            _formField(_facilityOtherCtrl, 'Facility name', Icons.local_hospital_rounded),
+            _formField(
+              _facilityOtherCtrl,
+              'Facility name',
+              Icons.local_hospital_rounded,
+            ),
           ],
           const SizedBox(height: 20),
           // Appointment date
-          Text('Appointment Date',
-              style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14, fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1A2A3D))),
+          Text(
+            'Appointment Date',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF1A2A3D),
+            ),
+          ),
           const SizedBox(height: 10),
           GestureDetector(
             onTap: () async {
@@ -789,7 +973,9 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                 builder: (ctx, child) => Theme(
                   data: Theme.of(ctx).copyWith(
                     colorScheme: const ColorScheme.light(
-                      primary: _teal, onPrimary: Colors.white),
+                      primary: _teal,
+                      onPrimary: Colors.white,
+                    ),
                   ),
                   child: child!,
                 ),
@@ -803,35 +989,44 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: _appointmentDate != null
-                      ? _teal : const Color(0xFFEEF2F6),
+                      ? _teal
+                      : const Color(0xFFEEF2F6),
                   width: 1.5,
                 ),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.calendar_today_rounded,
-                      size: 16,
-                      color: _appointmentDate != null
-                          ? _teal : const Color(0xFF8FA0B4)),
+                  Icon(
+                    Icons.calendar_today_rounded,
+                    size: 16,
+                    color: _appointmentDate != null
+                        ? _teal
+                        : const Color(0xFF8FA0B4),
+                  ),
                   const SizedBox(width: 10),
                   Text(
                     _appointmentDate == null
                         ? 'Select appointment date (optional)'
                         : 'Appointment: $_appointmentDateStr',
                     style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: _appointmentDate != null
-                            ? const Color(0xFF1A2A3D)
-                            : const Color(0xFF8FA0B4),
-                        fontWeight: _appointmentDate != null
-                            ? FontWeight.w600 : FontWeight.w400),
+                      fontSize: 13,
+                      color: _appointmentDate != null
+                          ? const Color(0xFF1A2A3D)
+                          : const Color(0xFF8FA0B4),
+                      fontWeight: _appointmentDate != null
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                    ),
                   ),
                   const Spacer(),
                   if (_appointmentDate != null)
                     GestureDetector(
                       onTap: () => setState(() => _appointmentDate = null),
-                      child: const Icon(Icons.close_rounded,
-                          size: 16, color: Color(0xFF8FA0B4)),
+                      child: const Icon(
+                        Icons.close_rounded,
+                        size: 16,
+                        color: Color(0xFF8FA0B4),
+                      ),
                     ),
                 ],
               ),
@@ -841,24 +1036,35 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: _profileLoaded ? () async {
-                final p = await SharedPreferences.getInstance();
-                if (mounted) setState(() {
-                  _language = p.getString('referral_language') ?? 'English Only';
-                  _showLetter = true;
-                });
-              } : null,
-              icon: const Icon(Icons.description_rounded,
-                  size: 18, color: Colors.white),
-              label: Text('Preview Referral Letter',
-                  style: GoogleFonts.inter(
-                      fontSize: 14, fontWeight: FontWeight.w700,
-                      color: Colors.white)),
+              onPressed: _profileLoaded
+                  ? () async {
+                      final profile = await ChwProfilePreferences.load();
+                      if (mounted)
+                        setState(() {
+                          _language = profile.referralLanguage;
+                          _showLetter = true;
+                        });
+                    }
+                  : null,
+              icon: const Icon(
+                Icons.description_rounded,
+                size: 18,
+                color: Colors.white,
+              ),
+              label: Text(
+                'Preview Referral Letter',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _teal,
                 padding: const EdgeInsets.symmetric(vertical: 15),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 elevation: 0,
               ),
             ),
@@ -887,7 +1093,8 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 12, offset: const Offset(0, 4),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
@@ -898,34 +1105,52 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                 Row(
                   children: [
                     Container(
-                      width: 44, height: 44,
+                      width: 44,
+                      height: 44,
                       decoration: BoxDecoration(
                         color: _red.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.local_hospital_rounded,
-                          color: _red, size: 22),
+                      child: const Icon(
+                        Icons.local_hospital_rounded,
+                        color: _red,
+                        size: 22,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(_t('referral_letter', 'REFERRAL LETTER'),
-                              style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 14, fontWeight: FontWeight.w900,
-                                  color: const Color(0xFF1A2A3D),
-                                  letterSpacing: 1.2)),
-                          Text(_t('vision_screening', 'Vision Screening Programme'),
-                              style: GoogleFonts.inter(
-                                  fontSize: 11,
-                                  color: const Color(0xFF8FA0B4))),
+                          Text(
+                            _t('referral_letter', 'REFERRAL LETTER'),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w900,
+                              color: const Color(0xFF1A2A3D),
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          Text(
+                            _t(
+                              'vision_screening',
+                              'Vision Screening Programme',
+                            ),
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: const Color(0xFF8FA0B4),
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                    Text(widget.screeningDate,
-                        style: GoogleFonts.inter(
-                            fontSize: 11, color: const Color(0xFF8FA0B4))),
+                    Text(
+                      widget.screeningDate,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: const Color(0xFF8FA0B4),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -934,54 +1159,81 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                 // To / From
                 _letterRow(_t('to', 'To'), _facilityName),
                 const SizedBox(height: 8),
-                _letterRow(_t('from', 'From'),
-                    '${_chwNameCtrl.text.trim().isEmpty ? '[CHW Name]' : _chwNameCtrl.text.trim()}\n${_chwTitleCtrl.text.trim()}'),
+                _letterRow(
+                  _t('from', 'From'),
+                  '${_chwNameCtrl.text.trim().isEmpty ? '[CHW Name]' : _chwNameCtrl.text.trim()}\n${_chwTitleCtrl.text.trim()}',
+                ),
                 const SizedBox(height: 16),
                 _divider(),
                 const SizedBox(height: 16),
                 // Patient
-                Text(_t('patient_details', 'PATIENT DETAILS'),
-                    style: GoogleFonts.inter(
-                        fontSize: 10, fontWeight: FontWeight.w700,
-                        color: const Color(0xFF8FA0B4),
-                        letterSpacing: 1.0)),
+                Text(
+                  _t('patient_details', 'PATIENT DETAILS'),
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF8FA0B4),
+                    letterSpacing: 1.0,
+                  ),
+                ),
                 const SizedBox(height: 10),
                 _letterRow(_t('name', 'Name'), p['name']!),
                 const SizedBox(height: 6),
                 _letterRow(_t('patient_id', 'Patient ID'), p['id']!),
                 const SizedBox(height: 6),
-                _letterRow(_t('age_sex', 'Age / Sex'),
-                    '${p['age']} ${_t('years', 'years')} · ${p['gender'] == 'M' ? _t('male', 'Male') : _t('female', 'Female')}'),
+                _letterRow(
+                  _t('age_sex', 'Age / Sex'),
+                  '${p['age']} ${_t('years', 'years')} · ${p['gender'] == 'M' ? _t('male', 'Male') : _t('female', 'Female')}',
+                ),
                 const SizedBox(height: 6),
                 _letterRow(_t('village', 'Village'), p['village']!),
                 if (widget.conditions.isNotEmpty) ...[
                   const SizedBox(height: 6),
-                  _letterRow(_t('conditions', 'Conditions'), widget.conditions.join(', ')),
+                  _letterRow(
+                    _t('conditions', 'Conditions'),
+                    widget.conditions.join(', '),
+                  ),
                 ],
                 if (_appointmentDate != null) ...[
                   const SizedBox(height: 6),
-                  _letterRow(_t('appointment', 'Appointment'), _appointmentDateStr),
+                  _letterRow(
+                    _t('appointment', 'Appointment'),
+                    _appointmentDateStr,
+                  ),
                 ],
                 const SizedBox(height: 16),
                 _divider(),
                 const SizedBox(height: 16),
                 // VA results
-                Text(_t('va_results', 'VISUAL ACUITY RESULTS'),
-                    style: GoogleFonts.inter(
-                        fontSize: 10, fontWeight: FontWeight.w700,
-                        color: const Color(0xFF8FA0B4),
-                        letterSpacing: 1.0)),
+                Text(
+                  _t('va_results', 'VISUAL ACUITY RESULTS'),
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF8FA0B4),
+                    letterSpacing: 1.0,
+                  ),
+                ),
                 const SizedBox(height: 6),
-                Text(_t('distance_vision', 'Distance Vision (Monocular)'),
-                    style: GoogleFonts.inter(
-                        fontSize: 10, color: const Color(0xFF8FA0B4))),
+                Text(
+                  _t('distance_vision', 'Distance Vision (Monocular)'),
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    color: const Color(0xFF8FA0B4),
+                  ),
+                ),
                 const SizedBox(height: 8),
                 ...widget.eyeResults.map((r) {
-                  final eye    = r['eye'] as String;
+                  final eye = r['eye'] as String;
                   final logmar = r['logmar'] as String;
-                  final v      = double.tryParse(logmar);
-                  final col    = v == null ? _red
-                      : v <= 0.3 ? _green : v <= 0.5 ? _amber : _red;
+                  final v = double.tryParse(logmar);
+                  final col = v == null
+                      ? _red
+                      : v <= 0.3
+                      ? _green
+                      : v <= 0.5
+                      ? _amber
+                      : _red;
                   final eyeFull = eye == 'OD'
                       ? _t('right_eye', 'Right Eye (OD)')
                       : _t('left_eye', 'Left Eye (OS)');
@@ -999,27 +1251,42 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(eyeFull,
-                                  style: GoogleFonts.inter(
-                                      fontSize: 11, fontWeight: FontWeight.w700,
-                                      color: const Color(0xFF1A2A3D))),
-                              Text(_vaClass(logmar),
-                                  style: GoogleFonts.inter(
-                                      fontSize: 10, color: const Color(0xFF8FA0B4))),
+                              Text(
+                                eyeFull,
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF1A2A3D),
+                                ),
+                              ),
+                              Text(
+                                VisualAcuity.classification(logmar),
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  color: const Color(0xFF8FA0B4),
+                                ),
+                              ),
                             ],
                           ),
                         ),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Text(_toSnellen(logmar),
-                                style: GoogleFonts.inter(
-                                    fontSize: 16, fontWeight: FontWeight.w800,
-                                    color: col)),
-                            Text('LogMAR $logmar',
-                                style: GoogleFonts.inter(
-                                    fontSize: 10,
-                                    color: col.withValues(alpha: 0.7))),
+                            Text(
+                              VisualAcuity.toSnellen(logmar),
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: col,
+                              ),
+                            ),
+                            Text(
+                              'LogMAR $logmar',
+                              style: GoogleFonts.inter(
+                                fontSize: 10,
+                                color: col.withValues(alpha: 0.7),
+                              ),
+                            ),
                           ],
                         ),
                       ],
@@ -1028,99 +1295,154 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                 }),
                 if (widget.nearResult != null) ...[
                   const SizedBox(height: 8),
-                  Text(_t('near_vision', 'Near Vision (Binocular — 40cm)'),
-                      style: GoogleFonts.inter(
-                          fontSize: 10, color: const Color(0xFF8FA0B4))),
+                  Text(
+                    _t('near_vision', 'Near Vision (Binocular — 40cm)'),
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      color: const Color(0xFF8FA0B4),
+                    ),
+                  ),
                   const SizedBox(height: 8),
-                  Builder(builder: (_) {
-                    final logmar = widget.nearResult!['logmar'] as String;
-                    final v = double.tryParse(logmar);
-                    final col = v == null ? _red : v <= 0.3 ? _green : v <= 0.5 ? _amber : _red;
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: col.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: col.withValues(alpha: 0.2)),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                  Builder(
+                    builder: (_) {
+                      final logmar = widget.nearResult!['logmar'] as String;
+                      final v = double.tryParse(logmar);
+                      final col = v == null
+                          ? _red
+                          : v <= 0.3
+                          ? _green
+                          : v <= 0.5
+                          ? _amber
+                          : _red;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: col.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: col.withValues(alpha: 0.2)),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _t('both_eyes', 'Both Eyes (OU)'),
+                                    style: GoogleFonts.inter(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFF1A2A3D),
+                                    ),
+                                  ),
+                                  Text(
+                                    VisualAcuity.classification(logmar),
+                                    style: GoogleFonts.inter(
+                                      fontSize: 10,
+                                      color: const Color(0xFF8FA0B4),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                Text(_t('both_eyes', 'Both Eyes (OU)'),
-                                    style: GoogleFonts.inter(
-                                        fontSize: 11, fontWeight: FontWeight.w700,
-                                        color: const Color(0xFF1A2A3D))),
-                                Text(_vaClass(logmar),
-                                    style: GoogleFonts.inter(
-                                        fontSize: 10, color: const Color(0xFF8FA0B4))),
+                                Text(
+                                  VisualAcuity.toSnellen(logmar),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: col,
+                                  ),
+                                ),
+                                Text(
+                                  'LogMAR $logmar',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 10,
+                                    color: col.withValues(alpha: 0.7),
+                                  ),
+                                ),
                               ],
                             ),
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(_toSnellen(logmar),
-                                  style: GoogleFonts.inter(
-                                      fontSize: 16, fontWeight: FontWeight.w800,
-                                      color: col)),
-                              Text('LogMAR $logmar',
-                                  style: GoogleFonts.inter(
-                                      fontSize: 10,
-                                      color: col.withValues(alpha: 0.7))),
-                            ],
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ],
                 const SizedBox(height: 16),
                 _divider(),
                 const SizedBox(height: 16),
                 // Reason
-                Text(_t('reason', 'REASON FOR REFERRAL'),
-                    style: GoogleFonts.inter(
-                        fontSize: 10, fontWeight: FontWeight.w700,
-                        color: const Color(0xFF8FA0B4),
-                        letterSpacing: 1.0)),
+                Text(
+                  _t('reason', 'REASON FOR REFERRAL'),
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF8FA0B4),
+                    letterSpacing: 1.0,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Text(
-                  _t('reason_body',
+                  _t(
+                    'reason_body',
                     'Visual acuity below 6/12 detected in one or more eyes during '
-                    'community vision screening. Further examination and management '
-                    'is recommended.'),
+                        'community vision screening. Further examination and management '
+                        'is recommended.',
+                  ),
                   style: GoogleFonts.inter(
-                      fontSize: 12, color: const Color(0xFF5E7291), height: 1.6),
+                    fontSize: 12,
+                    color: const Color(0xFF5E7291),
+                    height: 1.6,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 _divider(),
                 const SizedBox(height: 16),
                 // Signature
-                Text('_' * 28,
-                    style: GoogleFonts.inter(
-                        fontSize: 12, color: const Color(0xFF8FA0B4))),
+                Text(
+                  '_' * 28,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: const Color(0xFF8FA0B4),
+                  ),
+                ),
                 const SizedBox(height: 4),
                 Text(
                   _chwNameCtrl.text.trim().isEmpty
-                      ? '[CHW Name]' : _chwNameCtrl.text.trim(),
+                      ? '[CHW Name]'
+                      : _chwNameCtrl.text.trim(),
                   style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12, fontWeight: FontWeight.w700,
-                      color: const Color(0xFF1A2A3D)),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF1A2A3D),
+                  ),
                 ),
-                Text(_chwTitleCtrl.text.trim(),
-                    style: GoogleFonts.inter(
-                        fontSize: 11, color: const Color(0xFF8FA0B4))),
+                Text(
+                  _chwTitleCtrl.text.trim(),
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: const Color(0xFF8FA0B4),
+                  ),
+                ),
                 if (_chwId.isNotEmpty)
-                  Text('${_t('badge_id', 'Badge ID')}: $_chwId',
-                      style: GoogleFonts.inter(
-                          fontSize: 11, color: const Color(0xFF8FA0B4))),
-                Text('${_t('date', 'Date')}: ${widget.screeningDate}',
+                  Text(
+                    '${_t('badge_id', 'Badge ID')}: $_chwId',
                     style: GoogleFonts.inter(
-                        fontSize: 11, color: const Color(0xFF8FA0B4))),
+                      fontSize: 11,
+                      color: const Color(0xFF8FA0B4),
+                    ),
+                  ),
+                Text(
+                  '${_t('date', 'Date')}: ${widget.screeningDate}',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: const Color(0xFF8FA0B4),
+                  ),
+                ),
               ],
             ),
           ),
@@ -1129,28 +1451,49 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: _saved ? null : () async {
-                await _saveToDb();
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text('Referral saved to patient record',
-                        style: GoogleFonts.inter(fontSize: 12, color: Colors.white)),
-                    backgroundColor: _green,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    duration: const Duration(seconds: 2),
-                  ));
-                }
-              },
-              icon: Icon(_saved ? Icons.check_circle_rounded : Icons.save_rounded,
-                  size: 18, color: Colors.white),
-              label: Text(_saved ? 'Saved to Record' : 'Save to Patient Record',
-                  style: GoogleFonts.inter(
-                      fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
+              onPressed: _saved
+                  ? null
+                  : () async {
+                      await _saveToDb();
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Referral saved to patient record',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: Colors.white,
+                              ),
+                            ),
+                            backgroundColor: _green,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    },
+              icon: Icon(
+                _saved ? Icons.check_circle_rounded : Icons.save_rounded,
+                size: 18,
+                color: Colors.white,
+              ),
+              label: Text(
+                _saved ? 'Saved to Record' : 'Save to Patient Record',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _saved ? _green : _teal,
                 padding: const EdgeInsets.symmetric(vertical: 15),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 elevation: 0,
               ),
             ),
@@ -1160,16 +1503,29 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => Share.share(_letterText,
-                  subject: 'Vision Screening Referral — ${p['name']}'),
-              icon: const Icon(Icons.share_rounded, size: 18, color: Colors.white),
-              label: Text('Share Referral Letter',
-                  style: GoogleFonts.inter(
-                      fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
+              onPressed: () => Share.share(
+                _letterText,
+                subject: 'Vision Screening Referral — ${p['name']}',
+              ),
+              icon: const Icon(
+                Icons.share_rounded,
+                size: 18,
+                color: Colors.white,
+              ),
+              label: Text(
+                'Share Referral Letter',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1A2A3D),
                 padding: const EdgeInsets.symmetric(vertical: 15),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 elevation: 0,
               ),
             ),
@@ -1180,14 +1536,20 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
             child: OutlinedButton.icon(
               onPressed: () => setState(() => _showLetter = false),
               icon: const Icon(Icons.edit_rounded, size: 16, color: _teal),
-              label: Text('Edit Details',
-                  style: GoogleFonts.inter(
-                      fontSize: 14, fontWeight: FontWeight.w700, color: _teal)),
+              label: Text(
+                'Edit Details',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: _teal,
+                ),
+              ),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 side: const BorderSide(color: _teal, width: 1.5),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ),
@@ -1201,21 +1563,29 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
     children: [
       SizedBox(
         width: 80,
-        child: Text(label,
-            style: GoogleFonts.inter(
-                fontSize: 11, fontWeight: FontWeight.w600,
-                color: const Color(0xFF8FA0B4))),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF8FA0B4),
+          ),
+        ),
       ),
       Expanded(
-        child: Text(value,
-            style: GoogleFonts.inter(
-                fontSize: 12, color: const Color(0xFF1A2A3D), height: 1.5)),
+        child: Text(
+          value,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            color: const Color(0xFF1A2A3D),
+            height: 1.5,
+          ),
+        ),
       ),
     ],
   );
 
-  Widget _divider() => Container(
-    height: 1, color: const Color(0xFFEEF2F6));
+  Widget _divider() => Container(height: 1, color: const Color(0xFFEEF2F6));
 
   Widget _infoRow(IconData icon, String label, String value) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -1232,58 +1602,80 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label,
-                  style: GoogleFonts.inter(
-                      fontSize: 10, color: const Color(0xFF8FA0B4),
-                      fontWeight: FontWeight.w500)),
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 10,
+                  color: const Color(0xFF8FA0B4),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
               const SizedBox(height: 2),
-              Text(value,
-                  style: GoogleFonts.inter(
-                      fontSize: 13, color: const Color(0xFF1A2A3D),
-                      fontWeight: FontWeight.w600)),
+              Text(
+                value,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: const Color(0xFF1A2A3D),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
         ),
         GestureDetector(
           onTap: () => ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Edit your name in Settings',
-                  style: GoogleFonts.inter(fontSize: 12, color: Colors.white)),
+              content: Text(
+                'Edit your name in Settings',
+                style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
+              ),
               backgroundColor: _teal,
               behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
               duration: const Duration(seconds: 2),
             ),
           ),
-          child: const Icon(Icons.lock_outline_rounded,
-              size: 14, color: Color(0xFF8FA0B4)),
+          child: const Icon(
+            Icons.lock_outline_rounded,
+            size: 14,
+            color: Color(0xFF8FA0B4),
+          ),
         ),
       ],
     ),
   );
 
   Widget _formField(TextEditingController ctrl, String hint, IconData icon) =>
-    Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
-      ),
-      child: TextField(
-        controller: ctrl,
-        style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF1A2A3D)),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF8FA0B4)),
-          prefixIcon: Icon(icon, size: 16, color: const Color(0xFF8FA0B4)),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
         ),
-      ),
-    );
+        child: TextField(
+          controller: ctrl,
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            color: const Color(0xFF1A2A3D),
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: GoogleFonts.inter(
+              fontSize: 13,
+              color: const Color(0xFF8FA0B4),
+            ),
+            prefixIcon: Icon(icon, size: 16, color: const Color(0xFF8FA0B4)),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
+          ),
+        ),
+      );
 }
-
-
 
 // ── Dot pattern painter for referral letter header ──────────
 class _ReferralDotPainter extends CustomPainter {
@@ -1299,7 +1691,7 @@ class _ReferralDotPainter extends CustomPainter {
       }
     }
   }
+
   @override
   bool shouldRepaint(_ReferralDotPainter old) => false;
 }
-

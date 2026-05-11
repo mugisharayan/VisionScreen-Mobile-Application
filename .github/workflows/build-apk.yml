@@ -1,13 +1,54 @@
-name: Build Flutter APK
+name: Flutter CI
 
 on:
   push:
     branches:
       - main
+  pull_request:
 
 jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.9'
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Analyze core app files
+        run: |
+          dart analyze \
+            lib/db/database_helper.dart \
+            lib/repositories/auth_repository.dart \
+            lib/repositories/campaign_repository.dart \
+            lib/repositories/patient_repository.dart \
+            lib/repositories/screening_repository.dart \
+            lib/screens/splash_screen.dart \
+            lib/services/backup_service.dart \
+            lib/services/sync \
+            lib/utils/app_constants.dart \
+            lib/utils/id_utils.dart \
+            test/widget_test.dart
+
+      - name: Run tests
+        run: flutter test
+
   build:
     runs-on: ubuntu-latest
+    needs: verify
 
     steps:
       - name: Checkout code

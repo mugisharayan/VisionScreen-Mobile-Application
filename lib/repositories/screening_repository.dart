@@ -19,7 +19,7 @@ class ScreeningRepository {
     final database = await _db.db;
     return database.query(
       'screenings',
-      where: 'patient_id = ?',
+      where: 'patient_id = ? AND deleted_at IS NULL',
       whereArgs: [patientId],
       orderBy: 'screening_date DESC',
       limit: pageSize,
@@ -31,7 +31,7 @@ class ScreeningRepository {
   Future<int> getScreeningCountForPatient(String patientId) async {
     final database = await _db.db;
     final result = await database.rawQuery(
-      'SELECT COUNT(*) as count FROM screenings WHERE patient_id = ?',
+      'SELECT COUNT(*) as count FROM screenings WHERE patient_id = ? AND deleted_at IS NULL',
       [patientId],
     );
     return (result.first['count'] as int?) ?? 0;
@@ -39,6 +39,45 @@ class ScreeningRepository {
 
   Future<Map<String, dynamic>?> getLatestScreening(String patientId) =>
       _db.getLatestScreening(patientId);
+
+  Future<Map<String, Map<String, dynamic>>> getLatestScreeningsForPatients(
+    Iterable<String> patientIds,
+  ) async {
+    final ids = patientIds.where((id) => id.trim().isNotEmpty).toSet().toList();
+    if (ids.isEmpty) {
+      return <String, Map<String, dynamic>>{};
+    }
+
+    final database = await _db.db;
+    final placeholders = List.filled(ids.length, '?').join(', ');
+    final rows = await database.rawQuery(
+      '''
+      SELECT s.*
+      FROM screenings s
+      JOIN (
+        SELECT patient_id, MAX(screening_date) AS latest_screening_date
+        FROM screenings
+        WHERE deleted_at IS NULL AND patient_id IN ($placeholders)
+        GROUP BY patient_id
+      ) latest
+        ON latest.patient_id = s.patient_id
+       AND latest.latest_screening_date = s.screening_date
+      WHERE s.deleted_at IS NULL
+      ORDER BY s.patient_id ASC, s.id DESC
+      ''',
+      ids,
+    );
+
+    final latestByPatient = <String, Map<String, dynamic>>{};
+    for (final row in rows) {
+      final patientId = row['patient_id'] as String? ?? '';
+      if (patientId.isEmpty || latestByPatient.containsKey(patientId)) {
+        continue;
+      }
+      latestByPatient[patientId] = row;
+    }
+    return latestByPatient;
+  }
 
   Future<List<Map<String, dynamic>>> getRecentScreeningsWithPatient({
     int limit = AppPagination.recentLimit,

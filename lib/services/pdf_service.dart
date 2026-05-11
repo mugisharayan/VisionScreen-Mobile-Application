@@ -7,6 +7,8 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../utils/visual_acuity.dart';
+
 const _pdfTranslations = <String, Map<String, String>>{
   'Luganda': {
     'referral_letter': 'EBBALUWA EYA OKUKEBERA AMAASO / REFERRAL LETTER',
@@ -566,27 +568,6 @@ class PdfService {
     return file.path;
   }
 
-  static String _toSnellen(String logmar) {
-    final v = double.tryParse(logmar);
-    if (v == null) return logmar;
-    const snaps = [6, 9, 12, 18, 24, 36, 48, 60, 120];
-    double r = 1.0;
-    final steps = (v.abs() * 10).round();
-    for (int i = 0; i < steps; i++) r *= (v >= 0 ? 1.258925 : 0.794328);
-    final second = (6 * r).round();
-    return '6/${snaps.reduce((a, b) => (a - second).abs() < (b - second).abs() ? a : b)}';
-  }
-
-  static String _vaClass(String logmar) {
-    final v = double.tryParse(logmar);
-    if (v == null) return '';
-    if (v <= 0.0) return 'Normal';
-    if (v <= 0.3) return 'Near Normal';
-    if (v <= 0.5) return 'Moderate Impairment';
-    if (v <= 1.0) return 'Severe Impairment';
-    return 'Blind Range';
-  }
-
   static PdfColor _vaColor(String logmar) {
     final v = double.tryParse(logmar);
     if (v == null) return const PdfColor.fromInt(0xFFEF4444);
@@ -647,11 +628,12 @@ class PdfService {
               ? tr('right_eye', 'Right Eye (OD)')
               : tr('left_eye', 'Left Eye (OS)'),
               style: pw.TextStyle(font: bold, fontSize: 11)),
-          pw.Text(_vaClass(logmar),
+          pw.Text(
+              VisualAcuity.classification(logmar, invalidValue: ''),
               style: pw.TextStyle(font: font, fontSize: 9)),
         ]),
         pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
-          pw.Text(_toSnellen(logmar),
+          pw.Text(VisualAcuity.toSnellen(logmar),
               style: pw.TextStyle(font: bold, fontSize: 16, color: col)),
           pw.Text('LogMAR $logmar',
               style: pw.TextStyle(font: font, fontSize: 9)),
@@ -678,11 +660,12 @@ class PdfService {
               ? tr('right_eye', 'Right Eye (OD)')
               : tr('left_eye', 'Left Eye (OS)'),
               style: pw.TextStyle(font: bold, fontSize: 11)),
-          pw.Text(_vaClass(logmar),
+          pw.Text(
+              VisualAcuity.classification(logmar, invalidValue: ''),
               style: pw.TextStyle(font: font, fontSize: 9)),
         ]),
         pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
-          pw.Text(_toSnellen(logmar),
+          pw.Text(VisualAcuity.toSnellen(logmar),
               style: pw.TextStyle(font: bold, fontSize: 16, color: col)),
           pw.Text('LogMAR $logmar',
               style: pw.TextStyle(font: font, fontSize: 9)),

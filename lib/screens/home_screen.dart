@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:async' show TimeoutException;
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -15,6 +14,9 @@ import 'new_screening_screen.dart';
 import 'bulk_mode_screen.dart';
 import 'analytics_screen.dart';
 import '../repositories/screening_repository.dart';
+import '../services/chw_profile_preferences.dart';
+import '../services/sync/sync_service.dart';
+import '../utils/app_constants.dart';
 import '../utils/app_theme.dart';
 import '../utils/page_transitions.dart';
 import '../utils/haptics.dart';
@@ -26,19 +28,17 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with TickerProviderStateMixin {
-
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // -- Data --------------------------------------------------
-  String _chwName     = '';
-  String _chwCenter   = '';
-  String _chwDistrict = '';
-  String _chwPhoto    = '';
-  int _totalScreened  = 0;
-  int _totalReferred  = 0;
-  int _unsyncedCount  = 0;
+  String _chwName = '';
+  String _chwPhoto = '';
+  int _totalScreened = 0;
+  int _totalReferred = 0;
+  int _unsyncedCount = 0;
   int _notificationCount = 0;
-  bool _isSyncing     = false;
+  bool _isSyncing = false;
+  bool _syncConfigured = false;
+  String _lastSyncError = '';
   List<Map<String, dynamic>> _recentScreenings = [];
   List<Map<String, dynamic>> _referredPatients = [];
 
@@ -54,16 +54,16 @@ class _HomeScreenState extends State<HomeScreen>
   // -- Animations --------------------------------------------
   // Pulse for online dot
   late final AnimationController _pulseCtrl;
-  late final Animation<double>   _pulseAnim;
+  late final Animation<double> _pulseAnim;
 
   // Header entry (slide + fade)
   late final AnimationController _headerCtrl;
-  late final Animation<double>   _headerOpacity;
-  late final Animation<Offset>   _headerSlide;
+  late final Animation<double> _headerOpacity;
+  late final Animation<Offset> _headerSlide;
 
   // Stats counter (number roll-up)
   late final AnimationController _statsCtrl;
-  late final Animation<double>   _statsAnim;
+  late final Animation<double> _statsAnim;
 
   // Card stagger (recent list)
   late final AnimationController _cardCtrl;
@@ -76,12 +76,36 @@ class _HomeScreenState extends State<HomeScreen>
   Timer? _tipTimer;
 
   static const _tips = [
-    _TipData(Icons.wb_sunny_rounded,    VsColors.amber,   'Ensure adequate room lighting before starting a vision test.'),
-    _TipData(Icons.straighten_rounded,  VsColors.emerald, 'Always confirm the patient is exactly 3 metres from the screen.'),
-    _TipData(Icons.remove_red_eye_rounded, VsColors.sky,  'Test each eye separately — cover one eye completely before testing the other.'),
-    _TipData(Icons.elderly_rounded,     VsColors.brand,   'For elderly patients, apply the 6/18 threshold — not the adult 6/12 standard.'),
-    _TipData(Icons.child_care_rounded,  VsColors.violet,  'Children may need encouragement — demonstrate the E direction yourself first.'),
-    _TipData(Icons.visibility_off_rounded, VsColors.rose, 'Ask patients to remove glasses before the unaided vision test begins.'),
+    _TipData(
+      Icons.wb_sunny_rounded,
+      VsColors.amber,
+      'Ensure adequate room lighting before starting a vision test.',
+    ),
+    _TipData(
+      Icons.straighten_rounded,
+      VsColors.emerald,
+      'Always confirm the patient is exactly 3 metres from the screen.',
+    ),
+    _TipData(
+      Icons.remove_red_eye_rounded,
+      VsColors.sky,
+      'Test each eye separately — cover one eye completely before testing the other.',
+    ),
+    _TipData(
+      Icons.elderly_rounded,
+      VsColors.brand,
+      'For elderly patients, apply the 6/18 threshold — not the adult 6/12 standard.',
+    ),
+    _TipData(
+      Icons.child_care_rounded,
+      VsColors.violet,
+      'Children may need encouragement — demonstrate the E direction yourself first.',
+    ),
+    _TipData(
+      Icons.visibility_off_rounded,
+      VsColors.rose,
+      'Ask patients to remove glasses before the unaided vision test begins.',
+    ),
   ];
 
   // -- Lifecycle ---------------------------------------------
@@ -91,38 +115,56 @@ class _HomeScreenState extends State<HomeScreen>
 
     // Pulse
     _pulseCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 900))
-      ..repeat(reverse: true);
-    _pulseAnim = Tween<double>(begin: 0.4, end: 1.0).animate(
-        CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    _pulseAnim = Tween<double>(
+      begin: 0.4,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
 
     // Header entry
     _headerCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 700));
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
     _headerOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(parent: _headerCtrl,
-            curve: const Interval(0.0, 0.6, curve: Curves.easeOut)));
+      CurvedAnimation(
+        parent: _headerCtrl,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+      ),
+    );
     _headerSlide = Tween<Offset>(
-            begin: const Offset(0, -0.08), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _headerCtrl, curve: Curves.easeOutCubic));
+      begin: const Offset(0, -0.08),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _headerCtrl, curve: Curves.easeOutCubic));
 
     // Stats roll-up
     _statsCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1200));
-    _statsAnim = CurvedAnimation(parent: _statsCtrl, curve: Curves.easeOutCubic);
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _statsAnim = CurvedAnimation(
+      parent: _statsCtrl,
+      curve: Curves.easeOutCubic,
+    );
 
     // Card stagger
     _cardCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 800));
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
 
     // Sync spin
     _syncCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1000))
-      ..repeat();
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat();
 
     // Clock
-    _clockTimer = Timer.periodic(const Duration(seconds: 1),
-        (_) { if (mounted) setState(() => _now = DateTime.now()); });
+    _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() => _now = DateTime.now());
+    });
 
     // Tips carousel
     _tipTimer = Timer.periodic(const Duration(seconds: 5), (_) {
@@ -131,10 +173,16 @@ class _HomeScreenState extends State<HomeScreen>
 
     // Connectivity
     Connectivity().checkConnectivity().then((r) {
-      if (mounted) setState(() => _isOffline = r.every((x) => x == ConnectivityResult.none));
+      if (mounted)
+        setState(
+          () => _isOffline = r.every((x) => x == ConnectivityResult.none),
+        );
     });
     _connectivitySub = Connectivity().onConnectivityChanged.listen((r) {
-      if (mounted) setState(() => _isOffline = r.every((x) => x == ConnectivityResult.none));
+      if (mounted)
+        setState(
+          () => _isOffline = r.every((x) => x == ConnectivityResult.none),
+        );
     });
 
     // Load data then animate
@@ -156,28 +204,31 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _loadChwProfile() async {
+    final profile = await ChwProfilePreferences.load();
     final p = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() {
-      _chwName     = p.getString('chw_name')    ?? '';
-      _chwCenter   = p.getString('chw_center')  ?? '';
-      _chwDistrict = p.getString('chw_district') ?? '';
-      _chwPhoto    = p.getString('chw_photo')    ?? '';
+      _chwName = profile.name;
+      _chwPhoto = profile.photoPath;
+      _syncConfigured =
+          p.getBool(AppStrings.prefSyncConfigured) ??
+          SyncService.instance.isConfigured;
+      _lastSyncError = p.getString(AppStrings.prefLastSyncError) ?? '';
     });
   }
 
   Future<void> _loadDbStats() async {
     final sr = ScreeningRepository.instance;
-    final outcomes  = await sr.getOutcomeCounts();
-    final unsynced  = await sr.getUnsyncedCount();
-    final recent    = await sr.getRecentScreeningsWithPatient(limit: 4);
-    final referred  = await sr.getReferredPatients();
-    final notifs    = await sr.getNotifications();
+    final outcomes = await sr.getOutcomeCounts();
+    final unsynced = await sr.getUnsyncedCount();
+    final recent = await sr.getRecentScreeningsWithPatient(limit: 4);
+    final referred = await sr.getReferredPatients();
+    final notifs = await sr.getNotifications();
     if (!mounted) return;
     setState(() {
-      _totalScreened    = (outcomes['pass'] ?? 0) + (outcomes['refer'] ?? 0);
-      _totalReferred    = outcomes['refer'] ?? 0;
-      _unsyncedCount    = unsynced;
+      _totalScreened = (outcomes['pass'] ?? 0) + (outcomes['refer'] ?? 0);
+      _totalReferred = outcomes['refer'] ?? 0;
+      _unsyncedCount = unsynced;
       _recentScreenings = recent;
       _referredPatients = referred;
       _notificationCount = notifs.where((n) => n['read'] == false).length;
@@ -192,50 +243,97 @@ class _HomeScreenState extends State<HomeScreen>
 
   Future<void> _doSync() async {
     if (_isSyncing) return;
+    if (!_syncConfigured) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Cloud sync is not enabled in this build. Records remain on this device.',
+            style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
+          ),
+          backgroundColor: VsColors.sky,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
     VsHaptics.medium();
     setState(() => _isSyncing = true);
-    await Future.delayed(const Duration(seconds: 2));
+    final result = await SyncService.instance.syncNow();
+    final prefs = await SharedPreferences.getInstance();
+    await _loadDbStats();
     if (!mounted) return;
-    setState(() => _isSyncing = false);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('Sync complete!',
-          style: GoogleFonts.inter(fontSize: 12, color: Colors.white)),
-      backgroundColor: VsColors.emerald,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      duration: const Duration(seconds: 2),
-    ));
+    setState(() {
+      _isSyncing = false;
+      _syncConfigured =
+          prefs.getBool(AppStrings.prefSyncConfigured) ??
+          SyncService.instance.isConfigured;
+      _lastSyncError = prefs.getString(AppStrings.prefLastSyncError) ?? '';
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          result.success
+              ? 'Sync finished: ${result.appliedChanges} changes pushed, ${result.restoredRecords} records restored.'
+              : result.errorMessage ?? 'Sync failed.',
+          style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
+        ),
+        backgroundColor: result.success ? VsColors.emerald : VsColors.rose,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   Future<void> _fetchLocation() async {
     try {
       final ok = await Geolocator.isLocationServiceEnabled();
-      if (!ok) { if (mounted) setState(() => _locationLabel = 'Enable GPS'); return; }
+      if (!ok) {
+        if (mounted) setState(() => _locationLabel = 'Enable location services');
+        return;
+      }
       var perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied) perm = await Geolocator.requestPermission();
-      if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) {
+      if (perm == LocationPermission.denied)
+        perm = await Geolocator.requestPermission();
+      if (perm == LocationPermission.denied ||
+          perm == LocationPermission.deniedForever) {
         if (mounted) setState(() => _locationLabel = 'Location denied');
         return;
       }
-      if (mounted) setState(() => _locationLabel = 'Detecting...');
-      final pos = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium),
-      ).timeout(const Duration(seconds: 10));
-      if (mounted) setState(() => _locationLabel =
-          '${pos.latitude.toStringAsFixed(3)}, ${pos.longitude.toStringAsFixed(3)}');
+      if (mounted) setState(() => _locationLabel = 'Checking location...');
+      final pos = await Geolocator.getLastKnownPosition();
+      if (pos == null) {
+        if (mounted) setState(() => _locationLabel = 'Location unavailable');
+        return;
+      }
+      if (mounted)
+        setState(
+          () => _locationLabel =
+              '${pos.latitude.toStringAsFixed(3)}, ${pos.longitude.toStringAsFixed(3)}',
+        );
       try {
-        final marks = await placemarkFromCoordinates(pos.latitude, pos.longitude)
-            .timeout(const Duration(seconds: 6));
+        final marks = await placemarkFromCoordinates(
+          pos.latitude,
+          pos.longitude,
+        ).timeout(const Duration(seconds: 6));
         if (marks.isNotEmpty && mounted) {
-          final parts = [marks.first.subLocality, marks.first.locality, marks.first.administrativeArea]
-              .where((s) => s != null && s!.isNotEmpty).toList();
-          if (parts.isNotEmpty) setState(() => _locationLabel = parts.join(', '));
+          final parts = [
+            marks.first.subLocality,
+            marks.first.locality,
+            marks.first.administrativeArea,
+          ].whereType<String>().where((s) => s.isNotEmpty).toList();
+          if (parts.isNotEmpty) {
+            setState(() => _locationLabel = parts.join(', '));
+          }
         }
       } catch (_) {}
-    } on TimeoutException {
-      if (mounted) setState(() => _locationLabel = 'GPS timeout');
     } catch (_) {
-      if (mounted) setState(() => _locationLabel = 'Tap to retry');
+      if (mounted) setState(() => _locationLabel = 'Location unavailable');
     }
   }
 
@@ -265,14 +363,33 @@ class _HomeScreenState extends State<HomeScreen>
 
   String get _initials => _chwName.trim().isEmpty
       ? 'VS'
-      : _chwName.trim().split(' ').map((w) => w.isEmpty ? '' : w[0]).take(2).join().toUpperCase();
+      : _chwName
+            .trim()
+            .split(' ')
+            .map((w) => w.isEmpty ? '' : w[0])
+            .take(2)
+            .join()
+            .toUpperCase();
 
   String _fmtTime(DateTime dt) =>
       '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 
   String _fmtDate(DateTime dt) {
-    const m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const d = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const m = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    const d = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return '${d[dt.weekday - 1]}, ${dt.day} ${m[dt.month - 1]}';
   }
 
@@ -280,9 +397,11 @@ class _HomeScreenState extends State<HomeScreen>
     try {
       final diff = DateTime.now().difference(DateTime.parse(iso));
       if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-      if (diff.inHours < 24)   return '${diff.inHours}h ago';
+      if (diff.inHours < 24) return '${diff.inHours}h ago';
       return '${diff.inDays}d ago';
-    } catch (_) { return 'Today'; }
+    } catch (_) {
+      return 'Today';
+    }
   }
 
   // -- Build -------------------------------------------------
@@ -326,27 +445,43 @@ class _HomeScreenState extends State<HomeScreen>
                   const SizedBox(height: 20),
                   _buildTipCard(),
                   const SizedBox(height: 20),
-                  _buildSectionHeader("Today's Screenings",
-                      TextButton(
-                        onPressed: () => Navigator.push(context,
-                            VsPageRoute(builder: (_) => const PatientsScreen())),
-                        child: Text('See all',
-                            style: GoogleFonts.inter(
-                                fontSize: 12, color: VsColors.brand,
-                                fontWeight: FontWeight.w600)),
-                      )),
+                  _buildSectionHeader(
+                    "Today's Screenings",
+                    TextButton(
+                      onPressed: () => Navigator.push(
+                        context,
+                        VsPageRoute(builder: (_) => const PatientsScreen()),
+                      ),
+                      child: Text(
+                        'See all',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: VsColors.brand,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 10),
                   _buildRecentList(),
                   const SizedBox(height: 20),
-                  _buildSectionHeader('Referral Follow-Ups',
-                      TextButton(
-                        onPressed: () => Navigator.push(context,
-                            VsPageRoute(builder: (_) => const PatientsScreen())),
-                        child: Text('View all',
-                            style: GoogleFonts.inter(
-                                fontSize: 12, color: VsColors.brand,
-                                fontWeight: FontWeight.w600)),
-                      )),
+                  _buildSectionHeader(
+                    'Referral Follow-Ups',
+                    TextButton(
+                      onPressed: () => Navigator.push(
+                        context,
+                        VsPageRoute(builder: (_) => const PatientsScreen()),
+                      ),
+                      child: Text(
+                        'View all',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: VsColors.brand,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 10),
                   _buildReferralList(),
                 ]),
@@ -386,14 +521,36 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
               ),
               // Decorative arcs
-              Positioned(top: -60, right: -60,
-                child: Container(width: 220, height: 220,
-                  decoration: BoxDecoration(shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.07), width: 1)))),
-              Positioned(top: -20, right: -20,
-                child: Container(width: 130, height: 130,
-                  decoration: BoxDecoration(shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.10), width: 1)))),
+              Positioned(
+                top: -60,
+                right: -60,
+                child: Container(
+                  width: 220,
+                  height: 220,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.07),
+                      width: 1,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: -20,
+                right: -20,
+                child: Container(
+                  width: 130,
+                  height: 130,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.10),
+                      width: 1,
+                    ),
+                  ),
+                ),
+              ),
 
               SafeArea(
                 bottom: false,
@@ -420,22 +577,26 @@ class _HomeScreenState extends State<HomeScreen>
                                   child: RichText(
                                     overflow: TextOverflow.ellipsis,
                                     maxLines: 1,
-                                    text: TextSpan(children: [
-                                      TextSpan(
-                                        text: 'Vision',
-                                        style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 14, fontWeight: FontWeight.w800,
-                                          color: Colors.white,
+                                    text: TextSpan(
+                                      children: [
+                                        TextSpan(
+                                          text: 'Vision',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w800,
+                                            color: Colors.white,
+                                          ),
                                         ),
-                                      ),
-                                      TextSpan(
-                                        text: 'Screen',
-                                        style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 14, fontWeight: FontWeight.w800,
-                                          color: Colors.black,
+                                        TextSpan(
+                                          text: 'Screen',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w800,
+                                            color: Colors.black,
+                                          ),
                                         ),
-                                      ),
-                                    ]),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ],
@@ -465,80 +626,129 @@ class _HomeScreenState extends State<HomeScreen>
                                 Row(
                                   children: [
                                     Flexible(
-                                      child: Text(_greeting,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: GoogleFonts.inter(
-                                              fontSize: 12,
-                                              color: Colors.white.withValues(alpha: 0.80),
-                                              fontWeight: FontWeight.w500)),
+                                      child: Text(
+                                        _greeting,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          color: Colors.white.withValues(
+                                            alpha: 0.80,
+                                          ),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
                                     ),
                                     const SizedBox(width: 8),
                                     _buildOnlinePill(),
                                   ],
                                 ),
                                 const SizedBox(height: 2),
-                                Text('$_firstName 👋',
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
-                                    style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w800,
-                                        color: Colors.white,
-                                        height: 1.1)),
+                                Text(
+                                  '$_firstName 👋',
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    height: 1.1,
+                                  ),
+                                ),
                                 const SizedBox(height: 8),
                                 // Location + time
-                                Row(children: [
-                                  Flexible(
-                                    child: GestureDetector(
-                                      onTap: _fetchLocation,
-                                      child: Row(children: [
-                                        Icon(Icons.location_on_rounded,
-                                            size: 12, color: Colors.white.withValues(alpha: 0.8)),
-                                        const SizedBox(width: 4),
-                                        Flexible(
-                                          child: Text(_locationLabel,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: GoogleFonts.inter(
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: GestureDetector(
+                                        onTap: _fetchLocation,
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.location_on_rounded,
+                                              size: 12,
+                                              color: Colors.white.withValues(
+                                                alpha: 0.8,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Flexible(
+                                              child: Text(
+                                                _locationLabel,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: GoogleFonts.inter(
                                                   fontSize: 11,
-                                                  color: Colors.white.withValues(alpha: 0.8),
-                                                  fontWeight: FontWeight.w500)),
+                                                  color: Colors.white
+                                                      .withValues(alpha: 0.8),
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ]),
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.15),
-                                      borderRadius: BorderRadius.circular(99),
-                                    ),
-                                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                                      Icon(Icons.access_time_rounded,
-                                          size: 10, color: Colors.white.withValues(alpha: 0.9)),
-                                      const SizedBox(width: 4),
-                                      Text(_fmtTime(_now),
-                                          style: GoogleFonts.inter(
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.15,
+                                        ),
+                                        borderRadius: BorderRadius.circular(99),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.access_time_rounded,
+                                            size: 10,
+                                            color: Colors.white.withValues(
+                                              alpha: 0.9,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            _fmtTime(_now),
+                                            style: GoogleFonts.inter(
                                               fontSize: 11,
                                               fontWeight: FontWeight.w700,
-                                              color: Colors.white)),
-                                    ]),
-                                  ),
-                                ]),
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                                 const SizedBox(height: 4),
-                                Row(children: [
-                                  Icon(Icons.calendar_today_rounded,
-                                      size: 11, color: Colors.white.withValues(alpha: 0.7)),
-                                  const SizedBox(width: 4),
-                                  Flexible(
-                                    child: Text(_fmtDate(_now),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.calendar_today_rounded,
+                                      size: 11,
+                                      color: Colors.white.withValues(
+                                        alpha: 0.7,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text(
+                                        _fmtDate(_now),
                                         overflow: TextOverflow.ellipsis,
                                         style: GoogleFonts.inter(
-                                            fontSize: 11,
-                                            color: Colors.white.withValues(alpha: 0.7),
-                                            fontWeight: FontWeight.w500)),
-                                  ),
-                                ]),
+                                          fontSize: 11,
+                                          color: Colors.white.withValues(
+                                            alpha: 0.7,
+                                          ),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ],
                             ),
                           ),
@@ -577,27 +787,34 @@ class _HomeScreenState extends State<HomeScreen>
               : Colors.white.withValues(alpha: 0.3),
         ),
       ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        AnimatedBuilder(
-          animation: _pulseAnim,
-          builder: (_, __) => Opacity(
-            opacity: _isOffline ? 1.0 : _pulseAnim.value,
-            child: Container(
-              width: 6, height: 6,
-              decoration: BoxDecoration(
-                color: _isOffline ? VsColors.rose : Colors.white,
-                shape: BoxShape.circle,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedBuilder(
+            animation: _pulseAnim,
+            builder: (_, __) => Opacity(
+              opacity: _isOffline ? 1.0 : _pulseAnim.value,
+              child: Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: _isOffline ? VsColors.rose : Colors.white,
+                  shape: BoxShape.circle,
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(width: 5),
-        Text(_isOffline ? 'Offline' : 'Online',
+          const SizedBox(width: 5),
+          Text(
+            _isOffline ? 'Offline' : 'Online',
             style: GoogleFonts.inter(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: _isOffline ? VsColors.rose : Colors.white)),
-      ]),
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: _isOffline ? VsColors.rose : Colors.white,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -612,14 +829,19 @@ class _HomeScreenState extends State<HomeScreen>
         ),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
-          width: 38, height: 38,
+          width: 38,
+          height: 38,
           decoration: BoxDecoration(
-            color: _unsyncedCount > 0
+            color: !_syncConfigured
+                ? VsColors.rose.withValues(alpha: 0.25)
+                : _unsyncedCount > 0
                 ? VsColors.amber.withValues(alpha: 0.25)
                 : Colors.white.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: _unsyncedCount > 0
+              color: !_syncConfigured
+                  ? VsColors.rose.withValues(alpha: 0.6)
+                  : _unsyncedCount > 0
                   ? VsColors.amber.withValues(alpha: 0.6)
                   : Colors.white.withValues(alpha: 0.25),
             ),
@@ -630,23 +852,30 @@ class _HomeScreenState extends State<HomeScreen>
               Icon(
                 _isSyncing
                     ? Icons.sync_rounded
+                    : !_syncConfigured
+                    ? Icons.cloud_off_rounded
                     : _unsyncedCount > 0
-                        ? Icons.cloud_upload_rounded
-                        : Icons.cloud_done_rounded,
-                color: _unsyncedCount > 0 ? VsColors.amber : Colors.white,
+                    ? Icons.cloud_upload_rounded
+                    : Icons.cloud_done_rounded,
+                color: !_syncConfigured
+                    ? VsColors.rose
+                    : _unsyncedCount > 0
+                    ? VsColors.amber
+                    : Colors.white,
                 size: 18,
               ),
               // Badge showing unsynced count
               if (_unsyncedCount > 0 && !_isSyncing)
                 Positioned(
-                  top: 2, right: 2,
+                  top: 2,
+                  right: 2,
                   child: Container(
-                    width: 8, height: 8,
+                    width: 8,
+                    height: 8,
                     decoration: BoxDecoration(
                       color: VsColors.amber,
                       shape: BoxShape.circle,
-                      border: Border.all(
-                          color: VsColors.brandDeep, width: 1),
+                      border: Border.all(color: VsColors.brandDeep, width: 1),
                     ),
                   ),
                 ),
@@ -660,76 +889,102 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildNotifBell() {
     return GestureDetector(
       onTap: () async {
-        await Navigator.push(context, PageRouteBuilder(
-          pageBuilder: (_, __, ___) => const NotificationsScreen(),
-          transitionsBuilder: (_, anim, __, child) => FadeTransition(
-            opacity: CurvedAnimation(parent: anim, curve: Curves.easeOut),
-            child: child,
+        await Navigator.push(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => const NotificationsScreen(),
+            transitionsBuilder: (_, anim, __, child) => FadeTransition(
+              opacity: CurvedAnimation(parent: anim, curve: Curves.easeOut),
+              child: child,
+            ),
+            transitionDuration: const Duration(milliseconds: 280),
           ),
-          transitionDuration: const Duration(milliseconds: 280),
-        ));
+        );
         if (mounted) setState(() => _notificationCount = 0);
       },
-      child: Stack(clipBehavior: Clip.none, children: [
-        Container(
-          width: 38, height: 38,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
-          ),
-          child: Icon(
-            _notificationCount > 0
-                ? Icons.notifications_active_rounded
-                : Icons.notifications_rounded,
-            color: Colors.white, size: 18),
-        ),
-        if (_notificationCount > 0)
-          Positioned(
-            top: -5, right: -5,
-            child: AnimatedBuilder(
-              animation: _pulseAnim,
-              builder: (_, child) => Transform.scale(
-                scale: 0.9 + _pulseAnim.value * 0.1, child: child),
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: VsColors.rose,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: VsColors.brandDeep, width: 1.5),
-                ),
-                child: Text('$_notificationCount',
-                    style: GoogleFonts.inter(
-                        fontSize: 8, fontWeight: FontWeight.w800,
-                        color: Colors.white)),
-              ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+            ),
+            child: Icon(
+              _notificationCount > 0
+                  ? Icons.notifications_active_rounded
+                  : Icons.notifications_rounded,
+              color: Colors.white,
+              size: 18,
             ),
           ),
-      ]),
+          if (_notificationCount > 0)
+            Positioned(
+              top: -5,
+              right: -5,
+              child: AnimatedBuilder(
+                animation: _pulseAnim,
+                builder: (_, child) => Transform.scale(
+                  scale: 0.9 + _pulseAnim.value * 0.1,
+                  child: child,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: VsColors.rose,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: VsColors.brandDeep, width: 1.5),
+                  ),
+                  child: Text(
+                    '$_notificationCount',
+                    style: GoogleFonts.inter(
+                      fontSize: 8,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
   Widget _buildAvatar() {
     return Container(
-      width: 38, height: 38,
+      width: 38,
+      height: 38,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         gradient: const LinearGradient(
           colors: [VsColors.brandLight, Colors.white],
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
         border: Border.all(color: Colors.white, width: 2),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(10),
         child: _chwPhoto.isNotEmpty && File(_chwPhoto).existsSync()
-            ? Image.file(File(_chwPhoto), width: 38, height: 38, fit: BoxFit.cover)
+            ? Image.file(
+                File(_chwPhoto),
+                width: 38,
+                height: 38,
+                fit: BoxFit.cover,
+              )
             : Center(
-                child: Text(_initials,
-                    style: GoogleFonts.plusJakartaSans(
-                        color: VsColors.brand,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 13)),
+                child: Text(
+                  _initials,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: VsColors.brand,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                  ),
+                ),
               ),
       ),
     );
@@ -737,7 +992,8 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildHeaderIllustration() {
     return SizedBox(
-      width: 72, height: 72,
+      width: 72,
+      height: 72,
       child: VsPulsingRings(
         color: Colors.white,
         size: 72,
@@ -808,7 +1064,8 @@ class _HomeScreenState extends State<HomeScreen>
         child: Column(
           children: [
             Container(
-              width: 28, height: 28,
+              width: 28,
+              height: 28,
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.25),
                 borderRadius: BorderRadius.circular(8),
@@ -816,17 +1073,26 @@ class _HomeScreenState extends State<HomeScreen>
               child: Icon(icon, size: 14, color: Colors.white),
             ),
             const SizedBox(height: 6),
-            Text('$value',
-                style: GoogleFonts.plusJakartaSans(
-                    fontSize: 18, fontWeight: FontWeight.w800,
-                    color: Colors.white, height: 1.0)),
+            Text(
+              '$value',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                height: 1.0,
+              ),
+            ),
             const SizedBox(height: 2),
-            Text(label,
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-                style: GoogleFonts.inter(
-                    fontSize: 9, color: Colors.white.withValues(alpha: 0.8),
-                    fontWeight: FontWeight.w500)),
+            Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              style: GoogleFonts.inter(
+                fontSize: 9,
+                color: Colors.white.withValues(alpha: 0.8),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
       ),
@@ -842,46 +1108,80 @@ class _HomeScreenState extends State<HomeScreen>
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: VsColors.amber.withValues(alpha: 0.35)),
       ),
-      child: Row(children: [
-        Container(
-          width: 32, height: 32,
-          decoration: BoxDecoration(
-            color: VsColors.amber.withValues(alpha: 0.15),
-            shape: BoxShape.circle,
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: VsColors.amber.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.wifi_off_rounded,
+              size: 16,
+              color: VsColors.amber,
+            ),
           ),
-          child: const Icon(Icons.wifi_off_rounded, size: 16, color: VsColors.amber),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('You are offline',
-                style: GoogleFonts.inter(
-                    fontSize: 12, fontWeight: FontWeight.w700,
-                    color: const Color(0xFF92400E))),
-            Text('Data saved locally. Sync resumes when connected.',
-                style: GoogleFonts.inter(
-                    fontSize: 10, color: const Color(0xFF92400E),
-                    fontWeight: FontWeight.w400)),
-          ]),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: VsColors.amber.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(99),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'You are offline',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF92400E),
+                  ),
+                ),
+                Text(
+                  'Data saved locally. Sync resumes when connected.',
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    color: const Color(0xFF92400E),
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
           ),
-          child: Text('SQLite',
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: VsColors.amber.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(99),
+            ),
+            child: Text(
+              'SQLite',
               style: GoogleFonts.inter(
-                  fontSize: 9, fontWeight: FontWeight.w700,
-                  color: const Color(0xFF92400E))),
-        ),
-      ]),
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF92400E),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildSyncBanner() {
+    final canSync = _syncConfigured && !_isSyncing;
+    final statusText = _isSyncing
+        ? 'Syncing records...'
+        : !_syncConfigured
+        ? 'Cloud sync is not enabled in this build. Records stay on this device.'
+        : _lastSyncError.isNotEmpty
+        ? 'Last sync failed. Tap to retry.'
+        : '$_unsyncedCount record${_unsyncedCount == 1 ? '' : 's'} pending sync';
+    final pillColor = _syncConfigured ? VsColors.sky : VsColors.skyBg;
+    final pillTextColor = _syncConfigured ? Colors.white : const Color(0xFF0369A1);
+    final pillText = _syncConfigured ? 'Sync Now' : 'Local only';
+
     return GestureDetector(
-      onTap: _doSync,
+      onTap: canSync ? _doSync : null,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
@@ -889,51 +1189,69 @@ class _HomeScreenState extends State<HomeScreen>
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: VsColors.sky.withValues(alpha: 0.35)),
         ),
-        child: Row(children: [
-          AnimatedBuilder(
-            animation: _syncCtrl,
-            builder: (_, child) => Transform.rotate(
-              angle: _isSyncing ? _syncCtrl.value * 2 * pi : 0,
-              child: child,
-            ),
-            child: Container(
-              width: 32, height: 32,
-              decoration: BoxDecoration(
-                color: VsColors.sky.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
+        child: Row(
+          children: [
+            AnimatedBuilder(
+              animation: _syncCtrl,
+              builder: (_, child) => Transform.rotate(
+                angle: _isSyncing ? _syncCtrl.value * 2 * pi : 0,
+                child: child,
               ),
-              child: const Icon(Icons.sync_rounded, size: 16, color: VsColors.sky),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              _isSyncing
-                  ? 'Syncing records...'
-                  : '$_unsyncedCount record${_unsyncedCount == 1 ? '' : 's'} pending sync',
-              style: GoogleFonts.inter(
-                  fontSize: 12, fontWeight: FontWeight.w600,
-                  color: const Color(0xFF0369A1))),
-          ),
-          if (!_isSyncing)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: VsColors.sky,
-                borderRadius: BorderRadius.circular(99),
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: VsColors.sky.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.sync_rounded,
+                  size: 16,
+                  color: VsColors.sky,
+                ),
               ),
-              child: Text('Sync Now',
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                statusText,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF0369A1),
+                ),
+              ),
+            ),
+            if (!_isSyncing)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: pillColor,
+                  borderRadius: BorderRadius.circular(99),
+                ),
+                child: Text(
+                  pillText,
                   style: GoogleFonts.inter(
-                      fontSize: 10, fontWeight: FontWeight.w700,
-                      color: Colors.white)),
-            )
-          else
-            const SizedBox(
-              width: 16, height: 16,
-              child: CircularProgressIndicator(
-                  strokeWidth: 2, color: VsColors.sky),
-            ),
-        ]),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: pillTextColor,
+                  ),
+                ),
+              )
+            else
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: VsColors.sky,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -948,8 +1266,13 @@ class _HomeScreenState extends State<HomeScreen>
       tween: Tween(begin: 0.0, end: 1.0),
       duration: const Duration(milliseconds: 600),
       curve: Curves.easeOutCubic,
-      builder: (_, t, child) => Opacity(opacity: t,
-          child: Transform.translate(offset: Offset(0, 20 * (1 - t)), child: child)),
+      builder: (_, t, child) => Opacity(
+        opacity: t,
+        child: Transform.translate(
+          offset: Offset(0, 20 * (1 - t)),
+          child: child,
+        ),
+      ),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
@@ -958,78 +1281,108 @@ class _HomeScreenState extends State<HomeScreen>
           border: Border.all(color: VsColors.border),
           boxShadow: VsShadows.card,
         ),
-        child: Row(children: [
-          // Circular progress — smaller
-          SizedBox(
-            width: 44, height: 44,
-            child: Stack(fit: StackFit.expand, children: [
-              TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.0,
-                    end: _totalScreened > 0 ? passed / _totalScreened : 0.0),
-                duration: const Duration(milliseconds: 1200),
-                curve: Curves.easeOutCubic,
-                builder: (_, v, __) => CircularProgressIndicator(
-                  value: v,
-                  strokeWidth: 4,
-                  backgroundColor: VsColors.slate200,
-                  valueColor: const AlwaysStoppedAnimation(VsColors.emerald),
-                ),
+        child: Row(
+          children: [
+            // Circular progress — smaller
+            SizedBox(
+              width: 44,
+              height: 44,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(
+                      begin: 0.0,
+                      end: _totalScreened > 0 ? passed / _totalScreened : 0.0,
+                    ),
+                    duration: const Duration(milliseconds: 1200),
+                    curve: Curves.easeOutCubic,
+                    builder: (_, v, __) => CircularProgressIndicator(
+                      value: v,
+                      strokeWidth: 4,
+                      backgroundColor: VsColors.slate200,
+                      valueColor: const AlwaysStoppedAnimation(
+                        VsColors.emerald,
+                      ),
+                    ),
+                  ),
+                  Center(
+                    child: Text(
+                      _totalScreened == 0 ? '—' : '$passRate%',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: VsColors.slate900,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              Center(
-                child: Text(
-                  _totalScreened == 0 ? '—' : '$passRate%',
-                  style: GoogleFonts.plusJakartaSans(
-                      fontSize: 10, fontWeight: FontWeight.w800,
-                      color: VsColors.slate900),
-                ),
-              ),
-            ]),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Today\'s Impact',
-                  style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12, fontWeight: FontWeight.w700,
-                      color: VsColors.slate900)),
-              const SizedBox(height: 1),
-              // Stats on ONE line — use FittedBox to shrink if needed
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  _totalScreened == 0
-                      ? 'No screenings yet — start your first test!'
-                      : '$passed passed · $_totalReferred referred · $_totalScreened total',
-                  maxLines: 1,
-                  style: GoogleFonts.inter(
-                      fontSize: 11, color: VsColors.slate500,
-                      fontWeight: FontWeight.w400),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Row(children: [
-                Icon(Icons.location_on_rounded,
-                    size: 10, color: VsColors.slate400),
-                const SizedBox(width: 3),
-                Flexible(
-                  child: Text(_locationLabel,
-                      overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Today\'s Impact',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: VsColors.slate900,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  // Stats on ONE line — use FittedBox to shrink if needed
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      _totalScreened == 0
+                          ? 'No screenings yet — start your first test!'
+                          : '$passed passed · $_totalReferred referred · $_totalScreened total',
+                      maxLines: 1,
                       style: GoogleFonts.inter(
-                          fontSize: 10, color: VsColors.slate400,
-                          fontWeight: FontWeight.w500)),
-                ),
-              ]),
-            ]),
-          ),
-          const SizedBox(width: 8),
-          // Sight mark — smaller
-          VsPulsingRings(
-            color: VsColors.brand,
-            size: 48,
-            child: VsLogoAnimated(size: 24),
-          ),
-        ]),
+                        fontSize: 11,
+                        color: VsColors.slate500,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on_rounded,
+                        size: 10,
+                        color: VsColors.slate400,
+                      ),
+                      const SizedBox(width: 3),
+                      Flexible(
+                        child: Text(
+                          _locationLabel,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            color: VsColors.slate400,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Sight mark — smaller
+            VsPulsingRings(
+              color: VsColors.brand,
+              size: 48,
+              child: VsLogoAnimated(size: 24),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1040,12 +1393,16 @@ class _HomeScreenState extends State<HomeScreen>
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Flexible(
-          child: Text(title,
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-              style: GoogleFonts.plusJakartaSans(
-                  fontSize: 16, fontWeight: FontWeight.w700,
-                  color: VsColors.slate900)),
+          child: Text(
+            title,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: VsColors.slate900,
+            ),
+          ),
         ),
         if (trailing != null) trailing,
       ],
@@ -1063,10 +1420,12 @@ class _HomeScreenState extends State<HomeScreen>
         color: VsColors.brand,
         gradientColors: const [Color(0xFF0D9488), Color(0xFF0F766E)],
         illustration: const _EyeScanIllustration(),
-        onTap: () => Navigator.push(context,
-            VsPageRoute(builder: (_) =>
-                const NewScreeningScreen(startWithNewPatient: true)))
-            .then((_) => _loadDbStats()),
+        onTap: () => Navigator.push(
+          context,
+          VsPageRoute(
+            builder: (_) => const NewScreeningScreen(startWithNewPatient: true),
+          ),
+        ).then((_) => _loadDbStats()),
       ),
       _ActionData(
         icon: Icons.groups_rounded,
@@ -1076,9 +1435,10 @@ class _HomeScreenState extends State<HomeScreen>
         color: VsColors.sky,
         gradientColors: const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
         illustration: const _GroupIllustration(),
-        onTap: () => Navigator.push(context,
-            VsPageRoute(builder: (_) => const BulkModeScreen()))
-            .then((_) => _loadDbStats()),
+        onTap: () => Navigator.push(
+          context,
+          VsPageRoute(builder: (_) => const BulkModeScreen()),
+        ).then((_) => _loadDbStats()),
       ),
       _ActionData(
         icon: Icons.school_rounded,
@@ -1088,8 +1448,10 @@ class _HomeScreenState extends State<HomeScreen>
         color: VsColors.amber,
         gradientColors: const [Color(0xFFF59E0B), Color(0xFFD97706)],
         illustration: const _BookIllustration(),
-        onTap: () => Navigator.push(context,
-            VsPageRoute(builder: (_) => const TrainingScreen())),
+        onTap: () => Navigator.push(
+          context,
+          VsPageRoute(builder: (_) => const TrainingScreen()),
+        ),
       ),
       _ActionData(
         icon: Icons.bar_chart_rounded,
@@ -1099,8 +1461,10 @@ class _HomeScreenState extends State<HomeScreen>
         color: VsColors.violet,
         gradientColors: const [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
         illustration: const _ChartIllustration(),
-        onTap: () => Navigator.push(context,
-            VsPageRoute(builder: (_) => const AnalyticsScreen())),
+        onTap: () => Navigator.push(
+          context,
+          VsPageRoute(builder: (_) => const AnalyticsScreen()),
+        ),
       ),
     ];
 
@@ -1152,8 +1516,9 @@ class _HomeScreenState extends State<HomeScreen>
         opacity: anim,
         child: SlideTransition(
           position: Tween<Offset>(
-              begin: const Offset(0.05, 0), end: Offset.zero)
-              .animate(CurvedAnimation(parent: anim, curve: Curves.easeOut)),
+            begin: const Offset(0.05, 0),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOut)),
           child: child,
         ),
       ),
@@ -1165,46 +1530,63 @@ class _HomeScreenState extends State<HomeScreen>
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: tip.color.withValues(alpha: 0.2)),
         ),
-        child: Row(children: [
-          Container(
-            width: 40, height: 40,
-            decoration: BoxDecoration(
-              color: tip.color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(tip.icon, color: tip.color, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Clinical Tip',
-                  style: GoogleFonts.inter(
-                      fontSize: 10, fontWeight: FontWeight.w700,
-                      color: tip.color, letterSpacing: 0.3)),
-              const SizedBox(height: 3),
-              Text(tip.text,
-                  style: GoogleFonts.inter(
-                      fontSize: 12, color: VsColors.slate700,
-                      fontWeight: FontWeight.w400, height: 1.4)),
-            ]),
-          ),
-          const SizedBox(width: 8),
-          // Dot indicators
-          Column(
-            children: List.generate(_tips.length, (i) => AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              margin: const EdgeInsets.symmetric(vertical: 2),
-              width: 4,
-              height: i == _tipIndex ? 14 : 4,
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                color: i == _tipIndex
-                    ? tip.color
-                    : VsColors.slate300,
-                borderRadius: BorderRadius.circular(99),
+                color: tip.color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
               ),
-            )),
-          ),
-        ]),
+              child: Icon(tip.icon, color: tip.color, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Clinical Tip',
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: tip.color,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    tip.text,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: VsColors.slate700,
+                      fontWeight: FontWeight.w400,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Dot indicators
+            Column(
+              children: List.generate(
+                _tips.length,
+                (i) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  margin: const EdgeInsets.symmetric(vertical: 2),
+                  width: 4,
+                  height: i == _tipIndex ? 14 : 4,
+                  decoration: BoxDecoration(
+                    color: i == _tipIndex ? tip.color : VsColors.slate300,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1229,10 +1611,14 @@ class _HomeScreenState extends State<HomeScreen>
           builder: (_, t, child) => Opacity(
             opacity: t,
             child: Transform.translate(
-                offset: Offset(0, 20 * (1 - t)), child: child),
+              offset: Offset(0, 20 * (1 - t)),
+              child: child,
+            ),
           ),
           child: Padding(
-            padding: EdgeInsets.only(bottom: i < _recentScreenings.length - 1 ? 10 : 0),
+            padding: EdgeInsets.only(
+              bottom: i < _recentScreenings.length - 1 ? 10 : 0,
+            ),
             child: _buildPatientCard(r),
           ),
         );
@@ -1241,16 +1627,24 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildPatientCard(Map<String, dynamic> r) {
-    final name     = (r['name'] as String?) ?? 'Unknown';
-    final age      = (r['age'] as int?) ?? 0;
-    final gender   = (r['gender'] as String?) ?? '';
-    final outcome  = (r['outcome'] as String?) ?? 'pending';
-    final od       = (r['od_snellen'] as String?) ?? '�';
-    final os       = (r['os_snellen'] as String?) ?? '�';
-    final pid      = (r['patient_id'] as String?) ?? '';
-    final photo    = (r['photo_path'] as String?) ?? '';
-    final initials = name.split(' ').map((w) => w.isEmpty ? '' : w[0]).take(2).join();
-    final timeAgo  = _timeAgo((r['screening_date'] as String?) ?? '');
+    final name = (r['name'] as String?) ?? 'Unknown';
+    final age = (r['age'] as int?) ?? 0;
+    final gender = (r['gender'] as String?) ?? '';
+    final outcome = (r['outcome'] as String?) ?? 'pending';
+    final od = (r['od_snellen'] as String?)?.trim().isNotEmpty == true
+        ? r['od_snellen'] as String
+        : 'Not tested';
+    final os = (r['os_snellen'] as String?)?.trim().isNotEmpty == true
+        ? r['os_snellen'] as String
+        : 'Not tested';
+    final pid = (r['patient_id'] as String?) ?? '';
+    final photo = (r['photo_path'] as String?) ?? '';
+    final initials = name
+        .split(' ')
+        .map((w) => w.isEmpty ? '' : w[0])
+        .take(2)
+        .join();
+    final timeAgo = _timeAgo((r['screening_date'] as String?) ?? '');
 
     final Color accent;
     final Color badgeBg;
@@ -1260,18 +1654,24 @@ class _HomeScreenState extends State<HomeScreen>
 
     switch (outcome) {
       case 'pass':
-        accent = VsColors.emerald; badgeBg = VsColors.emeraldBg;
-        badgeText = const Color(0xFF065F46); badgeIcon = Icons.check_circle_rounded;
+        accent = VsColors.emerald;
+        badgeBg = VsColors.emeraldBg;
+        badgeText = const Color(0xFF065F46);
+        badgeIcon = Icons.check_circle_rounded;
         badgeLabel = 'Pass';
         break;
       case 'refer':
-        accent = VsColors.rose; badgeBg = VsColors.roseBg;
-        badgeText = const Color(0xFF9F1239); badgeIcon = Icons.warning_rounded;
+        accent = VsColors.rose;
+        badgeBg = VsColors.roseBg;
+        badgeText = const Color(0xFF9F1239);
+        badgeIcon = Icons.warning_rounded;
         badgeLabel = 'Refer';
         break;
       default:
-        accent = VsColors.amber; badgeBg = VsColors.amberBg;
-        badgeText = const Color(0xFF92400E); badgeIcon = Icons.schedule_rounded;
+        accent = VsColors.amber;
+        badgeBg = VsColors.amberBg;
+        badgeText = const Color(0xFF92400E);
+        badgeIcon = Icons.schedule_rounded;
         badgeLabel = 'Pending';
     }
 
@@ -1282,131 +1682,196 @@ class _HomeScreenState extends State<HomeScreen>
         border: Border.all(color: VsColors.border),
         boxShadow: VsShadows.card,
       ),
-      child: Column(children: [
-        Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            // Accent bar
-            Container(
-              width: 3, height: 64,
-              decoration: BoxDecoration(
-                color: accent, borderRadius: BorderRadius.circular(99)),
-            ),
-            const SizedBox(width: 12),
-            // Avatar
-            Container(
-              width: 48, height: 48,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(13),
-                boxShadow: [BoxShadow(
-                    color: accent.withValues(alpha: 0.3),
-                    blurRadius: 8, offset: const Offset(0, 3))],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(13),
-                child: photo.isNotEmpty && File(photo).existsSync()
-                    ? Image.file(File(photo), fit: BoxFit.cover)
-                    : Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [accent, accent.withValues(alpha: 0.6)],
-                            begin: Alignment.topLeft, end: Alignment.bottomRight,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Accent bar
+                Container(
+                  width: 3,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: accent,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Avatar
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(13),
+                    boxShadow: [
+                      BoxShadow(
+                        color: accent.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(13),
+                    child: photo.isNotEmpty && File(photo).existsSync()
+                        ? Image.file(File(photo), fit: BoxFit.cover)
+                        : Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [accent, accent.withValues(alpha: 0.6)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(13),
+                            ),
+                            child: Center(
+                              child: Text(
+                                initials,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
                           ),
-                          borderRadius: BorderRadius.circular(13),
-                        ),
-                        child: Center(
-                          child: Text(initials,
-                              style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 15, fontWeight: FontWeight.w800,
-                                  color: Colors.white)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: VsColors.slate900,
                         ),
                       ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            // Info
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(name,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(
-                        fontSize: 14, fontWeight: FontWeight.w700,
-                        color: VsColors.slate900)),
-                const SizedBox(height: 3),
-                Text('$gender · $age yrs',
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    style: GoogleFonts.inter(
-                        fontSize: 11, color: VsColors.slate500)),
-                const SizedBox(height: 6),
-                if (outcome != 'pending')
-                  Row(mainAxisSize: MainAxisSize.min, children: [
-                    _vaPill('OD', od, accent),
-                    const SizedBox(width: 4),
-                    _vaPill('OS', os, accent),
-                  ])
-                else
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: VsColors.amberBg,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text('Awaiting screening',
+                      const SizedBox(height: 3),
+                      Text(
+                        '$gender · $age yrs',
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                         style: GoogleFonts.inter(
-                            fontSize: 10, color: VsColors.amber,
-                            fontWeight: FontWeight.w600)),
+                          fontSize: 11,
+                          color: VsColors.slate500,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      if (outcome != 'pending')
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _vaPill('OD', od, accent),
+                            const SizedBox(width: 4),
+                            _vaPill('OS', os, accent),
+                          ],
+                        )
+                      else
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: VsColors.amberBg,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'Awaiting screening',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              color: VsColors.amber,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
-              ]),
+                ),
+                // Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: badgeBg,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(badgeIcon, size: 10, color: accent),
+                      const SizedBox(width: 3),
+                      Text(
+                        badgeLabel,
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: badgeText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            // Badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: badgeBg,
-                borderRadius: BorderRadius.circular(99),
-              ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(badgeIcon, size: 10, color: accent),
-                const SizedBox(width: 3),
-                Text(badgeLabel,
-                    style: GoogleFonts.inter(
-                        fontSize: 10, fontWeight: FontWeight.w700,
-                        color: badgeText)),
-              ]),
-            ),
-          ]),
-        ),
-        // Bottom strip
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color: accent.withValues(alpha: 0.04),
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(13),
-              bottomRight: Radius.circular(13),
-            ),
-            border: Border(top: BorderSide(color: accent.withValues(alpha: 0.1))),
           ),
-          child: Row(children: [
-            Icon(Icons.badge_outlined, size: 11, color: VsColors.slate400),
-            const SizedBox(width: 4),
-            Expanded(
-              child: Text(pid,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                      fontSize: 10, color: VsColors.slate400,
-                      fontWeight: FontWeight.w500)),
+          // Bottom strip
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.04),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(13),
+                bottomRight: Radius.circular(13),
+              ),
+              border: Border(
+                top: BorderSide(color: accent.withValues(alpha: 0.1)),
+              ),
             ),
-            Icon(Icons.access_time_rounded, size: 11, color: VsColors.slate400),
-            const SizedBox(width: 4),
-            Text(timeAgo,
-                style: GoogleFonts.inter(
-                    fontSize: 10, color: VsColors.slate400,
-                    fontWeight: FontWeight.w500)),
-          ]),
-        ),
-      ]),
+            child: Row(
+              children: [
+                Icon(Icons.badge_outlined, size: 11, color: VsColors.slate400),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    pid,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      color: VsColors.slate400,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.access_time_rounded,
+                  size: 11,
+                  color: VsColors.slate400,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  timeAgo,
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    color: VsColors.slate400,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1418,9 +1883,14 @@ class _HomeScreenState extends State<HomeScreen>
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: accent.withValues(alpha: 0.2)),
       ),
-      child: Text('$eye $value',
-          style: GoogleFonts.inter(
-              fontSize: 10, fontWeight: FontWeight.w600, color: accent)),
+      child: Text(
+        '$eye $value',
+        style: GoogleFonts.inter(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: accent,
+        ),
+      ),
     );
   }
 
@@ -1437,15 +1907,20 @@ class _HomeScreenState extends State<HomeScreen>
       children: _referredPatients.take(3).toList().asMap().entries.map((e) {
         final i = e.key;
         final r = e.value;
-        final name     = (r['name'] as String?) ?? 'Unknown';
-        final age      = (r['age'] as int?) ?? 0;
-        final gender   = (r['gender'] as String?) ?? '';
+        final name = (r['name'] as String?) ?? 'Unknown';
+        final age = (r['age'] as int?) ?? 0;
+        final gender = (r['gender'] as String?) ?? '';
         final facility = ((r['referral_facility'] as String?) ?? '').isEmpty
-            ? 'No facility set' : r['referral_facility'] as String;
-        final status   = (r['referral_status'] as String?) ?? 'pending';
-        final photo    = (r['photo_path'] as String?) ?? '';
-        final initials = name.split(' ').map((w) => w.isEmpty ? '' : w[0]).take(2).join();
-        final appt     = r['appointment_date'] as String?;
+            ? 'No facility set'
+            : r['referral_facility'] as String;
+        final status = (r['referral_status'] as String?) ?? 'pending';
+        final photo = (r['photo_path'] as String?) ?? '';
+        final initials = name
+            .split(' ')
+            .map((w) => w.isEmpty ? '' : w[0])
+            .take(2)
+            .join();
+        final appt = r['appointment_date'] as String?;
         String dueLabel = 'No date set';
         if (appt != null && appt.isNotEmpty) {
           try {
@@ -1456,10 +1931,17 @@ class _HomeScreenState extends State<HomeScreen>
 
         final Color statusColor;
         switch (status) {
-          case 'overdue':   statusColor = VsColors.rose;    break;
-          case 'completed': statusColor = VsColors.emerald; break;
-          case 'notified':  statusColor = VsColors.sky;     break;
-          default:          statusColor = VsColors.amber;
+          case 'overdue':
+            statusColor = VsColors.rose;
+            break;
+          case 'completed':
+            statusColor = VsColors.emerald;
+            break;
+          case 'notified':
+            statusColor = VsColors.sky;
+            break;
+          default:
+            statusColor = VsColors.amber;
         }
 
         return TweenAnimationBuilder<double>(
@@ -1469,7 +1951,9 @@ class _HomeScreenState extends State<HomeScreen>
           builder: (_, t, child) => Opacity(
             opacity: t,
             child: Transform.translate(
-                offset: Offset(0, 16 * (1 - t)), child: child),
+              offset: Offset(0, 16 * (1 - t)),
+              child: child,
+            ),
           ),
           child: Padding(
             padding: EdgeInsets.only(bottom: i < 2 ? 10 : 0),
@@ -1481,78 +1965,118 @@ class _HomeScreenState extends State<HomeScreen>
                 border: Border.all(color: VsColors.border),
                 boxShadow: VsShadows.card,
               ),
-              child: Row(children: [
-                // Avatar
-                Container(
-                  width: 44, height: 44,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: statusColor.withValues(alpha: 0.15),
-                  ),
-                  child: photo.isNotEmpty && File(photo).existsSync()
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.file(File(photo), fit: BoxFit.cover))
-                      : Center(
-                          child: Text(initials,
-                              style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 14, fontWeight: FontWeight.w800,
-                                  color: statusColor)),
-                        ),
-                ),
-                const SizedBox(width: 12),
-                // Info
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(name,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                            fontSize: 13, fontWeight: FontWeight.w700,
-                            color: VsColors.slate900)),
-                    const SizedBox(height: 2),
-                    Text('$gender · $age yrs',
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                        style: GoogleFonts.inter(
-                            fontSize: 11, color: VsColors.slate500)),
-                    const SizedBox(height: 4),
-                    Row(children: [
-                      Icon(Icons.local_hospital_outlined,
-                          size: 11, color: VsColors.slate400),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(facility,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(
-                                fontSize: 11, color: VsColors.slate500,
-                                fontWeight: FontWeight.w500)),
-                      ),
-                    ]),
-                  ]),
-                ),
-                const SizedBox(width: 8),
-                // Status + due
-                Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              child: Row(
+                children: [
+                  // Avatar
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(99),
+                      borderRadius: BorderRadius.circular(12),
+                      color: statusColor.withValues(alpha: 0.15),
                     ),
-                    child: Text(
-                      status[0].toUpperCase() + status.substring(1),
-                      style: GoogleFonts.inter(
-                          fontSize: 10, fontWeight: FontWeight.w700,
-                          color: statusColor),
+                    child: photo.isNotEmpty && File(photo).existsSync()
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.file(File(photo), fit: BoxFit.cover),
+                          )
+                        : Center(
+                            child: Text(
+                              initials,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: statusColor,
+                              ),
+                            ),
+                          ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Info
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: VsColors.slate900,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '$gender · $age yrs',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: VsColors.slate500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.local_hospital_outlined,
+                              size: 11,
+                              color: VsColors.slate400,
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                facility,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  color: VsColors.slate500,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(dueLabel,
-                      style: GoogleFonts.inter(
-                          fontSize: 10, color: VsColors.slate400,
-                          fontWeight: FontWeight.w500)),
-                ]),
-              ]),
+                  const SizedBox(width: 8),
+                  // Status + due
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: statusColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                        child: Text(
+                          status[0].toUpperCase() + status.substring(1),
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: statusColor,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        dueLabel,
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          color: VsColors.slate400,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -1573,26 +2097,38 @@ class _HomeScreenState extends State<HomeScreen>
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: VsColors.border),
       ),
-      child: Column(children: [
-        Container(
-          width: 52, height: 52,
-          decoration: BoxDecoration(
-            color: VsColors.brandFaint,
-            borderRadius: BorderRadius.circular(14),
+      child: Column(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: VsColors.brandFaint,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: VsColors.brand, size: 26),
           ),
-          child: Icon(icon, color: VsColors.brand, size: 26),
-        ),
-        const SizedBox(height: 12),
-        Text(title,
+          const SizedBox(height: 12),
+          Text(
+            title,
             style: GoogleFonts.plusJakartaSans(
-                fontSize: 14, fontWeight: FontWeight.w700,
-                color: VsColors.slate700)),
-        const SizedBox(height: 4),
-        Text(subtitle,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: VsColors.slate700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
-                fontSize: 12, color: VsColors.slate400, height: 1.5)),
-      ]),
+              fontSize: 12,
+              color: VsColors.slate400,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1629,7 +2165,7 @@ class _ActionData {
 }
 
 // -------------------------------------------------------------
-// Pressable Action Card � clinical gradient design
+// Pressable Action Card, clinical gradient design
 // -------------------------------------------------------------
 class _PressableActionCard extends StatefulWidget {
   const _PressableActionCard({required this.data});
@@ -1643,17 +2179,18 @@ class _PressableActionCardState extends State<_PressableActionCard>
     with SingleTickerProviderStateMixin {
   late final AnimationController _pressCtrl;
   late final Animation<double> _pressScale;
-  late final Animation<double> _pressGlow;
 
   @override
   void initState() {
     super.initState();
     _pressCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 130));
-    _pressScale = Tween<double>(begin: 1.0, end: 0.94)
-        .animate(CurvedAnimation(parent: _pressCtrl, curve: Curves.easeInOut));
-    _pressGlow = Tween<double>(begin: 0.0, end: 1.0)
-        .animate(CurvedAnimation(parent: _pressCtrl, curve: Curves.easeIn));
+      vsync: this,
+      duration: const Duration(milliseconds: 130),
+    );
+    _pressScale = Tween<double>(
+      begin: 1.0,
+      end: 0.94,
+    ).animate(CurvedAnimation(parent: _pressCtrl, curve: Curves.easeInOut));
   }
 
   @override
@@ -1666,7 +2203,10 @@ class _PressableActionCardState extends State<_PressableActionCard>
   Widget build(BuildContext context) {
     final a = widget.data;
     return GestureDetector(
-      onTapDown: (_) { VsHaptics.medium(); _pressCtrl.forward(); },
+      onTapDown: (_) {
+        VsHaptics.medium();
+        _pressCtrl.forward();
+      },
       onTapUp: (_) {
         _pressCtrl.reverse();
         a.onTap();
@@ -1674,10 +2214,8 @@ class _PressableActionCardState extends State<_PressableActionCard>
       onTapCancel: () => _pressCtrl.reverse(),
       child: AnimatedBuilder(
         animation: _pressCtrl,
-        builder: (_, child) => Transform.scale(
-          scale: _pressScale.value,
-          child: child,
-        ),
+        builder: (_, child) =>
+            Transform.scale(scale: _pressScale.value, child: child),
         child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -1706,31 +2244,35 @@ class _PressableActionCardState extends State<_PressableActionCard>
             child: Stack(
               children: [
                 // -- Dot pattern overlay --
-                Positioned.fill(
-                  child: CustomPaint(painter: _CardDotPainter()),
-                ),
+                Positioned.fill(child: CustomPaint(painter: _CardDotPainter())),
                 // -- Decorative arc top-right --
                 Positioned(
-                  top: -24, right: -24,
+                  top: -24,
+                  right: -24,
                   child: Container(
-                    width: 90, height: 90,
+                    width: 90,
+                    height: 90,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.10),
-                          width: 1.5),
+                        color: Colors.white.withValues(alpha: 0.10),
+                        width: 1.5,
+                      ),
                     ),
                   ),
                 ),
                 Positioned(
-                  top: -8, right: -8,
+                  top: -8,
+                  right: -8,
                   child: Container(
-                    width: 54, height: 54,
+                    width: 54,
+                    height: 54,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          width: 1),
+                        color: Colors.white.withValues(alpha: 0.15),
+                        width: 1,
+                      ),
                     ),
                   ),
                 ),
@@ -1748,13 +2290,15 @@ class _PressableActionCardState extends State<_PressableActionCard>
                         children: [
                           // Icon with glow container
                           Container(
-                            width: 34, height: 34,
+                            width: 34,
+                            height: 34,
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.22),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.35),
-                                  width: 1.5),
+                                color: Colors.white.withValues(alpha: 0.35),
+                                width: 1.5,
+                              ),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withValues(alpha: 0.18),
@@ -1768,28 +2312,31 @@ class _PressableActionCardState extends State<_PressableActionCard>
                           // Tag pill
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 7, vertical: 4),
+                              horizontal: 7,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.22),
                               borderRadius: BorderRadius.circular(99),
                               border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.4)),
+                                color: Colors.white.withValues(alpha: 0.4),
+                              ),
                             ),
-                            child: Text(a.tag,
-                                style: GoogleFonts.inter(
-                                    fontSize: 7.5,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    letterSpacing: 0.7)),
+                            child: Text(
+                              a.tag,
+                              style: GoogleFonts.inter(
+                                fontSize: 7.5,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: 0.7,
+                              ),
+                            ),
                           ),
                         ],
                       ),
 
                       // Middle: illustration
-                      SizedBox(
-                        height: 36,
-                        child: a.illustration,
-                      ),
+                      SizedBox(height: 36, child: a.illustration),
 
                       // Bottom: title + subtitle + arrow
                       Row(
@@ -1799,36 +2346,46 @@ class _PressableActionCardState extends State<_PressableActionCard>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(a.title,
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
-                                    style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w800,
-                                        color: Colors.white,
-                                        height: 1.1)),
+                                Text(
+                                  a.title,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    height: 1.1,
+                                  ),
+                                ),
                                 const SizedBox(height: 2),
-                                Text(a.subtitle,
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
-                                    style: GoogleFonts.inter(
-                                        fontSize: 10,
-                                        color: Colors.white.withValues(alpha: 0.75),
-                                        fontWeight: FontWeight.w400)),
+                                Text(
+                                  a.subtitle,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 10,
+                                    color: Colors.white.withValues(alpha: 0.75),
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
                           Container(
-                            width: 26, height: 26,
+                            width: 26,
+                            height: 26,
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.22),
                               shape: BoxShape.circle,
                               border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.35)),
+                                color: Colors.white.withValues(alpha: 0.35),
+                              ),
                             ),
                             child: const Icon(
-                                Icons.arrow_forward_rounded,
-                                size: 13, color: Colors.white),
+                              Icons.arrow_forward_rounded,
+                              size: 13,
+                              color: Colors.white,
+                            ),
                           ),
                         ],
                       ),
@@ -1858,6 +2415,7 @@ class _CardDotPainter extends CustomPainter {
       }
     }
   }
+
   @override
   bool shouldRepaint(_CardDotPainter old) => false;
 }
@@ -1878,6 +2436,7 @@ class _DotPainter extends CustomPainter {
       }
     }
   }
+
   @override
   bool shouldRepaint(_DotPainter old) => false;
 }
@@ -1890,8 +2449,10 @@ class _DotPainter extends CustomPainter {
 class _EyeScanIllustration extends StatelessWidget {
   const _EyeScanIllustration();
   @override
-  Widget build(BuildContext context) =>
-      CustomPaint(size: const Size(double.infinity, 44), painter: _EyeScanPainter());
+  Widget build(BuildContext context) => CustomPaint(
+    size: const Size(double.infinity, 44),
+    painter: _EyeScanPainter(),
+  );
 }
 
 class _EyeScanPainter extends CustomPainter {
@@ -1929,12 +2490,22 @@ class _EyeScanPainter extends CustomPainter {
     canvas.drawCircle(Offset(cx, cy), 9, stroke);
 
     // Pupil filled
-    canvas.drawCircle(Offset(cx, cy), 4,
-        Paint()..color = Colors.white.withValues(alpha: 0.85)..style = PaintingStyle.fill);
+    canvas.drawCircle(
+      Offset(cx, cy),
+      4,
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.85)
+        ..style = PaintingStyle.fill,
+    );
 
     // Highlight dot
-    canvas.drawCircle(Offset(cx + 3, cy - 3), 1.5,
-        Paint()..color = Colors.white..style = PaintingStyle.fill);
+    canvas.drawCircle(
+      Offset(cx + 3, cy - 3),
+      1.5,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.fill,
+    );
 
     // Scan line (horizontal dashed)
     for (double x = cx - 22; x < cx + 22; x += 5) {
@@ -1942,7 +2513,7 @@ class _EyeScanPainter extends CustomPainter {
     }
 
     // Corner brackets (top-left, top-right, bottom-left, bottom-right)
-    const bLen = 7.0, bOff = 4.0;
+    const bLen = 7.0;
     final bx = cx - 26.0, by = cy - 20.0;
     final bx2 = cx + 26.0, by2 = cy + 20.0;
     // TL
@@ -1967,8 +2538,10 @@ class _EyeScanPainter extends CustomPainter {
 class _GroupIllustration extends StatelessWidget {
   const _GroupIllustration();
   @override
-  Widget build(BuildContext context) =>
-      CustomPaint(size: const Size(double.infinity, 44), painter: _GroupPainter());
+  Widget build(BuildContext context) => CustomPaint(
+    size: const Size(double.infinity, 44),
+    painter: _GroupPainter(),
+  );
 }
 
 class _GroupPainter extends CustomPainter {
@@ -1997,11 +2570,20 @@ class _GroupPainter extends CustomPainter {
       // Body arc
       final bodyPath = Path();
       bodyPath.moveTo(cx - 9 * scale, baseY + 2 * scale);
-      bodyPath.quadraticBezierTo(cx, baseY - 4 * scale, cx + 9 * scale, baseY + 2 * scale);
+      bodyPath.quadraticBezierTo(
+        cx,
+        baseY - 4 * scale,
+        cx + 9 * scale,
+        baseY + 2 * scale,
+      );
       canvas.drawPath(bodyPath, stroke..strokeWidth = 1.5 * scale);
       // Shoulders fill
       canvas.drawOval(
-        Rect.fromCenter(center: Offset(cx, baseY), width: 16 * scale, height: 7 * scale),
+        Rect.fromCenter(
+          center: Offset(cx, baseY),
+          width: 16 * scale,
+          height: 7 * scale,
+        ),
         headFill,
       );
     }
@@ -2035,18 +2617,30 @@ class _GroupPainter extends CustomPainter {
       canvas.drawLine(
         Offset(clipX - 5, clipY - 4 + i * 5.0),
         Offset(clipX + 5, clipY - 4 + i * 5.0),
-        stroke..strokeWidth = 1.0..color = Colors.white.withValues(alpha: 0.6),
+        stroke
+          ..strokeWidth = 1.0
+          ..color = Colors.white.withValues(alpha: 0.6),
       );
     }
 
     // Check mark badge
-    canvas.drawCircle(Offset(w * 0.16, h * 0.28), 8,
-        Paint()..color = Colors.white.withValues(alpha: 0.25)..style = PaintingStyle.fill);
+    canvas.drawCircle(
+      Offset(w * 0.16, h * 0.28),
+      8,
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.25)
+        ..style = PaintingStyle.fill,
+    );
     final check = Path();
     check.moveTo(w * 0.16 - 4, h * 0.28);
     check.lineTo(w * 0.16 - 1, h * 0.28 + 3);
     check.lineTo(w * 0.16 + 4, h * 0.28 - 3);
-    canvas.drawPath(check, stroke..strokeWidth = 1.8..color = Colors.white.withValues(alpha: 0.9));
+    canvas.drawPath(
+      check,
+      stroke
+        ..strokeWidth = 1.8
+        ..color = Colors.white.withValues(alpha: 0.9),
+    );
   }
 
   @override
@@ -2057,8 +2651,10 @@ class _GroupPainter extends CustomPainter {
 class _BookIllustration extends StatelessWidget {
   const _BookIllustration();
   @override
-  Widget build(BuildContext context) =>
-      CustomPaint(size: const Size(double.infinity, 44), painter: _BookPainter());
+  Widget build(BuildContext context) => CustomPaint(
+    size: const Size(double.infinity, 44),
+    painter: _BookPainter(),
+  );
 }
 
 class _BookPainter extends CustomPainter {
@@ -2102,14 +2698,20 @@ class _BookPainter extends CustomPainter {
     canvas.drawPath(rightPage, stroke);
 
     // Spine line
-    canvas.drawLine(Offset(cx, cy - 16), Offset(cx, cy + 10), stroke..strokeWidth = 2.0);
+    canvas.drawLine(
+      Offset(cx, cy - 16),
+      Offset(cx, cy + 10),
+      stroke..strokeWidth = 2.0,
+    );
 
     // Lines on left page
     for (int i = 0; i < 3; i++) {
       canvas.drawLine(
         Offset(cx - 16, cy - 8 + i * 6.0),
         Offset(cx - 4, cy - 8 + i * 6.0),
-        stroke..strokeWidth = 1.0..color = Colors.white.withValues(alpha: 0.5),
+        stroke
+          ..strokeWidth = 1.0
+          ..color = Colors.white.withValues(alpha: 0.5),
       );
     }
     // Lines on right page
@@ -2117,7 +2719,9 @@ class _BookPainter extends CustomPainter {
       canvas.drawLine(
         Offset(cx + 4, cy - 8 + i * 6.0),
         Offset(cx + 16, cy - 8 + i * 6.0),
-        stroke..strokeWidth = 1.0..color = Colors.white.withValues(alpha: 0.5),
+        stroke
+          ..strokeWidth = 1.0
+          ..color = Colors.white.withValues(alpha: 0.5),
       );
     }
 
@@ -2132,7 +2736,13 @@ class _BookPainter extends CustomPainter {
     cap.close();
     canvas.drawPath(cap, bright);
     // Tassel
-    canvas.drawLine(Offset(capCx + 10, capCy - 2), Offset(capCx + 10, capCy + 6), stroke..strokeWidth = 1.5..color = Colors.white.withValues(alpha: 0.7));
+    canvas.drawLine(
+      Offset(capCx + 10, capCy - 2),
+      Offset(capCx + 10, capCy + 6),
+      stroke
+        ..strokeWidth = 1.5
+        ..color = Colors.white.withValues(alpha: 0.7),
+    );
     canvas.drawCircle(Offset(capCx + 10, capCy + 7), 2, bright);
   }
 
@@ -2144,8 +2754,10 @@ class _BookPainter extends CustomPainter {
 class _ChartIllustration extends StatelessWidget {
   const _ChartIllustration();
   @override
-  Widget build(BuildContext context) =>
-      CustomPaint(size: const Size(double.infinity, 44), painter: _ChartPainter());
+  Widget build(BuildContext context) => CustomPaint(
+    size: const Size(double.infinity, 44),
+    painter: _ChartPainter(),
+  );
 }
 
 class _ChartPainter extends CustomPainter {
@@ -2179,7 +2791,7 @@ class _ChartPainter extends CustomPainter {
     // Bar heights (normalized 0–1)
     final bars = [0.45, 0.70, 0.55, 0.85, 0.65];
     final barW = (chartW / bars.length) * 0.55;
-    final gap  = chartW / bars.length;
+    final gap = chartW / bars.length;
 
     // Draw bars
     for (int i = 0; i < bars.length; i++) {
@@ -2204,11 +2816,7 @@ class _ChartPainter extends CustomPainter {
         // Smooth curve
         final prevX = startX + (i - 1) * gap + gap * 0.22 + barW / 2;
         final prevY = baseY - bars[i - 1] * h * 0.72;
-        trendPath.cubicTo(
-          prevX + gap * 0.4, prevY,
-          x - gap * 0.4, y,
-          x, y,
-        );
+        trendPath.cubicTo(prevX + gap * 0.4, prevY, x - gap * 0.4, y, x, y);
       }
     }
     canvas.drawPath(trendPath, linePaint);
@@ -2224,20 +2832,32 @@ class _ChartPainter extends CustomPainter {
     canvas.drawLine(
       Offset(startX - 2, baseY),
       Offset(startX + chartW + 2, baseY),
-      Paint()..color = Colors.white.withValues(alpha: 0.35)..strokeWidth = 1.0,
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.35)
+        ..strokeWidth = 1.0,
     );
 
     // Up arrow badge (top right)
     final arrowCx = w * 0.90, arrowCy = h * 0.22;
-    canvas.drawCircle(Offset(arrowCx, arrowCy), 9,
-        Paint()..color = Colors.white.withValues(alpha: 0.22)..style = PaintingStyle.fill);
+    canvas.drawCircle(
+      Offset(arrowCx, arrowCy),
+      9,
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.22)
+        ..style = PaintingStyle.fill,
+    );
     final arrow = Path();
     arrow.moveTo(arrowCx, arrowCy + 4);
     arrow.lineTo(arrowCx, arrowCy - 4);
     arrow.moveTo(arrowCx - 3.5, arrowCy - 1);
     arrow.lineTo(arrowCx, arrowCy - 5);
     arrow.lineTo(arrowCx + 3.5, arrowCy - 1);
-    canvas.drawPath(arrow, linePaint..strokeWidth = 1.8..color = Colors.white.withValues(alpha: 0.9));
+    canvas.drawPath(
+      arrow,
+      linePaint
+        ..strokeWidth = 1.8
+        ..color = Colors.white.withValues(alpha: 0.9),
+    );
   }
 
   @override
