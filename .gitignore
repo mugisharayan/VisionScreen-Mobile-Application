@@ -17,6 +17,7 @@
 .pub/
 build/
 coverage/
+screenshots/
 **/doc/api/
 **/Flutter/.last_build_id
 
