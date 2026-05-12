@@ -23,13 +23,15 @@ class _Slide {
 const List<_Slide> _slides = [
   _Slide(
     headline: 'Built for the field',
-    body: 'Screen patients on the move with a workflow designed for community health workers in low-resource settings.',
+    body:
+        'Screen patients on the move with a workflow designed for community health workers in low-resource settings.',
     illustration: ChwIllustration(color: Colors.white),
   ),
   _Slide(
     headline: 'Works offline',
-    body: 'Run the full Tumbling-E test, generate referrals and review analytics — all without a connection. Sync when you reach signal.',
-    illustration: AnalyticsIllustration(color: Colors.white),
+    body:
+        'Run the full Tumbling-E test, generate referrals and review recent activity without a connection. Sync when you reach signal.',
+    illustration: ActivityIllustration(color: Colors.white),
   ),
 ];
 
@@ -77,7 +79,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               // ── Top bar: wordmark + skip ──
               Padding(
                 padding: const EdgeInsets.fromLTRB(
-                  VsSpace.lg, VsSpace.md, VsSpace.lg, 0,
+                  VsSpace.lg,
+                  VsSpace.md,
+                  VsSpace.lg,
+                  0,
                 ),
                 child: Row(
                   children: [
@@ -116,7 +121,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               // ── Footer: dots + next ──
               Padding(
                 padding: const EdgeInsets.fromLTRB(
-                  VsSpace.lg, VsSpace.md, VsSpace.lg, VsSpace.xl,
+                  VsSpace.lg,
+                  VsSpace.md,
+                  VsSpace.lg,
+                  VsSpace.xl,
                 ),
                 child: Column(
                   children: [
@@ -180,15 +188,9 @@ class _SlideContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            flex: 5,
-            child: Center(child: slide.illustration),
-          ),
+          Expanded(flex: 5, child: Center(child: slide.illustration)),
           const SizedBox(height: VsSpace.lg),
-          Text(
-            slide.headline,
-            style: VsText.display(color: Colors.white),
-          ),
+          Text(slide.headline, style: VsText.display(color: Colors.white)),
           const SizedBox(height: VsSpace.md),
           Text(
             slide.body,

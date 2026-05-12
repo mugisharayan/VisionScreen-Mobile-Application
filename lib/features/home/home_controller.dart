@@ -14,21 +14,17 @@ import '../../utils/app_constants.dart';
 
 class HomeController extends ChangeNotifier {
   HomeController({
-    required int tipCount,
     ScreeningRepository? screeningRepository,
     SyncService? syncService,
-  }) : _tipCount = tipCount,
-       _screeningRepository =
+  }) : _screeningRepository =
            screeningRepository ?? ScreeningRepository.instance,
        _syncService = syncService ?? SyncService.instance;
 
-  final int _tipCount;
   final ScreeningRepository _screeningRepository;
   final SyncService _syncService;
 
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   Timer? _clockTimer;
-  Timer? _tipTimer;
   bool _initialized = false;
 
   String _chwName = '';
@@ -40,12 +36,9 @@ class HomeController extends ChangeNotifier {
   bool _isSyncing = false;
   bool _syncConfigured = false;
   String _lastSyncError = '';
-  List<Map<String, dynamic>> _recentScreenings = [];
-  List<Map<String, dynamic>> _referredPatients = [];
   bool _isOffline = false;
   String _locationLabel = 'Tap to check location';
   DateTime _now = DateTime.now();
-  int _tipIndex = 0;
 
   String get chwName => _chwName;
   String get chwPhoto => _chwPhoto;
@@ -56,12 +49,9 @@ class HomeController extends ChangeNotifier {
   bool get isSyncing => _isSyncing;
   bool get syncConfigured => _syncConfigured;
   String get lastSyncError => _lastSyncError;
-  List<Map<String, dynamic>> get recentScreenings => _recentScreenings;
-  List<Map<String, dynamic>> get referredPatients => _referredPatients;
   bool get isOffline => _isOffline;
   String get locationLabel => _locationLabel;
   DateTime get now => _now;
-  int get tipIndex => _tipIndex;
 
   String get greeting {
     final hour = _now.hour;
@@ -87,9 +77,6 @@ class HomeController extends ChangeNotifier {
             .join()
             .toUpperCase();
 
-  String formatTime(DateTime dateTime) =>
-      '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-
   String formatDate(DateTime dateTime) {
     const months = [
       'Jan',
@@ -109,28 +96,12 @@ class HomeController extends ChangeNotifier {
     return '${weekdays[dateTime.weekday - 1]}, ${dateTime.day} ${months[dateTime.month - 1]}';
   }
 
-  String timeAgo(String iso) {
-    try {
-      final difference = DateTime.now().difference(DateTime.parse(iso));
-      if (difference.inMinutes < 60) {
-        return '${difference.inMinutes}m ago';
-      }
-      if (difference.inHours < 24) {
-        return '${difference.inHours}h ago';
-      }
-      return '${difference.inDays}d ago';
-    } catch (_) {
-      return 'Today';
-    }
-  }
-
   Future<void> initialize() async {
     if (_initialized) {
       return;
     }
     _initialized = true;
     _startClock();
-    _startTips();
     await _bindConnectivity();
     await loadAll();
   }
@@ -242,17 +213,6 @@ class HomeController extends ChangeNotifier {
     });
   }
 
-  void _startTips() {
-    if (_tipCount <= 0) {
-      return;
-    }
-    _tipTimer?.cancel();
-    _tipTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      _tipIndex = (_tipIndex + 1) % _tipCount;
-      notifyListeners();
-    });
-  }
-
   Future<void> _loadChwProfile() async {
     final profile = await ChwProfilePreferences.load();
     final prefs = await SharedPreferences.getInstance();
@@ -266,17 +226,11 @@ class HomeController extends ChangeNotifier {
   Future<void> _loadDbStats() async {
     final outcomes = await _screeningRepository.getOutcomeCounts();
     final unsynced = await _screeningRepository.getUnsyncedCount();
-    final recent = await _screeningRepository.getRecentScreeningsWithPatient(
-      limit: 4,
-    );
-    final referred = await _screeningRepository.getReferredPatients();
     final notifications = await _screeningRepository.getNotifications();
 
     _totalScreened = (outcomes['pass'] ?? 0) + (outcomes['refer'] ?? 0);
     _totalReferred = outcomes['refer'] ?? 0;
     _unsyncedCount = unsynced;
-    _recentScreenings = recent;
-    _referredPatients = referred;
     _notificationCount = notifications
         .where((notification) => notification['read'] == false)
         .length;
@@ -286,7 +240,6 @@ class HomeController extends ChangeNotifier {
   @override
   void dispose() {
     _clockTimer?.cancel();
-    _tipTimer?.cancel();
     _connectivitySub?.cancel();
     super.dispose();
   }

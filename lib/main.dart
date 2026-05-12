@@ -5,7 +5,7 @@ import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
-import 'screens/analytics_screen.dart';
+import 'screens/activity_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/patients_screen.dart';
 import 'screens/new_screening_screen.dart';
@@ -85,7 +85,7 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
   static const _items = [
     _NavItem(Icons.home_rounded, Icons.home_outlined, 'Home'),
     _NavItem(Icons.people_alt_rounded, Icons.people_alt_outlined, 'Patients'),
-    _NavItem(Icons.bar_chart_rounded, Icons.bar_chart_outlined, 'Analytics'),
+    _NavItem(Icons.list_alt_rounded, Icons.list_alt_outlined, 'Activity'),
     _NavItem(Icons.settings_rounded, Icons.settings_outlined, 'Settings'),
   ];
 
@@ -147,7 +147,7 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
         children: const [
           HomeScreen(),
           PatientsScreen(),
-          AnalyticsScreen(),
+          ActivityScreen(),
           SettingsScreen(),
         ],
       ),
@@ -287,9 +287,7 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                     child: AnimatedSlide(
                       duration: const Duration(milliseconds: 220),
                       curve: Curves.easeOut,
-                      offset: active
-                          ? const Offset(0, -0.02)
-                          : Offset.zero,
+                      offset: active ? const Offset(0, -0.02) : Offset.zero,
                       child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 180),
                         transitionBuilder: (child, anim) => FadeTransition(

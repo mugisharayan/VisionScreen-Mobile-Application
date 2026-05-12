@@ -30,10 +30,13 @@ class _VsSkeletonState extends State<VsSkeleton>
   void initState() {
     super.initState();
     _ctrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1400))
-      ..repeat();
-    _shimmer = Tween<double>(begin: -1.5, end: 2.5).animate(
-        CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat();
+    _shimmer = Tween<double>(
+      begin: -1.5,
+      end: 2.5,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
   }
 
   @override
@@ -87,34 +90,42 @@ class VsPatientCardSkeleton extends StatelessWidget {
         border: Border.all(color: VsColors.border),
         boxShadow: VsShadows.card,
       ),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Avatar
-        const VsSkeleton(width: 48, height: 48, borderRadius: 13),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const VsSkeleton(width: 140, height: 14, borderRadius: 6),
-            const SizedBox(height: 6),
-            const VsSkeleton(width: 100, height: 11, borderRadius: 5),
-            const SizedBox(height: 10),
-            Row(children: const [
-              VsSkeleton(width: 50, height: 22, borderRadius: 6),
-              SizedBox(width: 6),
-              VsSkeleton(width: 50, height: 22, borderRadius: 6),
-              SizedBox(width: 6),
-              VsSkeleton(width: 50, height: 22, borderRadius: 6),
-            ]),
-          ]),
-        ),
-        const SizedBox(width: 10),
-        const VsSkeleton(width: 44, height: 44, borderRadius: 10),
-      ]),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Avatar
+          const VsSkeleton(width: 48, height: 48, borderRadius: 13),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const VsSkeleton(width: 140, height: 14, borderRadius: 6),
+                const SizedBox(height: 6),
+                const VsSkeleton(width: 100, height: 11, borderRadius: 5),
+                const SizedBox(height: 10),
+                Row(
+                  children: const [
+                    VsSkeleton(width: 50, height: 22, borderRadius: 6),
+                    SizedBox(width: 6),
+                    VsSkeleton(width: 50, height: 22, borderRadius: 6),
+                    SizedBox(width: 6),
+                    VsSkeleton(width: 50, height: 22, borderRadius: 6),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          const VsSkeleton(width: 44, height: 44, borderRadius: 10),
+        ],
+      ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────
-// Stats card skeleton (for analytics)
+// Stats card skeleton
 // ─────────────────────────────────────────────────────────────
 class VsStatsCardSkeleton extends StatelessWidget {
   const VsStatsCardSkeleton({super.key});
@@ -129,13 +140,16 @@ class VsStatsCardSkeleton extends StatelessWidget {
         border: Border.all(color: VsColors.border),
         boxShadow: VsShadows.card,
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
-        VsSkeleton(width: 80, height: 11, borderRadius: 5),
-        SizedBox(height: 8),
-        VsSkeleton(width: 60, height: 28, borderRadius: 7),
-        SizedBox(height: 8),
-        VsSkeleton(width: double.infinity, height: 4, borderRadius: 99),
-      ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          VsSkeleton(width: 80, height: 11, borderRadius: 5),
+          SizedBox(height: 8),
+          VsSkeleton(width: 60, height: 28, borderRadius: 7),
+          SizedBox(height: 8),
+          VsSkeleton(width: double.infinity, height: 4, borderRadius: 99),
+        ],
+      ),
     );
   }
 }

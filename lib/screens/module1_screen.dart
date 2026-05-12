@@ -61,7 +61,7 @@ class _Module1ScreenState extends State<Module1Screen> {
           '• CHILD (under 18) — shown in blue\n'
           '• ADULT (18–60) — shown in teal\n'
           '• ELDERLY (over 60) — shown in red\n\n'
-          'Age groups affect how results are displayed on patient cards and in analytics. '
+          'Age groups affect how results are displayed on patient cards and in activity summaries. '
           'The referral threshold is LogMAR > 0.5 (Snellen 6/18) for all age groups.',
       'tip':
           'Always verify the patient\'s age carefully — it affects the age group badge shown on their card.',
@@ -366,30 +366,30 @@ class _Module1ScreenState extends State<Module1Screen> {
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: () {
-                  if (isLast) {
-                    widget.onCompleted?.call();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Module 1 completed.',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: Colors.white,
+                    if (isLast) {
+                      widget.onCompleted?.call();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Module 1 completed.',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: Colors.white,
+                            ),
                           ),
+                          backgroundColor: color,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          duration: const Duration(seconds: 2),
                         ),
-                        backgroundColor: color,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                    Navigator.pop(context);
-                  } else {
-                    setState(() => _currentStep++);
-                  }
-                },
+                      );
+                      Navigator.pop(context);
+                    } else {
+                      setState(() => _currentStep++);
+                    }
+                  },
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 14),

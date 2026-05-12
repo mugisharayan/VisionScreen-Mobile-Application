@@ -428,7 +428,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           badgeIcon: Icons.picture_as_pdf_outlined,
                           label: 'Export as PDF',
                           subtitle:
-                              'Printable reports for patient, campaign and analytics data',
+                              'Printable PDFs for patient, campaign and activity data',
                           isLast: true,
                           onTap: () => _showExportSheet(),
                         ),
@@ -460,7 +460,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 11),
                     _buildSection(
-                      title: 'App Info',
+                      title: 'About',
                       children: [
                         _buildRow(
                           badgeColor: _C.teal,
@@ -468,43 +468,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           label: 'About VisionScreen',
                           isFirst: true,
                           onTap: () => _showAboutDialog(),
-                        ),
-                        _buildRow(
-                          badgeColor: const Color(0xFF8B5CF6),
-                          badgeIcon: Icons.auto_awesome_rounded,
-                          label: "What's New",
-                          trailing: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _C.amber.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(99),
-                            ),
-                            child: Text(
-                              'NEW',
-                              style: GoogleFonts.inter(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w800,
-                                color: _C.amber,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                          ),
-                          onTap: () => _showChangelogSheet(),
-                        ),
-                        _buildRow(
-                          badgeColor: const Color(0xFF1A2A3D),
-                          badgeIcon: Icons.gavel_rounded,
-                          label: 'Terms of Service',
-                          onTap: () => _showTermsOfService(),
-                        ),
-                        _buildRow(
-                          badgeColor: const Color(0xFF1A2A3D),
-                          badgeIcon: Icons.lock_outline_rounded,
-                          label: 'Privacy Policy',
-                          onTap: () => _showPrivacyPolicy(),
                         ),
                         _buildRow(
                           badgeColor: _C.teal,
@@ -532,18 +495,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      'VisionScreen v1.0',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(fontSize: 11, color: _C.g400),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Made for Community Health Workers - Uganda',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(fontSize: 10, color: _C.g400),
                     ),
                     const SizedBox(height: 80),
                   ],
@@ -1999,24 +1950,78 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Column(
                   children: [
                     _aboutRow(
-                      'CHW',
+                      Icons.groups_rounded,
                       'Built for',
-                      'Community Health Workers | Uganda',
+                      'Community health workers in Uganda',
                     ),
                     _aboutRow(
-                      'EYE',
+                      Icons.visibility_rounded,
                       'Test Method',
-                      'Tumbling E | LogMAR Scale',
+                      'Tumbling E with LogMAR scoring',
                     ),
-                    _aboutRow('DATA', 'Storage', 'SQLite (offline-first)'),
                     _aboutRow(
-                      'SYNC',
+                      Icons.storage_rounded,
+                      'Storage',
+                      'SQLite on device',
+                    ),
+                    _aboutRow(
+                      Icons.cloud_sync_rounded,
                       'Cloud Sync',
                       _syncConfigured
                           ? 'MongoDB workspace enabled'
                           : 'Not configured in this build',
                     ),
-                    _aboutRow('HELP', 'Support', 'support@visionscreen.ug'),
+                    _aboutRow(
+                      Icons.support_agent_rounded,
+                      'Support',
+                      'support@visionscreen.ug',
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            Future<void>.delayed(
+                              Duration.zero,
+                              _showChangelogSheet,
+                            );
+                          },
+                          icon: const Icon(
+                            Icons.auto_awesome_rounded,
+                            size: 16,
+                          ),
+                          label: const Text("What's New"),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            Future<void>.delayed(
+                              Duration.zero,
+                              _showTermsOfService,
+                            );
+                          },
+                          icon: const Icon(Icons.gavel_rounded, size: 16),
+                          label: const Text('Terms'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            Future<void>.delayed(
+                              Duration.zero,
+                              _showPrivacyPolicy,
+                            );
+                          },
+                          icon: const Icon(
+                            Icons.lock_outline_rounded,
+                            size: 16,
+                          ),
+                          label: const Text('Privacy'),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
@@ -2050,12 +2055,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _aboutRow(String emoji, String label, String value) {
+  Widget _aboutRow(IconData icon, String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 16)),
+          Icon(icon, size: 16, color: _C.g500),
           const SizedBox(width: 10),
           Text(label, style: GoogleFonts.inter(fontSize: 12, color: _C.g400)),
           const Spacer(),
@@ -2487,7 +2492,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                     Text(
-                      'Choose a report to generate',
+                      'Choose a PDF to export',
                       style: GoogleFonts.inter(fontSize: 12, color: _C.g400),
                     ),
                   ],
@@ -2525,11 +2530,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _exportOption(
               icon: Icons.bar_chart_rounded,
               color: const Color(0xFFF59E0B),
-              title: 'Analytics Report',
-              subtitle: 'Outcomes, age groups, acuity & village breakdown',
+              title: 'Activity Report',
+              subtitle: 'Screening activity, outcomes and referrals',
               onTap: () {
                 Navigator.pop(context);
-                _exportAnalyticsPDF();
+                _exportActivityPDF();
               },
             ),
             const SizedBox(height: 16),
@@ -2541,7 +2546,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Navigator.pop(context);
                   await _exportPDF();
                   await _exportCampaignPDF();
-                  await _exportAnalyticsPDF();
+                  await _exportActivityPDF();
                 },
                 icon: const Icon(
                   Icons.download_rounded,
@@ -2549,7 +2554,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   color: Colors.white,
                 ),
                 label: Text(
-                  'Export All Reports',
+                  'Export All PDFs',
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -2628,10 +2633,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _exportAnalyticsPDF() async {
+  Future<void> _exportActivityPDF() async {
     try {
-      _showSnack('Generating analytics report...', _C.teal);
-      final file = await SettingsExportService.exportAnalyticsPdf(
+      _showSnack('Generating activity report...', _C.teal);
+      final file = await SettingsExportService.exportActivityPdf(
         SettingsExportProfile(
           chwName: _chwName,
           chwCenter: _chwCenter,
@@ -2642,7 +2647,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       if (mounted) {
         _showSnack(
-          'Analytics PDF saved: ${file.path.split('/').last}',
+          'Activity PDF saved: ${file.path.split('/').last}',
           _C.green,
         );
         await OpenFilex.open(file.path);

@@ -106,7 +106,7 @@ class _Module4ScreenState extends State<Module4Screen> {
           '• COMPLETED — treatment completed\n'
           '• OVERDUE — appointment date passed, patient not attended\n'
           '• CANCELLED — referral cancelled\n\n'
-          'The Home screen "Referral Follow-Ups" section shows all pending and overdue referrals.\n\n'
+          'The Activity screen follow-up view shows pending and overdue referrals.\n\n'
           'The Notifications screen automatically alerts you when appointments are overdue or upcoming (within 3 days).',
       'tip':
           'Update referral status after each follow-up call — this keeps your data accurate and helps track programme outcomes.',

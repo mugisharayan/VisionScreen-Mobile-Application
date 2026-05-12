@@ -1,7 +1,7 @@
 import '../db/database_helper.dart';
 import '../utils/app_constants.dart';
 
-/// Repository for screening CRUD and analytics operations.
+/// Repository for screening CRUD plus summary and reporting reads.
 class ScreeningRepository {
   ScreeningRepository._();
   static final ScreeningRepository instance = ScreeningRepository._();
@@ -50,8 +50,7 @@ class ScreeningRepository {
 
     final database = await _db.db;
     final placeholders = List.filled(ids.length, '?').join(', ');
-    final rows = await database.rawQuery(
-      '''
+    final rows = await database.rawQuery('''
       SELECT s.*
       FROM screenings s
       JOIN (
@@ -64,9 +63,7 @@ class ScreeningRepository {
        AND latest.latest_screening_date = s.screening_date
       WHERE s.deleted_at IS NULL
       ORDER BY s.patient_id ASC, s.id DESC
-      ''',
-      ids,
-    );
+      ''', ids);
 
     final latestByPatient = <String, Map<String, dynamic>>{};
     for (final row in rows) {
@@ -81,8 +78,7 @@ class ScreeningRepository {
 
   Future<List<Map<String, dynamic>>> getRecentScreeningsWithPatient({
     int limit = AppPagination.recentLimit,
-  }) =>
-      _db.getRecentScreeningsWithPatient(limit: limit);
+  }) => _db.getRecentScreeningsWithPatient(limit: limit);
 
   Future<List<Map<String, dynamic>>> getReferredPatients() =>
       _db.getReferredPatients();
@@ -104,17 +100,16 @@ class ScreeningRepository {
     String? facility,
     String? appointmentDate,
     String? status,
-  }) =>
-      _db.updateReferralDetails(
-        screeningId,
-        facility: facility,
-        appointmentDate: appointmentDate,
-        status: status,
-      );
+  }) => _db.updateReferralDetails(
+    screeningId,
+    facility: facility,
+    appointmentDate: appointmentDate,
+    status: status,
+  );
 
   Future<void> markSynced(int screeningId) => _db.markSynced(screeningId);
 
-  // ── Analytics ──────────────────────────────────────────────────────────────
+  // ── Summary and reporting reads ───────────────────────────────────────────
 
   Future<Map<String, int>> getOutcomeCounts({String period = 'All'}) =>
       _db.getOutcomeCounts(period: period);
@@ -128,8 +123,9 @@ class ScreeningRepository {
   Future<List<Map<String, dynamic>>> getPassRateTrend(String period) =>
       _db.getPassRateTrend(period);
 
-  Future<Map<String, int>> getVisualAcuityDistribution({String period = 'All'}) =>
-      _db.getVisualAcuityDistribution(period: period);
+  Future<Map<String, int>> getVisualAcuityDistribution({
+    String period = 'All',
+  }) => _db.getVisualAcuityDistribution(period: period);
 
   Future<Map<String, int>> getConditionCounts({String period = 'All'}) =>
       _db.getConditionCounts(period: period);
@@ -143,11 +139,13 @@ class ScreeningRepository {
   Future<Map<String, int>> getFollowUpCompliance({String period = 'All'}) =>
       _db.getFollowUpCompliance(period: period);
 
-  Future<Map<String, Map<String, int>>> getConditionsByAgeGroup({String period = 'All'}) =>
-      _db.getConditionsByAgeGroup(period: period);
+  Future<Map<String, Map<String, int>>> getConditionsByAgeGroup({
+    String period = 'All',
+  }) => _db.getConditionsByAgeGroup(period: period);
 
-  Future<List<Map<String, dynamic>>> getVillageBreakdown({String period = 'All'}) =>
-      _db.getVillageBreakdown(period: period);
+  Future<List<Map<String, dynamic>>> getVillageBreakdown({
+    String period = 'All',
+  }) => _db.getVillageBreakdown(period: period);
 
   Future<List<Map<String, dynamic>>> getNotifications() =>
       _db.getNotifications();

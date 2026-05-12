@@ -1,18 +1,19 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'training_screen.dart';
-import 'notifications_screen.dart';
-import 'patients_screen.dart';
-import 'new_screening_screen.dart';
+
+import 'activity_screen.dart';
 import 'bulk_mode_screen.dart';
-import 'analytics_screen.dart';
+import 'new_screening_screen.dart';
+import 'notifications_screen.dart';
+import 'training_screen.dart';
 import '../features/home/home_controller.dart';
 import '../utils/app_theme.dart';
-import '../utils/page_transitions.dart';
 import '../utils/haptics.dart';
+import '../utils/page_transitions.dart';
 import '../widgets/vs_logo.dart';
 import '../widgets/vs_ui.dart';
 
@@ -35,52 +36,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late final AnimationController _statsCtrl;
   late final Animation<double> _statsAnim;
 
-  // Card stagger (recent list)
-  late final AnimationController _cardCtrl;
-
   // Sync spin
   late final AnimationController _syncCtrl;
-
-  // Tips carousel auto-scroll
-  static const _tips = [
-    _TipData(
-      Icons.wb_sunny_rounded,
-      VsColors.amber,
-      'Ensure adequate room lighting before starting a vision test.',
-    ),
-    _TipData(
-      Icons.straighten_rounded,
-      VsColors.emerald,
-      'Always confirm the patient is exactly 3 metres from the screen.',
-    ),
-    _TipData(
-      Icons.remove_red_eye_rounded,
-      VsColors.sky,
-      'Test each eye separately — cover one eye completely before testing the other.',
-    ),
-    _TipData(
-      Icons.elderly_rounded,
-      VsColors.brand,
-      'For elderly patients, apply the 6/18 threshold — not the adult 6/12 standard.',
-    ),
-    _TipData(
-      Icons.child_care_rounded,
-      VsColors.violet,
-      'Children may need encouragement — demonstrate the E direction yourself first.',
-    ),
-    _TipData(
-      Icons.visibility_off_rounded,
-      VsColors.rose,
-      'Ask patients to remove glasses before the unaided vision test begins.',
-    ),
-  ];
 
   // -- Lifecycle ---------------------------------------------
   @override
   void initState() {
     super.initState();
-    _controller = HomeController(tipCount: _tips.length)
-      ..addListener(_handleControllerChanged);
+    _controller = HomeController()..addListener(_handleControllerChanged);
 
     // Header entry
     _headerCtrl = AnimationController(
@@ -108,12 +71,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       curve: Curves.easeOutCubic,
     );
 
-    // Card stagger
-    _cardCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-
     // Sync spin
     _syncCtrl = AnimationController(
       vsync: this,
@@ -131,7 +88,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _onRefresh() async {
     _statsCtrl.forward(from: 0);
-    _cardCtrl.forward(from: 0);
     await _controller.refresh();
   }
 
@@ -185,7 +141,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ..dispose();
     _headerCtrl.dispose();
     _statsCtrl.dispose();
-    _cardCtrl.dispose();
     _syncCtrl.dispose();
     super.dispose();
   }
@@ -199,19 +154,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool get _isSyncing => _controller.isSyncing;
   bool get _syncConfigured => _controller.syncConfigured;
   String get _lastSyncError => _controller.lastSyncError;
-  List<Map<String, dynamic>> get _recentScreenings =>
-      _controller.recentScreenings;
-  List<Map<String, dynamic>> get _referredPatients =>
-      _controller.referredPatients;
   bool get _isOffline => _controller.isOffline;
   String get _locationLabel => _controller.locationLabel;
   DateTime get _now => _controller.now;
-  int get _tipIndex => _controller.tipIndex;
   String get _greeting => _controller.greeting;
   String get _firstName => _controller.firstName;
   String get _initials => _controller.initials;
   String _fmtDate(DateTime dateTime) => _controller.formatDate(dateTime);
-  String _timeAgo(String iso) => _controller.timeAgo(iso);
 
   void _handleControllerChanged() {
     if (mounted) {
@@ -224,11 +173,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     Future.delayed(const Duration(milliseconds: 300), () {
       if (mounted) {
         _statsCtrl.forward();
-      }
-    });
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        _cardCtrl.forward();
       }
     });
   }
@@ -264,55 +208,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             // Body content
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   _buildTodaySummary(),
                   const SizedBox(height: 20),
                   _buildSectionHeader('Quick Actions', null),
                   _buildActionGrid(),
-                  const SizedBox(height: 20),
-                  _buildTipCard(),
-                  const SizedBox(height: 20),
-                  _buildSectionHeader(
-                    "Today's Screenings",
-                    TextButton(
-                      onPressed: () => Navigator.push(
-                        context,
-                        VsPageRoute(builder: (_) => const PatientsScreen()),
-                      ),
-                      child: Text(
-                        'See all',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: VsColors.brand,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  _buildRecentList(),
-                  const SizedBox(height: 20),
-                  _buildSectionHeader(
-                    'Referral Follow-Ups',
-                    TextButton(
-                      onPressed: () => Navigator.push(
-                        context,
-                        VsPageRoute(builder: (_) => const PatientsScreen()),
-                      ),
-                      child: Text(
-                        'View all',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: VsColors.brand,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  _buildReferralList(),
                 ]),
               ),
             ),
@@ -813,14 +715,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
       _ActionData(
         primary: false,
-        icon: Icons.bar_chart_rounded,
-        title: 'Analytics',
-        subtitle: 'Programme data',
+        icon: Icons.list_alt_rounded,
+        title: 'Activity',
+        subtitle: 'Screenings and follow-ups',
         accent: VsColors.violet,
         illustration: const SizedBox.shrink(),
         onTap: () => Navigator.push(
           context,
-          VsPageRoute(builder: (_) => const AnalyticsScreen()),
+          VsPageRoute(builder: (_) => const ActivityScreen()),
         ),
       ),
     ];
@@ -844,608 +746,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       },
     );
   }
-
-  // -- TIP CARD ----------------------------------------------
-  Widget _buildTipCard() {
-    final tip = _tips[_tipIndex];
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 400),
-      transitionBuilder: (child, anim) => FadeTransition(
-        opacity: anim,
-        child: SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0.05, 0),
-            end: Offset.zero,
-          ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOut)),
-          child: child,
-        ),
-      ),
-      child: Container(
-        key: ValueKey(_tipIndex),
-        padding: const EdgeInsets.all(VsSpace.lg),
-        decoration: BoxDecoration(
-          color: VsColors.card,
-          borderRadius: BorderRadius.circular(VsRadius.lg),
-          border: Border.all(color: VsColors.border),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: tip.color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(VsRadius.md),
-              ),
-              child: Icon(tip.icon, color: tip.color, size: 20),
-            ),
-            const SizedBox(width: VsSpace.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Tip', style: VsText.label(color: VsColors.slate500)),
-                  const SizedBox(height: 2),
-                  Text(tip.text, style: VsText.body(color: VsColors.slate800)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // -- RECENT SCREENINGS LIST --------------------------------
-  Widget _buildRecentList() {
-    if (_recentScreenings.isEmpty) {
-      return _buildEmptyState(
-        icon: Icons.remove_red_eye_outlined,
-        title: 'No screenings yet',
-        subtitle: 'Tap the eye button below to start your first test.',
-      );
-    }
-    return Column(
-      children: _recentScreenings.asMap().entries.map((e) {
-        final i = e.key;
-        final r = e.value;
-        return TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0.0, end: 1.0),
-          duration: Duration(milliseconds: 350 + i * 80),
-          curve: Curves.easeOutCubic,
-          builder: (_, t, child) => Opacity(
-            opacity: t,
-            child: Transform.translate(
-              offset: Offset(0, 20 * (1 - t)),
-              child: child,
-            ),
-          ),
-          child: Padding(
-            padding: EdgeInsets.only(
-              bottom: i < _recentScreenings.length - 1 ? 10 : 0,
-            ),
-            child: _buildPatientCard(r),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildPatientCard(Map<String, dynamic> r) {
-    final name = (r['name'] as String?) ?? 'Unknown';
-    final age = (r['age'] as int?) ?? 0;
-    final gender = (r['gender'] as String?) ?? '';
-    final outcome = (r['outcome'] as String?) ?? 'pending';
-    final od = (r['od_snellen'] as String?)?.trim().isNotEmpty == true
-        ? r['od_snellen'] as String
-        : 'Not tested';
-    final os = (r['os_snellen'] as String?)?.trim().isNotEmpty == true
-        ? r['os_snellen'] as String
-        : 'Not tested';
-    final pid = (r['patient_id'] as String?) ?? '';
-    final photo = (r['photo_path'] as String?) ?? '';
-    final initials = name
-        .split(' ')
-        .map((w) => w.isEmpty ? '' : w[0])
-        .take(2)
-        .join();
-    final timeAgo = _timeAgo((r['screening_date'] as String?) ?? '');
-
-    final Color accent;
-    final Color badgeBg;
-    final Color badgeText;
-    final IconData badgeIcon;
-    final String badgeLabel;
-
-    switch (outcome) {
-      case 'pass':
-        accent = VsColors.emerald;
-        badgeBg = VsColors.emeraldBg;
-        badgeText = const Color(0xFF065F46);
-        badgeIcon = Icons.check_circle_rounded;
-        badgeLabel = 'Pass';
-        break;
-      case 'refer':
-        accent = VsColors.rose;
-        badgeBg = VsColors.roseBg;
-        badgeText = const Color(0xFF9F1239);
-        badgeIcon = Icons.warning_rounded;
-        badgeLabel = 'Refer';
-        break;
-      default:
-        accent = VsColors.amber;
-        badgeBg = VsColors.amberBg;
-        badgeText = const Color(0xFF92400E);
-        badgeIcon = Icons.schedule_rounded;
-        badgeLabel = 'Pending';
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: VsColors.card,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: VsColors.border),
-        boxShadow: VsShadows.card,
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Accent bar
-                Container(
-                  width: 3,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: accent,
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // Avatar
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(13),
-                    boxShadow: [
-                      BoxShadow(
-                        color: accent.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(13),
-                    child: photo.isNotEmpty && File(photo).existsSync()
-                        ? Image.file(File(photo), fit: BoxFit.cover)
-                        : Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [accent, accent.withValues(alpha: 0.6)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(13),
-                            ),
-                            child: Center(
-                              child: Text(
-                                initials,
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // Info
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        name,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: VsColors.slate900,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        '$gender · $age yrs',
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          color: VsColors.slate500,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      if (outcome != 'pending')
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _vaPill('OD', od, accent),
-                            const SizedBox(width: 4),
-                            _vaPill('OS', os, accent),
-                          ],
-                        )
-                      else
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: VsColors.amberBg,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            'Awaiting screening',
-                            style: GoogleFonts.inter(
-                              fontSize: 10,
-                              color: VsColors.amber,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                // Badge
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: badgeBg,
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(badgeIcon, size: 10, color: accent),
-                      const SizedBox(width: 3),
-                      Text(
-                        badgeLabel,
-                        style: GoogleFonts.inter(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: badgeText,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Bottom strip
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.04),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(13),
-                bottomRight: Radius.circular(13),
-              ),
-              border: Border(
-                top: BorderSide(color: accent.withValues(alpha: 0.1)),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.badge_outlined, size: 11, color: VsColors.slate400),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    pid,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontSize: 10,
-                      color: VsColors.slate400,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                Icon(
-                  Icons.access_time_rounded,
-                  size: 11,
-                  color: VsColors.slate400,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  timeAgo,
-                  style: GoogleFonts.inter(
-                    fontSize: 10,
-                    color: VsColors.slate400,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _vaPill(String eye, String value, Color accent) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: accent.withValues(alpha: 0.2)),
-      ),
-      child: Text(
-        '$eye $value',
-        style: GoogleFonts.inter(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          color: accent,
-        ),
-      ),
-    );
-  }
-
-  // -- REFERRAL LIST -----------------------------------------
-  Widget _buildReferralList() {
-    if (_referredPatients.isEmpty) {
-      return _buildEmptyState(
-        icon: Icons.check_circle_outline_rounded,
-        title: 'No referrals yet',
-        subtitle: 'Referred patients will appear here for follow-up.',
-      );
-    }
-    return Column(
-      children: _referredPatients.take(3).toList().asMap().entries.map((e) {
-        final i = e.key;
-        final r = e.value;
-        final name = (r['name'] as String?) ?? 'Unknown';
-        final age = (r['age'] as int?) ?? 0;
-        final gender = (r['gender'] as String?) ?? '';
-        final facility = ((r['referral_facility'] as String?) ?? '').isEmpty
-            ? 'No facility set'
-            : r['referral_facility'] as String;
-        final status = (r['referral_status'] as String?) ?? 'pending';
-        final photo = (r['photo_path'] as String?) ?? '';
-        final initials = name
-            .split(' ')
-            .map((w) => w.isEmpty ? '' : w[0])
-            .take(2)
-            .join();
-        final appt = r['appointment_date'] as String?;
-        String dueLabel = 'No date set';
-        if (appt != null && appt.isNotEmpty) {
-          try {
-            final dt = DateTime.parse(appt);
-            dueLabel = 'Due ${dt.day}/${dt.month}/${dt.year}';
-          } catch (_) {}
-        }
-
-        final Color statusColor;
-        switch (status) {
-          case 'overdue':
-            statusColor = VsColors.rose;
-            break;
-          case 'completed':
-            statusColor = VsColors.emerald;
-            break;
-          case 'notified':
-            statusColor = VsColors.sky;
-            break;
-          default:
-            statusColor = VsColors.amber;
-        }
-
-        return TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0.0, end: 1.0),
-          duration: Duration(milliseconds: 350 + i * 80),
-          curve: Curves.easeOutCubic,
-          builder: (_, t, child) => Opacity(
-            opacity: t,
-            child: Transform.translate(
-              offset: Offset(0, 16 * (1 - t)),
-              child: child,
-            ),
-          ),
-          child: Padding(
-            padding: EdgeInsets.only(bottom: i < 2 ? 10 : 0),
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: VsColors.card,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: VsColors.border),
-                boxShadow: VsShadows.card,
-              ),
-              child: Row(
-                children: [
-                  // Avatar
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: statusColor.withValues(alpha: 0.15),
-                    ),
-                    child: photo.isNotEmpty && File(photo).existsSync()
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.file(File(photo), fit: BoxFit.cover),
-                          )
-                        : Center(
-                            child: Text(
-                              initials,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w800,
-                                color: statusColor,
-                              ),
-                            ),
-                          ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Info
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: VsColors.slate900,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '$gender · $age yrs',
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            color: VsColors.slate500,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.local_hospital_outlined,
-                              size: 11,
-                              color: VsColors.slate400,
-                            ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                facility,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.inter(
-                                  fontSize: 11,
-                                  color: VsColors.slate500,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Status + due
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: statusColor.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(99),
-                        ),
-                        child: Text(
-                          status[0].toUpperCase() + status.substring(1),
-                          style: GoogleFonts.inter(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: statusColor,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        dueLabel,
-                        style: GoogleFonts.inter(
-                          fontSize: 10,
-                          color: VsColors.slate400,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  // -- EMPTY STATE -------------------------------------------
-  Widget _buildEmptyState({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
-      decoration: BoxDecoration(
-        color: VsColors.card,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: VsColors.border),
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: VsColors.brandFaint,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(icon, color: VsColors.brand, size: 26),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: VsColors.slate700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              color: VsColors.slate400,
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// -------------------------------------------------------------
-// Data classes
-// -------------------------------------------------------------
-class _TipData {
-  const _TipData(this.icon, this.color, this.text);
-  final IconData icon;
-  final Color color;
-  final String text;
 }
 
 class _ActionData {
@@ -1474,7 +774,7 @@ class _ActionData {
 //              "New Screening" and "Bulk Mode" — actions the
 //              user is most likely to take on opening the app)
 //   secondary → flat white card with subtle border, slate copy
-//               (used for "Training" and "Analytics" — reference
+//               (used for "Training" and "Activity" — reference
 //               actions). Accent color appears only on the icon
 //               tile to keep visual hierarchy with the primary
 //               cards.

@@ -685,7 +685,7 @@ class SettingsExportService {
     return _writePdfFile(pdf, 'visionscreen_campaigns');
   }
 
-  static Future<File> exportAnalyticsPdf(SettingsExportProfile profile) async {
+  static Future<File> exportActivityPdf(SettingsExportProfile profile) async {
     final outcomes = await ScreeningRepository.instance.getOutcomeCounts();
     final ageGroups = await ScreeningRepository.instance.getAgeGroupCounts();
     final genders = await ScreeningRepository.instance.getGenderCounts();
@@ -878,8 +878,8 @@ class SettingsExportService {
           ),
         );
 
-    pw.Widget insightRow(
-      String tag,
+    pw.Widget summaryRow(
+      String label,
       String text,
       PdfColor accent,
       PdfColor bg,
@@ -899,7 +899,7 @@ class SettingsExportService {
                 vertical: 3,
               ),
               decoration: pw.BoxDecoration(color: accent),
-              child: pw.Text(tag, style: ts(8, white, bold: true)),
+              child: pw.Text(label, style: ts(8, white, bold: true)),
             ),
           ),
           pw.SizedBox(width: 8),
@@ -927,7 +927,7 @@ class SettingsExportService {
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.Text(
-                      'VisionScreen Analytics Report',
+                      'VisionScreen Activity Report',
                       style: ts(18, teal, bold: true),
                     ),
                     pw.SizedBox(height: 2),
@@ -1320,73 +1320,47 @@ class SettingsExportService {
                   ], entry.key.isEven ? g50 : white);
                 }),
           ],
-          secHeader('10.  Key Insights & Recommendations', g900),
+          secHeader('10.  Summary', g900),
           pw.SizedBox(height: 4),
           if (screened == 0)
-            insightRow(
-              'INFO',
-              'No screening data available. Start a new screening session to generate insights.',
+            summaryRow(
+              'DATA',
+              'No screening data is available for this export period.',
               g500,
               g50,
             )
           else ...[
-            if (double.parse(passRate) >= 70)
-              insightRow(
-                'POSITIVE',
-                'Pass rate of $passRate% is strong. Continue current screening protocols.',
-                green,
-                greenL,
-              )
-            else
-              insightRow(
-                'WARNING',
-                'Pass rate of $passRate% is below target (70%). Review screening quality and patient follow-up.',
-                red,
-                redL,
-              ),
+            summaryRow(
+              'OUTCOME',
+              'Pass rate: $passRate% across $screened completed screening${screened == 1 ? '' : 's'}.',
+              teal,
+              teal2,
+            ),
             if (overdue > 0)
-              insightRow(
-                'URGENT',
-                '$overdue referral${overdue == 1 ? '' : 's'} overdue - immediate follow-up required with ${overdue == 1 ? 'this patient' : 'these patients'}.',
+              summaryRow(
+                'FOLLOW-UP',
+                '$overdue referral${overdue == 1 ? '' : 's'} currently overdue.',
                 red,
                 redL,
-              ),
-            if ((ageGroups['0-17'] ?? 0) > 0 &&
-                total > 0 &&
-                ((ageGroups['0-17']! / total) * 100) >= 20)
-              insightRow(
-                'ACTION',
-                'Children (0-17) make up ${((ageGroups['0-17']! / total) * 100).toStringAsFixed(0)}% of patients - prioritise school and community outreach.',
-                amber,
-                amberL,
-              ),
-            if ((ageGroups['60+'] ?? 0) > 0 &&
-                total > 0 &&
-                ((ageGroups['60+']! / total) * 100) >= 15)
-              insightRow(
-                'ACTION',
-                'Elderly (60+) represent ${((ageGroups['60+']! / total) * 100).toStringAsFixed(0)}% of screenings - ensure specialist referral pathways are in place.',
-                amber,
-                amberL,
               ),
             if (topCond != null)
-              insightRow(
-                'INFO',
-                '"${topCond.key}" is the most reported condition with ${topCond.value} cases - ensure CHWs are trained to identify and document it.',
+              summaryRow(
+                'CONDITION',
+                'Most recorded condition: ${topCond.key} (${topCond.value} case${topCond.value == 1 ? '' : 's'}).',
                 blue,
                 blueL,
               ),
             if (topVillage != null)
-              insightRow(
-                'INSIGHT',
-                '"${topVillage['village']}" leads with ${topVillage['total']} patients screened - replicate this campaign model in lower-coverage locations.',
+              summaryRow(
+                'LOCATION',
+                'Highest screening volume: ${topVillage['village']} (${topVillage['total']} patient${topVillage['total'] == 1 ? '' : 's'}).',
                 purp,
                 purpL,
               ),
-            if (completed > 0 && referred > 0)
-              insightRow(
-                'POSITIVE',
-                'Referral completion rate: ${(completed / referred * 100).toStringAsFixed(0)}% - $completed patient${completed == 1 ? '' : 's'} attended their appointment.',
+            if (referred > 0)
+              summaryRow(
+                'REFERRALS',
+                'Completed referrals: $completed of $referred (${(completed / referred * 100).toStringAsFixed(0)}%).',
                 green,
                 greenL,
               ),
@@ -1396,7 +1370,7 @@ class SettingsExportService {
       ),
     );
 
-    return _writePdfFile(pdf, 'visionscreen_analytics');
+    return _writePdfFile(pdf, 'visionscreen_activity');
   }
 
   static pw.Widget _pdfStatBox(

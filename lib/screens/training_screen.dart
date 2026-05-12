@@ -21,7 +21,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
       'icon': Icons.person_add_rounded,
       'title': 'Patient Registration',
       'desc':
-          'Register patients individually or in bulk campaigns. Learn all required fields including eye conditions.',
+          'Register patients correctly for individual and campaign screenings.',
       'duration': '4 min',
       'color': Color(0xFF0D9488),
       'image':
@@ -33,7 +33,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
       'icon': Icons.remove_red_eye_rounded,
       'title': 'Vision Testing',
       'desc':
-          'Conduct the Tumbling E staircase test for distance and near vision. Understand LogMAR and Snellen results.',
+          'Run the Tumbling E test and understand distance and near results.',
       'duration': '5 min',
       'color': Color(0xFF8B5CF6),
       'image':
@@ -45,7 +45,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
       'icon': Icons.groups_rounded,
       'title': 'Bulk Mode & Campaigns',
       'desc':
-          'Run campaign screenings for schools and communities. Manage patients grouped under campaign cards.',
+          'Run school and community campaigns without losing patient structure.',
       'duration': '4 min',
       'color': Color(0xFF3B82F6),
       'image':
@@ -57,7 +57,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
       'icon': Icons.assignment_rounded,
       'title': 'Referrals & Follow-Up',
       'desc':
-          'Generate referral letters, set appointments, track referral status and manage patient follow-ups.',
+          'Create referrals, set appointments and keep follow-ups up to date.',
       'duration': '4 min',
       'color': Color(0xFFF59E0B),
       'image':
@@ -104,30 +104,6 @@ class _TrainingScreenState extends State<TrainingScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildWelcomeBanner(),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Container(
-                        width: 3,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0D9488),
-                          borderRadius: BorderRadius.circular(99),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Modules',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF475569),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
                   ...List.generate(
                     _modules.length,
                     (i) => Padding(
@@ -135,7 +111,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                       child: _buildModuleCard(i),
                     ),
                   ),
-                  const SizedBox(height: 100),
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
@@ -177,7 +153,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Training',
+                              'Modules',
                               style: GoogleFonts.inter(
                                 fontSize: 9,
                                 fontWeight: FontWeight.w700,
@@ -289,82 +265,6 @@ class _TrainingScreenState extends State<TrainingScreen> {
     );
   }
 
-  Widget _buildWelcomeBanner() {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF134E4A), Color(0xFF0D9488)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0D9488).withValues(alpha: 0.3),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(18),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Master VisionScreen\nin 4 Modules',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                            height: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Registration - Testing - Bulk Mode - Referrals',
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            color: Colors.white.withValues(alpha: 0.7),
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.25),
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.school_rounded,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildModuleCard(int index) {
     final m = _modules[index];
     final isDone = m['done'] as bool;
@@ -403,8 +303,8 @@ class _TrainingScreenState extends State<TrainingScreen> {
                   bottomLeft: Radius.circular(14),
                 ),
                 child: Container(
-                  width: 90,
-                  height: 90,
+                  width: 82,
+                  height: 82,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [color.withValues(alpha: 0.85), color],
@@ -417,7 +317,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                       // Illustration
                       Center(
                         child: CustomPaint(
-                          size: const Size(64, 64),
+                          size: const Size(58, 58),
                           painter: _moduleIllustration(index),
                         ),
                       ),
@@ -536,6 +436,8 @@ class _TrainingScreenState extends State<TrainingScreen> {
                       const SizedBox(height: 5),
                       Text(
                         m['desc'] as String,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
                           fontSize: 11,
                           fontWeight: FontWeight.w400,
@@ -556,7 +458,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                           borderRadius: BorderRadius.circular(99),
                         ),
                         child: Text(
-                          isDone ? 'Completed' : 'Start Module ->',
+                          isDone ? 'Completed' : 'Open',
                           style: GoogleFonts.inter(
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
