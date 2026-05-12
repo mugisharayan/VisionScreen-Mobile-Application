@@ -164,82 +164,77 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
         clipBehavior: Clip.none,
         alignment: Alignment.topCenter,
         children: [
-          // ── Nav bar background — transparent bottom so scaffold shows through ──
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: const Border(
-                  top: BorderSide(color: VsColors.border, width: 1),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: VsColors.slate900.withValues(alpha: 0.07),
-                    blurRadius: 16,
-                    offset: const Offset(0, -4),
-                  ),
+          // ── Notched bar surface ──
+          // Custom-painted so the notch is a smooth bezier curve, not
+          // Material's default tangent-arc CircularNotchedRectangle which
+          // looks visibly steep where shoulder meets arc.
+          const Positioned.fill(
+            child: CustomPaint(painter: _NotchedNavPainter()),
+          ),
+
+          // ── Nav items ──
+          Align(
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              height: 72,
+              child: Row(
+                children: [
+                  ..._items
+                      .sublist(0, 2)
+                      .asMap()
+                      .entries
+                      .map((e) => _buildNavItem(e.key, e.value)),
+                  const SizedBox(width: _NotchedNavPainter.notchSpan),
+                  ..._items
+                      .sublist(2)
+                      .asMap()
+                      .entries
+                      .map((e) => _buildNavItem(e.key + 2, e.value)),
                 ],
-              ),
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: SizedBox(
-                  height: 72,
-                  child: Row(
-                    children: [
-                      ..._items
-                          .sublist(0, 2)
-                          .asMap()
-                          .entries
-                          .map((e) => _buildNavItem(e.key, e.value)),
-                      const SizedBox(width: 80),
-                      ..._items
-                          .sublist(2)
-                          .asMap()
-                          .entries
-                          .map((e) => _buildNavItem(e.key + 2, e.value)),
-                    ],
-                  ),
-                ),
               ),
             ),
           ),
 
-          // ── FAB — floats above the bar ──
+          // ── FAB — nests inside the notch ──
           Positioned(
-            top: -32,
-            child: GestureDetector(
-              onTapDown: (_) {
-                VsHaptics.medium();
-                _fabCtrl.forward();
-              },
-              onTapUp: (_) {
-                _fabCtrl.reverse();
-                _startNewScreening();
-              },
-              onTapCancel: () => _fabCtrl.reverse(),
-              child: AnimatedBuilder(
-                animation: _fabScale,
-                builder: (_, child) =>
-                    Transform.scale(scale: _fabScale.value, child: child),
-                child: Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: VsColors.brand,
-                    border: Border.all(color: Colors.white, width: 3),
-                    boxShadow: [
-                      BoxShadow(
-                        color: VsColors.brand.withValues(alpha: 0.35),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.remove_red_eye_rounded,
-                    color: Colors.white,
-                    size: 28,
+            top: -40,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _startNewScreening,
+                onTapDown: (_) {
+                  VsHaptics.medium();
+                  _fabCtrl.forward();
+                },
+                onTapUp: (_) => _fabCtrl.reverse(),
+                onTapCancel: () => _fabCtrl.reverse(),
+                customBorder: const CircleBorder(),
+                child: AnimatedBuilder(
+                  animation: _fabScale,
+                  builder: (_, child) =>
+                      Transform.scale(scale: _fabScale.value, child: child),
+                  child: Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: VsColors.brand,
+                      // Slim 2px ring matches the notch lip thickness so the
+                      // FAB reads as nested rather than floating apart.
+                      border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: VsColors.brand.withValues(alpha: 0.28),
+                          blurRadius: 14,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.remove_red_eye_rounded,
+                      color: Colors.white,
+                      size: 28,
+                    ),
                   ),
                 ),
               ),
@@ -252,56 +247,79 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
 
   Widget _buildNavItem(int i, _NavItem item) {
     final active = _index == i;
+    final tint = active ? VsColors.brand : VsColors.slate500;
     return Expanded(
-      child: GestureDetector(
-        onTap: () => _onNavTap(i),
-        behavior: HitTestBehavior.opaque,
-        child: AnimatedBuilder(
-          animation: _itemCtrls[i],
-          builder: (_, child) => Transform.scale(
-            scale: 1.0 - _itemCtrls[i].value * 0.08,
-            child: child,
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: active ? 40 : 36,
-                height: active ? 32 : 28,
-                decoration: BoxDecoration(
-                  color: active
-                      ? VsColors.brand.withValues(alpha: 0.10)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  active ? item.activeIcon : item.icon,
-                  size: active ? 20 : 18,
-                  color: active ? VsColors.brand : VsColors.slate400,
-                ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _onNavTap(i),
+          borderRadius: BorderRadius.circular(14),
+          highlightColor: VsColors.brand.withValues(alpha: 0.06),
+          splashColor: VsColors.brand.withValues(alpha: 0.10),
+          child: SizedBox(
+            height: 72,
+            child: AnimatedBuilder(
+              animation: _itemCtrls[i],
+              builder: (_, child) => Transform.scale(
+                scale: 1.0 - _itemCtrls[i].value * 0.06,
+                child: child,
               ),
-              const SizedBox(height: 4),
-              Text(
-                item.label,
-                style: GoogleFonts.inter(
-                  fontSize: 11,
-                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                  color: active ? VsColors.brand : VsColors.slate400,
-                ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Active indicator pill — single confident state.
+                  // No background when inactive; the pill itself announces
+                  // selection, so there's no need for a competing underline.
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOutCubic,
+                    width: active ? 56 : 36,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: active
+                          ? VsColors.brand.withValues(alpha: 0.13)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(VsRadius.pill),
+                    ),
+                    alignment: Alignment.center,
+                    // Subtle upward lift on active so the icon feels "raised"
+                    // out of the pill rather than sitting flat in it.
+                    child: AnimatedSlide(
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOut,
+                      offset: active
+                          ? const Offset(0, -0.02)
+                          : Offset.zero,
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 180),
+                        transitionBuilder: (child, anim) => FadeTransition(
+                          opacity: anim,
+                          child: ScaleTransition(scale: anim, child: child),
+                        ),
+                        child: Icon(
+                          active ? item.activeIcon : item.icon,
+                          key: ValueKey<bool>(active),
+                          size: 20,
+                          color: tint,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOut,
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                      color: tint,
+                      letterSpacing: active ? 0.1 : 0.0,
+                    ),
+                    child: Text(item.label),
+                  ),
+                ],
               ),
-              const SizedBox(height: 4),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.easeOutCubic,
-                width: active ? 20 : 0,
-                height: 2.5,
-                decoration: BoxDecoration(
-                  color: VsColors.brand,
-                  borderRadius: BorderRadius.circular(99),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -314,4 +332,91 @@ class _NavItem {
   final IconData activeIcon;
   final IconData icon;
   final String label;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Notched nav background
+//
+// The default Material `CircularNotchedRectangle` joins a circular arc to
+// flat shoulders with tangent points — the visible "kink" at that join is
+// the steep look we want to avoid. Here we use two mirrored cubic-bezier
+// shoulders that meet at a horizontal tangent at the bottom of the dip,
+// so the curve is continuous and visually smooth.
+//
+// Geometry:
+//   - Total notch span: 2 * _shoulderHalf
+//   - Depth: _depth pixels down from the bar top
+//   - _flatness controls how long the curve stays near horizontal at top
+//     and bottom of the dip. Higher = flatter shoulders, more "bowl" shape.
+// ─────────────────────────────────────────────────────────────
+class _NotchedNavPainter extends CustomPainter {
+  const _NotchedNavPainter();
+
+  static const double _shoulderHalf = 64;
+  static const double _depth = 30;
+  static const double _flatness = 0.38;
+
+  /// Horizontal gap the nav-items Row should leave at the centre. Includes a
+  /// small buffer beyond the notch span so labels don't crowd the shoulders.
+  static const double notchSpan = (_shoulderHalf * 2) + 8;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final shape = _buildShape(size, cx);
+
+    // Soft upward shadow — drawn as the same path offset above with an
+    // outer-blur mask so we don't get bleed inside the bar.
+    canvas.save();
+    canvas.translate(0, -3);
+    canvas.drawPath(
+      shape,
+      Paint()
+        ..color = VsColors.slate900.withValues(alpha: 0.08)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.outer, 12),
+    );
+    canvas.restore();
+
+    // Surface
+    canvas.drawPath(shape, Paint()..color = Colors.white);
+
+    // Top hairline — traces just the notched top edge, not the bottom.
+    canvas.drawPath(
+      _buildTopEdge(size, cx),
+      Paint()
+        ..color = VsColors.border
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+  }
+
+  Path _buildShape(Size size, double cx) {
+    final f = _flatness;
+    final s = _shoulderHalf;
+    final d = _depth;
+    return Path()
+      ..moveTo(0, 0)
+      ..lineTo(cx - s, 0)
+      ..cubicTo(cx - s * (1 - f), 0, cx - s * f, d, cx, d)
+      ..cubicTo(cx + s * f, d, cx + s * (1 - f), 0, cx + s, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+  }
+
+  Path _buildTopEdge(Size size, double cx) {
+    final f = _flatness;
+    final s = _shoulderHalf;
+    final d = _depth;
+    return Path()
+      ..moveTo(0, 0)
+      ..lineTo(cx - s, 0)
+      ..cubicTo(cx - s * (1 - f), 0, cx - s * f, d, cx, d)
+      ..cubicTo(cx + s * f, d, cx + s * (1 - f), 0, cx + s, 0)
+      ..lineTo(size.width, 0);
+  }
+
+  @override
+  bool shouldRepaint(covariant _NotchedNavPainter old) => false;
 }

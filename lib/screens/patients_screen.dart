@@ -135,82 +135,86 @@ Future<void> _showReferralStatusSheet(
           const SizedBox(height: 20),
           ...patientReferralStatusOptions.map((statusOption) {
             final isActive = patient.referralStatus == statusOption.value;
-            return GestureDetector(
-              onTap: () async {
-                Navigator.pop(context);
-                await onStatusSelected(statusOption.value);
-                if (!context.mounted) {
-                  return;
-                }
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Status updated to ${statusOption.label}${patient.name.isEmpty ? '' : ' for ${patient.name}'}',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: Colors.white,
-                      ),
-                    ),
-                    backgroundColor: statusOption.color,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: isActive
-                      ? statusOption.color.withValues(alpha: 0.08)
-                      : Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: isActive
-                        ? statusOption.color
-                        : const Color(0xFFEEF2F6),
-                    width: isActive ? 2 : 1.5,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: statusOption.color.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        statusOption.icon,
-                        size: 18,
-                        color: statusOption.color,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        statusOption.label,
+            return Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () async {
+                  Navigator.pop(context);
+                  await onStatusSelected(statusOption.value);
+                  if (!context.mounted) {
+                    return;
+                  }
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Status updated to ${statusOption.label}${patient.name.isEmpty ? '' : ' for ${patient.name}'}',
                         style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: isActive
-                              ? statusOption.color
-                              : const Color(0xFF1A2A3D),
+                          fontSize: 12,
+                          color: Colors.white,
                         ),
                       ),
-                    ),
-                    if (isActive)
-                      Icon(
-                        Icons.check_circle_rounded,
-                        color: statusOption.color,
-                        size: 20,
+                      backgroundColor: statusOption.color,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                  ],
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(14),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? statusOption.color.withValues(alpha: 0.08)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isActive
+                          ? statusOption.color
+                          : const Color(0xFFEEF2F6),
+                      width: isActive ? 2 : 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: statusOption.color.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          statusOption.icon,
+                          size: 18,
+                          color: statusOption.color,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          statusOption.label,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: isActive
+                                ? statusOption.color
+                                : const Color(0xFF1A2A3D),
+                          ),
+                        ),
+                      ),
+                      if (isActive)
+                        Icon(
+                          Icons.check_circle_rounded,
+                          color: statusOption.color,
+                          size: 20,
+                        ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -1254,28 +1258,34 @@ class _PatientsScreenState extends State<PatientsScreen> {
                           ),
                           const SizedBox(width: 6),
                           if (p.outcome == 'refer')
-                            GestureDetector(
-                              onTap: () => _showUpdateStatusSheet(p),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: _referralStatusColor(
-                                    p.referralStatus,
-                                  ).withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(7),
-                                  border: Border.all(
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () => _showUpdateStatusSheet(p),
+                                borderRadius: BorderRadius.circular(7),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
                                     color: _referralStatusColor(
                                       p.referralStatus,
-                                    ).withValues(alpha: 0.3),
+                                    ).withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(7),
+                                    border: Border.all(
+                                      color: _referralStatusColor(
+                                        p.referralStatus,
+                                      ).withValues(alpha: 0.3),
+                                    ),
                                   ),
-                                ),
-                                child: Icon(
-                                  Icons.edit_rounded,
-                                  size: 12,
-                                  color: _referralStatusColor(p.referralStatus),
+                                  child: Icon(
+                                    Icons.edit_rounded,
+                                    size: 12,
+                                    color: _referralStatusColor(
+                                      p.referralStatus,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
@@ -1325,46 +1335,50 @@ class _PatientsScreenState extends State<PatientsScreen> {
                             () => _callPatient(p),
                           ),
                           const SizedBox(width: 5),
-                          GestureDetector(
-                            onTap: () => _screenPatientNow(p),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 5,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [_teal, Color(0xFF0F766E)],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => _screenPatientNow(p),
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
                                 ),
-                                borderRadius: BorderRadius.circular(8),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: _teal.withValues(alpha: 0.3),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [_teal, Color(0xFF0F766E)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
                                   ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.remove_red_eye_rounded,
-                                    size: 12,
-                                    color: Colors.white,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Screen Now',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700,
+                                  borderRadius: BorderRadius.circular(8),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: _teal.withValues(alpha: 0.3),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.remove_red_eye_rounded,
+                                      size: 12,
                                       color: Colors.white,
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Screen now',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -1379,16 +1393,20 @@ class _PatientsScreenState extends State<PatientsScreen> {
   }
 
   Widget _actionBtn(IconData icon, Color color, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(7),
-          border: Border.all(color: color.withValues(alpha: 0.25)),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(7),
+        child: Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(7),
+            border: Border.all(color: color.withValues(alpha: 0.25)),
+          ),
+          child: Icon(icon, size: 14, color: color),
         ),
-        child: Icon(icon, size: 14, color: color),
       ),
     );
   }
@@ -2321,24 +2339,9 @@ class _CampaignDetailScreenState extends State<_CampaignDetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        GestureDetector(
+                        VsBackTile(
                           onTap: () => Navigator.pop(context),
-                          child: Container(
-                            width: 38,
-                            height: 38,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(11),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.25),
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.arrow_back_ios_new_rounded,
-                              color: Colors.white,
-                              size: 15,
-                            ),
-                          ),
+                          size: 38,
                         ),
                         const SizedBox(height: 16),
                         Row(
@@ -3099,16 +3102,20 @@ class _CampaignPatientCardState extends State<_CampaignPatientCard> {
   }
 
   Widget _campBtn(IconData icon, Color color, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(5),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(7),
-          border: Border.all(color: color.withValues(alpha: 0.25)),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(7),
+        child: Container(
+          padding: const EdgeInsets.all(5),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(7),
+            border: Border.all(color: color.withValues(alpha: 0.25)),
+          ),
+          child: Icon(icon, size: 13, color: color),
         ),
-        child: Icon(icon, size: 13, color: color),
       ),
     );
   }

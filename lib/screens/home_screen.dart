@@ -14,6 +14,7 @@ import '../utils/app_theme.dart';
 import '../utils/page_transitions.dart';
 import '../utils/haptics.dart';
 import '../widgets/vs_logo.dart';
+import '../widgets/vs_ui.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -141,7 +142,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Cloud sync is not enabled in this build. Records remain on this device.',
+            'Cloud workspace is not configured. Records remain on this device.',
             style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
           ),
           backgroundColor: VsColors.sky,
@@ -161,7 +162,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       SnackBar(
         content: Text(
           result.success
-              ? 'Sync finished: ${result.appliedChanges} changes pushed, ${result.restoredRecords} records restored.'
+              ? 'Sync finished: ${result.appliedChanges} uploaded, ${result.restoredRecords} refreshed.'
               : result.errorMessage ?? 'Sync failed.',
           style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
         ),
@@ -327,161 +328,85 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       opacity: _headerOpacity,
       child: SlideTransition(
         position: _headerSlide,
-        child: Container(
-          decoration: const BoxDecoration(
-            gradient: VsGradients.hero,
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(28),
-              bottomRight: Radius.circular(28),
+        child: VsGradientHeader(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+          topRow: Row(
+            children: [
+              Expanded(child: _buildBrandWordmark()),
+              _buildNotifBell(),
+              const SizedBox(width: 8),
+              _buildAvatar(),
+            ],
+          ),
+          title: _firstName.isEmpty ? 'Welcome' : '$_firstName 👋',
+          subtitle: '$_greeting · ${_fmtDate(_now)}',
+          bottom: _buildHeaderLocationButton(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBrandWordmark() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const VsLogo(size: 24, showRing: false),
+        const SizedBox(width: 8),
+        Flexible(
+          child: RichText(
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            text: TextSpan(
+              children: [
+                TextSpan(
+                  text: 'Vision',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+                TextSpan(
+                  text: 'Screen',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
             ),
           ),
-          child: Stack(
-            clipBehavior: Clip.hardEdge,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeaderLocationButton() {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(VsRadius.pill),
+      child: InkWell(
+        onTap: _fetchLocation,
+        borderRadius: BorderRadius.circular(VsRadius.pill),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
             children: [
-              // Dot pattern
-              Positioned.fill(
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(28),
-                    bottomRight: Radius.circular(28),
-                  ),
-                  child: CustomPaint(painter: _DotPainter()),
-                ),
+              Icon(
+                Icons.location_on_rounded,
+                size: 14,
+                color: Colors.white.withValues(alpha: 0.82),
               ),
-              SafeArea(
-                bottom: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // -- Top bar --
-                      Row(
-                        children: [
-                          // Logo wordmark — takes remaining space
-                          Expanded(
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                VsLogo(size: 24, showRing: false),
-                                const SizedBox(width: 8),
-                                Flexible(
-                                  child: RichText(
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
-                                    text: TextSpan(
-                                      children: [
-                                        TextSpan(
-                                          text: 'Vision',
-                                          style: GoogleFonts.plusJakartaSans(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w800,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        TextSpan(
-                                          text: 'Screen',
-                                          style: GoogleFonts.plusJakartaSans(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w800,
-                                            color: Colors.white.withValues(
-                                              alpha: 0.6,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          // Right side — compact fixed items
-                          _buildNotifBell(),
-                          const SizedBox(width: 8),
-                          _buildAvatar(),
-                        ],
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      // -- Greeting --
-                      Text(
-                        _greeting,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: Colors.white.withValues(alpha: 0.80),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '$_firstName 👋',
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          height: 1.1,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Flexible(
-                            child: GestureDetector(
-                              onTap: _fetchLocation,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.location_on_rounded,
-                                    size: 12,
-                                    color: Colors.white.withValues(alpha: 0.8),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Flexible(
-                                    child: Text(
-                                      _locationLabel,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: GoogleFonts.inter(
-                                        fontSize: 11,
-                                        color: Colors.white.withValues(
-                                          alpha: 0.8,
-                                        ),
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            '·',
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              color: Colors.white.withValues(alpha: 0.5),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Flexible(
-                            child: Text(
-                              _fmtDate(_now),
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.inter(
-                                fontSize: 11,
-                                color: Colors.white.withValues(alpha: 0.7),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  _locationLabel,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: Colors.white.withValues(alpha: 0.82),
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -496,112 +421,126 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildTodaySummary() {
     final passed = _totalScreened - _totalReferred;
     final items = [
-      ('Screened', _totalScreened, VsColors.sky),
-      ('Passed', passed, VsColors.emerald),
-      ('Referred', _totalReferred, VsColors.rose),
-      ('Unsynced', _unsyncedCount, VsColors.amber),
+      (
+        'Screened',
+        _totalScreened,
+        VsColors.sky,
+        Icons.people_alt_rounded,
+        'Today',
+      ),
+      ('Passed', passed, VsColors.emerald, Icons.check_circle_rounded, 'Today'),
+      (
+        'Referred',
+        _totalReferred,
+        VsColors.rose,
+        Icons.warning_rounded,
+        'Today',
+      ),
+      (
+        'Unsynced',
+        _unsyncedCount,
+        VsColors.amber,
+        Icons.sync_problem_rounded,
+        !_syncConfigured
+            ? 'Local only'
+            : _unsyncedCount == 0
+            ? 'Synced'
+            : 'Queued for sync',
+      ),
     ];
     return AnimatedBuilder(
       animation: _statsAnim,
       builder: (_, _) {
         final t = _statsAnim.value;
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: VsColors.card,
-            borderRadius: BorderRadius.circular(VsRadius.lg),
-            border: Border.all(color: VsColors.border),
-          ),
-          child: Row(
-            children: [
-              for (var i = 0; i < items.length; i++) ...[
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${(items[i].$2 * t).round()}',
-                        style: VsText.title(color: items[i].$3),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(items[i].$1, style: VsText.label()),
-                    ],
-                  ),
-                ),
-                if (i < items.length - 1)
-                  Container(width: 1, height: 28, color: VsColors.border),
+        Widget tile(int index) => VsStatTile(
+          value: '${(items[index].$2 * t).round()}',
+          label: items[index].$1,
+          color: items[index].$3,
+          icon: items[index].$4,
+          caption: items[index].$5,
+          dense: true,
+        );
+
+        return Column(
+          children: [
+            Row(
+              children: [
+                Expanded(child: tile(0)),
+                const SizedBox(width: VsSpace.md),
+                Expanded(child: tile(1)),
               ],
-            ],
-          ),
+            ),
+            const SizedBox(height: VsSpace.md),
+            Row(
+              children: [
+                Expanded(child: tile(2)),
+                const SizedBox(width: VsSpace.md),
+                Expanded(child: tile(3)),
+              ],
+            ),
+          ],
         );
       },
     );
   }
 
+  Future<void> _openNotifications() async {
+    await Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, primaryAnimation, secondaryAnimation) =>
+            const NotificationsScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+            FadeTransition(
+              opacity: CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOut,
+              ),
+              child: child,
+            ),
+        transitionDuration: const Duration(milliseconds: 280),
+      ),
+    );
+    _controller.clearNotifications();
+  }
+
   Widget _buildNotifBell() {
-    return GestureDetector(
-      onTap: () async {
-        await Navigator.push(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, primaryAnimation, secondaryAnimation) =>
-                const NotificationsScreen(),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) =>
-                    FadeTransition(
-                      opacity: CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeOut,
-                      ),
-                      child: child,
-                    ),
-            transitionDuration: const Duration(milliseconds: 280),
-          ),
-        );
-        _controller.clearNotifications();
-      },
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
-            ),
-            child: Icon(
-              _notificationCount > 0
-                  ? Icons.notifications_active_rounded
-                  : Icons.notifications_rounded,
-              color: Colors.white,
-              size: 18,
-            ),
-          ),
-          if (_notificationCount > 0)
-            Positioned(
-              top: -4,
-              right: -4,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: VsColors.rose,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: VsColors.brandDeep, width: 1.5),
-                ),
-                child: Text(
-                  '$_notificationCount',
-                  style: GoogleFonts.inter(
-                    fontSize: 8,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        VsIconButton(
+          icon: _notificationCount > 0
+              ? Icons.notifications_active_rounded
+              : Icons.notifications_rounded,
+          tooltip: 'Open notifications',
+          onTap: _openNotifications,
+          foreground: Colors.white,
+          tint: Colors.white.withValues(alpha: 0.15),
+          size: 38,
+          iconSize: 18,
+        ),
+        if (_notificationCount > 0)
+          Positioned(
+            top: -4,
+            right: -4,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: VsColors.rose,
+                shape: BoxShape.circle,
+                border: Border.all(color: VsColors.brandDeep, width: 1.5),
+              ),
+              child: Text(
+                '$_notificationCount',
+                style: GoogleFonts.inter(
+                  fontSize: 8,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
                 ),
               ),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 
@@ -714,87 +653,93 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final statusText = _isSyncing
         ? 'Syncing records...'
         : !_syncConfigured
-        ? 'Cloud sync is not enabled in this build. Records stay on this device.'
+        ? 'Cloud workspace is not configured. Records stay on this device.'
         : _lastSyncError.isNotEmpty
         ? 'Last sync failed. Tap to retry.'
-        : '$_unsyncedCount record${_unsyncedCount == 1 ? '' : 's'} pending sync';
+        : _unsyncedCount == 0
+        ? 'All local changes are synced.'
+        : '$_unsyncedCount record${_unsyncedCount == 1 ? '' : 's'} waiting to sync';
     final pillColor = _syncConfigured ? VsColors.sky : VsColors.skyBg;
     final pillTextColor = _syncConfigured
         ? Colors.white
         : const Color(0xFF0369A1);
     final pillText = _syncConfigured ? 'Sync Now' : 'Local only';
 
-    return GestureDetector(
-      onTap: canSync ? _doSync : null,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: VsColors.skyBg,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: VsColors.sky.withValues(alpha: 0.35)),
-        ),
-        child: Row(
-          children: [
-            AnimatedBuilder(
-              animation: _syncCtrl,
-              builder: (_, child) => Transform.rotate(
-                angle: _isSyncing ? _syncCtrl.value * 2 * pi : 0,
-                child: child,
-              ),
-              child: Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: VsColors.sky.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: canSync ? _doSync : null,
+        borderRadius: BorderRadius.circular(12),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: VsColors.skyBg,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: VsColors.sky.withValues(alpha: 0.35)),
+          ),
+          child: Row(
+            children: [
+              AnimatedBuilder(
+                animation: _syncCtrl,
+                builder: (_, child) => Transform.rotate(
+                  angle: _isSyncing ? _syncCtrl.value * 2 * pi : 0,
+                  child: child,
                 ),
-                child: const Icon(
-                  Icons.sync_rounded,
-                  size: 16,
-                  color: VsColors.sky,
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                statusText,
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF0369A1),
-                ),
-              ),
-            ),
-            if (!_isSyncing)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: pillColor,
-                  borderRadius: BorderRadius.circular(99),
-                ),
-                child: Text(
-                  pillText,
-                  style: GoogleFonts.inter(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: pillTextColor,
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: VsColors.sky.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.sync_rounded,
+                    size: 16,
+                    color: VsColors.sky,
                   ),
                 ),
-              )
-            else
-              const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: VsColors.sky,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  statusText,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF0369A1),
+                  ),
                 ),
               ),
-          ],
+              if (!_isSyncing)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: pillColor,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Text(
+                    pillText,
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: pillTextColor,
+                    ),
+                  ),
+                )
+              else
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: VsColors.sky,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -832,7 +777,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         primary: true,
         icon: Icons.remove_red_eye_rounded,
         title: 'New Screening',
-        subtitle: 'Register & test patient',
+        subtitle: 'Register and test patient',
         accent: VsColors.brand,
         illustration: const _EyeScanIllustration(),
         onTap: () => Navigator.push(
@@ -1558,21 +1503,27 @@ class _PressableActionCardState extends State<_PressableActionCard>
   @override
   Widget build(BuildContext context) {
     final a = widget.data;
-    return GestureDetector(
-      onTapDown: (_) {
-        VsHaptics.light();
-        _pressCtrl.forward();
-      },
-      onTapUp: (_) {
-        _pressCtrl.reverse();
-        a.onTap();
-      },
-      onTapCancel: () => _pressCtrl.reverse(),
-      child: AnimatedBuilder(
-        animation: _pressCtrl,
-        builder: (_, child) =>
-            Transform.scale(scale: 1 - (_pressCtrl.value * 0.03), child: child),
-        child: a.primary ? _primaryCard(a) : _secondaryCard(a),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTapDown: (_) {
+          VsHaptics.light();
+          _pressCtrl.forward();
+        },
+        onTapCancel: () => _pressCtrl.reverse(),
+        onTap: () {
+          _pressCtrl.reverse();
+          a.onTap();
+        },
+        borderRadius: BorderRadius.circular(VsRadius.lg),
+        child: AnimatedBuilder(
+          animation: _pressCtrl,
+          builder: (_, child) => Transform.scale(
+            scale: 1 - (_pressCtrl.value * 0.03),
+            child: child,
+          ),
+          child: a.primary ? _primaryCard(a) : _secondaryCard(a),
+        ),
       ),
     );
   }
@@ -1698,27 +1649,6 @@ class _PressableActionCardState extends State<_PressableActionCard>
       ),
     );
   }
-}
-
-// -------------------------------------------------------------
-// Dot pattern painter — used on the home header
-// -------------------------------------------------------------
-class _DotPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = Colors.white.withValues(alpha: 0.06)
-      ..style = PaintingStyle.fill;
-    const spacing = 26.0;
-    for (double y = 0; y < size.height; y += spacing) {
-      for (double x = 0; x < size.width; x += spacing) {
-        canvas.drawCircle(Offset(x, y), 1.8, p);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_DotPainter old) => false;
 }
 
 // -------------------------------------------------------------

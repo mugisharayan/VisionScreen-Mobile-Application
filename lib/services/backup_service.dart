@@ -1,112 +1,142 @@
-import 'dart:convert';
-import 'dart:io';
-
-import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../db/database_helper.dart';
+
+class BackupSnapshot {
+  const BackupSnapshot({
+    required this.schemaVersion,
+    required this.createdAt,
+    required this.tables,
+  });
+
+  final int schemaVersion;
+  final String createdAt;
+  final Map<String, List<Map<String, dynamic>>> tables;
+
+  int get totalRows =>
+      tables.values.fold(0, (total, rows) => total + rows.length);
+
+  Map<String, dynamic> toMap() {
+    return {
+      'schema_version': schemaVersion,
+      'created_at': createdAt,
+      'tables': tables,
+    };
+  }
+
+  static BackupSnapshot fromMap(Map<String, dynamic> raw) {
+    final tablesRaw = raw['tables'];
+    if (tablesRaw is! Map<String, dynamic>) {
+      throw const FormatException('Invalid backup format: missing tables.');
+    }
+
+    return BackupSnapshot(
+      schemaVersion: (raw['schema_version'] as int?) ?? 0,
+      createdAt: raw['created_at'] as String? ?? '',
+      tables: tablesRaw.map(
+        (key, value) => MapEntry(key, _normalizeRows(key, value)),
+      ),
+    );
+  }
+
+  static List<Map<String, dynamic>> _normalizeRows(String table, Object? rows) {
+    if (rows == null) {
+      return const <Map<String, dynamic>>[];
+    }
+    if (rows is! List) {
+      throw FormatException('Invalid backup format for table $table.');
+    }
+
+    final normalized = <Map<String, dynamic>>[];
+    for (final row in rows) {
+      if (row is! Map) {
+        throw FormatException('Invalid row in backup table $table.');
+      }
+      normalized.add(row.map((key, value) => MapEntry(key.toString(), value)));
+    }
+    return normalized;
+  }
+}
+
+class RestoreSummary {
+  const RestoreSummary({
+    required this.tablesRestored,
+    required this.rowsRestored,
+  });
+
+  final int tablesRestored;
+  final int rowsRestored;
+}
 
 class BackupService {
   BackupService._();
 
   static final BackupService instance = BackupService._();
 
+  static const List<String> _backupTables = <String>[
+    'chw_profiles',
+    'workspace_facilities',
+    'facility_memberships',
+    'campaigns',
+    'patients',
+    'screenings',
+    'sync_queue',
+  ];
+
   final DatabaseHelper _db = DatabaseHelper.instance;
 
-  Future<String> exportJsonBackup() async {
+  Future<BackupSnapshot> createWorkspaceSnapshot() async {
     final database = await _db.db;
-    final payload = <String, dynamic>{
-      'schema_version': await database.getVersion(),
-      'exported_at': DateTime.now().toUtc().toIso8601String(),
-      'tables': {
-        'chw_profiles': await database.query('chw_profiles'),
-        'workspace_facilities': await database.query('workspace_facilities'),
-        'facility_memberships': await database.query('facility_memberships'),
-        'campaigns': await database.query('campaigns'),
-        'patients': await database.query('patients'),
-        'screenings': await database.query('screenings'),
-      },
-    };
+    final tables = <String, List<Map<String, dynamic>>>{};
+    for (final table in _backupTables) {
+      tables[table] = await database.query(table);
+    }
 
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File(
-      '${dir.path}/visionscreen-backup-${DateTime.now().millisecondsSinceEpoch}.json',
+    return BackupSnapshot(
+      schemaVersion: await database.getVersion(),
+      createdAt: DateTime.now().toUtc().toIso8601String(),
+      tables: tables,
     );
-    await file.writeAsString(
-      const JsonEncoder.withIndent('  ').convert(payload),
-    );
-    return file.path;
   }
 
-  Future<void> restoreJsonBackup(String path) async {
-    final file = File(path);
-    if (!await file.exists()) {
-      throw StateError('Backup file not found: $path');
-    }
-
-    final raw = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
-    final tables = raw['tables'];
-    if (tables is! Map<String, dynamic>) {
-      throw const FormatException('Invalid backup format');
-    }
-
+  Future<RestoreSummary> restoreWorkspaceSnapshot(
+    Map<String, dynamic> rawSnapshot,
+  ) async {
+    final snapshot = BackupSnapshot.fromMap(rawSnapshot);
     final database = await _db.db;
-    await database.transaction((txn) async {
-      await _db.clearWorkspaceData(database: txn);
+    var tablesRestored = 0;
+    var rowsRestored = 0;
 
-      await _restoreTable(
-        txn,
-        'workspace_facilities',
-        tables['workspace_facilities'],
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-      await _restoreTable(
-        txn,
-        'facility_memberships',
-        tables['facility_memberships'],
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-      await _restoreTable(
-        txn,
-        'chw_profiles',
-        tables['chw_profiles'],
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-      await _restoreTable(
-        txn,
-        'campaigns',
-        tables['campaigns'],
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-      await _restoreTable(
-        txn,
-        'patients',
-        tables['patients'],
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-      await _restoreTable(
-        txn,
-        'screenings',
-        tables['screenings'],
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+    await database.transaction((txn) async {
+      await _db.clearRestorableData(database: txn);
+
+      for (final table in _backupTables) {
+        final rows = snapshot.tables[table] ?? const <Map<String, dynamic>>[];
+        await _restoreTable(
+          txn,
+          table,
+          rows,
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        tablesRestored++;
+        rowsRestored += rows.length;
+      }
     });
+
+    return RestoreSummary(
+      tablesRestored: tablesRestored,
+      rowsRestored: rowsRestored,
+    );
   }
 
   Future<void> _restoreTable(
     DatabaseExecutor database,
     String table,
-    Object? rows, {
+    List<Map<String, dynamic>> rows, {
     required ConflictAlgorithm conflictAlgorithm,
   }) async {
-    if (rows is! List) return;
     for (final row in rows) {
-      if (row is! Map) continue;
-      await database.insert(
-        table,
-        row.map((key, value) => MapEntry(key.toString(), value)),
-        conflictAlgorithm: conflictAlgorithm,
-      );
+      await database.insert(table, row, conflictAlgorithm: conflictAlgorithm);
     }
   }
 }

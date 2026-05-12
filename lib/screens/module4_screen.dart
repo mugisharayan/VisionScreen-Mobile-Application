@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/module_illustrations.dart';
+import '../widgets/vs_ui.dart';
 
 class Module4Screen extends StatefulWidget {
   final VoidCallback? onCompleted;
@@ -41,14 +42,14 @@ class _Module4ScreenState extends State<Module4Screen> {
           'To generate a referral letter:\n\n'
           'INDIVIDUAL SCREENING:\n'
           '1. Complete the eye test\n'
-          '2. On the summary screen, tap "Generate Referral Letter"\n'
+          '2. On the summary screen, tap "Generate referral letter"\n'
           '3. Select the referral facility from the dropdown\n'
           '4. Set an appointment date\n'
           '5. Enter CHW name and title\n'
           '6. Tap "Preview Letter" to review\n'
           '7. Share via WhatsApp, PDF or print\n\n'
           'BULK MODE:\n'
-          '1. On the result screen after each patient, tap "Generate Referral Letter"\n'
+          '1. On the result screen after each patient, tap "Generate referral letter"\n'
           '2. Same steps as above',
       'tip':
           'The referral letter includes patient demographics, VA results, eye conditions, facility name and appointment date — all pre-filled from the screening data.',
@@ -157,25 +158,7 @@ class _Module4ScreenState extends State<Module4Screen> {
             children: [
               Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(11),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.2),
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_rounded,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ),
-                  ),
+                  VsBackTile(onTap: () => Navigator.pop(context), size: 38),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -358,23 +341,27 @@ class _Module4ScreenState extends State<Module4Screen> {
         child: Row(
           children: [
             if (_currentStep > 0) ...[
-              GestureDetector(
-                onTap: () => setState(() => _currentStep--),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 14,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF0F4F7),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '← Back',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF5E7291),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => setState(() => _currentStep--),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0F4F7),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Back',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF5E7291),
+                      ),
                     ),
                   ),
                 ),
@@ -382,56 +369,60 @@ class _Module4ScreenState extends State<Module4Screen> {
               const SizedBox(width: 10),
             ],
             Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  if (isLast) {
-                    widget.onCompleted?.call();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Module 4 completed! All modules done! 🎓',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: Colors.white,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    if (isLast) {
+                      widget.onCompleted?.call();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Module 4 completed.',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: Colors.white,
+                            ),
                           ),
+                          backgroundColor: color,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          duration: const Duration(seconds: 3),
                         ),
-                        backgroundColor: color,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        duration: const Duration(seconds: 3),
+                      );
+                      Navigator.pop(context);
+                    } else {
+                      setState(() => _currentStep++);
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [color, color.withValues(alpha: 0.8)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                    );
-                    Navigator.pop(context);
-                  } else {
-                    setState(() => _currentStep++);
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [color, color.withValues(alpha: 0.8)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withValues(alpha: 0.35),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.35),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      isLast ? 'Complete All Modules 🎓' : 'Next Step →',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                    child: Center(
+                      child: Text(
+                        isLast ? 'Complete module' : 'Next step',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),

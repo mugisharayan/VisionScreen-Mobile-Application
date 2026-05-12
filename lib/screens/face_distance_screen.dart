@@ -7,6 +7,7 @@ import 'package:camera/camera.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import '../services/permission_coordinator.dart';
+import '../widgets/vs_ui.dart';
 
 // ─────────────────────────────────────────────────────────────
 // FaceDistanceScreen
@@ -497,20 +498,7 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
                   child: Row(
                     children: [
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          width: 38, height: 38,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(11),
-                            border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.3)),
-                          ),
-                          child: const Icon(Icons.arrow_back_rounded,
-                              color: Colors.white, size: 18),
-                        ),
-                      ),
+                      VsBackTile(onTap: () => Navigator.pop(context), size: 38),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -668,23 +656,30 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
                   ],
 
                   // ── Skip button ──────────────────────────────
-                  GestureDetector(
-                    onTap: widget.onDistanceConfirmed,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(99),
-                        border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.25)),
-                      ),
-                      child: Text(
-                        'Skip — proceed manually',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white.withValues(alpha: 0.7),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: widget.onDistanceConfirmed,
+                      borderRadius: BorderRadius.circular(99),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.25),
+                          ),
+                        ),
+                        child: Text(
+                          'Skip and proceed manually',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.7),
+                          ),
                         ),
                       ),
                     ),
@@ -890,20 +885,29 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
                     fontSize: 13,
                     color: Colors.white.withValues(alpha: 0.6))),
             const SizedBox(height: 24),
-            GestureDetector(
-              onTap: _initCamera,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0D9488),
-                  borderRadius: BorderRadius.circular(99),
-                ),
-                child: Text('Grant Permission',
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _initCamera,
+                borderRadius: BorderRadius.circular(99),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0D9488),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Text(
+                    'Grant permission',
                     style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white)),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
               ),
             ),
           ],

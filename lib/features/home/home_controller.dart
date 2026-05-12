@@ -18,7 +18,8 @@ class HomeController extends ChangeNotifier {
     ScreeningRepository? screeningRepository,
     SyncService? syncService,
   }) : _tipCount = tipCount,
-       _screeningRepository = screeningRepository ?? ScreeningRepository.instance,
+       _screeningRepository =
+           screeningRepository ?? ScreeningRepository.instance,
        _syncService = syncService ?? SyncService.instance;
 
   final int _tipCount;
@@ -152,11 +153,9 @@ class HomeController extends ChangeNotifier {
     notifyListeners();
     try {
       final result = await _syncService.syncNow();
-      final prefs = await SharedPreferences.getInstance();
       await _loadDbStats();
-      _syncConfigured =
-          prefs.getBool(AppStrings.prefSyncConfigured) ??
-          _syncService.isConfigured;
+      _syncConfigured = _syncService.isConfigured;
+      final prefs = await SharedPreferences.getInstance();
       _lastSyncError = prefs.getString(AppStrings.prefLastSyncError) ?? '';
       return result;
     } finally {
@@ -170,8 +169,7 @@ class HomeController extends ChangeNotifier {
       context,
     );
     if (!permission.isGranted) {
-      _locationLabel =
-          permission.status == AppPermissionStatus.serviceDisabled
+      _locationLabel = permission.status == AppPermissionStatus.serviceDisabled
           ? 'Enable location services'
           : 'Location permission not granted';
       notifyListeners();
@@ -260,8 +258,7 @@ class HomeController extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _chwName = profile.name;
     _chwPhoto = profile.photoPath;
-    _syncConfigured =
-        prefs.getBool(AppStrings.prefSyncConfigured) ?? _syncService.isConfigured;
+    _syncConfigured = _syncService.isConfigured;
     _lastSyncError = prefs.getString(AppStrings.prefLastSyncError) ?? '';
     notifyListeners();
   }
@@ -280,8 +277,9 @@ class HomeController extends ChangeNotifier {
     _unsyncedCount = unsynced;
     _recentScreenings = recent;
     _referredPatients = referred;
-    _notificationCount =
-        notifications.where((notification) => notification['read'] == false).length;
+    _notificationCount = notifications
+        .where((notification) => notification['read'] == false)
+        .length;
     notifyListeners();
   }
 

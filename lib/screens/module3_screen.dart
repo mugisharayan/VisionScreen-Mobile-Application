@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/module_illustrations.dart';
+import '../widgets/vs_ui.dart';
 
 class Module3Screen extends StatefulWidget {
   final VoidCallback? onCompleted;
@@ -57,8 +58,8 @@ class _Module3ScreenState extends State<Module3Screen> {
           '3. Select GENDER (M or F)\n'
           '4. Enter PHONE NUMBER (optional)\n'
           '5. Select EYE CONDITIONS (tap chips)\n\n'
-          'Tap "Register & Start Eye Test" — the patient is saved to the database and the eye test begins immediately.\n\n'
-          'After each patient\'s result, tap "Next Patient" to loop back to registration for the next person.',
+          'Tap "Register and start eye test" to save the patient and begin the eye test immediately.\n\n'
+          'After each patient\'s result, tap "Next patient" to return to registration for the next person.',
       'tip':
           'The session counter at the top shows how many patients have been screened so far — keep track of your queue.',
     },
@@ -68,14 +69,14 @@ class _Module3ScreenState extends State<Module3Screen> {
           'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&q=80',
       'title': 'Session Summary',
       'body':
-          'When all patients are screened, tap "End Session & View Summary".\n\n'
+          'When all patients are screened, tap "End session and view summary".\n\n'
           'The summary shows:\n'
           '• Campaign name, location and target group\n'
           '• Total screened, passed, referred and pass rate\n'
           '• Full list of all patients with their VA results and outcome badges\n'
           '• Referral facility for referred patients\n\n'
-          'Tap "Done — Back to Home" to finish the session.\n\n'
-          'For referred patients, tap "Generate Referral Letter" on the result screen before moving to the next patient.',
+          'Tap "Done and return home" to finish the session.\n\n'
+          'For referred patients, tap "Generate referral letter" on the result screen before moving to the next patient.',
       'tip':
           'Always generate referral letters for referred patients before ending the session — you can share them via WhatsApp immediately.',
     },
@@ -142,25 +143,7 @@ class _Module3ScreenState extends State<Module3Screen> {
             children: [
               Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(11),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.2),
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_rounded,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ),
-                  ),
+                  VsBackTile(onTap: () => Navigator.pop(context), size: 38),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -343,23 +326,27 @@ class _Module3ScreenState extends State<Module3Screen> {
         child: Row(
           children: [
             if (_currentStep > 0) ...[
-              GestureDetector(
-                onTap: () => setState(() => _currentStep--),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 14,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF0F4F7),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '← Back',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF5E7291),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => setState(() => _currentStep--),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0F4F7),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Back',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF5E7291),
+                      ),
                     ),
                   ),
                 ),
@@ -367,56 +354,60 @@ class _Module3ScreenState extends State<Module3Screen> {
               const SizedBox(width: 10),
             ],
             Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  if (isLast) {
-                    widget.onCompleted?.call();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Module 3 completed! 🎉',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: Colors.white,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    if (isLast) {
+                      widget.onCompleted?.call();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Module 3 completed.',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: Colors.white,
+                            ),
                           ),
+                          backgroundColor: color,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          duration: const Duration(seconds: 2),
                         ),
-                        backgroundColor: color,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        duration: const Duration(seconds: 2),
+                      );
+                      Navigator.pop(context);
+                    } else {
+                      setState(() => _currentStep++);
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [color, color.withValues(alpha: 0.8)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                    );
-                    Navigator.pop(context);
-                  } else {
-                    setState(() => _currentStep++);
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [color, color.withValues(alpha: 0.8)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withValues(alpha: 0.35),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.35),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      isLast ? 'Complete Module ✓' : 'Next Step →',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                    child: Center(
+                      child: Text(
+                        isLast ? 'Complete module' : 'Next step',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),

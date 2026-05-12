@@ -23,6 +23,40 @@ class SyncResult {
   final String? errorMessage;
 }
 
+class BackupResult {
+  const BackupResult({
+    required this.success,
+    required this.rowsCaptured,
+    this.backupId,
+    this.createdAt,
+    this.errorMessage,
+  });
+
+  final bool success;
+  final int rowsCaptured;
+  final String? backupId;
+  final String? createdAt;
+  final String? errorMessage;
+}
+
+class RestoreBackupResult {
+  const RestoreBackupResult({
+    required this.success,
+    required this.rowsRestored,
+    required this.tablesRestored,
+    this.backupId,
+    this.createdAt,
+    this.errorMessage,
+  });
+
+  final bool success;
+  final int rowsRestored;
+  final int tablesRestored;
+  final String? backupId;
+  final String? createdAt;
+  final String? errorMessage;
+}
+
 class SyncService {
   SyncService._();
 
@@ -35,7 +69,9 @@ class SyncService {
   bool get isConfigured => _remote.isConfigured;
 
   Future<void> mirrorProfile(Map<String, dynamic> profile) async {
-    if (!isConfigured) return;
+    if (!isConfigured) {
+      return;
+    }
     await _remote.ensureConnected();
 
     final facility = _facilityFromProfile(profile);
@@ -53,7 +89,9 @@ class SyncService {
   }
 
   Future<Map<String, dynamic>?> fetchRemoteProfile(String email) async {
-    if (!isConfigured) return null;
+    if (!isConfigured) {
+      return null;
+    }
     await _remote.ensureConnected();
     return _remote.fetchUserByEmail(email);
   }
@@ -63,7 +101,7 @@ class SyncService {
       return const SyncResult(
         success: false,
         appliedChanges: 0,
-        errorMessage: 'MongoDB sync is not configured for this build.',
+        errorMessage: 'Cloud workspace is not configured.',
       );
     }
 
@@ -82,35 +120,40 @@ class SyncService {
     try {
       final operations = await _db.getPendingSyncOperations();
       for (final op in operations) {
-        final payload =
-            jsonDecode(op['payload'] as String) as Map<String, dynamic>;
-        final result = await _remote.pushQueuedChange(
-          entityType: op['entity_type'] as String,
-          entityId: op['entity_id'] as String,
-          operation: op['operation'] as String,
-          payload: payload,
-        );
-        if (result['conflict'] == true) {
-          final remoteDoc = result['remote'] as Map<String, dynamic>?;
-          if (remoteDoc != null) {
-            await _applyRemoteRecord(op['entity_type'] as String, remoteDoc);
+        try {
+          final payload =
+              jsonDecode(op['payload'] as String) as Map<String, dynamic>;
+          final result = await _remote.pushQueuedChange(
+            entityType: op['entity_type'] as String,
+            entityId: op['entity_id'] as String,
+            operation: op['operation'] as String,
+            payload: payload,
+          );
+          if (result['conflict'] == true) {
+            final remoteDoc = result['remote'] as Map<String, dynamic>?;
+            if (remoteDoc != null) {
+              await _applyRemoteRecord(op['entity_type'] as String, remoteDoc);
+            }
+            await _db.markSyncOperationSucceeded(
+              op['id'] as int,
+              entityType: op['entity_type'] as String,
+              entityId: op['entity_id'] as String,
+              screeningRecordId: payload['record_id'] as String?,
+            );
+            continue;
           }
+
           await _db.markSyncOperationSucceeded(
             op['id'] as int,
             entityType: op['entity_type'] as String,
             entityId: op['entity_id'] as String,
             screeningRecordId: payload['record_id'] as String?,
           );
-          continue;
+          applied++;
+        } catch (error) {
+          await _db.markSyncOperationFailed(op['id'] as int, error.toString());
+          rethrow;
         }
-
-        await _db.markSyncOperationSucceeded(
-          op['id'] as int,
-          entityType: op['entity_type'] as String,
-          entityId: op['entity_id'] as String,
-          screeningRecordId: payload['record_id'] as String?,
-        );
-        applied++;
       }
 
       final workspace = await _remote.fetchWorkspaceData(
@@ -152,7 +195,6 @@ class SyncService {
         }
       }
 
-      await prefs.setBool(AppStrings.prefSyncConfigured, true);
       await prefs.setString(
         AppStrings.prefLastSyncAt,
         DateTime.now().toUtc().toIso8601String(),
@@ -165,7 +207,6 @@ class SyncService {
         restoredRecords: restored,
       );
     } catch (error) {
-      await prefs.setBool(AppStrings.prefSyncConfigured, isConfigured);
       await prefs.setString(AppStrings.prefLastSyncError, error.toString());
       return SyncResult(
         success: false,
@@ -175,9 +216,112 @@ class SyncService {
     }
   }
 
-  Future<String> exportBackup() => _backup.exportJsonBackup();
+  Future<BackupResult> createBackup() async {
+    if (!isConfigured) {
+      return const BackupResult(
+        success: false,
+        rowsCaptured: 0,
+        errorMessage: 'Cloud workspace is not configured.',
+      );
+    }
 
-  Future<void> restoreBackup(String path) => _backup.restoreJsonBackup(path);
+    final prefs = await SharedPreferences.getInstance();
+    final facilityId = prefs.getString(AppStrings.prefFacilityId) ?? '';
+    final email = prefs.getString(AppStrings.prefChwEmail) ?? '';
+    if (facilityId.isEmpty || email.isEmpty) {
+      return const BackupResult(
+        success: false,
+        rowsCaptured: 0,
+        errorMessage: 'Missing account context for backup.',
+      );
+    }
+
+    try {
+      await _remote.ensureConnected();
+      final snapshot = await _backup.createWorkspaceSnapshot();
+      final saved = await _remote.saveWorkspaceBackup(
+        facilityId: facilityId,
+        createdBy: email,
+        snapshot: snapshot.toMap(),
+      );
+      final createdAt = saved['created_at'] as String? ?? snapshot.createdAt;
+      final backupId =
+          saved['remote_id'] as String? ?? saved['id'] as String? ?? '';
+      await prefs.setString(AppStrings.prefLastBackupId, backupId);
+      await prefs.setString(AppStrings.prefLastBackupAt, createdAt);
+      return BackupResult(
+        success: true,
+        rowsCaptured: snapshot.totalRows,
+        backupId: backupId,
+        createdAt: createdAt,
+      );
+    } catch (error) {
+      return BackupResult(
+        success: false,
+        rowsCaptured: 0,
+        errorMessage: error.toString(),
+      );
+    }
+  }
+
+  Future<RestoreBackupResult> restoreLatestBackup() async {
+    if (!isConfigured) {
+      return const RestoreBackupResult(
+        success: false,
+        rowsRestored: 0,
+        tablesRestored: 0,
+        errorMessage: 'Cloud workspace is not configured.',
+      );
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final facilityId = prefs.getString(AppStrings.prefFacilityId) ?? '';
+    if (facilityId.isEmpty) {
+      return const RestoreBackupResult(
+        success: false,
+        rowsRestored: 0,
+        tablesRestored: 0,
+        errorMessage: 'Missing facility context for restore.',
+      );
+    }
+
+    try {
+      await _remote.ensureConnected();
+      final backup = await _remote.fetchLatestWorkspaceBackup(
+        facilityId: facilityId,
+      );
+      if (backup == null) {
+        return const RestoreBackupResult(
+          success: false,
+          rowsRestored: 0,
+          tablesRestored: 0,
+          errorMessage: 'No cloud backup is available for this facility yet.',
+        );
+      }
+
+      final summary = await _backup.restoreWorkspaceSnapshot(backup);
+      final createdAt = backup['created_at'] as String? ?? '';
+      final backupId =
+          backup['remote_id'] as String? ?? backup['id'] as String? ?? '';
+      await prefs.setString(AppStrings.prefLastBackupId, backupId);
+      await prefs.setString(AppStrings.prefLastBackupAt, createdAt);
+
+      return RestoreBackupResult(
+        success: true,
+        rowsRestored: summary.rowsRestored,
+        tablesRestored: summary.tablesRestored,
+        backupId: backupId,
+        createdAt: createdAt,
+      );
+    } catch (error) {
+      return RestoreBackupResult(
+        success: false,
+        rowsRestored: 0,
+        tablesRestored: 0,
+        errorMessage: error.toString(),
+      );
+    }
+  }
 
   Map<String, dynamic> _facilityFromProfile(Map<String, dynamic> profile) {
     final now = DateTime.now().toUtc().toIso8601String();

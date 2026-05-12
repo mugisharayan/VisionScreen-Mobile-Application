@@ -705,70 +705,76 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
             childAspectRatio: 2.8,
             children: _targetGroups.map((g) {
               final active = _targetGroup == g['label'];
-              return GestureDetector(
-                onTap: () =>
-                    setState(() => _targetGroup = g['label'] as String),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: active
-                        ? _teal.withValues(alpha: 0.08)
-                        : Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: active ? _teal : const Color(0xFFEEF2F6),
-                      width: active ? 2 : 1.5,
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () =>
+                      setState(() => _targetGroup = g['label'] as String),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
+                    decoration: BoxDecoration(
+                      color: active
+                          ? _teal.withValues(alpha: 0.08)
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: active ? _teal : const Color(0xFFEEF2F6),
+                        width: active ? 2 : 1.5,
                       ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        g['icon'] as IconData,
-                        size: 18,
-                        color: active ? _teal : const Color(0xFF8FA0B4),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              g['label'] as String,
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: active ? _teal : const Color(0xFF1A2A3D),
-                              ),
-                            ),
-                            Text(
-                              g['sub'] as String,
-                              style: GoogleFonts.inter(
-                                fontSize: 10,
-                                color: const Color(0xFF8FA0B4),
-                              ),
-                            ),
-                          ],
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
-                      ),
-                      if (active)
-                        const Icon(
-                          Icons.check_circle_rounded,
-                          size: 16,
-                          color: _teal,
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          g['icon'] as IconData,
+                          size: 18,
+                          color: active ? _teal : const Color(0xFF8FA0B4),
                         ),
-                    ],
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                g['label'] as String,
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: active
+                                      ? _teal
+                                      : const Color(0xFF1A2A3D),
+                                ),
+                              ),
+                              Text(
+                                g['sub'] as String,
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  color: const Color(0xFF8FA0B4),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (active)
+                          const Icon(
+                            Icons.check_circle_rounded,
+                            size: 16,
+                            color: _teal,
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -805,81 +811,86 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
           const SizedBox(height: 28),
 
           // Start button
-          GestureDetector(
-            onTap: _saving ? null : _startSession,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: _saving
-                      ? [Colors.grey.shade400, Colors.grey.shade400]
-                      : [_teal, const Color(0xFF0F766E)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+          Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: _saving ? null : _startSession,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: _saving
+                        ? [Colors.grey.shade400, Colors.grey.shade400]
+                        : [_teal, const Color(0xFF0F766E)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: _saving
+                      ? []
+                      : [
+                          BoxShadow(
+                            color: _teal.withValues(alpha: 0.4),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
                 ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: _saving
-                    ? []
-                    : [
-                        BoxShadow(
-                          color: _teal.withValues(alpha: 0.4),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-              ),
-              child: _saving
-                  ? const Center(
-                      child: SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: Colors.white,
-                        ),
-                      ),
-                    )
-                  : Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.2),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.play_arrow_rounded,
-                                color: Colors.white,
-                                size: 22,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Start Screening Session',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Tap to begin — patients will be added one by one',
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            color: Colors.white.withValues(alpha: 0.7),
+                child: _saving
+                    ? const Center(
+                        child: SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
                           ),
                         ),
-                      ],
-                    ),
+                      )
+                    : Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.play_arrow_rounded,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Start screening session',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Tap to begin. Patients will be added one by one.',
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: Colors.white.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
             ),
           ),
         ],
@@ -1119,20 +1130,25 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
             ),
             child: Row(
               children: [
-                GestureDetector(
-                  onTap: () =>
-                      setState(() => _quickAge = (_quickAge - 1).clamp(1, 120)),
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF0F4F7),
-                      borderRadius: BorderRadius.circular(10),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: () => setState(
+                      () => _quickAge = (_quickAge - 1).clamp(1, 120),
                     ),
-                    child: const Icon(
-                      Icons.remove_rounded,
-                      size: 18,
-                      color: Color(0xFF5E7291),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0F4F7),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.remove_rounded,
+                        size: 18,
+                        color: Color(0xFF5E7291),
+                      ),
                     ),
                   ),
                 ),
@@ -1157,20 +1173,25 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                     ],
                   ),
                 ),
-                GestureDetector(
-                  onTap: () =>
-                      setState(() => _quickAge = (_quickAge + 1).clamp(1, 120)),
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: _teal.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: () => setState(
+                      () => _quickAge = (_quickAge + 1).clamp(1, 120),
                     ),
-                    child: const Icon(
-                      Icons.add_rounded,
-                      size: 18,
-                      color: _teal,
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: _teal.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.add_rounded,
+                        size: 18,
+                        color: _teal,
+                      ),
                     ),
                   ),
                 ),
@@ -1186,46 +1207,52 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
             children: ['M', 'F'].map((g) {
               final active = _quickGender == g;
               return Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() => _quickGender = g),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    margin: EdgeInsets.only(right: g == 'M' ? 8 : 0),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      color: active
-                          ? _teal.withValues(alpha: 0.08)
-                          : Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: active ? _teal : const Color(0xFFEEF2F6),
-                        width: active ? 2 : 1.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: () => setState(() => _quickGender = g),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      margin: EdgeInsets.only(right: g == 'M' ? 8 : 0),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: active
+                            ? _teal.withValues(alpha: 0.08)
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: active ? _teal : const Color(0xFFEEF2F6),
+                          width: active ? 2 : 1.5,
                         ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          g == 'M' ? Icons.male_rounded : Icons.female_rounded,
-                          size: 24,
-                          color: active ? _teal : const Color(0xFF8FA0B4),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          g == 'M' ? 'Male' : 'Female',
-                          style: GoogleFonts.inter(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: active ? _teal : const Color(0xFF5E7291),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            g == 'M'
+                                ? Icons.male_rounded
+                                : Icons.female_rounded,
+                            size: 24,
+                            color: active ? _teal : const Color(0xFF8FA0B4),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            g == 'M' ? 'Male' : 'Female',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: active ? _teal : const Color(0xFF5E7291),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -1235,7 +1262,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
           const SizedBox(height: 16),
 
           // Phone number
-          _label('Phone Number (optional)'),
+          _label('Phone number (optional)'),
           const SizedBox(height: 6),
           _field(
             ctrl: _phoneCtrl,
@@ -1245,7 +1272,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
           const SizedBox(height: 20),
 
           // Current eye conditions
-          _label('Current Eye Conditions'),
+          _label('Current eye conditions'),
           const SizedBox(height: 4),
           Text(
             'Select all that apply',
@@ -1282,46 +1309,52 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                   final label = c['label'] as String;
                   final icon = c['icon'] as IconData;
                   final selected = _quickConditions.contains(label);
-                  return GestureDetector(
-                    onTap: () => setState(
-                      () => selected
-                          ? _quickConditions.remove(label)
-                          : _quickConditions.add(label),
-                    ),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 7,
+                  return Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(99),
+                      onTap: () => setState(
+                        () => selected
+                            ? _quickConditions.remove(label)
+                            : _quickConditions.add(label),
                       ),
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? _teal.withValues(alpha: 0.1)
-                            : Colors.white,
-                        borderRadius: BorderRadius.circular(99),
-                        border: Border.all(
-                          color: selected ? _teal : const Color(0xFFDDE4EC),
-                          width: 1.5,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 7,
                         ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            icon,
-                            size: 13,
-                            color: selected ? _teal : const Color(0xFF8FA0B4),
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? _teal.withValues(alpha: 0.1)
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(
+                            color: selected ? _teal : const Color(0xFFDDE4EC),
+                            width: 1.5,
                           ),
-                          const SizedBox(width: 5),
-                          Text(
-                            label,
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: selected ? _teal : const Color(0xFF5E7291),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              icon,
+                              size: 13,
+                              color: selected ? _teal : const Color(0xFF8FA0B4),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 5),
+                            Text(
+                              label,
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: selected
+                                    ? _teal
+                                    : const Color(0xFF5E7291),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   );
@@ -1330,105 +1363,117 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
           const SizedBox(height: 24),
 
           // Proceed button
-          GestureDetector(
-            onTap: _registering ? null : _registerAndProceed,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: _registering
-                      ? [Colors.grey.shade400, Colors.grey.shade400]
-                      : [_teal, const Color(0xFF0F766E)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+          Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: _registering ? null : _registerAndProceed,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: _registering
+                        ? [Colors.grey.shade400, Colors.grey.shade400]
+                        : [_teal, const Color(0xFF0F766E)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: _registering
+                      ? []
+                      : [
+                          BoxShadow(
+                            color: _teal.withValues(alpha: 0.4),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
                 ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: _registering
-                    ? []
-                    : [
-                        BoxShadow(
-                          color: _teal.withValues(alpha: 0.4),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
+                child: _registering
+                    ? const Center(
+                        child: SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
                         ),
-                      ],
-              ),
-              child: _registering
-                  ? const Center(
-                      child: SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: Colors.white,
-                        ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.remove_red_eye_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Register and start eye test',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.remove_red_eye_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Register & Start Eye Test',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
+              ),
             ),
           ),
           const SizedBox(height: 16),
 
           // End session button
-          GestureDetector(
-            onTap: () async {
-              await _loadSummary();
-              setState(() => _section = 3);
-            },
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.stop_circle_outlined,
-                    size: 18,
-                    color: Color(0xFF8FA0B4),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () async {
+                await _loadSummary();
+                setState(() => _section = 3);
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFFEEF2F6),
+                    width: 1.5,
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'End Session & View Summary',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF5E7291),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.stop_circle_outlined,
+                      size: 18,
+                      color: Color(0xFF8FA0B4),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Text(
+                      'End session and view summary',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF5E7291),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1600,24 +1645,28 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
     );
   }
 
-  Widget _dirBtn(IconData icon, int turns) => GestureDetector(
-    onTap: () => _recordResponse(turns == _rotation),
-    child: Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFDDE4EC), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+  Widget _dirBtn(IconData icon, int turns) => Material(
+    color: Colors.transparent,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => _recordResponse(turns == _rotation),
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFDDE4EC), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Icon(icon, size: 20, color: _ink),
       ),
-      child: Icon(icon, size: 20, color: _ink),
     ),
   );
 
@@ -1670,7 +1719,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            eye == 'OD' ? 'Cover Left Eye' : 'Cover Right Eye',
+            eye == 'OD' ? 'Cover left eye' : 'Cover right eye',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 22,
               fontWeight: FontWeight.w800,
@@ -1690,67 +1739,72 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
             ),
           ),
           const SizedBox(height: 32),
-          GestureDetector(
-            onTap: () {
-              _generateRotation();
-              _startTestTimer();
-              // Show face distance check before starting the chart
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => FaceDistanceScreen(
-                    onDistanceConfirmed: () {
-                      Navigator.pop(context);
-                      setState(() => _section = 2);
-                    },
+          Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () {
+                _generateRotation();
+                _startTestTimer();
+                // Show face distance check before starting the chart
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => FaceDistanceScreen(
+                      onDistanceConfirmed: () {
+                        Navigator.pop(context);
+                        setState(() => _section = 2);
+                      },
+                    ),
                   ),
+                );
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [_teal, Color(0xFF0F766E)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _teal.withValues(alpha: 0.4),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
-              );
-            },
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [_teal, Color(0xFF0F766E)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.remove_red_eye_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Start ${eye == 'OD' ? 'right' : 'left'} eye test',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
                 ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: _teal.withValues(alpha: 0.4),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.remove_red_eye_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Begin ${eye == 'OD' ? 'Right' : 'Left'} Eye Test',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
               ),
             ),
           ),
@@ -1867,73 +1921,80 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
           // Referral letter (only if refer)
           if (!passed) ...[
             // Generate referral letter button
-            GestureDetector(
-              onTap: () async {
-                // Save facility first if entered
-                if (_facilityCtrl.text.trim().isNotEmpty ||
-                    _selectedFacility != null) {
-                  await _saveFacility();
-                }
-                // Get patient data for referral letter
-                final patient = await PatientRepository.instance.getPatient(
-                  _currentPatientId!,
-                );
-                if (patient == null || !mounted) return;
-                final patientMap = {
-                  'id': patient['id'] as String,
-                  'name': patient['name'] as String,
-                  'age': patient['age'].toString(),
-                  'gender': patient['gender'] as String,
-                  'village': patient['village'] as String,
-                  'phone': (patient['phone'] as String?) ?? '',
-                  'conditions': (patient['conditions'] as String?) ?? '',
-                };
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ReferralLetterScreen(
-                      patient: patientMap,
-                      eyeResults: _eyeResults,
-                      screeningDate: DateTime.now().toString().substring(0, 10),
-                      conditions: ((patient['conditions'] as String?) ?? '')
-                          .split(',')
-                          .map((s) => s.trim())
-                          .where((s) => s.isNotEmpty)
-                          .toList(),
-                      screeningId: null,
-                    ),
-                  ),
-                );
-              },
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  color: _red.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: _red.withValues(alpha: 0.3),
-                    width: 1.5,
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.description_rounded,
-                      size: 18,
-                      color: _red,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Generate Referral Letter',
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: _red,
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () async {
+                  // Save facility first if entered
+                  if (_facilityCtrl.text.trim().isNotEmpty ||
+                      _selectedFacility != null) {
+                    await _saveFacility();
+                  }
+                  // Get patient data for referral letter
+                  final patient = await PatientRepository.instance.getPatient(
+                    _currentPatientId!,
+                  );
+                  if (patient == null || !mounted) return;
+                  final patientMap = {
+                    'id': patient['id'] as String,
+                    'name': patient['name'] as String,
+                    'age': patient['age'].toString(),
+                    'gender': patient['gender'] as String,
+                    'village': patient['village'] as String,
+                    'phone': (patient['phone'] as String?) ?? '',
+                    'conditions': (patient['conditions'] as String?) ?? '',
+                  };
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ReferralLetterScreen(
+                        patient: patientMap,
+                        eyeResults: _eyeResults,
+                        screeningDate: DateTime.now().toString().substring(
+                          0,
+                          10,
+                        ),
+                        conditions: ((patient['conditions'] as String?) ?? '')
+                            .split(',')
+                            .map((s) => s.trim())
+                            .where((s) => s.isNotEmpty)
+                            .toList(),
+                        screeningId: null,
                       ),
                     ),
-                  ],
+                  );
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: _red.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: _red.withValues(alpha: 0.3),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.description_rounded,
+                        size: 18,
+                        color: _red,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Generate referral letter',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: _red,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1941,93 +2002,105 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
           ],
 
           // Next patient button
-          GestureDetector(
-            onTap: () async {
-              _resetRegistration();
-              _resetEyeTest();
-              setState(() => _section = 1);
-            },
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [_teal, Color(0xFF0F766E)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+          Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () async {
+                _resetRegistration();
+                _resetEyeTest();
+                setState(() => _section = 1);
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [_teal, Color(0xFF0F766E)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _teal.withValues(alpha: 0.4),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: _teal.withValues(alpha: 0.4),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_forward_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.arrow_forward_rounded,
-                      color: Colors.white,
-                      size: 20,
+                    const SizedBox(width: 12),
+                    Text(
+                      'Next patient',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Next Patient',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
           const SizedBox(height: 14),
 
           // End session button
-          GestureDetector(
-            onTap: () async {
-              await _loadSummary();
-              setState(() => _section = 3);
-            },
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.stop_circle_outlined,
-                    size: 18,
-                    color: Color(0xFF8FA0B4),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () async {
+                await _loadSummary();
+                setState(() => _section = 3);
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFFEEF2F6),
+                    width: 1.5,
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'End Session & View Summary',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF5E7291),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.stop_circle_outlined,
+                      size: 18,
+                      color: Color(0xFF8FA0B4),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Text(
+                      'End session and view summary',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF5E7291),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -2413,52 +2486,57 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
           const SizedBox(height: 28),
 
           // ── Done button ──────────────────────────────────────
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [_teal, Color(0xFF0F766E)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+          Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [_teal, Color(0xFF0F766E)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _teal.withValues(alpha: 0.4),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: _teal.withValues(alpha: 0.4),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.check_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.check_rounded,
-                      color: Colors.white,
-                      size: 20,
+                    const SizedBox(width: 12),
+                    Text(
+                      'Done and return home',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Done — Back to Home',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

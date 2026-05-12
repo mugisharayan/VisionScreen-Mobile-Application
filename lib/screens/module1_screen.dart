@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/module_illustrations.dart';
+import '../widgets/vs_ui.dart';
 
 class Module1Screen extends StatefulWidget {
   final VoidCallback? onCompleted;
@@ -150,25 +151,7 @@ class _Module1ScreenState extends State<Module1Screen> {
             children: [
               Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(11),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.2),
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_rounded,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ),
-                  ),
+                  VsBackTile(onTap: () => Navigator.pop(context), size: 38),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -352,37 +335,43 @@ class _Module1ScreenState extends State<Module1Screen> {
         child: Row(
           children: [
             if (_currentStep > 0)
-              GestureDetector(
-                onTap: () => setState(() => _currentStep--),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 14,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF0F4F7),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '← Back',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF64748B),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => setState(() => _currentStep--),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0F4F7),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Back',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF64748B),
+                      ),
                     ),
                   ),
                 ),
               ),
             if (_currentStep > 0) const SizedBox(width: 10),
             Expanded(
-              child: GestureDetector(
-                onTap: () {
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
                   if (isLast) {
                     widget.onCompleted?.call();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          'Module 1 completed! 🎉',
+                          'Module 1 completed.',
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             color: Colors.white,
@@ -401,30 +390,32 @@ class _Module1ScreenState extends State<Module1Screen> {
                     setState(() => _currentStep++);
                   }
                 },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [color, color.withValues(alpha: 0.8)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.35),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [color, color.withValues(alpha: 0.8)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      isLast ? 'Complete Module ✓' : 'Next Step →',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withValues(alpha: 0.35),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        isLast ? 'Complete module' : 'Next step',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),

@@ -6,6 +6,7 @@ import 'module1_screen.dart';
 import 'module2_screen.dart';
 import 'module3_screen.dart';
 import 'module4_screen.dart';
+import '../widgets/vs_ui.dart';
 
 class TrainingScreen extends StatefulWidget {
   const TrainingScreen({super.key});
@@ -169,25 +170,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                 children: [
                   Row(
                     children: [
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(11),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.25),
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.arrow_back_rounded,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ),
-                      ),
+                      VsBackTile(onTap: () => Navigator.pop(context), size: 38),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(

@@ -16,6 +16,7 @@ import '../features/screening/screening_flow_controller.dart';
 import '../services/permission_coordinator.dart';
 import '../utils/patient_validators.dart';
 import '../utils/visual_acuity.dart';
+import '../widgets/vs_ui.dart';
 
 // ── Colours ──────────────────────────────────────────────────────────────────
 const _ink = Color(0xFF04091A);
@@ -472,21 +473,16 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             SafeArea(
               child: Align(
                 alignment: Alignment.topLeft,
-                child: GestureDetector(
-                  onTap: _closePhotoCamera,
-                  child: Container(
-                    margin: const EdgeInsets.all(16),
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.5),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.close_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
+                child: Container(
+                  margin: const EdgeInsets.all(16),
+                  child: VsIconButton(
+                    icon: Icons.close_rounded,
+                    tooltip: 'Close camera',
+                    onTap: _closePhotoCamera,
+                    foreground: Colors.white,
+                    tint: Colors.black.withValues(alpha: 0.5),
+                    size: 40,
+                    iconSize: 20,
                   ),
                 ),
               ),
@@ -496,20 +492,24 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               left: 0,
               right: 0,
               child: Center(
-                child: GestureDetector(
-                  onTap: _takePhoto,
-                  child: Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 4),
-                      color: Colors.white.withValues(alpha: 0.2),
-                    ),
-                    child: const Icon(
-                      Icons.camera_alt_rounded,
-                      color: Colors.white,
-                      size: 32,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _takePhoto,
+                    customBorder: const CircleBorder(),
+                    child: Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 4),
+                        color: Colors.white.withValues(alpha: 0.2),
+                      ),
+                      child: const Icon(
+                        Icons.camera_alt_rounded,
+                        color: Colors.white,
+                        size: 32,
+                      ),
                     ),
                   ),
                 ),
@@ -813,25 +813,12 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   }
 
   Widget _backButton() {
-    return GestureDetector(
+    return VsBackTile(
+      size: 36,
       onTap: () {
         _restoreBrightness();
         Navigator.pop(context);
       },
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
-        ),
-        child: const Icon(
-          Icons.arrow_back_rounded,
-          color: Colors.white,
-          size: 18,
-        ),
-      ),
     );
   }
 
@@ -1096,191 +1083,201 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Photo capture
-        GestureDetector(
-          onTap: _showPhotoOptions,
-          child: Center(
-            child: Stack(
-              children: [
-                Container(
-                  width: 90,
-                  height: 90,
-                  decoration: BoxDecoration(
-                    color: _newPhotoPath != null
-                        ? Colors.transparent
-                        : _teal.withValues(alpha: 0.06),
-                    shape: BoxShape.circle,
-                    border: Border.all(
+        Center(
+          child: Material(
+            color: Colors.transparent,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: _showPhotoOptions,
+              child: Stack(
+                children: [
+                  Container(
+                    width: 90,
+                    height: 90,
+                    decoration: BoxDecoration(
                       color: _newPhotoPath != null
-                          ? _teal
-                          : const Color(0xFFDDE4EC),
-                      width: 2,
+                          ? Colors.transparent
+                          : _teal.withValues(alpha: 0.06),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: _newPhotoPath != null
+                            ? _teal
+                            : const Color(0xFFDDE4EC),
+                        width: 2,
+                      ),
                     ),
-                  ),
-                  child:
-                      _newPhotoPath != null && File(_newPhotoPath!).existsSync()
-                      ? ClipOval(
-                          child: Image.file(
-                            File(_newPhotoPath!),
-                            fit: BoxFit.cover,
-                            width: 90,
-                            height: 90,
-                            errorBuilder: (context, error, stackTrace) =>
-                                Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(
-                                      Icons.camera_alt_rounded,
-                                      size: 24,
-                                      color: _teal,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Photo',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
+                    child:
+                        _newPhotoPath != null &&
+                            File(_newPhotoPath!).existsSync()
+                        ? ClipOval(
+                            child: Image.file(
+                              File(_newPhotoPath!),
+                              fit: BoxFit.cover,
+                              width: 90,
+                              height: 90,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(
+                                        Icons.camera_alt_rounded,
+                                        size: 24,
                                         color: _teal,
                                       ),
-                                    ),
-                                  ],
-                                ),
-                          ),
-                        )
-                      : Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.camera_alt_rounded,
-                              size: 24,
-                              color: _teal,
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Photo',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: _teal,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Photo',
-                              style: GoogleFonts.inter(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
+                          )
+                        : Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.camera_alt_rounded,
+                                size: 24,
                                 color: _teal,
                               ),
-                            ),
-                          ],
-                        ),
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    width: 26,
-                    height: 26,
-                    decoration: BoxDecoration(
-                      color: _teal,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                    child: const Icon(
-                      Icons.edit_rounded,
-                      size: 12,
-                      color: Colors.white,
+                              const SizedBox(height: 4),
+                              Text(
+                                'Photo',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: _teal,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 26,
+                      height: 26,
+                      decoration: BoxDecoration(
+                        color: _teal,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: const Icon(
+                        Icons.edit_rounded,
+                        size: 12,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
         const SizedBox(height: 16),
         // Full name
-        _newField(_newNameCtrl, 'Full Name', Icons.person_rounded),
+        _newField(_newNameCtrl, 'Full name', Icons.person_rounded),
         const SizedBox(height: 8),
         // DOB + Gender
         Row(
           children: [
             Expanded(
-              child: GestureDetector(
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now().subtract(
-                      const Duration(days: 365 * 25),
-                    ),
-                    firstDate: DateTime(1920),
-                    lastDate: DateTime.now(),
-                    helpText: 'Select Date of Birth',
-                    builder: (ctx, child) => Theme(
-                      data: Theme.of(ctx).copyWith(
-                        colorScheme: const ColorScheme.light(
-                          primary: _teal,
-                          onPrimary: Colors.white,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now().subtract(
+                        const Duration(days: 365 * 25),
+                      ),
+                      firstDate: DateTime(1920),
+                      lastDate: DateTime.now(),
+                      helpText: 'Select date of birth',
+                      builder: (ctx, child) => Theme(
+                        data: Theme.of(ctx).copyWith(
+                          colorScheme: const ColorScheme.light(
+                            primary: _teal,
+                            onPrimary: Colors.white,
+                          ),
                         ),
+                        child: child!,
                       ),
-                      child: child!,
+                    );
+                    if (picked != null) {
+                      _controller.setNewDob(picked);
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
                     ),
-                  );
-                  if (picked != null) {
-                    _controller.setNewDob(picked);
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: _newDob != null
-                          ? _teal.withValues(alpha: 0.4)
-                          : const Color(0xFFEEF2F6),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.cake_rounded,
-                        size: 16,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
                         color: _newDob != null
-                            ? _teal
-                            : const Color(0xFF8FA0B4),
+                            ? _teal.withValues(alpha: 0.4)
+                            : const Color(0xFFEEF2F6),
+                        width: 1.5,
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _newDob == null
-                            ? Text(
-                                'Date of Birth',
-                                style: GoogleFonts.inter(
-                                  fontSize: 13,
-                                  color: const Color(0xFF8FA0B4),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.cake_rounded,
+                          size: 16,
+                          color: _newDob != null
+                              ? _teal
+                              : const Color(0xFF8FA0B4),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _newDob == null
+                              ? Text(
+                                  'Date of birth',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    color: const Color(0xFF8FA0B4),
+                                  ),
+                                )
+                              : Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${_newDob!.day}/${_newDob!.month}/${_newDob!.year}',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 13,
+                                        color: const Color(0xFF1A2A3D),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${_calcAge(_newDob!)} years old',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 10,
+                                        color: _teal,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              )
-                            : Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '${_newDob!.day}/${_newDob!.month}/${_newDob!.year}',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 13,
-                                      color: const Color(0xFF1A2A3D),
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  Text(
-                                    '${_calcAge(_newDob!)} years old',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 10,
-                                      color: _teal,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                      ),
-                      const Icon(
-                        Icons.calendar_today_rounded,
-                        size: 14,
-                        color: Color(0xFF8FA0B4),
-                      ),
-                    ],
+                        ),
+                        const Icon(
+                          Icons.calendar_today_rounded,
+                          size: 14,
+                          color: Color(0xFF8FA0B4),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -1295,26 +1292,30 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               child: Row(
                 children: ['M', 'F'].map((g) {
                   final active = _newGender == g;
-                  return GestureDetector(
-                    onTap: () => _controller.setNewGender(g),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: active ? _teal : Colors.transparent,
-                        borderRadius: BorderRadius.circular(9),
-                      ),
-                      child: Text(
-                        g,
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: active
-                              ? Colors.white
-                              : const Color(0xFF8FA0B4),
+                  return Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(9),
+                      onTap: () => _controller.setNewGender(g),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: active ? _teal : Colors.transparent,
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        child: Text(
+                          g,
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: active
+                                ? Colors.white
+                                : const Color(0xFF8FA0B4),
+                          ),
                         ),
                       ),
                     ),
@@ -1331,42 +1332,46 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             Expanded(
               child: _newField(
                 _newVillageCtrl,
-                'Village / Area',
+                'Village / area',
                 Icons.location_on_rounded,
               ),
             ),
             const SizedBox(width: 8),
-            GestureDetector(
-              onTap: _detectingLocation ? null : _detectLocation,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: _detectingLocation
-                      ? const Color(0xFFEEF2F6)
-                      : _teal.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: _detectingLocation ? null : _detectLocation,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
                     color: _detectingLocation
                         ? const Color(0xFFEEF2F6)
-                        : _teal.withValues(alpha: 0.3),
-                    width: 1.5,
+                        : _teal.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: _detectingLocation
+                          ? const Color(0xFFEEF2F6)
+                          : _teal.withValues(alpha: 0.3),
+                      width: 1.5,
+                    ),
                   ),
-                ),
-                child: _detectingLocation
-                    ? const Padding(
-                        padding: EdgeInsets.all(12),
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
+                  child: _detectingLocation
+                      ? const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: _teal,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.my_location_rounded,
+                          size: 20,
                           color: _teal,
                         ),
-                      )
-                    : const Icon(
-                        Icons.my_location_rounded,
-                        size: 20,
-                        color: _teal,
-                      ),
+                ),
               ),
             ),
           ],
@@ -1375,14 +1380,14 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
         // Phone number
         _newField(
           _newPhoneCtrl,
-          'Phone Number',
+          'Phone number',
           Icons.phone_rounded,
           inputType: TextInputType.phone,
         ),
         const SizedBox(height: 16),
         // Current conditions
         Text(
-          'Current Eye Conditions',
+          'Current eye conditions',
           style: GoogleFonts.plusJakartaSans(
             fontSize: 12,
             fontWeight: FontWeight.w800,
@@ -1405,40 +1410,46 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             final label = c['label'] as String;
             final icon = c['icon'] as IconData;
             final selected = _newConditions.contains(label);
-            return GestureDetector(
-              onTap: () => _controller.toggleNewCondition(label),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 7,
-                ),
-                decoration: BoxDecoration(
-                  color: selected ? _teal.withValues(alpha: 0.1) : Colors.white,
-                  borderRadius: BorderRadius.circular(99),
-                  border: Border.all(
-                    color: selected ? _teal : const Color(0xFFDDE4EC),
-                    width: 1.5,
+            return Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(99),
+                onTap: () => _controller.toggleNewCondition(label),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 7,
                   ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      icon,
-                      size: 13,
-                      color: selected ? _teal : const Color(0xFF8FA0B4),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? _teal.withValues(alpha: 0.1)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(
+                      color: selected ? _teal : const Color(0xFFDDE4EC),
+                      width: 1.5,
                     ),
-                    const SizedBox(width: 5),
-                    Text(
-                      label,
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: selected ? _teal : const Color(0xFF5E7291),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        icon,
+                        size: 13,
+                        color: selected ? _teal : const Color(0xFF8FA0B4),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 5),
+                      Text(
+                        label,
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: selected ? _teal : const Color(0xFF5E7291),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -1547,108 +1558,117 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   Widget _patientCard(Map<String, String> p) {
     final isSelected = _selectedPatientId == p['id'];
     final isNew = p['id']!.startsWith('PAT-NEW');
-    return GestureDetector(
-      onTap: () => _controller.selectPatient(p['id']),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: isSelected ? _teal.withValues(alpha: 0.06) : Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isSelected ? _teal : const Color(0xFFEEF2F6),
-            width: isSelected ? 2 : 1.5,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => _controller.selectPatient(p['id']),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: isSelected ? _teal.withValues(alpha: 0.06) : Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isSelected ? _teal : const Color(0xFFEEF2F6),
+              width: isSelected ? 2 : 1.5,
+            ),
           ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? _teal.withValues(alpha: 0.12)
-                    : const Color(0xFFF0F4F7),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Center(
-                child: Text(
-                  p['name']!.split(' ').map((w) => w[0]).take(2).join(),
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: isSelected ? _teal : const Color(0xFF8FA0B4),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? _teal.withValues(alpha: 0.12)
+                      : const Color(0xFFF0F4F7),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Text(
+                    p['name']!.split(' ').map((w) => w[0]).take(2).join(),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: isSelected ? _teal : const Color(0xFF8FA0B4),
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          p['name']!,
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: isSelected ? _teal : const Color(0xFF1A2A3D),
-                          ),
-                        ),
-                      ),
-                      if (isNew) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _amber.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(99),
-                          ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
                           child: Text(
-                            'New',
-                            style: GoogleFonts.inter(
-                              fontSize: 9,
+                            p['name']!,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
                               fontWeight: FontWeight.w700,
-                              color: _amber,
+                              color: isSelected
+                                  ? _teal
+                                  : const Color(0xFF1A2A3D),
                             ),
                           ),
                         ),
+                        if (isNew) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _amber.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(99),
+                            ),
+                            child: Text(
+                              'New',
+                              style: GoogleFonts.inter(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: _amber,
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    '${p['gender']} · ${p['age']} yrs · ${p['village']}',
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      color: const Color(0xFF8FA0B4),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            if (isSelected)
-              const Icon(Icons.check_circle_rounded, color: _teal, size: 20)
-            else
-              Container(
-                width: 20,
-                height: 20,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFDDE4EC), width: 2),
+                    const SizedBox(height: 3),
+                    Text(
+                      '${p['gender']} · ${p['age']} yrs · ${p['village']}',
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: const Color(0xFF8FA0B4),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-          ],
+              if (isSelected)
+                const Icon(Icons.check_circle_rounded, color: _teal, size: 20)
+              else
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFDDE4EC),
+                      width: 2,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -1855,77 +1875,82 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           ),
           const SizedBox(height: 32),
           if (_checklistDone)
-            GestureDetector(
-              onTap: () {
-                // Open face distance check before starting the test
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => FaceDistanceScreen(
-                      onDistanceConfirmed: () {
-                        Navigator.pop(context); // close face screen
-                        _controller.prepareNextEye();
-                      },
-                    ),
-                  ),
-                );
-              },
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: _teal.withValues(alpha: 0.4),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.check_circle_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Proceed to Eye Test',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'All checks passed — ready to begin',
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        color: Colors.white.withValues(alpha: 0.7),
+            Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(20),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () {
+                  // Open face distance check before starting the test
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => FaceDistanceScreen(
+                        onDistanceConfirmed: () {
+                          Navigator.pop(context); // close face screen
+                          _controller.prepareNextEye();
+                        },
                       ),
                     ),
-                  ],
+                  );
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _teal.withValues(alpha: 0.4),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.check_circle_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Proceed to eye test',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'All checks passed. Ready to begin.',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: Colors.white.withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             )
@@ -2230,64 +2255,71 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               ),
             )
           else
-            GestureDetector(
-              onTap: _startCountdown,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [_teal, const Color(0xFF0F766E)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: _teal.withValues(alpha: 0.4),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
+            Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(20),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: _startCountdown,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [_teal, const Color(0xFF0F766E)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.remove_red_eye_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          isOD ? 'Begin Right Eye Test' : 'Begin Left Eye Test',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Patient is ready — tap to start 3s countdown',
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        color: Colors.white.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _teal.withValues(alpha: 0.4),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.remove_red_eye_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            isOD
+                                ? 'Start right eye test'
+                                : 'Start left eye test',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Patient is ready. Tap to start the 3-second countdown.',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: Colors.white.withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -2407,25 +2439,9 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   }
 
   Widget _dirBtn(IconData icon, int quarterTurns) {
-    return GestureDetector(
+    return _directionButton(
+      icon: icon,
       onTap: () => _recordResponse(quarterTurns == _currentRotation),
-      child: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFDDE4EC), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Icon(icon, size: 20, color: _ink),
-      ),
     );
   }
 
@@ -2942,79 +2958,84 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               ),
             )
           else
-            GestureDetector(
-              onTap: () {
-                // Show 40cm face distance check before near vision test
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => FaceDistanceScreen(
-                      targetDistanceM: 0.4,
-                      toleranceM: 0.08,
-                      onDistanceConfirmed: () {
-                        Navigator.pop(context);
-                        _startNearCountdown();
-                      },
-                    ),
-                  ),
-                );
-              },
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [_teal, Color(0xFF0F766E)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: _teal.withValues(alpha: 0.4),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.check_circle_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Distance Confirmed — Begin Test',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Tap when device is at 40 cm from eyes',
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        color: Colors.white.withValues(alpha: 0.7),
+            Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(20),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () {
+                  // Show 40cm face distance check before near vision test
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => FaceDistanceScreen(
+                        targetDistanceM: 0.4,
+                        toleranceM: 0.08,
+                        onDistanceConfirmed: () {
+                          Navigator.pop(context);
+                          _startNearCountdown();
+                        },
                       ),
                     ),
-                  ],
+                  );
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [_teal, Color(0xFF0F766E)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _teal.withValues(alpha: 0.4),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.check_circle_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Distance confirmed. Start test.',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Tap when the device is 40 cm from the eyes.',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: Colors.white.withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -3125,26 +3146,41 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     );
   }
 
-  Widget _nearDirBtn(IconData icon, int quarterTurns) => GestureDetector(
+  Widget _nearDirBtn(IconData icon, int quarterTurns) => _directionButton(
+    icon: icon,
     onTap: () => _recordNearResponse(quarterTurns == _nearRotation),
-    child: Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFDDE4EC), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Icon(icon, size: 20, color: _ink),
-    ),
   );
+
+  Widget _directionButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Ink(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFDDE4EC), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Icon(icon, size: 20, color: _ink),
+        ),
+      ),
+    );
+  }
 
   // ── Step 8: Near Vision Result ──────────────────────────────────────────────────
   Widget _buildNearResult() {
@@ -3693,7 +3729,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                     color: Colors.white,
                   ),
                   label: Text(
-                    'Generate Referral Letter',
+                    'Generate referral letter',
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,

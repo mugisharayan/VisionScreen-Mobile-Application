@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 import '../repositories/screening_repository.dart';
 import '../services/chw_profile_preferences.dart';
 import '../utils/visual_acuity.dart';
+import '../widgets/vs_ui.dart';
 
 const _teal = Color(0xFF0D9488);
 const _teal3 = Color(0xFF5EEAD4);
@@ -489,26 +490,11 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
               child: Row(
                 children: [
-                  GestureDetector(
+                  VsBackTile(
                     onTap: () => _showLetter
                         ? setState(() => _showLetter = false)
                         : Navigator.pop(context),
-                    child: Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.25),
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_rounded,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ),
+                    size: 38,
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -544,42 +530,46 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                     ),
                   ),
                   if (_showLetter)
-                    GestureDetector(
-                      onTap: () => Share.share(
-                        _letterText,
-                        subject:
-                            'Vision Screening Referral — ${widget.patient['name']}',
-                      ),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => Share.share(
+                          _letterText,
+                          subject:
+                              'Vision Screening Referral — ${widget.patient['name']}',
                         ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(99),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(99),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
                           ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.share_rounded,
-                              size: 14,
-                              color: Colors.white,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(99),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.3),
                             ),
-                            const SizedBox(width: 5),
-                            Text(
-                              'Share',
-                              style: GoogleFonts.inter(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.share_rounded,
+                                size: 14,
                                 color: Colors.white,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 5),
+                              Text(
+                                'Share',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -940,8 +930,10 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
             ),
           ),
           const SizedBox(height: 10),
-          GestureDetector(
-            onTap: () async {
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () async {
               final picked = await showDatePicker(
                 context: context,
                 initialDate: DateTime.now().add(const Duration(days: 7)),
@@ -959,54 +951,56 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                 ),
               );
               if (picked != null) setState(() => _appointmentDate = picked);
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: _appointmentDate != null
-                      ? _teal
-                      : const Color(0xFFEEF2F6),
-                  width: 1.5,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.calendar_today_rounded,
-                    size: 16,
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
                     color: _appointmentDate != null
                         ? _teal
-                        : const Color(0xFF8FA0B4),
+                        : const Color(0xFFEEF2F6),
+                    width: 1.5,
                   ),
-                  const SizedBox(width: 10),
-                  Text(
-                    _appointmentDate == null
-                        ? 'Select appointment date (optional)'
-                        : 'Appointment: $_appointmentDateStr',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      size: 16,
                       color: _appointmentDate != null
-                          ? const Color(0xFF1A2A3D)
+                          ? _teal
                           : const Color(0xFF8FA0B4),
-                      fontWeight: _appointmentDate != null
-                          ? FontWeight.w600
-                          : FontWeight.w400,
                     ),
-                  ),
-                  const Spacer(),
-                  if (_appointmentDate != null)
-                    GestureDetector(
-                      onTap: () => setState(() => _appointmentDate = null),
-                      child: const Icon(
-                        Icons.close_rounded,
-                        size: 16,
-                        color: Color(0xFF8FA0B4),
+                    const SizedBox(width: 10),
+                    Text(
+                      _appointmentDate == null
+                          ? 'Select appointment date (optional)'
+                          : 'Appointment: $_appointmentDateStr',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: _appointmentDate != null
+                            ? const Color(0xFF1A2A3D)
+                            : const Color(0xFF8FA0B4),
+                        fontWeight: _appointmentDate != null
+                            ? FontWeight.w600
+                            : FontWeight.w400,
                       ),
                     ),
-                ],
+                    const Spacer(),
+                    if (_appointmentDate != null)
+                      VsIconButton(
+                        icon: Icons.close_rounded,
+                        tooltip: 'Clear appointment date',
+                        onTap: () => setState(() => _appointmentDate = null),
+                        size: 24,
+                        iconSize: 16,
+                        foreground: const Color(0xFF8FA0B4),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1601,7 +1595,9 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
             ],
           ),
         ),
-        GestureDetector(
+        VsIconButton(
+          icon: Icons.lock_outline_rounded,
+          tooltip: 'Profile name is managed in Settings',
           onTap: () => ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -1616,11 +1612,9 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
               duration: const Duration(seconds: 2),
             ),
           ),
-          child: const Icon(
-            Icons.lock_outline_rounded,
-            size: 14,
-            color: Color(0xFF8FA0B4),
-          ),
+          size: 20,
+          iconSize: 14,
+          foreground: const Color(0xFF8FA0B4),
         ),
       ],
     ),

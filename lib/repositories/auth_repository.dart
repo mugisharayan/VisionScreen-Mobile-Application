@@ -31,7 +31,9 @@ class AuthRepository {
 
   Future<AuthResult> login(String email, String password) async {
     final normalised = email.trim().toLowerCase();
+    final hadLocalWorkspace = await _db.hasWorkspaceData();
     var profile = await _db.getChwProfileByEmail(normalised);
+    var usedRemoteProfile = false;
 
     if (profile == null && SyncService.instance.isConfigured) {
       final remoteProfile = await SyncService.instance.fetchRemoteProfile(
@@ -44,6 +46,7 @@ class AuthRepository {
         }
         await _db.cacheSyncedChwProfile(remoteProfile);
         profile = await _db.getChwProfileByEmail(normalised);
+        usedRemoteProfile = true;
       }
     }
 
@@ -60,7 +63,13 @@ class AuthRepository {
     await _persistSession(profile);
     if (SyncService.instance.isConfigured) {
       await SyncService.instance.mirrorProfile(profile);
-      await SyncService.instance.syncNow();
+      final syncResult = await SyncService.instance.syncNow();
+      if (!syncResult.success && (usedRemoteProfile || !hadLocalWorkspace)) {
+        await logout();
+        return const AuthResult.failure(
+          'Could not restore your cloud workspace. Check your connection and sign in again.',
+        );
+      }
     }
     return AuthResult.success(profile);
   }
@@ -117,11 +126,11 @@ class AuthRepository {
     };
 
     await _db.insertChwProfile(profile);
+    await _persistSession(profile);
     if (SyncService.instance.isConfigured) {
       await SyncService.instance.mirrorProfile(profile);
       await SyncService.instance.syncNow();
     }
-    await _persistSession(profile);
     return AuthResult.success(profile);
   }
 
@@ -135,7 +144,7 @@ class AuthRepository {
     required String newPassword,
   }) async {
     final normalised = email.trim().toLowerCase();
-    final profile = await _db.getChwProfileByEmail(normalised);
+    final profile = await _loadAccountProfile(normalised, cacheRemote: true);
     if (profile == null) return 'Account not found';
 
     final stored = profile['password'] as String;
@@ -145,13 +154,7 @@ class AuthRepository {
 
     final newHash = SecurityUtils.hashPassword(newPassword);
     await _db.updateChwPassword(normalised, newHash);
-    if (SyncService.instance.isConfigured) {
-      final updated = await _db.getChwProfileByEmail(normalised);
-      if (updated != null) {
-        await SyncService.instance.mirrorProfile(updated);
-        await SyncService.instance.syncNow();
-      }
-    }
+    await _publishProfileMutation(normalised);
     return null; // success
   }
 
@@ -165,7 +168,7 @@ class AuthRepository {
     final normalised = email.trim().toLowerCase();
     if (_isResetLocked(normalised)) return null;
 
-    final profile = await _db.getChwProfileByEmail(normalised);
+    final profile = await _loadAccountProfile(normalised);
     if (profile == null) {
       _recordResetFailure(normalised);
       return null;
@@ -202,15 +205,12 @@ class AuthRepository {
     final normalised = email.trim().toLowerCase();
     if (!_consumeResetToken(normalised, token)) return false;
 
+    final profile = await _loadAccountProfile(normalised, cacheRemote: true);
+    if (profile == null) return false;
+
     final newHash = SecurityUtils.hashPassword(newPassword);
     await _db.updateChwPassword(normalised, newHash);
-    if (SyncService.instance.isConfigured) {
-      final updated = await _db.getChwProfileByEmail(normalised);
-      if (updated != null) {
-        await SyncService.instance.mirrorProfile(updated);
-        await SyncService.instance.syncNow();
-      }
-    }
+    await _publishProfileMutation(normalised);
     return true;
   }
 
@@ -327,5 +327,48 @@ class AuthRepository {
       AppStrings.prefLastLoginTime,
       DateTime.now().toUtc().toIso8601String(),
     );
+  }
+
+  Future<Map<String, dynamic>?> _loadAccountProfile(
+    String email, {
+    bool cacheRemote = false,
+  }) async {
+    final normalised = email.trim().toLowerCase();
+    final local = await _db.getChwProfileByEmail(normalised);
+    if (local != null) {
+      return local;
+    }
+    if (!SyncService.instance.isConfigured) {
+      return null;
+    }
+
+    final remote = await SyncService.instance.fetchRemoteProfile(normalised);
+    if (remote == null) {
+      return null;
+    }
+    if (!cacheRemote) {
+      return remote;
+    }
+
+    await _db.cacheSyncedChwProfile(remote);
+    return await _db.getChwProfileByEmail(normalised) ?? remote;
+  }
+
+  Future<void> _publishProfileMutation(String email) async {
+    if (!SyncService.instance.isConfigured) {
+      return;
+    }
+    final updated = await _db.getChwProfileByEmail(email.trim().toLowerCase());
+    if (updated == null) {
+      return;
+    }
+
+    await SyncService.instance.mirrorProfile(updated);
+
+    final prefs = await SharedPreferences.getInstance();
+    final facilityId = prefs.getString(AppStrings.prefFacilityId) ?? '';
+    if (facilityId.isNotEmpty) {
+      await SyncService.instance.syncNow();
+    }
   }
 }

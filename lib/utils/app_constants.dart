@@ -35,10 +35,10 @@ class AppStrings {
   static const prefReferralLanguage = 'referral_language';
   static const prefFirstLaunch = 'first_launch';
   static const prefFacilityId = 'facility_id';
-  static const prefSyncConfigured = 'sync_configured';
   static const prefLastSyncAt = 'last_sync_at';
   static const prefLastSyncError = 'last_sync_error';
-  static const prefBackupPath = 'last_backup_path';
+  static const prefLastBackupId = 'last_backup_id';
+  static const prefLastBackupAt = 'last_backup_at';
 
   // Sync state
   static const syncPendingUpsert = 'pending_upsert';

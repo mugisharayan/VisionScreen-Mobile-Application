@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math';
+import '../features/analytics/analytics_insights.dart';
 import '../repositories/screening_repository.dart';
 import '../repositories/campaign_repository.dart';
 import '../utils/app_theme.dart';
@@ -734,32 +735,36 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  Widget _demoTabBtn(String label, int idx) => GestureDetector(
-    onTap: () => setState(() => _demoTab = idx),
-    child: AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      decoration: BoxDecoration(
-        color: _demoTab == idx ? Colors.white : Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: _demoTab == idx
-            ? [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ]
-            : [],
-      ),
-      child: Text(
-        label,
-        style: GoogleFonts.inter(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: _demoTab == idx
-              ? const Color(0xFF0D9488)
-              : const Color(0xFF8FA0B4),
+  Widget _demoTabBtn(String label, int idx) => Material(
+    color: Colors.transparent,
+    child: InkWell(
+      onTap: () => setState(() => _demoTab = idx),
+      borderRadius: BorderRadius.circular(8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: _demoTab == idx ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: _demoTab == idx
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : [],
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: _demoTab == idx
+                ? const Color(0xFF0D9488)
+                : const Color(0xFF8FA0B4),
+          ),
         ),
       ),
     ),
@@ -3108,183 +3113,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   /// Generates insights dynamically from live state values.
-  List<
-    ({
-      String text,
-      Color accent,
-      IconData icon,
-      String priority,
-      List<Color> gradients,
-    })
-  >
-  get _computedInsights {
-    final insights =
-        <
-          ({
-            String text,
-            Color accent,
-            IconData icon,
-            String priority,
-            List<Color> gradients,
-          })
-        >[];
-
-    // 1. Pass rate trend — strip __total__ sentinel before comparing buckets
-    final trendBuckets = _trendData
-        .where((r) => r['label'] != '__total__')
-        .toList();
-    if (trendBuckets.length >= 2) {
-      final passData = trendBuckets.map((r) {
-        final p = (r['pass_count'] as int).toDouble();
-        final q = (r['refer_count'] as int).toDouble();
-        final t = p + q;
-        return t > 0 ? p / t * 100 : 0.0;
-      }).toList();
-      final curr = passData.last;
-      final prev = passData[passData.length - 2];
-      final diff = curr - prev;
-      if (diff.abs() >= 1) {
-        final up = diff > 0;
-        insights.add((
-          text:
-              '${up ? 'Pass rate up' : 'Pass rate down'} ${diff.abs().toStringAsFixed(0)}% vs previous period — ${up ? 'performance improving.' : 'review recent screenings.'}',
-          accent: up ? const Color(0xFF22C55E) : const Color(0xFFEF4444),
-          icon: up ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-          priority: up ? 'Positive' : 'Warning',
-          gradients: up
-              ? [const Color(0xFF052E16), const Color(0xFF14532D)]
-              : [const Color(0xFF2D0A0A), const Color(0xFF450A0A)],
-        ));
-      }
-    }
-
-    // 2. High referral rate
-    if (_totalScreened > 0) {
-      final referRate = _totalReferred / _totalScreened * 100;
-      if (referRate >= 30) {
-        insights.add((
-          text:
-              'Referral rate is ${referRate.toStringAsFixed(0)}% — ${referRate >= 40 ? 'critically high' : 'elevated'}. Consider targeted follow-up sessions.',
-          accent: referRate >= 40
-              ? const Color(0xFFEF4444)
-              : const Color(0xFFF59E0B),
-          icon: Icons.assignment_rounded,
-          priority: referRate >= 40 ? 'Urgent' : 'Action',
-          gradients: referRate >= 40
-              ? [const Color(0xFF2D0A0A), const Color(0xFF450A0A)]
-              : [const Color(0xFF2D1A00), const Color(0xFF3D2200)],
-        ));
-      }
-    }
-
-    // 3. Children referral burden
-    final allTotal = _ageGroups.values.fold(0, (s, v) => s + v);
-    final childTotal = (_ageGroups['0-17'] ?? 0);
-    if (childTotal > 0 && allTotal > 0) {
-      final childShare = childTotal / allTotal * 100;
-      if (childShare >= 20) {
-        insights.add((
-          text:
-              'Children (0–17) make up ${childShare.toStringAsFixed(0)}% of patients — prioritise school and community outreach.',
-          accent: const Color(0xFFF59E0B),
-          icon: Icons.child_care_rounded,
-          priority: 'Action',
-          gradients: [const Color(0xFF2D1A00), const Color(0xFF3D2200)],
-        ));
-      }
-    }
-
-    // 4. Overdue referrals
-    final overdue = _referralStatuses['overdue'] ?? 0;
-    if (overdue > 0) {
-      insights.add((
-        text:
-            '$overdue referral${overdue == 1 ? '' : 's'} overdue — follow up with ${overdue == 1 ? 'this patient' : 'these patients'} immediately.',
-        accent: const Color(0xFFEF4444),
-        icon: Icons.error_rounded,
-        priority: 'Urgent',
-        gradients: [const Color(0xFF2D0A0A), const Color(0xFF450A0A)],
-      ));
-    }
-
-    // 5. Village coverage
-    if (_villages.length >= 2) {
-      final topVillage = _villages.first;
-      final name = (topVillage['village'] as String?) ?? 'Unknown';
-      final count = (topVillage['total'] as int?) ?? 0;
-      insights.add((
-        text:
-            '$name leads with $count patients screened — replicate this campaign model in lower-coverage locations.',
-        accent: const Color(0xFF8B5CF6),
-        icon: Icons.location_on_rounded,
-        priority: 'Insight',
-        gradients: [const Color(0xFF1A0533), const Color(0xFF240A45)],
-      ));
-    }
-
-    // 6. Dominant eye condition
-    if (_conditionCounts.isNotEmpty) {
-      final top = _conditionCounts.entries.reduce(
-        (a, b) => a.value > b.value ? a : b,
-      );
-      insights.add((
-        text:
-            '${top.key} is the most reported condition with ${top.value} cases — ensure CHWs are trained to identify and document it.',
-        accent: const Color(0xFF3B82F6),
-        icon: Icons.health_and_safety_rounded,
-        priority: 'Info',
-        gradients: [const Color(0xFF0C1A2E), const Color(0xFF0F2744)],
-      ));
-    }
-
-    // 7. Elderly burden
-    final elderlyTotal = (_ageGroups['60+'] ?? 0);
-    if (elderlyTotal > 0 && allTotal > 0) {
-      final elderShare = elderlyTotal / allTotal * 100;
-      if (elderShare >= 15) {
-        insights.add((
-          text:
-              'Elderly patients (60+) make up ${elderShare.toStringAsFixed(0)}% of screenings — ensure referral pathways to specialist eye care are in place.',
-          accent: const Color(0xFF8B5CF6),
-          icon: Icons.elderly_rounded,
-          priority: 'Action',
-          gradients: [const Color(0xFF1A0533), const Color(0xFF240A45)],
-        ));
-      }
-    }
-
-    // 8. Severe or Critical cases
-    final severeCount = (_severityCounts['Severe'] ?? 0);
-    final criticalCount = (_severityCounts['Critical'] ?? 0);
-    final sevTotal = _severityCounts.values.fold(0, (s, v) => s + v);
-    if (sevTotal > 0 && (severeCount + criticalCount) > 0) {
-      final sevPct = (severeCount + criticalCount) / sevTotal * 100;
-      if (sevPct >= 10) {
-        insights.add((
-          text:
-              '${severeCount + criticalCount} patient${(severeCount + criticalCount) == 1 ? "" : "s"} classified \'Severe\' or \'Critical\' (${sevPct.toStringAsFixed(0)}%) — urgent referral follow-up required.',
-          accent: const Color(0xFFEF4444),
-          icon: Icons.warning_rounded,
-          priority: 'Urgent',
-          gradients: [const Color(0xFF2D0A0A), const Color(0xFF450A0A)],
-        ));
-      }
-    }
-
-    // Fallback when no data at all
-    if (insights.isEmpty) {
-      insights.add((
-        text:
-            'No screening data available for this period. Start a new screening session to generate insights.',
-        accent: const Color(0xFF8FA0B4),
-        icon: Icons.info_outline_rounded,
-        priority: 'Info',
-        gradients: [const Color(0xFF0C1A2E), const Color(0xFF0F2744)],
-      ));
-    }
-
-    return insights;
-  }
+  List<AnalyticsInsight> get _computedInsights => AnalyticsInsights.build(
+    trendData: _trendData,
+    totalScreened: _totalScreened,
+    totalReferred: _totalReferred,
+    ageGroups: _ageGroups,
+    referralStatuses: _referralStatuses,
+    villages: _villages,
+    conditionCounts: _conditionCounts,
+    severityCounts: _severityCounts,
+  );
 
   Widget _buildInsightsSection() {
     final insights = _computedInsights;

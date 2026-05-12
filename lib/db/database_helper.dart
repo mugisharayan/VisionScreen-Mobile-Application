@@ -417,6 +417,10 @@ class DatabaseHelper {
       operation: AppStrings.syncPendingUpsert,
       payload: row,
     );
+    final campaignId = row['campaign_id'] as String?;
+    if (campaignId != null && campaignId.isNotEmpty) {
+      await updateCampaignStats(campaignId);
+    }
   }
 
   Future<void> deletePatient(String patientId) async {
@@ -484,6 +488,24 @@ class DatabaseHelper {
     return rows.isEmpty ? null : rows.first;
   }
 
+  Future<bool> hasWorkspaceData() async {
+    final database = await db;
+    const tables = <String>[
+      'campaigns',
+      'patients',
+      'screenings',
+      'workspace_facilities',
+      'facility_memberships',
+    ];
+    for (final table in tables) {
+      final rows = await database.query(table, limit: 1);
+      if (rows.isNotEmpty) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   Future<List<Map<String, dynamic>>> searchPatients(String query) async {
     final database = await db;
     final q = '%${query.toLowerCase()}%';
@@ -522,24 +544,11 @@ class DatabaseHelper {
 
   Future<List<Map<String, dynamic>>> getAllCampaigns() async {
     final database = await db;
-    final campaigns = await database.query(
+    return database.query(
       'campaigns',
       where: 'deleted_at IS NULL',
       orderBy: 'created_at DESC',
     );
-    // Recalculate stats for each campaign fresh
-    final result = <Map<String, dynamic>>[];
-    for (final c in campaigns) {
-      await updateCampaignStats(c['id'] as String);
-      final updated = await database.query(
-        'campaigns',
-        where: 'id = ?',
-        whereArgs: [c['id']],
-        limit: 1,
-      );
-      if (updated.isNotEmpty) result.add(updated.first);
-    }
-    return result;
   }
 
   Future<Map<String, dynamic>?> getCampaign(String id) async {
@@ -553,7 +562,10 @@ class DatabaseHelper {
     return rows.isEmpty ? null : rows.first;
   }
 
-  Future<void> updateCampaignStats(String campaignId) async {
+  Future<void> updateCampaignStats(
+    String campaignId, {
+    bool queueSync = true,
+  }) async {
     final database = await db;
     // Count distinct patients, and their latest screening outcome
     final result = await database.rawQuery(
@@ -579,33 +591,58 @@ class DatabaseHelper {
       [campaignId],
     );
     if (result.isNotEmpty) {
-      final ctx = await _currentActorContext();
-      final now = _isoNow();
       final current = await getCampaign(campaignId);
-      final nextVersion = ((current?['version'] as int?) ?? 0) + 1;
-      await database.update(
-        'campaigns',
-        {
-          'total': (result.first['total'] as int?) ?? 0,
-          'passed': (result.first['passed'] as num?)?.toInt() ?? 0,
-          'referred': (result.first['referred'] as num?)?.toInt() ?? 0,
+      if (current == null) {
+        return;
+      }
+
+      final total = (result.first['total'] as int?) ?? 0;
+      final passed = (result.first['passed'] as num?)?.toInt() ?? 0;
+      final referred = (result.first['referred'] as num?)?.toInt() ?? 0;
+      final currentTotal = (current['total'] as int?) ?? 0;
+      final currentPassed = (current['passed'] as int?) ?? 0;
+      final currentReferred = (current['referred'] as int?) ?? 0;
+      if (currentTotal == total &&
+          currentPassed == passed &&
+          currentReferred == referred) {
+        return;
+      }
+
+      final data = <String, dynamic>{
+        'total': total,
+        'passed': passed,
+        'referred': referred,
+      };
+      if (queueSync) {
+        final ctx = await _currentActorContext();
+        final now = _isoNow();
+        final nextVersion = ((current['version'] as int?) ?? 0) + 1;
+        data.addAll({
           'updated_at': now,
           'updated_by': ctx.email,
           'sync_state': AppStrings.syncPendingUpsert,
           'version': nextVersion,
-        },
+        });
+      }
+
+      await database.update(
+        'campaigns',
+        data,
         where: 'id = ?',
         whereArgs: [campaignId],
       );
-      final updated = await getCampaign(campaignId);
-      if (updated != null) {
-        await _queueOperation(
-          database,
-          entityType: AppStrings.entityCampaign,
-          entityId: campaignId,
-          operation: AppStrings.syncPendingUpsert,
-          payload: updated,
-        );
+
+      if (queueSync) {
+        final updated = await getCampaign(campaignId);
+        if (updated != null) {
+          await _queueOperation(
+            database,
+            entityType: AppStrings.entityCampaign,
+            entityId: campaignId,
+            operation: AppStrings.syncPendingUpsert,
+            payload: updated,
+          );
+        }
       }
     }
   }
@@ -723,6 +760,11 @@ class DatabaseHelper {
       operation: AppStrings.syncPendingUpsert,
       payload: row,
     );
+    final patient = await getPatient(row['patient_id'] as String);
+    final campaignId = patient?['campaign_id'] as String?;
+    if (campaignId != null && campaignId.isNotEmpty) {
+      await updateCampaignStats(campaignId);
+    }
     return id;
   }
 
@@ -1373,11 +1415,15 @@ class DatabaseHelper {
 
   Future<void> cacheSyncedChwProfile(Map<String, dynamic> profile) async {
     final database = await db;
-    await database.insert('chw_profiles', {
-      ...profile,
-      'last_synced_at': profile['last_synced_at'] ?? _isoNow(),
-      'sync_state': AppStrings.syncSynced,
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
+    final row = Map<String, dynamic>.from(profile)
+      ..remove('remote_id')
+      ..['last_synced_at'] = profile['last_synced_at'] ?? _isoNow()
+      ..['sync_state'] = AppStrings.syncSynced;
+    await database.insert(
+      'chw_profiles',
+      row,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   Future<Map<String, dynamic>?> getChwProfileByEmail(String email) async {
@@ -1469,9 +1515,15 @@ class DatabaseHelper {
     }
   }
 
-  Future<void> clearAllData() async {
-    final database = await db;
-    await clearWorkspaceData(database: database);
+  Future<void> clearRestorableData({DatabaseExecutor? database}) async {
+    final target = database ?? await db;
+    await target.delete('sync_queue');
+    await target.delete('screenings');
+    await target.delete('patients');
+    await target.delete('campaigns');
+    await target.delete('facility_memberships');
+    await target.delete('workspace_facilities');
+    await target.delete('chw_profiles');
   }
 
   Future<void> clearWorkspaceData({DatabaseExecutor? database}) async {
