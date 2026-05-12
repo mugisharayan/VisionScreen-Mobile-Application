@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'dart:math';
 import '../repositories/screening_repository.dart';
 import '../repositories/campaign_repository.dart';
+import '../utils/app_theme.dart';
+import '../widgets/vs_ui.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -200,91 +202,31 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  // stubs
   Widget _buildHeader() {
-    return Container(
-      color: const Color(0xFFF8FAFC),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Analytics',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0F172A),
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'Programme data',
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFF64748B),
-                ),
-              ),
-              const SizedBox(height: 12),
-              _buildPeriodSelector(),
-            ],
-          ),
+    return VsGradientHeader(
+      eyebrow: 'Programme Data',
+      title: 'Analytics',
+      subtitle: 'Screening outcomes, referrals and trends',
+      icon: Icons.bar_chart_rounded,
+      bottom: Container(
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.18),
+          borderRadius: BorderRadius.circular(VsRadius.md + 3),
         ),
+        padding: const EdgeInsets.all(3),
+        child: _buildPeriodSelector(),
       ),
     );
   }
 
   Widget _buildPeriodSelector() {
-    return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE2E8F0),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: _periods.map((p) {
-          final isSelected = p == _selectedPeriod;
-          return Expanded(
-            child: GestureDetector(
-              onTap: () {
-                setState(() => _selectedPeriod = p);
-                _loadStats();
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  color: isSelected ? Colors.white : Colors.transparent,
-                  borderRadius: BorderRadius.circular(9),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.06),
-                            blurRadius: 4,
-                            offset: const Offset(0, 1),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Text(
-                  p,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: isSelected
-                        ? const Color(0xFF0D9488)
-                        : const Color(0xFF64748B),
-                  ),
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
+    return VsSegmentedControl(
+      options: _periods,
+      value: _selectedPeriod,
+      onChanged: (period) {
+        setState(() => _selectedPeriod = period);
+        _loadStats();
+      },
     );
   }
 
@@ -293,55 +235,62 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       children: [
         Row(
           children: [
-            _buildStatCard('$_totalScreened', 'Screened', const Color(0xFF0D9488)),
+            _buildStatCard(
+              '$_totalScreened',
+              'Screened',
+              VsColors.brand,
+              Icons.remove_red_eye_rounded,
+              'Completed',
+            ),
             const SizedBox(width: 8),
-            _buildStatCard('$_totalPassed', 'Passed', const Color(0xFF10B981)),
+            _buildStatCard(
+              '$_totalPassed',
+              'Passed',
+              VsColors.emerald,
+              Icons.check_circle_rounded,
+              'No referral',
+            ),
           ],
         ),
         const SizedBox(height: 8),
         Row(
           children: [
-            _buildStatCard('$_totalReferred', 'Referred', const Color(0xFFE11D48)),
+            _buildStatCard(
+              '$_totalReferred',
+              'Referred',
+              VsColors.rose,
+              Icons.local_hospital_rounded,
+              'Needs care',
+            ),
             const SizedBox(width: 8),
-            _buildStatCard('$_totalPending', 'Pending', const Color(0xFFF59E0B)),
+            _buildStatCard(
+              '$_totalPending',
+              'Pending',
+              VsColors.amber,
+              Icons.schedule_rounded,
+              'Incomplete',
+            ),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildStatCard(String number, String label, Color tone) {
+  Widget _buildStatCard(
+    String number,
+    String label,
+    Color tone,
+    IconData icon,
+    String caption,
+  ) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              number,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-                color: tone,
-                height: 1.0,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF64748B),
-              ),
-            ),
-          ],
-        ),
+      child: VsStatTile(
+        value: number,
+        label: label,
+        caption: caption,
+        color: tone,
+        icon: icon,
+        dense: true,
       ),
     );
   }

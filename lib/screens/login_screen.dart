@@ -7,7 +7,8 @@ import '../repositories/auth_repository.dart';
 import '../utils/app_constants.dart';
 import '../utils/legal_copy.dart';
 import '../utils/app_theme.dart';
-import '../widgets/vs_logo.dart';
+import '../widgets/vs_auth_hero.dart';
+import '../widgets/vs_ui.dart';
 
 // ─────────────────────────────────────────────────────────────
 // Login Screen — Login + Sign Up tabs
@@ -132,7 +133,7 @@ class _LoginScreenState extends State<LoginScreen>
     if (!_termsAgreed) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: AppColors.ink2,
+          backgroundColor: VsColors.slate900,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
@@ -329,11 +330,11 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.authBg,
+      backgroundColor: VsColors.card,
       resizeToAvoidBottomInset: true,
       body: Column(
         children: [
-          // ── Green hero zone (no tab switcher) ──
+          // ── Branded auth hero (no tab switcher) ──
           _AuthHeroZone(isSignUp: _showSignUp),
 
           // ── White scrollable form area ──
@@ -462,99 +463,20 @@ class _LoginScreenState extends State<LoginScreen>
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// Auth Hero Zone — animated entry + logo bounce
-// ─────────────────────────────────────────────────────────────
-// Auth Hero Zone — teal gradient + Sight Mark logo + animations
-// ─────────────────────────────────────────────────────────────
-class _AuthHeroZone extends StatefulWidget {
+class _AuthHeroZone extends StatelessWidget {
   const _AuthHeroZone({required this.isSignUp});
   final bool isSignUp;
-
-  @override
-  State<_AuthHeroZone> createState() => _AuthHeroZoneState();
-}
-
-class _AuthHeroZoneState extends State<_AuthHeroZone>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _entryCtrl;
-  late final Animation<double> _heroOpacity;
-  late final Animation<Offset> _heroSlide;
-
-  @override
-  void initState() {
-    super.initState();
-    _entryCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    )..forward();
-    _heroOpacity = CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOut);
-    _heroSlide = Tween<Offset>(
-      begin: const Offset(0, -0.08),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic));
-  }
-
-  @override
-  void dispose() {
-    _entryCtrl.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
     final keyboardOpen = mq.viewInsets.bottom > 0;
-    return SlideTransition(
-      position: _heroSlide,
-      child: FadeTransition(
-        opacity: _heroOpacity,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          width: double.infinity,
-          height: keyboardOpen ? 120 : 220,
-          decoration: const BoxDecoration(gradient: VsGradients.hero),
-          child: SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      VsLogo(size: keyboardOpen ? 32 : 44, showRing: false),
-                      const SizedBox(width: 10),
-                      Text(
-                        'VisionScreen',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: keyboardOpen ? 18 : 22,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (!keyboardOpen) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      widget.isSignUp ? 'Create your account' : 'Welcome back',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: Colors.white.withValues(alpha: 0.80),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+    return VsAuthHero(
+      compact: keyboardOpen,
+      title: isSignUp ? 'Create your account' : 'Welcome back',
+      subtitle: isSignUp
+          ? 'Register your CHW workspace'
+          : 'Sign in to continue',
     );
   }
 }
@@ -708,11 +630,11 @@ class _NewLoginFormState extends State<_NewLoginForm>
                     children: [
                       const TextSpan(
                         text: 'Hello ',
-                        style: TextStyle(color: AppColors.greenDark),
+                        style: TextStyle(color: VsColors.brandDark),
                       ),
                       TextSpan(
                         text: 'Again!',
-                        style: TextStyle(color: AppColors.textDark),
+                        style: TextStyle(color: VsColors.slate900),
                       ),
                     ],
                   ),
@@ -722,7 +644,7 @@ class _NewLoginFormState extends State<_NewLoginForm>
                   'Sign in to continue to VisionScreen.',
                   style: GoogleFonts.inter(
                     fontSize: 12,
-                    color: AppColors.textMuted,
+                    color: VsColors.slate500,
                   ),
                 ),
               ],
@@ -758,18 +680,9 @@ class _NewLoginFormState extends State<_NewLoginForm>
               hasError: widget.passwordError != null,
               errorText: widget.passwordError,
               onChanged: widget.onPasswordChanged,
-              suffixIcon: GestureDetector(
+              suffixIcon: AuthPasswordVisibilityButton(
+                visible: widget.passwordVisible,
                 onTap: widget.onTogglePassword,
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 4),
-                  child: Icon(
-                    widget.passwordVisible
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                    size: 18,
-                    color: AppColors.textMuted,
-                  ),
-                ),
               ),
             ),
           ),
@@ -779,40 +692,30 @@ class _NewLoginFormState extends State<_NewLoginForm>
             3,
             Row(
               children: [
-                GestureDetector(
-                  onTap: () => widget.onRememberMeChanged(!widget.rememberMe),
+                MergeSemantics(
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        width: 18,
-                        height: 18,
-                        decoration: BoxDecoration(
-                          color: widget.rememberMe
-                              ? AppColors.green
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(5),
-                          border: Border.all(
-                            color: widget.rememberMe
-                                ? AppColors.green
-                                : AppColors.borderColor,
-                            width: 1.5,
-                          ),
+                      Checkbox(
+                        value: widget.rememberMe,
+                        onChanged: (value) =>
+                            widget.onRememberMeChanged(value ?? false),
+                        activeColor: VsColors.brand,
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        side: const BorderSide(
+                          color: VsColors.border,
+                          width: 1.5,
                         ),
-                        child: widget.rememberMe
-                            ? const Icon(
-                                Icons.check_rounded,
-                                size: 12,
-                                color: Colors.white,
-                              )
-                            : null,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(5),
+                        ),
                       ),
-                      const SizedBox(width: 7),
                       Text(
                         'Remember me',
                         style: GoogleFonts.inter(
                           fontSize: 11,
-                          color: AppColors.textMuted,
+                          color: VsColors.slate500,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -820,17 +723,11 @@ class _NewLoginFormState extends State<_NewLoginForm>
                   ),
                 ),
                 const Spacer(),
-                GestureDetector(
+                VsTextLink(
+                  label: 'Forgot password?',
+                  color: VsColors.slate900,
                   onTap: () =>
                       Navigator.of(context).pushNamed('/forgot-password'),
-                  child: Text(
-                    'Forgot Password?',
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textDark,
-                    ),
-                  ),
                 ),
               ],
             ),
@@ -842,33 +739,25 @@ class _NewLoginFormState extends State<_NewLoginForm>
             Column(
               children: [
                 AuthGreenPillButton(
-                  label: 'Sign In',
+                  label: 'Sign in',
                   icon: Icons.login_rounded,
                   loading: widget.loading,
                   onTap: widget.onLogin,
                 ),
                 const SizedBox(height: 28),
                 Center(
-                  child: GestureDetector(
-                    onTap: widget.onGoSignUp,
-                    child: RichText(
-                      text: TextSpan(
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: AppColors.textMuted,
-                        ),
-                        children: [
-                          const TextSpan(text: 'New User? '),
-                          TextSpan(
-                            text: 'Create Account',
-                            style: TextStyle(
-                              color: AppColors.greenDark,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
+                  child: Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(
+                        'New user?',
+                        style: VsText.label(color: VsColors.slate500),
                       ),
-                    ),
+                      VsTextLink(
+                        label: 'Create account',
+                        onTap: widget.onGoSignUp,
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -1022,11 +911,11 @@ class _NewSignUpFormState extends State<_NewSignUpForm>
               children: [
                 const TextSpan(
                   text: 'Create ',
-                  style: TextStyle(color: AppColors.greenDark),
+                  style: TextStyle(color: VsColors.brandDark),
                 ),
                 TextSpan(
                   text: 'Account',
-                  style: TextStyle(color: AppColors.textDark),
+                  style: TextStyle(color: VsColors.slate900),
                 ),
               ],
             ),
@@ -1037,7 +926,7 @@ class _NewSignUpFormState extends State<_NewSignUpForm>
           0,
           Text(
             'Fill in your details to get started.',
-            style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted),
+            style: GoogleFonts.inter(fontSize: 12, color: VsColors.slate500),
           ),
         ),
         const SizedBox(height: 22),
@@ -1087,7 +976,7 @@ class _NewSignUpFormState extends State<_NewSignUpForm>
           4,
           AuthUnderlineField(
             controller: widget.emailCtrl,
-            label: 'Email Address',
+            label: 'Email address',
             hint: 'yourname@gmail.com',
             prefixIcon: Icons.mail_outline_rounded,
             keyboardType: TextInputType.emailAddress,
@@ -1120,18 +1009,9 @@ class _NewSignUpFormState extends State<_NewSignUpForm>
             hasError: widget.passwordError != null,
             errorText: widget.passwordError,
             onChanged: widget.onPasswordChanged,
-            suffixIcon: GestureDetector(
+            suffixIcon: AuthPasswordVisibilityButton(
+              visible: widget.passwordVisible,
               onTap: widget.onTogglePassword,
-              child: Padding(
-                padding: const EdgeInsets.only(right: 4),
-                child: Icon(
-                  widget.passwordVisible
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                  size: 18,
-                  color: AppColors.textMuted,
-                ),
-              ),
             ),
           ),
         ),
@@ -1144,7 +1024,7 @@ class _NewSignUpFormState extends State<_NewSignUpForm>
           7,
           AuthUnderlineField(
             controller: widget.confirmPasswordCtrl,
-            label: 'Confirm Password',
+            label: 'Confirm password',
             hint: 'Re-enter your password',
             prefixIcon: Icons.lock_outline_rounded,
             obscure: !widget.confirmPasswordVisible,
@@ -1152,18 +1032,9 @@ class _NewSignUpFormState extends State<_NewSignUpForm>
             hasError: widget.confirmPasswordError != null,
             errorText: widget.confirmPasswordError,
             onChanged: widget.onConfirmPasswordChanged,
-            suffixIcon: GestureDetector(
+            suffixIcon: AuthPasswordVisibilityButton(
+              visible: widget.confirmPasswordVisible,
               onTap: widget.onToggleConfirmPassword,
-              child: Padding(
-                padding: const EdgeInsets.only(right: 4),
-                child: Icon(
-                  widget.confirmPasswordVisible
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                  size: 18,
-                  color: AppColors.textMuted,
-                ),
-              ),
             ),
           ),
         ),
@@ -1181,32 +1052,21 @@ class _NewSignUpFormState extends State<_NewSignUpForm>
           Column(
             children: [
               AuthGreenPillButton(
-                label: 'Create Account',
+                label: 'Create account',
                 icon: Icons.person_add_outlined,
                 onTap: widget.onSignUp,
               ),
               const SizedBox(height: 24),
               Center(
-                child: GestureDetector(
-                  onTap: widget.onGoLogin,
-                  child: RichText(
-                    text: TextSpan(
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: AppColors.textMuted,
-                      ),
-                      children: [
-                        const TextSpan(text: 'Already have an account? '),
-                        TextSpan(
-                          text: 'Sign In',
-                          style: TextStyle(
-                            color: AppColors.greenDark,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
+                child: Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      'Already have an account?',
+                      style: VsText.label(color: VsColors.slate500),
                     ),
-                  ),
+                    VsTextLink(label: 'Sign in', onTap: widget.onGoLogin),
+                  ],
                 ),
               ),
             ],
@@ -1217,10 +1077,6 @@ class _NewSignUpFormState extends State<_NewSignUpForm>
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────
-// Phase 5 supporting widgets
-// ─────────────────────────────────────────────────────────────
 
 // Underline phone field with +256 prefix (light theme)
 class _UnderlinePhoneField extends StatefulWidget {
@@ -1365,8 +1221,8 @@ class _UnderlinePhoneFieldState extends State<_UnderlinePhoneField> {
     final lineColor = widget.hasError
         ? const Color(0xFFEF4444)
         : _focused
-        ? AppColors.green
-        : AppColors.borderColor;
+        ? VsColors.brand
+        : VsColors.border;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1376,20 +1232,26 @@ class _UnderlinePhoneFieldState extends State<_UnderlinePhoneField> {
           style: GoogleFonts.inter(
             fontSize: 11,
             fontWeight: FontWeight.w500,
-            color: AppColors.textMuted,
+            color: VsColors.slate500,
           ),
         ),
         const SizedBox(height: 2),
         Row(
           children: [
-            // Inline +256 prefix — quieter than a teal pill
-            Text(
-              '+256',
-              style: GoogleFonts.inter(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textMuted,
-                letterSpacing: 0.5,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+              decoration: BoxDecoration(
+                color: VsColors.brandFaint,
+                borderRadius: BorderRadius.circular(VsRadius.pill),
+                border: Border.all(color: VsColors.brandLight),
+              ),
+              child: Text(
+                '🇺🇬 +256',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: VsColors.brandDark,
+                ),
               ),
             ),
             const SizedBox(width: 10),
@@ -1408,15 +1270,15 @@ class _UnderlinePhoneFieldState extends State<_UnderlinePhoneField> {
                 style: GoogleFonts.inter(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.textDark,
+                  color: VsColors.slate900,
                   letterSpacing: 1.2,
                 ),
-                cursorColor: AppColors.green,
+                cursorColor: VsColors.brand,
                 decoration: InputDecoration(
                   hintText: '7XX XXX XXX',
                   hintStyle: GoogleFonts.inter(
                     fontSize: 13,
-                    color: AppColors.textMuted.withValues(alpha: 0.4),
+                    color: VsColors.slate500.withValues(alpha: 0.4),
                     letterSpacing: 0.5,
                   ),
                   isDense: true,
@@ -1488,7 +1350,7 @@ class _UnderlinePhoneFieldState extends State<_UnderlinePhoneField> {
             'MTN or Airtel Uganda · 9 digits',
             style: GoogleFonts.inter(
               fontSize: 10,
-              color: AppColors.textMuted.withValues(alpha: 0.6),
+              color: VsColors.slate500.withValues(alpha: 0.6),
             ),
           ),
         ),
@@ -1547,7 +1409,7 @@ class _GreenPasswordStrength extends StatelessWidget {
       Colors.transparent,
       const Color(0xFFEF4444),
       const Color(0xFFF59E0B),
-      AppColors.green,
+      VsColors.brand,
     ];
     final color = colors[score];
     return Column(
@@ -1562,7 +1424,7 @@ class _GreenPasswordStrength extends StatelessWidget {
                 margin: EdgeInsets.only(right: i < 2 ? 4 : 0),
                 height: 3,
                 decoration: BoxDecoration(
-                  color: i < score ? color : AppColors.borderColor,
+                  color: i < score ? color : VsColors.border,
                   borderRadius: BorderRadius.circular(99),
                 ),
               ),
@@ -1595,7 +1457,7 @@ class _GreenPasswordStrength extends StatelessWidget {
                       : '· Add symbols to strengthen',
                   style: GoogleFonts.inter(
                     fontSize: 10,
-                    color: AppColors.textMuted,
+                    color: VsColors.slate500,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1608,7 +1470,6 @@ class _GreenPasswordStrength extends StatelessWidget {
   }
 }
 
-// Green terms checkbox row
 class _GreenTermsRow extends StatelessWidget {
   const _GreenTermsRow({required this.agreed, required this.onChanged});
   final bool agreed;
@@ -1616,121 +1477,91 @@ class _GreenTermsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onChanged(!agreed);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: agreed
-              ? AppColors.green.withValues(alpha: 0.06)
-              : AppColors.greenHero,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: agreed ? AppColors.green : AppColors.borderColor,
-            width: 1.5,
-          ),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                color: agreed ? AppColors.green : Colors.white,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: agreed ? AppColors.green : AppColors.borderColor,
-                  width: 1.5,
-                ),
-                boxShadow: agreed
-                    ? [
-                        BoxShadow(
-                          color: AppColors.green.withValues(alpha: 0.3),
-                          blurRadius: 6,
-                        ),
-                      ]
-                    : [],
-              ),
-              child: agreed
-                  ? const Icon(
-                      Icons.check_rounded,
-                      size: 13,
-                      color: Colors.white,
-                    )
-                  : null,
+    return Material(
+      color: agreed
+          ? VsColors.brand.withValues(alpha: 0.06)
+          : VsColors.brandFaint,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onChanged(!agreed);
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: agreed ? VsColors.brand : VsColors.border,
+              width: 1.5,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: RichText(
-                text: TextSpan(
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.textMuted,
-                    height: 1.6,
-                  ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Checkbox(
+                value: agreed,
+                onChanged: (value) => onChanged(value ?? false),
+                activeColor: VsColors.brand,
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                side: const BorderSide(color: VsColors.border, width: 1.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    const TextSpan(text: 'I have read and agree to the '),
-                    WidgetSpan(
-                      child: GestureDetector(
-                        onTap: () => showTermsOfService(context),
-                        child: Text(
-                          'Terms of Service',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.greenDark,
-                            decoration: TextDecoration.underline,
-                            decorationColor: AppColors.greenDark,
-                          ),
-                        ),
+                    Text(
+                      'I have read and agree to the',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: VsColors.slate500,
+                        height: 1.6,
                       ),
                     ),
-                    const TextSpan(text: ' and '),
-                    WidgetSpan(
-                      child: GestureDetector(
-                        onTap: () => showPrivacyPolicy(context),
-                        child: Text(
-                          'Privacy Policy',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.greenDark,
-                            decoration: TextDecoration.underline,
-                            decorationColor: AppColors.greenDark,
-                          ),
-                        ),
+                    VsTextLink(
+                      label: 'Terms of Service',
+                      onTap: () => showTermsOfService(context),
+                    ),
+                    Text(
+                      'and',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: VsColors.slate500,
+                        height: 1.6,
                       ),
                     ),
-                    const TextSpan(text: ' of VisionScreen.'),
+                    VsTextLink(
+                      label: 'Privacy Policy',
+                      onTap: () => showPrivacyPolicy(context),
+                    ),
+                    Text(
+                      'of VisionScreen.',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: VsColors.slate500,
+                        height: 1.6,
+                      ),
+                    ),
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// Tab switcher — Login / Sign Up
-// ─────────────────────────────────────────────────────────────
-// ─────────────────────────────────────────────────────────────
-// Role selector button
-// ─────────────────────────────────────────────────────────────
-// ─────────────────────────────────────────────────────────────
-// Uganda Phone Field — +256 prefix badge + network hint
-// ─────────────────────────────────────────────────────────────
-// ─────────────────────────────────────────────────────────────
-// Terms of Service bottom sheet
-// ─────────────────────────────────────────────────────────────
 List<_LegalSection> _buildLegalSections(Iterable<LegalSectionData> sections) {
   return sections
       .map(
@@ -1748,7 +1579,7 @@ void showTermsOfService(BuildContext context) {
     builder: (_) => _LegalSheet(
       title: 'Terms of Service',
       icon: Icons.gavel_rounded,
-      iconColor: AppColors.teal,
+      iconColor: VsColors.brand,
       sections: _buildLegalSections(termsOfServiceSections),
     ),
   );
@@ -1849,21 +1680,14 @@ class _LegalSheet extends StatelessWidget {
                       ],
                     ),
                   ),
-                  GestureDetector(
+                  VsIconButton(
+                    icon: Icons.close_rounded,
+                    tooltip: 'Close',
                     onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF0F4F7),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.close_rounded,
-                        size: 16,
-                        color: Color(0xFF5E7291),
-                      ),
-                    ),
+                    size: 40,
+                    iconSize: 18,
+                    foreground: const Color(0xFF5E7291),
+                    tint: const Color(0xFFF0F4F7),
                   ),
                 ],
               ),
@@ -1909,7 +1733,7 @@ class _LegalSectionWidget extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            color: AppColors.teal.withValues(alpha: 0.07),
+            color: VsColors.brand.withValues(alpha: 0.07),
             borderRadius: BorderRadius.circular(6),
           ),
           child: Text(
@@ -1917,7 +1741,7 @@ class _LegalSectionWidget extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.w800,
-              color: AppColors.teal,
+              color: VsColors.brand,
             ),
           ),
         ),

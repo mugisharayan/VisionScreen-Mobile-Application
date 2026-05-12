@@ -17,6 +17,8 @@ class AuthUnderlineField extends StatefulWidget {
     this.errorText,
     this.onChanged,
     this.prefixIcon,
+    this.autofillHints,
+    this.inputFormatters,
   });
 
   final TextEditingController controller;
@@ -30,6 +32,8 @@ class AuthUnderlineField extends StatefulWidget {
   final String? errorText;
   final ValueChanged<String>? onChanged;
   final IconData? prefixIcon;
+  final Iterable<String>? autofillHints;
+  final List<TextInputFormatter>? inputFormatters;
 
   @override
   State<AuthUnderlineField> createState() => _AuthUnderlineFieldState();
@@ -58,7 +62,7 @@ class _AuthUnderlineFieldState extends State<AuthUnderlineField> {
         : _focused
         ? VsColors.brand
         : VsColors.border;
-    final iconColor = _focused ? VsColors.brand : VsColors.muted;
+    final iconColor = _focused ? VsColors.brand : VsColors.slate500;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,14 +81,21 @@ class _AuthUnderlineFieldState extends State<AuthUnderlineField> {
                 controller: widget.controller,
                 focusNode: _focus,
                 obscureText: widget.obscure,
+                enableSuggestions: !widget.obscure,
+                autocorrect: !widget.obscure,
                 keyboardType: widget.keyboardType,
                 textInputAction: widget.inputAction,
+                autofillHints: widget.autofillHints,
                 onChanged: widget.onChanged,
-                style: VsText.body(color: VsColors.text, w: FontWeight.w500),
+                inputFormatters: widget.inputFormatters,
+                style: VsText.body(
+                  color: VsColors.slate900,
+                  w: FontWeight.w500,
+                ),
                 cursorColor: VsColors.brand,
                 decoration: InputDecoration(
                   hintText: widget.hint,
-                  hintStyle: VsText.body(color: VsColors.subtle),
+                  hintStyle: VsText.body(color: VsColors.slate400),
                   suffixIcon: widget.suffixIcon,
                   suffixIconConstraints: const BoxConstraints(
                     minWidth: 0,
@@ -138,7 +149,7 @@ class _AuthUnderlineFieldState extends State<AuthUnderlineField> {
   }
 }
 
-class AuthGreenPillButton extends StatefulWidget {
+class AuthGreenPillButton extends StatelessWidget {
   const AuthGreenPillButton({
     super.key,
     required this.label,
@@ -153,66 +164,84 @@ class AuthGreenPillButton extends StatefulWidget {
   final IconData? icon;
 
   @override
-  State<AuthGreenPillButton> createState() => _AuthGreenPillButtonState();
-}
-
-class _AuthGreenPillButtonState extends State<AuthGreenPillButton> {
-  bool _pressed = false;
-
-  @override
   Widget build(BuildContext context) {
-    final background = widget.loading
+    final background = loading
         ? VsColors.brand.withValues(alpha: 0.55)
         : VsColors.brand;
 
-    return GestureDetector(
-      onTapDown: (_) {
-        if (!widget.loading) {
-          setState(() => _pressed = true);
-        }
-      },
-      onTapUp: (_) {
-        if (widget.loading) return;
-        setState(() => _pressed = false);
-        HapticFeedback.mediumImpact();
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedScale(
-        scale: _pressed ? 0.98 : 1,
-        duration: const Duration(milliseconds: 100),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          width: double.infinity,
-          height: 52,
-          padding: const EdgeInsets.symmetric(horizontal: VsSpace.xl),
-          decoration: BoxDecoration(
-            color: background,
-            borderRadius: BorderRadius.circular(VsRadius.pill),
-            boxShadow: VsShadows.elevated,
-          ),
-          child: widget.loading
-              ? const Center(
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (widget.icon != null) ...[
-                      Icon(widget.icon, size: 18, color: Colors.white),
-                      const SizedBox(width: VsSpace.sm),
-                    ],
-                    Text(widget.label, style: VsText.button()),
-                  ],
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: ElevatedButton(
+        onPressed: loading
+            ? null
+            : () {
+                HapticFeedback.mediumImpact();
+                onTap();
+              },
+        style:
+            ElevatedButton.styleFrom(
+              elevation: 0,
+              backgroundColor: background,
+              disabledBackgroundColor: background,
+              foregroundColor: Colors.white,
+              disabledForegroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(VsRadius.pill),
+              ),
+            ).copyWith(
+              overlayColor: WidgetStatePropertyAll(
+                Colors.white.withValues(alpha: 0.08),
+              ),
+            ),
+        child: loading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
-        ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (icon != null) ...[
+                    Icon(icon, size: 18, color: Colors.white),
+                    const SizedBox(width: VsSpace.sm),
+                  ],
+                  Text(label, style: VsText.button()),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+class AuthPasswordVisibilityButton extends StatelessWidget {
+  const AuthPasswordVisibilityButton({
+    super.key,
+    required this.visible,
+    required this.onTap,
+  });
+
+  final bool visible;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: visible ? 'Hide password' : 'Show password',
+      onPressed: onTap,
+      constraints: const BoxConstraints.tightFor(width: 48, height: 48),
+      padding: EdgeInsets.zero,
+      style: IconButton.styleFrom(
+        tapTargetSize: MaterialTapTargetSize.padded,
+        foregroundColor: VsColors.slate500,
+      ),
+      icon: Icon(
+        visible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+        size: 18,
       ),
     );
   }

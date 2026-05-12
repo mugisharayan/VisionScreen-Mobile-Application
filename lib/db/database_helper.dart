@@ -1628,6 +1628,7 @@ class DatabaseHelper {
     ''');
     for (final r in overdueRows) {
       notifications.add({
+        'id': 'overdue_${r['id']}',
         'icon': 'warning',
         'color': 0xFFEF4444,
         'title': 'Referral Overdue',
@@ -1650,6 +1651,7 @@ class DatabaseHelper {
     ''');
     for (final r in upcomingRows) {
       notifications.add({
+        'id': 'upcoming_${r['id']}',
         'icon': 'reminder',
         'color': 0xFF8B5CF6,
         'title': 'Appointment Reminder',
@@ -1672,6 +1674,7 @@ class DatabaseHelper {
     for (final r in recentRows) {
       final passed = r['outcome'] == 'pass';
       notifications.add({
+        'id': 'screening_${r['id']}',
         'icon': passed ? 'check' : 'assignment',
         'color': passed ? 0xFF22C55E : 0xFFF59E0B,
         'title': passed ? 'Screening Passed' : 'Referral Generated',
@@ -1679,7 +1682,7 @@ class DatabaseHelper {
             ? '${r['name']} passed. OD ${r['od_snellen']}, OS ${r['os_snellen']}.'
             : 'Referral created for ${r['name']}.',
         'time': r['screening_date'],
-        'read': true,
+        'read': false,
         'tag': passed ? 'RESULT' : 'REFERRAL',
       });
     }
@@ -1688,12 +1691,13 @@ class DatabaseHelper {
     final unsynced = await getUnsyncedCount();
     if (unsynced > 0) {
       notifications.add({
+        'id': 'sync_pending',
         'icon': 'sync',
         'color': 0xFF38BDF8,
         'title': 'Sync Pending',
         'body': '$unsynced record${unsynced == 1 ? '' : 's'} waiting to sync.',
         'time': DateTime.now().toIso8601String(),
-        'read': unsynced < 3,
+        'read': false,
         'tag': 'SYNC',
       });
     }

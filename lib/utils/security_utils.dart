@@ -22,6 +22,15 @@ class SecurityUtils {
     return '$salt:$hash';
   }
 
+  /// Generate a cryptographically random opaque token, [byteLength] bytes
+  /// rendered as hex. Suitable for short-lived single-use tokens like
+  /// password-reset handles.
+  static String randomToken([int byteLength = 24]) {
+    final rng = Random.secure();
+    final bytes = List<int>.generate(byteLength, (_) => rng.nextInt(256));
+    return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+  }
+
   /// Verify a plain-text password against a stored "salt:hash" value.
   static bool verifyPassword(String plainText, String stored) {
     final parts = stored.split(':');
@@ -29,7 +38,20 @@ class SecurityUtils {
     final salt = parts[0];
     final expectedHash = parts[1];
     final actualHash = _pbkdf2(plainText, salt, _iterations);
-    return _constantTimeEquals(actualHash, expectedHash);
+    return constantTimeEquals(actualHash, expectedHash);
+  }
+
+  /// Constant-time string comparison for secrets such as password hashes and
+  /// short-lived reset tokens.
+  static bool constantTimeEquals(String a, String b) {
+    final maxLength = a.length > b.length ? a.length : b.length;
+    var result = a.length ^ b.length;
+    for (var i = 0; i < maxLength; i++) {
+      final ac = i < a.length ? a.codeUnitAt(i) : 0;
+      final bc = i < b.length ? b.codeUnitAt(i) : 0;
+      result |= ac ^ bc;
+    }
+    return result == 0;
   }
 
   // ── Private helpers ────────────────────────────────────────────────────────
@@ -57,15 +79,5 @@ class SecurityUtils {
     }
 
     return result.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
-  }
-
-  /// Constant-time string comparison to prevent timing attacks.
-  static bool _constantTimeEquals(String a, String b) {
-    if (a.length != b.length) return false;
-    var result = 0;
-    for (var i = 0; i < a.length; i++) {
-      result |= a.codeUnitAt(i) ^ b.codeUnitAt(i);
-    }
-    return result == 0;
   }
 }

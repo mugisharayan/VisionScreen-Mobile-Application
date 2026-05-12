@@ -17,9 +17,11 @@ import '../repositories/campaign_repository.dart';
 import '../services/permission_coordinator.dart';
 import '../services/sync/sync_service.dart';
 import '../utils/app_constants.dart';
+import '../utils/app_theme.dart';
 import '../utils/haptics.dart';
 import '../utils/id_utils.dart';
 import '../utils/legal_copy.dart';
+import '../widgets/vs_ui.dart';
 
 // Colours
 class _C {
@@ -582,11 +584,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Container(
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF134E4A), Color(0xFF0D9488)],
-        ),
+        gradient: VsGradients.hero,
         borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(28),
           bottomRight: Radius.circular(28),
@@ -595,6 +593,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Stack(
         clipBehavior: Clip.hardEdge,
         children: [
+          const Positioned.fill(
+            child: CustomPaint(painter: VsDotPatternPainter()),
+          ),
           SafeArea(
             bottom: false,
             child: Padding(
@@ -741,24 +742,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ],
                     ),
                   ),
-                  GestureDetector(
+                  VsIconButton(
+                    icon: Icons.edit_rounded,
+                    iconSize: 16,
+                    size: 36,
+                    foreground: Colors.white,
+                    tint: Colors.white.withValues(alpha: 0.15),
+                    tooltip: 'Edit profile',
                     onTap: _showEditProfileSheet,
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.edit_rounded,
-                        size: 16,
-                        color: Colors.white,
-                      ),
-                    ),
                   ),
                 ],
               ),
@@ -1416,15 +1407,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
           child: Row(
             children: [
-              // Icon — neutral slate tile, calmer than colored block
               Container(
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: _C.g100,
+                  color: badgeColor.withValues(alpha: 0.11),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(badgeIcon, size: 18, color: _C.g500),
+                child: Icon(badgeIcon, size: 18, color: badgeColor),
               ),
               const SizedBox(width: 14),
               // Label + optional subtitle
@@ -2257,7 +2247,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 20),
                   // Current password
-                  _sheetFieldLabel('Current Password'),
+                  _sheetFieldLabel('Current password'),
                   const SizedBox(height: 5),
                   _sheetPasswordField(
                     ctrl: currentCtrl,
@@ -2271,7 +2261,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   if (currentError != null) _sheetError(currentError!),
                   const SizedBox(height: 14),
                   // New password
-                  _sheetFieldLabel('New Password'),
+                  _sheetFieldLabel('New password'),
                   const SizedBox(height: 5),
                   _sheetPasswordField(
                     ctrl: newCtrl,
@@ -2284,7 +2274,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   if (newError != null) _sheetError(newError!),
                   const SizedBox(height: 14),
                   // Confirm password
-                  _sheetFieldLabel('Confirm New Password'),
+                  _sheetFieldLabel('Confirm new password'),
                   const SizedBox(height: 5),
                   _sheetPasswordField(
                     ctrl: confirmCtrl,

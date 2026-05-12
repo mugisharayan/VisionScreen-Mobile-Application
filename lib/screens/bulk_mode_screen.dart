@@ -8,8 +8,10 @@ import '../repositories/patient_repository.dart';
 import '../repositories/screening_repository.dart';
 import 'referral_letter_screen.dart';
 import 'face_distance_screen.dart';
+import '../utils/app_theme.dart';
 import '../utils/patient_validators.dart';
 import '../utils/visual_acuity.dart';
+import '../widgets/vs_ui.dart';
 
 const _ink = Color(0xFF04091A);
 const _ink2 = Color(0xFF0B1530);
@@ -490,81 +492,19 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
     // Compact header during eye test and cover eye reminder
     final isEyeTest = _section == 2 || _section == 4;
     if (isEyeTest) return _buildCompactHeader();
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF134E4A), Color(0xFF0D9488)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(28),
-          bottomRight: Radius.circular(28),
-        ),
-      ),
-      child: Stack(
-        clipBehavior: Clip.hardEdge,
+    return VsGradientHeader(
+      eyebrow: 'Campaign mode',
+      title: 'Bulk screening',
+      subtitle: 'Screen many patients quickly in one session',
+      icon: Icons.groups_rounded,
+      leading: VsBackTile(onTap: () => Navigator.pop(context)),
+      bottom: Row(
         children: [
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Back button
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(11),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.25),
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: Colors.white,
-                        size: 15,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Bulk screening',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      height: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Screen many patients quickly in one session',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: Colors.white.withValues(alpha: 0.75),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  // Step indicator
-                  Row(
-                    children: [
-                      _stepDot(1, 'Setup', _section >= 0),
-                      _stepLine(_section >= 1),
-                      _stepDot(2, 'Screen', _section >= 1),
-                      _stepLine(_section >= 2),
-                      _stepDot(3, 'Summary', _section >= 2),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
+          _stepDot(1, 'Setup', _section >= 0),
+          _stepLine(_section >= 1),
+          _stepDot(2, 'Screen', _section >= 1),
+          _stepLine(_section >= 2),
+          _stepDot(3, 'Summary', _section >= 2),
         ],
       ),
     );
@@ -575,37 +515,17 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
         ? _eyeOrder[_eyeIndex]
         : (_eyeIndex < _eyeOrder.length ? _eyeOrder[_eyeIndex] : 'OS');
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF134E4A), Color(0xFF0D9488)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
+      decoration: const BoxDecoration(gradient: VsGradients.hero),
       child: SafeArea(
         bottom: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
           child: Row(
             children: [
-              GestureDetector(
+              VsBackTile(
                 onTap: () => setState(() => _section = 1),
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.25),
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: Colors.white,
-                    size: 14,
-                  ),
-                ),
+                size: 36,
+                tooltip: 'Back to setup',
               ),
               const SizedBox(width: 12),
               if (_section == 2) ...[

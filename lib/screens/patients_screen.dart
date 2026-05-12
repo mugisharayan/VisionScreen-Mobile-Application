@@ -13,6 +13,7 @@ import '../widgets/vs_skeleton.dart';
 import '../utils/page_transitions.dart';
 import '../utils/haptics.dart';
 import '../utils/app_theme.dart';
+import '../widgets/vs_ui.dart';
 
 // -- Colours (shared with the rest of the app) --
 const _teal = Color(0xFF0D9488);
@@ -399,71 +400,65 @@ class _PatientsScreenState extends State<PatientsScreen> {
     );
   }
 
-  // -- Header (flat) --
   Widget _buildHeader(int total, int passed, int referred, int pending) {
-    return Container(
-      color: VsColors.scaffold,
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // -- Title row --
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Patients',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
-                            color: VsColors.slate900,
-                            height: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '$total registered · $referred referrals',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: VsColors.slate500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 14),
-
-              // -- Stats row --
-              if (total > 0)
-                Row(
+    return Column(
+      children: [
+        VsGradientHeader(
+          eyebrow: 'Patient Registry',
+          title: 'Patients',
+          subtitle: '$total registered · $referred referrals',
+          icon: Icons.groups_rounded,
+          bottom: total > 0
+              ? Row(
                   children: [
-                    _statTile('$passed', 'Passed', VsColors.emerald),
+                    Expanded(
+                      child: VsStatTile(
+                        value: '$passed',
+                        label: 'Passed',
+                        color: VsColors.emerald,
+                        dense: true,
+                      ),
+                    ),
                     const SizedBox(width: 8),
-                    _statTile('$referred', 'Referred', VsColors.rose),
+                    Expanded(
+                      child: VsStatTile(
+                        value: '$referred',
+                        label: 'Referred',
+                        color: VsColors.rose,
+                        dense: true,
+                      ),
+                    ),
                     const SizedBox(width: 8),
-                    _statTile('$pending', 'Pending', VsColors.amber),
+                    Expanded(
+                      child: VsStatTile(
+                        value: '$pending',
+                        label: 'Pending',
+                        color: VsColors.amber,
+                        dense: true,
+                      ),
+                    ),
                   ],
-                ),
-              if (total > 0) const SizedBox(height: 14),
-
-              // -- Search bar (filled) --
+                )
+              : null,
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+          child: Column(
+            children: [
               TextField(
                 controller: _searchCtrl,
                 onChanged: _controller.setQuery,
-                style: GoogleFonts.inter(fontSize: 14, color: VsColors.slate900),
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: VsColors.slate900,
+                ),
                 decoration: InputDecoration(
                   hintText: 'Search name, ID or village',
-                  prefixIcon: const Icon(Icons.search_rounded, size: 20, color: VsColors.slate400),
+                  prefixIcon: const Icon(
+                    Icons.search_rounded,
+                    size: 20,
+                    color: VsColors.slate400,
+                  ),
                   suffixIcon: _query.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.close_rounded, size: 18),
@@ -476,10 +471,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                       : null,
                 ),
               ),
-
               const SizedBox(height: 10),
-
-              // -- Filter chips (essential set only) --
               SizedBox(
                 height: 36,
                 child: ListView(
@@ -498,72 +490,41 @@ class _PatientsScreenState extends State<PatientsScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  // Flat stat tile (white card with one number + label, accent on number)
-  Widget _statTile(String value, String label, Color tone) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: VsColors.card,
-          borderRadius: BorderRadius.circular(VsRadius.md),
-          border: Border.all(color: VsColors.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              value,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                color: tone,
-                height: 1.0,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: VsColors.slate500,
-              ),
-            ),
-          ],
-        ),
-      ),
+      ],
     );
   }
 
   Widget _filterChip(String label) {
     final active = _filter == label;
-    return GestureDetector(
-      onTap: () {
-        VsHaptics.selection();
-        _controller.setFilter(label);
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        margin: const EdgeInsets.only(right: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: active ? VsColors.brand : VsColors.card,
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Material(
+        color: active ? VsColors.brand : VsColors.card,
+        borderRadius: BorderRadius.circular(VsRadius.pill),
+        child: InkWell(
+          onTap: () {
+            VsHaptics.selection();
+            _controller.setFilter(label);
+          },
           borderRadius: BorderRadius.circular(VsRadius.pill),
-          border: Border.all(
-            color: active ? VsColors.brand : VsColors.border,
-          ),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-              color: active ? Colors.white : VsColors.slate700,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(VsRadius.pill),
+              border: Border.all(
+                color: active ? VsColors.brand : VsColors.border,
+              ),
+            ),
+            child: Center(
+              child: Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                  color: active ? Colors.white : VsColors.slate700,
+                ),
+              ),
             ),
           ),
         ),

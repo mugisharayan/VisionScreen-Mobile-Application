@@ -23,6 +23,9 @@ class AuthRepository {
   static final AuthRepository instance = AuthRepository._();
 
   final _db = DatabaseHelper.instance;
+  static const _resetTokenTtl = Duration(minutes: 10);
+  static const _resetAttemptWindow = Duration(minutes: 15);
+  static const _maxResetAttempts = 5;
 
   // ── Login ──────────────────────────────────────────────────────────────────
 
@@ -152,11 +155,54 @@ class AuthRepository {
     return null; // success
   }
 
-  /// Reset password without verifying the old one (used in forgot-password flow
-  /// after email verification).
-  Future<void> resetPassword(String email, String newPassword) async {
-    final newHash = SecurityUtils.hashPassword(newPassword);
+  /// Confirms the phone number on file for [email]. Reset flow requires this
+  /// to succeed before [resetPasswordWithToken] will accept a new password.
+  /// Email alone is not enough to identify the account holder.
+  Future<String?> verifyResetIdentity({
+    required String email,
+    required String phone,
+  }) async {
     final normalised = email.trim().toLowerCase();
+    if (_isResetLocked(normalised)) return null;
+
+    final profile = await _db.getChwProfileByEmail(normalised);
+    if (profile == null) {
+      _recordResetFailure(normalised);
+      return null;
+    }
+    final onFile = ((profile['phone'] as String?) ?? '').replaceAll(
+      RegExp(r'\D'),
+      '',
+    );
+    final entered = phone.replaceAll(RegExp(r'\D'), '');
+    if (onFile.isEmpty || entered.isEmpty) {
+      _recordResetFailure(normalised);
+      return null;
+    }
+    // Compare the 9 trailing digits — same form we store on signup.
+    final a = onFile.length >= 9 ? onFile.substring(onFile.length - 9) : onFile;
+    final b = entered.length >= 9
+        ? entered.substring(entered.length - 9)
+        : entered;
+    if (!SecurityUtils.constantTimeEquals(a, b)) {
+      _recordResetFailure(normalised);
+      return null;
+    }
+    _resetAttempts.remove(normalised);
+    return _issueResetToken(normalised);
+  }
+
+  /// Resets the password using a short-lived token issued by
+  /// [verifyResetIdentity]. The token is single-use and expires after 10 minutes.
+  Future<bool> resetPasswordWithToken({
+    required String email,
+    required String token,
+    required String newPassword,
+  }) async {
+    final normalised = email.trim().toLowerCase();
+    if (!_consumeResetToken(normalised, token)) return false;
+
+    final newHash = SecurityUtils.hashPassword(newPassword);
     await _db.updateChwPassword(normalised, newHash);
     if (SyncService.instance.isConfigured) {
       final updated = await _db.getChwProfileByEmail(normalised);
@@ -165,6 +211,60 @@ class AuthRepository {
         await SyncService.instance.syncNow();
       }
     }
+    return true;
+  }
+
+  // Issued reset tokens live in-memory only; a process restart invalidates
+  // them, which is the correct behavior for a single-device CHW workspace.
+  static final Map<String, ({String token, DateTime expiresAt})>
+  _activeResetTokens = {};
+  static final Map<String, ({int count, DateTime firstAttempt})>
+  _resetAttempts = {};
+
+  String _issueResetToken(String email) {
+    final token = SecurityUtils.randomToken(24);
+    _activeResetTokens[email] = (
+      token: token,
+      expiresAt: DateTime.now().toUtc().add(_resetTokenTtl),
+    );
+    return token;
+  }
+
+  bool _consumeResetToken(String email, String token) {
+    final issued = _activeResetTokens[email];
+    if (issued == null) return false;
+    if (DateTime.now().toUtc().isAfter(issued.expiresAt)) {
+      _activeResetTokens.remove(email);
+      return false;
+    }
+    if (!SecurityUtils.constantTimeEquals(issued.token, token)) return false;
+    _activeResetTokens.remove(email);
+    return true;
+  }
+
+  bool _isResetLocked(String email) {
+    final attempts = _resetAttempts[email];
+    if (attempts == null) return false;
+    final now = DateTime.now().toUtc();
+    if (now.difference(attempts.firstAttempt) > _resetAttemptWindow) {
+      _resetAttempts.remove(email);
+      return false;
+    }
+    return attempts.count >= _maxResetAttempts;
+  }
+
+  void _recordResetFailure(String email) {
+    final now = DateTime.now().toUtc();
+    final attempts = _resetAttempts[email];
+    if (attempts == null ||
+        now.difference(attempts.firstAttempt) > _resetAttemptWindow) {
+      _resetAttempts[email] = (count: 1, firstAttempt: now);
+      return;
+    }
+    _resetAttempts[email] = (
+      count: attempts.count + 1,
+      firstAttempt: attempts.firstAttempt,
+    );
   }
 
   // ── Session ────────────────────────────────────────────────────────────────

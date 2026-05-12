@@ -481,7 +481,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           ),
                         ],
                       ),
-
                     ],
                   ),
                 ),
@@ -530,11 +529,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 if (i < items.length - 1)
-                  Container(
-                    width: 1,
-                    height: 28,
-                    color: VsColors.border,
-                  ),
+                  Container(width: 1, height: 28, color: VsColors.border),
               ],
             ],
           ),
@@ -645,7 +640,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
     );
   }
-
 
   // -- BANNERS -----------------------------------------------
   Widget _buildOfflineBanner() {
@@ -947,10 +941,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 children: [
                   Text('Tip', style: VsText.label(color: VsColors.slate500)),
                   const SizedBox(height: 2),
-                  Text(
-                    tip.text,
-                    style: VsText.body(color: VsColors.slate800),
-                  ),
+                  Text(tip.text, style: VsText.body(color: VsColors.slate800)),
                 ],
               ),
             ),
@@ -1624,12 +1615,18 @@ class _PressableActionCardState extends State<_PressableActionCard>
                       a.subtitle,
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
-                      style: VsText.label(color: Colors.white.withValues(alpha: 0.85)),
+                      style: VsText.label(
+                        color: Colors.white.withValues(alpha: 0.85),
+                      ),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_forward_rounded, size: 18, color: Colors.white),
+              const Icon(
+                Icons.arrow_forward_rounded,
+                size: 18,
+                color: Colors.white,
+              ),
             ],
           ),
         ],
@@ -1643,6 +1640,7 @@ class _PressableActionCardState extends State<_PressableActionCard>
         color: VsColors.card,
         borderRadius: BorderRadius.circular(VsRadius.lg),
         border: Border.all(color: VsColors.border),
+        boxShadow: VsShadows.card,
       ),
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       child: Column(
@@ -1658,21 +1656,41 @@ class _PressableActionCardState extends State<_PressableActionCard>
             ),
             child: Icon(a.icon, color: a.accent, size: 20),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                a.title,
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-                style: VsText.headline(),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      a.title,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: VsText.headline(),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      a.subtitle,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: VsText.label(),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                a.subtitle,
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-                style: VsText.label(),
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: a.accent.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(VsRadius.pill),
+                ),
+                child: Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 16,
+                  color: a.accent,
+                ),
               ),
             ],
           ),
