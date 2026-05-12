@@ -7,9 +7,6 @@ import 'package:crypto/crypto.dart';
 /// Uses PBKDF2-style salted SHA-256 to protect passwords at rest.
 /// Each password is stored as "salt:hash" so the salt is recoverable
 /// for verification without a separate column.
-///
-/// Migration: existing unsalted SHA-256 hashes (64 hex chars, no colon)
-/// are detected and re-hashed on first successful login.
 class SecurityUtils {
   SecurityUtils._();
 
@@ -25,16 +22,8 @@ class SecurityUtils {
     return '$salt:$hash';
   }
 
-  /// Verify a plain-text password against a stored hash.
-  ///
-  /// Supports both the new "salt:hash" format and the legacy
-  /// unsalted SHA-256 format (64 hex chars) for backward compatibility.
+  /// Verify a plain-text password against a stored "salt:hash" value.
   static bool verifyPassword(String plainText, String stored) {
-    if (_isLegacyHash(stored)) {
-      // Legacy: plain SHA-256 without salt
-      final bytes = utf8.encode(plainText);
-      return sha256.convert(bytes).toString() == stored;
-    }
     final parts = stored.split(':');
     if (parts.length != 2) return false;
     final salt = parts[0];
@@ -42,10 +31,6 @@ class SecurityUtils {
     final actualHash = _pbkdf2(plainText, salt, _iterations);
     return _constantTimeEquals(actualHash, expectedHash);
   }
-
-  /// Returns true if the stored hash is in the legacy (unsalted) format.
-  /// Use this to trigger a re-hash on successful login.
-  static bool needsRehash(String stored) => _isLegacyHash(stored);
 
   // ── Private helpers ────────────────────────────────────────────────────────
 
@@ -59,7 +44,7 @@ class SecurityUtils {
   /// Runs [iterations] rounds of SHA-256 keyed with the salt.
   static String _pbkdf2(String password, String salt, int iterations) {
     final passwordBytes = utf8.encode(password);
-    final saltBytes     = utf8.encode(salt);
+    final saltBytes = utf8.encode(salt);
 
     // Initial HMAC-SHA256
     var hmac = Hmac(sha256, passwordBytes);
@@ -67,7 +52,7 @@ class SecurityUtils {
 
     // Iterate
     for (var i = 1; i < iterations; i++) {
-      hmac   = Hmac(sha256, passwordBytes);
+      hmac = Hmac(sha256, passwordBytes);
       result = hmac.convert(result).bytes;
     }
 
@@ -82,10 +67,5 @@ class SecurityUtils {
       result |= a.codeUnitAt(i) ^ b.codeUnitAt(i);
     }
     return result == 0;
-  }
-
-  /// Legacy hash: exactly 64 hex chars, no colon separator.
-  static bool _isLegacyHash(String stored) {
-    return !stored.contains(':') && stored.length == 64;
   }
 }

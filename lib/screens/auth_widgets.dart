@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'splash_screen.dart' show AppColors;
+import '../utils/app_constants.dart';
 
 // ─────────────────────────────────────────────────────────────
 // Shared Auth Widgets — used by login & forgot password screens
@@ -14,9 +14,17 @@ class AuthWaveClipper extends CustomClipper<Path> {
     final path = Path();
     path.lineTo(0, size.height - 40);
     path.quadraticBezierTo(
-        size.width * 0.25, size.height, size.width * 0.5, size.height - 20);
+      size.width * 0.25,
+      size.height,
+      size.width * 0.5,
+      size.height - 20,
+    );
     path.quadraticBezierTo(
-        size.width * 0.75, size.height - 40, size.width, size.height - 10);
+      size.width * 0.75,
+      size.height - 40,
+      size.width,
+      size.height - 10,
+    );
     path.lineTo(size.width, 0);
     path.close();
     return path;
@@ -40,18 +48,23 @@ class AuthEyePainter extends CustomPainter {
       ..strokeWidth = 2.0;
     canvas.drawOval(
       Rect.fromCenter(
-          center: Offset(cx, cy),
-          width: size.width * 0.9,
-          height: size.height * 0.52),
+        center: Offset(cx, cy),
+        width: size.width * 0.9,
+        height: size.height * 0.52,
+      ),
       paint,
     );
     canvas.drawCircle(Offset(cx, cy), size.width * 0.18, paint);
     canvas.drawCircle(
-        Offset(cx, cy), size.width * 0.09, Paint()..color = color);
+      Offset(cx, cy),
+      size.width * 0.09,
+      Paint()..color = color,
+    );
     canvas.drawCircle(
-        Offset(cx, cy),
-        size.width * 0.04,
-        Paint()..color = Colors.white.withValues(alpha: 0.8));
+      Offset(cx, cy),
+      size.width * 0.04,
+      Paint()..color = Colors.white.withValues(alpha: 0.8),
+    );
   }
 
   @override
@@ -112,25 +125,30 @@ class _AuthUnderlineFieldState extends State<AuthUnderlineField> {
     final lineColor = widget.hasError
         ? const Color(0xFFEF4444)
         : _focused
-            ? AppColors.green
-            : AppColors.borderColor;
+        ? AppColors.green
+        : AppColors.borderColor;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(widget.label,
-            style: GoogleFonts.inter(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textMuted)),
+        Text(
+          widget.label,
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textMuted,
+          ),
+        ),
         const SizedBox(height: 2),
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             if (widget.prefixIcon != null) ...[
-              Icon(widget.prefixIcon,
-                  size: 16,
-                  color: _focused ? AppColors.green : AppColors.textMuted),
+              Icon(
+                widget.prefixIcon,
+                size: 16,
+                color: _focused ? AppColors.green : AppColors.textMuted,
+              ),
               const SizedBox(width: 8),
             ],
             Expanded(
@@ -142,18 +160,22 @@ class _AuthUnderlineFieldState extends State<AuthUnderlineField> {
                 textInputAction: widget.inputAction,
                 onChanged: widget.onChanged,
                 style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textDark),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textDark,
+                ),
                 cursorColor: AppColors.green,
                 decoration: InputDecoration(
                   hintText: widget.hint,
                   hintStyle: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: AppColors.textMuted.withValues(alpha: 0.5)),
+                    fontSize: 13,
+                    color: AppColors.textMuted.withValues(alpha: 0.5),
+                  ),
                   suffixIcon: widget.suffixIcon,
-                  suffixIconConstraints:
-                      const BoxConstraints(minWidth: 0, minHeight: 0),
+                  suffixIconConstraints: const BoxConstraints(
+                    minWidth: 0,
+                    minHeight: 0,
+                  ),
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(vertical: 6),
                   border: InputBorder.none,
@@ -168,21 +190,29 @@ class _AuthUnderlineFieldState extends State<AuthUnderlineField> {
           duration: const Duration(milliseconds: 200),
           height: 2,
           decoration: BoxDecoration(
-              color: lineColor, borderRadius: BorderRadius.circular(99)),
+            color: lineColor,
+            borderRadius: BorderRadius.circular(99),
+          ),
         ),
         if (widget.hasError && widget.errorText != null)
           Padding(
             padding: const EdgeInsets.only(top: 5),
             child: Row(
               children: [
-                const Icon(Icons.error_outline_rounded,
-                    size: 12, color: Color(0xFFEF4444)),
+                const Icon(
+                  Icons.error_outline_rounded,
+                  size: 12,
+                  color: Color(0xFFEF4444),
+                ),
                 const SizedBox(width: 4),
-                Text(widget.errorText!,
-                    style: GoogleFonts.inter(
-                        fontSize: 11,
-                        color: const Color(0xFFEF4444),
-                        fontWeight: FontWeight.w500)),
+                Text(
+                  widget.errorText!,
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: const Color(0xFFEF4444),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ],
             ),
           ),
@@ -237,7 +267,7 @@ class _AuthGreenPillButtonState extends State<AuthGreenPillButton> {
               colors: widget.loading
                   ? [
                       AppColors.green.withValues(alpha: 0.5),
-                      AppColors.greenDark.withValues(alpha: 0.5)
+                      AppColors.greenDark.withValues(alpha: 0.5),
                     ]
                   : [AppColors.green, AppColors.greenDark],
               begin: Alignment.topLeft,
@@ -246,19 +276,21 @@ class _AuthGreenPillButtonState extends State<AuthGreenPillButton> {
             borderRadius: BorderRadius.circular(30),
             boxShadow: [
               BoxShadow(
-                  color: AppColors.green.withValues(alpha: 0.4),
-                  blurRadius: 20,
-                  offset: const Offset(0, 6)),
+                color: AppColors.green.withValues(alpha: 0.4),
+                blurRadius: 20,
+                offset: const Offset(0, 6),
+              ),
             ],
           ),
           child: widget.loading
               ? const Center(
                   child: SizedBox(
-                    width: 20, height: 20,
+                    width: 20,
+                    height: 20,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Colors.white)),
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
                   ),
                 )
               : Row(
@@ -268,12 +300,15 @@ class _AuthGreenPillButtonState extends State<AuthGreenPillButton> {
                       Icon(widget.icon, color: Colors.white, size: 16),
                       const SizedBox(width: 8),
                     ],
-                    Text(widget.label,
-                        style: GoogleFonts.inter(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            letterSpacing: 0.3)),
+                    Text(
+                      widget.label,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
                   ],
                 ),
         ),
@@ -281,4 +316,3 @@ class _AuthGreenPillButtonState extends State<AuthGreenPillButton> {
     );
   }
 }
-

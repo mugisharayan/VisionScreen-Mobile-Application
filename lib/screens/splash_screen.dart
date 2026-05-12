@@ -109,33 +109,3 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────
-// AppColors — kept for backward compatibility with other screens
-// that still import from splash_screen.dart
-// ─────────────────────────────────────────────────────────────
-class AppColors {
-  AppColors._();
-
-  static const Color ink = Color(0xFF04091A);
-  static const Color ink2 = Color(0xFF0B1530);
-  static const Color ink3 = Color(0xFF162040);
-  static const Color teal = Color(0xFF0D9488);
-  static const Color teal2 = Color(0xFF14B8A6);
-  static const Color teal3 = Color(0xFF5EEAD4);
-  static const Color sky = Color(0xFF38BDF8);
-
-  // Updated: use teal instead of lime-green
-  static const Color green = VsColors.brand;
-  static const Color greenDark = VsColors.brandDark;
-  static const Color greenDeep = VsColors.brandDeep;
-  static const Color greenHero = VsColors.brandFaint;
-  static const Color greenHero2 = VsColors.brandLight;
-  static const Color greenForgot = VsColors.brandDark;
-
-  static const Color authBg = Color(0xFFFFFFFF);
-  static const Color textDark = Color(0xFF0F172A);
-  static const Color textMuted = Color(0xFF64748B);
-  static const Color borderColor = Color(0xFFE2E8F0);
-  static const Color cardShadow = Color(0x200D9488);
-}

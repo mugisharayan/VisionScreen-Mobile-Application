@@ -19,10 +19,12 @@ void main() async {
   GoogleFonts.config.allowRuntimeFetching = false;
 
   // Status bar: transparent so the teal header bleeds through
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.light,
-  ));
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+    ),
+  );
 
   runApp(const VisionScreenApp());
 }
@@ -38,11 +40,11 @@ class VisionScreenApp extends StatelessWidget {
       theme: VsTheme.light,
       home: const SplashScreen(),
       routes: {
-        '/splash':          (_) => const SplashScreen(),
-        '/onboarding':      (_) => const OnboardingScreen(),
-        '/login':           (_) => const LoginScreen(),
+        '/splash': (_) => const SplashScreen(),
+        '/onboarding': (_) => const OnboardingScreen(),
+        '/login': (_) => const LoginScreen(),
         '/forgot-password': (_) => const ForgotPasswordScreen(),
-        '/home':            (_) => const MainShell(),
+        '/home': (_) => const MainShell(),
       },
       // ── Lock text scaling only ─────────────────────────────
       // Prevents accessibility font size from breaking layouts.
@@ -50,9 +52,9 @@ class VisionScreenApp extends StatelessWidget {
       // correctly through logical pixels — no manual scaling needed.
       builder: (context, child) {
         return MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.noScaling,
-          ),
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.noScaling),
           child: child!,
         );
       },
@@ -75,16 +77,16 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
 
   // FAB press animation
   late final AnimationController _fabCtrl;
-  late final Animation<double>   _fabScale;
+  late final Animation<double> _fabScale;
 
   // Nav item tap animation (one per item)
   late final List<AnimationController> _itemCtrls;
 
   static const _items = [
-    _NavItem(Icons.home_rounded,        Icons.home_outlined,        'Home'),
-    _NavItem(Icons.people_alt_rounded,  Icons.people_alt_outlined,  'Patients'),
-    _NavItem(Icons.bar_chart_rounded,   Icons.bar_chart_outlined,   'Analytics'),
-    _NavItem(Icons.settings_rounded,    Icons.settings_outlined,    'Settings'),
+    _NavItem(Icons.home_rounded, Icons.home_outlined, 'Home'),
+    _NavItem(Icons.people_alt_rounded, Icons.people_alt_outlined, 'Patients'),
+    _NavItem(Icons.bar_chart_rounded, Icons.bar_chart_outlined, 'Analytics'),
+    _NavItem(Icons.settings_rounded, Icons.settings_outlined, 'Settings'),
   ];
 
   @override
@@ -93,14 +95,20 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
     _index = widget.initialIndex;
 
     _fabCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 120));
-    _fabScale = Tween<double>(begin: 1.0, end: 0.92)
-        .animate(CurvedAnimation(parent: _fabCtrl, curve: Curves.easeInOut));
+      vsync: this,
+      duration: const Duration(milliseconds: 120),
+    );
+    _fabScale = Tween<double>(
+      begin: 1.0,
+      end: 0.92,
+    ).animate(CurvedAnimation(parent: _fabCtrl, curve: Curves.easeInOut));
 
     _itemCtrls = List.generate(
       _items.length,
       (_) => AnimationController(
-          vsync: this, duration: const Duration(milliseconds: 200)),
+        vsync: this,
+        duration: const Duration(milliseconds: 200),
+      ),
     );
   }
 
@@ -123,8 +131,9 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
   void _startNewScreening() {
     Navigator.push(
       context,
-      VsPageRoute(builder: (_) =>
-          const NewScreeningScreen(startWithNewPatient: true)),
+      VsPageRoute(
+        builder: (_) => const NewScreeningScreen(startWithNewPatient: true),
+      ),
     );
   }
 
@@ -161,7 +170,8 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
               decoration: BoxDecoration(
                 color: Colors.white,
                 border: const Border(
-                    top: BorderSide(color: VsColors.border, width: 1)),
+                  top: BorderSide(color: VsColors.border, width: 1),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: VsColors.slate900.withValues(alpha: 0.07),
@@ -176,11 +186,17 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                   height: 72,
                   child: Row(
                     children: [
-                      ..._items.sublist(0, 2).asMap().entries.map((e) =>
-                          _buildNavItem(e.key, e.value)),
+                      ..._items
+                          .sublist(0, 2)
+                          .asMap()
+                          .entries
+                          .map((e) => _buildNavItem(e.key, e.value)),
                       const SizedBox(width: 80),
-                      ..._items.sublist(2).asMap().entries.map((e) =>
-                          _buildNavItem(e.key + 2, e.value)),
+                      ..._items
+                          .sublist(2)
+                          .asMap()
+                          .entries
+                          .map((e) => _buildNavItem(e.key + 2, e.value)),
                     ],
                   ),
                 ),
@@ -192,7 +208,10 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
           Positioned(
             top: -32,
             child: GestureDetector(
-              onTapDown: (_) { VsHaptics.medium(); _fabCtrl.forward(); },
+              onTapDown: (_) {
+                VsHaptics.medium();
+                _fabCtrl.forward();
+              },
               onTapUp: (_) {
                 _fabCtrl.reverse();
                 _startNewScreening();

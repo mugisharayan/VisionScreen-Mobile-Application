@@ -7,14 +7,24 @@ class AppColors {
   AppColors._();
 
   // Brand
+  static const green = Color(0xFF0D9488);
+  static const greenDark = Color(0xFF0F766E);
+  static const greenDeep = Color(0xFF134E4A);
+  static const greenHero = Color(0xFFF0FDFA);
+  static const greenHero2 = Color(0xFFCCFBF1);
+  static const greenForgot = Color(0xFF0F766E);
   static const teal = Color(0xFF0D9488);
   static const teal2 = Color(0xFF14B8A6);
   static const teal3 = Color(0xFF5EEAD4);
+  static const sky = Color(0xFF38BDF8);
 
   // Ink / dark
   static const ink = Color(0xFF04091A);
   static const ink2 = Color(0xFF0B1530);
+  static const ink3 = Color(0xFF162040);
   static const dark800 = Color(0xFF1A2A3D);
+  static const textDark = Color(0xFF0F172A);
+  static const textMuted = Color(0xFF64748B);
 
   // Greys
   static const g100 = Color(0xFFF0F4F7);
@@ -22,9 +32,10 @@ class AppColors {
   static const g300 = Color(0xFFC4CFDB);
   static const g400 = Color(0xFF8FA0B4);
   static const g500 = Color(0xFF5E7291);
+  static const borderColor = Color(0xFFE2E8F0);
 
   // Semantic
-  static const green = Color(0xFF22C55E);
+  static const pass = Color(0xFF22C55E);
   static const amber = Color(0xFFF59E0B);
   static const red = Color(0xFFEF4444);
   static const blue = Color(0xFF3B82F6);
@@ -33,8 +44,10 @@ class AppColors {
   static const yellow = Color(0xFFEAB308);
 
   // Backgrounds
+  static const authBg = Color(0xFFFFFFFF);
   static const scaffold = Color(0xFFF8FAFB);
   static const surface = Color(0xFFF2F4F7);
+  static const cardShadow = Color(0x200D9488);
 }
 
 // ── App Dimensions ────────────────────────────────────────────────────────────

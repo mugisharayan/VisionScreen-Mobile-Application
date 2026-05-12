@@ -80,6 +80,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   final _newPhoneCtrl = TextEditingController();
   CameraController? _photoCtrl;
   bool _showPhotoCamera = false;
+  bool _newPatientSheetOpen = false;
 
   // ── Animation ─────────────────────────────────────────────────────────────
   late AnimationController _pulseCtrl;
@@ -125,13 +126,14 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   int get _step => _controller.step;
   String? get _selectedPatientId => _controller.selectedPatientId;
   String get _patientQuery => _controller.patientQuery;
-  bool get _showNewPatientForm => _controller.showNewPatientForm;
+  bool get _shouldOpenNewPatientSheet => _controller.shouldOpenNewPatientSheet;
   String get _newGender => _controller.newGender;
   DateTime? get _newDob => _controller.newDob;
   bool get _detectingLocation => _controller.detectingLocation;
   List<String> get _newConditions => _controller.newConditions;
   String? get _newPhotoPath => _controller.newPhotoPath;
-  List<Map<String, String>> get _patientListRuntime => _controller.patientListRuntime;
+  List<Map<String, String>> get _patientListRuntime =>
+      _controller.patientListRuntime;
   int? get _savedScreeningId => _controller.savedScreeningId;
   double get _currentLux => _controller.currentLux;
   bool get _luxChecked => _controller.luxChecked;
@@ -156,9 +158,142 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   bool get _needsReferral => _controller.needsReferral;
 
   void _handleControllerChanged() {
-    if (mounted) {
-      setState(() {});
+    if (!mounted) {
+      return;
     }
+    setState(() {});
+    if (_step == 0 && _shouldOpenNewPatientSheet && !_newPatientSheetOpen) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted ||
+            _step != 0 ||
+            !_shouldOpenNewPatientSheet ||
+            _newPatientSheetOpen) {
+          return;
+        }
+        unawaited(_showNewPatientSheet());
+      });
+    }
+  }
+
+  Future<void> _showNewPatientSheet() async {
+    if (_newPatientSheetOpen) {
+      return;
+    }
+    _controller.clearNewPatientSheetRequest();
+    setState(() => _newPatientSheetOpen = true);
+
+    await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return AnimatedBuilder(
+          animation: _controller,
+          builder: (context, _) {
+            final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+            return Padding(
+              padding: EdgeInsets.only(bottom: bottomInset),
+              child: DraggableScrollableSheet(
+                expand: false,
+                initialChildSize: 0.88,
+                minChildSize: 0.58,
+                maxChildSize: 0.94,
+                builder: (context, scrollController) {
+                  return Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(24),
+                      ),
+                    ),
+                    child: SingleChildScrollView(
+                      controller: scrollController,
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+                      child: SafeArea(
+                        top: false,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Center(
+                              child: Container(
+                                width: 40,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFDDE4EC),
+                                  borderRadius: BorderRadius.circular(99),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            Row(
+                              children: [
+                                Container(
+                                  width: 42,
+                                  height: 42,
+                                  decoration: BoxDecoration(
+                                    color: _teal.withValues(alpha: 0.10),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Icon(
+                                    Icons.person_add_rounded,
+                                    color: _teal,
+                                    size: 22,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Add Patient',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w800,
+                                          color: const Color(0xFF1A2A3D),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Register the patient, then continue screening.',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          color: const Color(0xFF5E7291),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  onPressed: () =>
+                                      Navigator.of(sheetContext).pop(false),
+                                  icon: const Icon(
+                                    Icons.close_rounded,
+                                    color: Color(0xFF8FA0B4),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 18),
+                            _newPatientForm(closeOnSuccess: true),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (!mounted) {
+      return;
+    }
+    setState(() => _newPatientSheetOpen = false);
   }
 
   Future<void> _openPhotoCamera() async {
@@ -509,10 +644,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       ),
       child: Stack(
         children: [
-          // Dot pattern
-          Positioned.fill(
-            child: CustomPaint(painter: _ScreeningHeaderDotPainter()),
-          ),
           SafeArea(
             bottom: false,
             child: Padding(
@@ -792,7 +923,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     );
   }
 
-  // ── Step indicator (legacy — kept for compatibility) ──────────────────────
+  // ── Step indicator ────────────────────────────────────────────────────────
   Widget _stepBar(int current) {
     const total = 6;
     return Row(
@@ -877,112 +1008,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           p['village']!.toLowerCase().contains(q);
     }).toList();
 
-    if (_showNewPatientForm) {
-      return SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _stepBar(1),
-            const SizedBox(height: 20),
-            Text(
-              'Select Patient',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF1A2A3D),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Search for a registered patient or add a new one.',
-              style: GoogleFonts.inter(
-                fontSize: 13,
-                color: const Color(0xFF5E7291),
-              ),
-            ),
-            const SizedBox(height: 16),
-            _searchBar(),
-            const SizedBox(height: 10),
-            _newPatientToggle(),
-            const SizedBox(height: 12),
-            _newPatientForm(),
-            const SizedBox(height: 16),
-            ...filtered.map(
-              (p) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: _patientCard(p),
-              ),
-            ),
-            if (_selectedPatientId != null) ...[
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: _runChecklist,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _teal.withValues(alpha: 0.4),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.arrow_forward_rounded,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Continue to Setup',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Patient selected — proceed to checklist',
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          color: Colors.white.withValues(alpha: 0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      );
-    }
-
     return Column(
       children: [
         Padding(
@@ -1010,9 +1035,9 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               ),
               const SizedBox(height: 16),
               _searchBar(),
+              const SizedBox(height: 12),
+              _addPatientButton(),
               const SizedBox(height: 10),
-              _newPatientToggle(),
-              const SizedBox(height: 8),
             ],
           ),
         ),
@@ -1039,71 +1064,29 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
         if (_selectedPatientId != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-            child: GestureDetector(
-              onTap: _runChecklist,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: _teal.withValues(alpha: 0.4),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.arrow_forward_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Continue to Setup',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Patient selected — proceed to checklist',
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        color: Colors.white.withValues(alpha: 0.7),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            child: _continueBtn('Continue to setup', _runChecklist),
           ),
       ],
     );
   }
+
+  Widget _addPatientButton() => OutlinedButton.icon(
+    onPressed: () => unawaited(_showNewPatientSheet()),
+    icon: const Icon(Icons.person_add_rounded, size: 18),
+    label: Text(
+      'Add patient',
+      style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700),
+    ),
+    style: OutlinedButton.styleFrom(
+      foregroundColor: _teal,
+      backgroundColor: Colors.white,
+      side: const BorderSide(color: Color(0xFFDDE4EC), width: 1.5),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      minimumSize: const Size.fromHeight(46),
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+    ),
+  );
 
   Widget _searchBar() => Container(
     decoration: BoxDecoration(
@@ -1135,44 +1118,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     ),
   );
 
-  Widget _newPatientToggle() => GestureDetector(
-    onTap: _controller.toggleNewPatientForm,
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: _showNewPatientForm
-            ? _teal.withValues(alpha: 0.08)
-            : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: _showNewPatientForm ? _teal : const Color(0xFFEEF2F6),
-          width: 1.5,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            _showNewPatientForm
-                ? Icons.remove_circle_outline_rounded
-                : Icons.person_add_rounded,
-            size: 18,
-            color: _teal,
-          ),
-          const SizedBox(width: 10),
-          Text(
-            _showNewPatientForm ? 'Cancel new patient' : 'Add new patient',
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: _teal,
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-
-  Widget _newPatientForm() {
+  Widget _newPatientForm({required bool closeOnSuccess}) {
     const conditions = [
       {'label': 'Red Eyes', 'icon': Icons.remove_red_eye_rounded},
       {'label': 'Swollen Eyes', 'icon': Icons.visibility_off_rounded},
@@ -1185,475 +1131,455 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       {'label': 'Hypertension', 'icon': Icons.favorite_rounded},
     ];
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _teal.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _teal.withValues(alpha: 0.15)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'New Patient Details',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-              color: const Color(0xFF1A2A3D),
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Photo capture
-          GestureDetector(
-            onTap: _showPhotoOptions,
-            child: Center(
-              child: Stack(
-                children: [
-                  Container(
-                    width: 90,
-                    height: 90,
-                    decoration: BoxDecoration(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Photo capture
+        GestureDetector(
+          onTap: _showPhotoOptions,
+          child: Center(
+            child: Stack(
+              children: [
+                Container(
+                  width: 90,
+                  height: 90,
+                  decoration: BoxDecoration(
+                    color: _newPhotoPath != null
+                        ? Colors.transparent
+                        : _teal.withValues(alpha: 0.06),
+                    shape: BoxShape.circle,
+                    border: Border.all(
                       color: _newPhotoPath != null
-                          ? Colors.transparent
-                          : _teal.withValues(alpha: 0.06),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: _newPhotoPath != null
-                            ? _teal
-                            : const Color(0xFFDDE4EC),
-                        width: 2,
-                      ),
+                          ? _teal
+                          : const Color(0xFFDDE4EC),
+                      width: 2,
                     ),
-                    child:
-                        _newPhotoPath != null &&
-                            File(_newPhotoPath!).existsSync()
-                        ? ClipOval(
-                            child: Image.file(
-                              File(_newPhotoPath!),
-                              fit: BoxFit.cover,
-                              width: 90,
-                              height: 90,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Icon(
-                                    Icons.camera_alt_rounded,
-                                    size: 24,
-                                    color: _teal,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Photo',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
+                  ),
+                  child:
+                      _newPhotoPath != null && File(_newPhotoPath!).existsSync()
+                      ? ClipOval(
+                          child: Image.file(
+                            File(_newPhotoPath!),
+                            fit: BoxFit.cover,
+                            width: 90,
+                            height: 90,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.camera_alt_rounded,
+                                      size: 24,
                                       color: _teal,
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          )
-                        : Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.camera_alt_rounded,
-                                size: 24,
-                                color: _teal,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Photo',
-                                style: GoogleFonts.inter(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: _teal,
-                                ),
-                              ),
-                            ],
-                          ),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      width: 26,
-                      height: 26,
-                      decoration: BoxDecoration(
-                        color: _teal,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                      child: const Icon(
-                        Icons.edit_rounded,
-                        size: 12,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          // Full name
-          _newField(_newNameCtrl, 'Full Name', Icons.person_rounded),
-          const SizedBox(height: 8),
-          // DOB + Gender
-          Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: DateTime.now().subtract(
-                        const Duration(days: 365 * 25),
-                      ),
-                      firstDate: DateTime(1920),
-                      lastDate: DateTime.now(),
-                      helpText: 'Select Date of Birth',
-                      builder: (ctx, child) => Theme(
-                        data: Theme.of(ctx).copyWith(
-                          colorScheme: const ColorScheme.light(
-                            primary: _teal,
-                            onPrimary: Colors.white,
-                          ),
-                        ),
-                        child: child!,
-                      ),
-                    );
-                    if (picked != null) {
-                      _controller.setNewDob(picked);
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: _newDob != null
-                            ? _teal.withValues(alpha: 0.4)
-                            : const Color(0xFFEEF2F6),
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.cake_rounded,
-                          size: 16,
-                          color: _newDob != null
-                              ? _teal
-                              : const Color(0xFF8FA0B4),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _newDob == null
-                              ? Text(
-                                  'Date of Birth',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 13,
-                                    color: const Color(0xFF8FA0B4),
-                                  ),
-                                )
-                              : Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
+                                    const SizedBox(height: 4),
                                     Text(
-                                      '${_newDob!.day}/${_newDob!.month}/${_newDob!.year}',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 13,
-                                        color: const Color(0xFF1A2A3D),
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    Text(
-                                      '${_calcAge(_newDob!)} years old',
+                                      'Photo',
                                       style: GoogleFonts.inter(
                                         fontSize: 10,
+                                        fontWeight: FontWeight.w600,
                                         color: _teal,
                                       ),
                                     ),
                                   ],
                                 ),
-                        ),
-                        const Icon(
-                          Icons.calendar_today_rounded,
-                          size: 14,
-                          color: Color(0xFF8FA0B4),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: const Color(0xFFEEF2F6),
-                    width: 1.5,
-                  ),
-                ),
-                child: Row(
-                  children: ['M', 'F'].map((g) {
-                    final active = _newGender == g;
-                    return GestureDetector(
-                      onTap: () => _controller.setNewGender(g),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: active ? _teal : Colors.transparent,
-                          borderRadius: BorderRadius.circular(9),
-                        ),
-                        child: Text(
-                          g,
-                          style: GoogleFonts.inter(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: active
-                                ? Colors.white
-                                : const Color(0xFF8FA0B4),
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Village / Area with auto-detect
-          Row(
-            children: [
-              Expanded(
-                child: _newField(
-                  _newVillageCtrl,
-                  'Village / Area',
-                  Icons.location_on_rounded,
-                ),
-              ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: _detectingLocation ? null : _detectLocation,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: _detectingLocation
-                        ? const Color(0xFFEEF2F6)
-                        : _teal.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: _detectingLocation
-                          ? const Color(0xFFEEF2F6)
-                          : _teal.withValues(alpha: 0.3),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: _detectingLocation
-                      ? const Padding(
-                          padding: EdgeInsets.all(12),
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: _teal,
                           ),
                         )
-                      : const Icon(
-                          Icons.my_location_rounded,
-                          size: 20,
-                          color: _teal,
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.camera_alt_rounded,
+                              size: 24,
+                              color: _teal,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Photo',
+                              style: GoogleFonts.inter(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: _teal,
+                              ),
+                            ),
+                          ],
                         ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Phone number
-          _newField(
-            _newPhoneCtrl,
-            'Phone Number',
-            Icons.phone_rounded,
-            inputType: TextInputType.phone,
-          ),
-          const SizedBox(height: 16),
-          // Current conditions
-          Text(
-            'Current Eye Conditions',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: const Color(0xFF1A2A3D),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      color: _teal,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: const Icon(
+                      Icons.edit_rounded,
+                      size: 12,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Select all that apply',
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              color: const Color(0xFF8FA0B4),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: conditions.map((c) {
-              final label = c['label'] as String;
-              final icon = c['icon'] as IconData;
-              final selected = _newConditions.contains(label);
-              return GestureDetector(
-                onTap: () => _controller.toggleNewCondition(label),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
+        ),
+        const SizedBox(height: 16),
+        // Full name
+        _newField(_newNameCtrl, 'Full Name', Icons.person_rounded),
+        const SizedBox(height: 8),
+        // DOB + Gender
+        Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now().subtract(
+                      const Duration(days: 365 * 25),
+                    ),
+                    firstDate: DateTime(1920),
+                    lastDate: DateTime.now(),
+                    helpText: 'Select Date of Birth',
+                    builder: (ctx, child) => Theme(
+                      data: Theme.of(ctx).copyWith(
+                        colorScheme: const ColorScheme.light(
+                          primary: _teal,
+                          onPrimary: Colors.white,
+                        ),
+                      ),
+                      child: child!,
+                    ),
+                  );
+                  if (picked != null) {
+                    _controller.setNewDob(picked);
+                  }
+                },
+                child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 7,
+                    horizontal: 14,
+                    vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: selected
-                        ? _teal.withValues(alpha: 0.1)
-                        : Colors.white,
-                    borderRadius: BorderRadius.circular(99),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: selected ? _teal : const Color(0xFFDDE4EC),
+                      color: _newDob != null
+                          ? _teal.withValues(alpha: 0.4)
+                          : const Color(0xFFEEF2F6),
                       width: 1.5,
                     ),
                   ),
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        icon,
-                        size: 13,
-                        color: selected ? _teal : const Color(0xFF8FA0B4),
+                        Icons.cake_rounded,
+                        size: 16,
+                        color: _newDob != null
+                            ? _teal
+                            : const Color(0xFF8FA0B4),
                       ),
-                      const SizedBox(width: 5),
-                      Text(
-                        label,
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: selected ? _teal : const Color(0xFF5E7291),
-                        ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _newDob == null
+                            ? Text(
+                                'Date of Birth',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  color: const Color(0xFF8FA0B4),
+                                ),
+                              )
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${_newDob!.day}/${_newDob!.month}/${_newDob!.year}',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      color: const Color(0xFF1A2A3D),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${_calcAge(_newDob!)} years old',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 10,
+                                      color: _teal,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      ),
+                      const Icon(
+                        Icons.calendar_today_rounded,
+                        size: 14,
+                        color: Color(0xFF8FA0B4),
                       ),
                     ],
                   ),
                 ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 16),
-          // Register button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () async {
-                final name = _newNameCtrl.text.trim();
-                final vil = _newVillageCtrl.text.trim();
-                final phone = _newPhoneCtrl.text.trim();
-
-                // ── Validation ──────────────────────────────
-                final nameErr = PatientValidators.validateName(name);
-                final dobErr = PatientValidators.validateDob(_newDob);
-                final vilErr = PatientValidators.validateVillage(vil);
-                final phoneErr = PatientValidators.validatePhone(phone);
-
-                final firstError = nameErr ?? dobErr ?? vilErr ?? phoneErr;
-                if (firstError != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        firstError,
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: Colors.white,
-                        ),
-                      ),
-                      backgroundColor: _red,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      duration: const Duration(seconds: 3),
-                    ),
-                  );
-                  return;
-                }
-
-                final age = _calcAge(_newDob!);
-
-                // ── Duplicate detection ──────────────────────
-                final duplicates = await _controller.findPotentialDuplicates(
-                  name: name,
-                  age: age,
-                  village: vil,
-                );
-
-                if (duplicates.isNotEmpty && mounted) {
-                  final proceed = await showDialog<bool>(
-                    context: context,
-                    builder: (_) => _DuplicateWarningDialog(
-                      newName: name,
-                      duplicates: duplicates,
-                    ),
-                  );
-                  if (proceed != true) return;
-                }
-
-                await _controller.registerNewPatient(
-                  name: name,
-                  age: age,
-                  dob: _newDob!,
-                  village: vil,
-                  phone: phone,
-                );
-                if (!mounted) return;
-                _newNameCtrl.clear();
-                _newVillageCtrl.clear();
-                _newPhoneCtrl.clear();
-              },
-              icon: const Icon(
-                Icons.check_rounded,
-                size: 16,
-                color: Colors.white,
-              ),
-              label: Text(
-                'Register & Select',
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _teal,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                elevation: 0,
               ),
             ),
+            const SizedBox(width: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
+              ),
+              child: Row(
+                children: ['M', 'F'].map((g) {
+                  final active = _newGender == g;
+                  return GestureDetector(
+                    onTap: () => _controller.setNewGender(g),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: active ? _teal : Colors.transparent,
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                      child: Text(
+                        g,
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: active
+                              ? Colors.white
+                              : const Color(0xFF8FA0B4),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Village / Area with auto-detect
+        Row(
+          children: [
+            Expanded(
+              child: _newField(
+                _newVillageCtrl,
+                'Village / Area',
+                Icons.location_on_rounded,
+              ),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: _detectingLocation ? null : _detectLocation,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: _detectingLocation
+                      ? const Color(0xFFEEF2F6)
+                      : _teal.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: _detectingLocation
+                        ? const Color(0xFFEEF2F6)
+                        : _teal.withValues(alpha: 0.3),
+                    width: 1.5,
+                  ),
+                ),
+                child: _detectingLocation
+                    ? const Padding(
+                        padding: EdgeInsets.all(12),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: _teal,
+                        ),
+                      )
+                    : const Icon(
+                        Icons.my_location_rounded,
+                        size: 20,
+                        color: _teal,
+                      ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Phone number
+        _newField(
+          _newPhoneCtrl,
+          'Phone Number',
+          Icons.phone_rounded,
+          inputType: TextInputType.phone,
+        ),
+        const SizedBox(height: 16),
+        // Current conditions
+        Text(
+          'Current Eye Conditions',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF1A2A3D),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Select all that apply',
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            color: const Color(0xFF8FA0B4),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: conditions.map((c) {
+            final label = c['label'] as String;
+            final icon = c['icon'] as IconData;
+            final selected = _newConditions.contains(label);
+            return GestureDetector(
+              onTap: () => _controller.toggleNewCondition(label),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: selected ? _teal.withValues(alpha: 0.1) : Colors.white,
+                  borderRadius: BorderRadius.circular(99),
+                  border: Border.all(
+                    color: selected ? _teal : const Color(0xFFDDE4EC),
+                    width: 1.5,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      icon,
+                      size: 13,
+                      color: selected ? _teal : const Color(0xFF8FA0B4),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      label,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: selected ? _teal : const Color(0xFF5E7291),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 16),
+        // Register button
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () async {
+              final name = _newNameCtrl.text.trim();
+              final vil = _newVillageCtrl.text.trim();
+              final phone = _newPhoneCtrl.text.trim();
+
+              // ── Validation ──────────────────────────────
+              final nameErr = PatientValidators.validateName(name);
+              final dobErr = PatientValidators.validateDob(_newDob);
+              final vilErr = PatientValidators.validateVillage(vil);
+              final phoneErr = PatientValidators.validatePhone(phone);
+
+              final firstError = nameErr ?? dobErr ?? vilErr ?? phoneErr;
+              if (firstError != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      firstError,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: Colors.white,
+                      ),
+                    ),
+                    backgroundColor: _red,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+                return;
+              }
+
+              final age = _calcAge(_newDob!);
+
+              // ── Duplicate detection ──────────────────────
+              final duplicates = await _controller.findPotentialDuplicates(
+                name: name,
+                age: age,
+                village: vil,
+              );
+
+              if (duplicates.isNotEmpty && mounted) {
+                final proceed = await showDialog<bool>(
+                  context: context,
+                  builder: (_) => _DuplicateWarningDialog(
+                    newName: name,
+                    duplicates: duplicates,
+                  ),
+                );
+                if (proceed != true) return;
+              }
+
+              await _controller.registerNewPatient(
+                name: name,
+                age: age,
+                dob: _newDob!,
+                village: vil,
+                phone: phone,
+              );
+              if (!mounted) return;
+              _newNameCtrl.clear();
+              _newVillageCtrl.clear();
+              _newPhoneCtrl.clear();
+              if (closeOnSuccess && mounted) {
+                Navigator.of(context).pop(true);
+              }
+            },
+            icon: const Icon(
+              Icons.check_rounded,
+              size: 16,
+              color: Colors.white,
+            ),
+            label: Text(
+              'Register patient',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _teal,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              elevation: 0,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -2708,10 +2634,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               _controller.prepareNextEye,
             )
           else
-            _continueBtn(
-              'View Near Vision Test',
-              _controller.jumpToNearIntro,
-            ),
+            _continueBtn('View Near Vision Test', _controller.jumpToNearIntro),
         ],
       ),
     );
@@ -3936,25 +3859,6 @@ class _ETumbleEPainter extends CustomPainter {
   bool shouldRepaint(_ETumbleEPainter old) => old.color != color;
 }
 
-// ── Dot pattern painter for screening header ────────────────
-class _ScreeningHeaderDotPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = Colors.white.withValues(alpha: 0.06)
-      ..style = PaintingStyle.fill;
-    const spacing = 24.0;
-    for (double y = 0; y < size.height; y += spacing) {
-      for (double x = 0; x < size.width; x += spacing) {
-        canvas.drawCircle(Offset(x, y), 1.6, p);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_ScreeningHeaderDotPainter old) => false;
-}
-
 // ─────────────────────────────────────────────────────────────
 // Duplicate patient warning dialog
 // ─────────────────────────────────────────────────────────────
@@ -4088,7 +3992,7 @@ class _DuplicateWarningDialog extends StatelessWidget {
         TextButton(
           onPressed: () => Navigator.pop(context, false),
           child: Text(
-            'Cancel — Use Existing',
+            'Use existing',
             style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -4106,7 +4010,7 @@ class _DuplicateWarningDialog extends StatelessWidget {
             elevation: 0,
           ),
           child: Text(
-            'Register as New Patient',
+            'Register patient',
             style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.w700,

@@ -252,7 +252,8 @@ class _PatientsScreenState extends State<PatientsScreen> {
   String get _query => _controller.query;
   List<Map<String, dynamic>> get _campaigns => _controller.campaigns;
   bool get _loading => _controller.loading;
-  List<Map<String, dynamic>> get _filteredCampaigns => _controller.filteredCampaigns;
+  List<Map<String, dynamic>> get _filteredCampaigns =>
+      _controller.filteredCampaigns;
   List<PatientListItem> get _filteredCampaignPatients =>
       _controller.filteredCampaignPatients;
   List<PatientListItem> get _filtered => _controller.filteredPatients;
@@ -416,61 +417,6 @@ class _PatientsScreenState extends State<PatientsScreen> {
       child: Stack(
         clipBehavior: Clip.hardEdge,
         children: [
-          // Dot pattern
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(32),
-                bottomRight: Radius.circular(32),
-              ),
-              child: CustomPaint(painter: _PatientsDotPainter()),
-            ),
-          ),
-          // Large decorative arc, top right.
-          Positioned(
-            top: -80,
-            right: -80,
-            child: Container(
-              width: 260,
-              height: 260,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.05),
-                  width: 1.5,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            top: -30,
-            right: -30,
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.08),
-                  width: 1,
-                ),
-              ),
-            ),
-          ),
-          // Small accent circle, bottom left.
-          Positioned(
-            bottom: 60,
-            left: -20,
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.04),
-              ),
-            ),
-          ),
-
           SafeArea(
             bottom: false,
             child: Padding(
@@ -959,15 +905,9 @@ class _PatientsScreenState extends State<PatientsScreen> {
             ),
             boxShadow: [
               BoxShadow(
-                color: _teal.withValues(alpha: 0.35),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-              BoxShadow(
-                color: _teal.withValues(alpha: 0.15),
-                blurRadius: 32,
-                spreadRadius: 2,
-                offset: const Offset(0, 2),
+                color: _teal.withValues(alpha: 0.20),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -975,26 +915,6 @@ class _PatientsScreenState extends State<PatientsScreen> {
             borderRadius: BorderRadius.circular(16),
             child: Stack(
               children: [
-                // Dot pattern
-                Positioned.fill(
-                  child: CustomPaint(painter: _CampaignCardDotPainter()),
-                ),
-                // Decorative arc
-                Positioned(
-                  top: -30,
-                  right: -30,
-                  child: Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.08),
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                ),
                 // Content
                 Padding(
                   padding: const EdgeInsets.all(16),
@@ -1046,28 +966,6 @@ class _PatientsScreenState extends State<PatientsScreen> {
                                   ),
                                 ),
                               ],
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(99),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.3),
-                              ),
-                            ),
-                            child: Text(
-                              'CAMPAIGN',
-                              style: GoogleFonts.inter(
-                                fontSize: 8,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                                letterSpacing: 0.8,
-                              ),
                             ),
                           ),
                         ],
@@ -2709,45 +2607,6 @@ class _CampaignDetailScreenState extends State<_CampaignDetailScreen> {
             child: Stack(
               clipBehavior: Clip.hardEdge,
               children: [
-                Positioned.fill(
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(28),
-                      bottomRight: Radius.circular(28),
-                    ),
-                    child: CustomPaint(painter: _PatientsDotPainter()),
-                  ),
-                ),
-                Positioned(
-                  top: -50,
-                  right: -50,
-                  child: Container(
-                    width: 180,
-                    height: 180,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.07),
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: -10,
-                  right: -10,
-                  child: Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.10),
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                ),
                 SafeArea(
                   bottom: false,
                   child: Padding(
@@ -2794,14 +2653,13 @@ class _CampaignDetailScreenState extends State<_CampaignDetailScreen> {
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
-                                        'CAMPAIGN \u00b7 $group',
+                                        'Campaign \u00b7 $group',
                                         style: GoogleFonts.inter(
-                                          fontSize: 9,
+                                          fontSize: 11,
                                           fontWeight: FontWeight.w700,
                                           color: Colors.white.withValues(
                                             alpha: 0.65,
                                           ),
-                                          letterSpacing: 1.8,
                                         ),
                                       ),
                                     ],
@@ -3547,42 +3405,4 @@ class _CampaignPatientCardState extends State<_CampaignPatientCard> {
       ),
     );
   }
-}
-
-// -- Dot pattern painter for header --------------------------
-class _PatientsDotPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = Colors.white.withValues(alpha: 0.06)
-      ..style = PaintingStyle.fill;
-    const spacing = 26.0;
-    for (double y = 0; y < size.height; y += spacing) {
-      for (double x = 0; x < size.width; x += spacing) {
-        canvas.drawCircle(Offset(x, y), 1.8, p);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_PatientsDotPainter old) => false;
-}
-
-// -- Dot pattern painter for campaign cards ------------------
-class _CampaignCardDotPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = Colors.white.withValues(alpha: 0.07)
-      ..style = PaintingStyle.fill;
-    const spacing = 18.0;
-    for (double y = 0; y < size.height; y += spacing) {
-      for (double x = 0; x < size.width; x += spacing) {
-        canvas.drawCircle(Offset(x, y), 1.4, p);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_CampaignCardDotPainter old) => false;
 }

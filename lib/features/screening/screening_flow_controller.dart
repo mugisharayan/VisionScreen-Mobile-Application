@@ -29,7 +29,7 @@ class ScreeningFlowController extends ChangeNotifier {
   int _step = 0;
   String? _selectedPatientId;
   String _patientQuery = '';
-  bool _showNewPatientForm = false;
+  bool _shouldOpenNewPatientSheet = false;
   String _newGender = 'M';
   DateTime? _newDob;
   bool _detectingLocation = false;
@@ -94,17 +94,12 @@ class ScreeningFlowController extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool get showNewPatientForm => _showNewPatientForm;
-  void setShowNewPatientForm(bool value) {
-    if (_showNewPatientForm == value) {
+  bool get shouldOpenNewPatientSheet => _shouldOpenNewPatientSheet;
+  void clearNewPatientSheetRequest() {
+    if (!_shouldOpenNewPatientSheet) {
       return;
     }
-    _showNewPatientForm = value;
-    notifyListeners();
-  }
-
-  void toggleNewPatientForm() {
-    _showNewPatientForm = !_showNewPatientForm;
+    _shouldOpenNewPatientSheet = false;
     notifyListeners();
   }
 
@@ -171,6 +166,7 @@ class ScreeningFlowController extends ChangeNotifier {
     _originalBrightness = value;
     notifyListeners();
   }
+
   bool get checklistDone => _luxOk && _brightnessSet;
   int get currentEyeIndex => _currentEyeIndex;
   int get currentRow => _currentRow;
@@ -218,7 +214,7 @@ class ScreeningFlowController extends ChangeNotifier {
     required bool startWithNewPatient,
     String? existingPatientId,
   }) async {
-    _showNewPatientForm = startWithNewPatient;
+    _shouldOpenNewPatientSheet = startWithNewPatient;
     if (existingPatientId != null) {
       _selectedPatientId = existingPatientId;
       _step = 1;
@@ -496,7 +492,7 @@ class ScreeningFlowController extends ChangeNotifier {
     await _patientRepository.insertPatient(newPatient);
     await loadPatients();
     _selectedPatientId = id;
-    _showNewPatientForm = false;
+    _shouldOpenNewPatientSheet = false;
     _newDob = null;
     _newConditions.clear();
     _newPhotoPath = null;

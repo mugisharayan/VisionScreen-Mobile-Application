@@ -483,30 +483,6 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
       child: Stack(
         clipBehavior: Clip.hardEdge,
         children: [
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(24),
-                bottomRight: Radius.circular(24),
-              ),
-              child: CustomPaint(painter: _ReferralDotPainter()),
-            ),
-          ),
-          Positioned(
-            top: -40,
-            right: -40,
-            child: Container(
-              width: 160,
-              height: 160,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.07),
-                  width: 1,
-                ),
-              ),
-            ),
-          ),
           SafeArea(
             bottom: false,
             child: Padding(
@@ -1678,23 +1654,4 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
           ),
         ),
       );
-}
-
-// ── Dot pattern painter for referral letter header ──────────
-class _ReferralDotPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = Colors.white.withValues(alpha: 0.06)
-      ..style = PaintingStyle.fill;
-    const spacing = 26.0;
-    for (double y = 0; y < size.height; y += spacing) {
-      for (double x = 0; x < size.width; x += spacing) {
-        canvas.drawCircle(Offset(x, y), 1.8, p);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_ReferralDotPainter old) => false;
 }

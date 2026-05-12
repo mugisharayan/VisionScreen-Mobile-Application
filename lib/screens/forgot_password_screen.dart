@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'splash_screen.dart' show AppColors;
 import 'auth_widgets.dart';
 import '../db/database_helper.dart';
 import '../repositories/auth_repository.dart';
+import '../utils/app_constants.dart';
 import '../widgets/vs_logo.dart';
 
 // ─────────────────────────────────────────────────────────────
@@ -24,8 +24,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
   // ── Animations ────────────────────────────────────────────
   late final AnimationController _logoCtrl;
   late final AnimationController _shimmerCtrl;
-  late final Animation<double>   _logoScale;
-  late final Animation<double>   _shimmerAnim;
+  late final Animation<double> _logoScale;
+  late final Animation<double> _shimmerAnim;
 
   // Step 1
   final _emailCtrl = TextEditingController();
@@ -49,18 +49,26 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
   void initState() {
     super.initState();
     _logoCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 700));
-    _logoScale = Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(parent: _logoCtrl, curve: Curves.elasticOut));
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _logoScale = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _logoCtrl, curve: Curves.elasticOut));
 
     _shimmerCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 2200))
-      ..repeat();
-    _shimmerAnim = Tween<double>(begin: -1.0, end: 2.0).animate(
-        CurvedAnimation(parent: _shimmerCtrl, curve: Curves.easeInOut));
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    )..repeat();
+    _shimmerAnim = Tween<double>(
+      begin: -1.0,
+      end: 2.0,
+    ).animate(CurvedAnimation(parent: _shimmerCtrl, curve: Curves.easeInOut));
 
-    Future.delayed(const Duration(milliseconds: 200),
-        () { if (mounted) _logoCtrl.forward(); });
+    Future.delayed(const Duration(milliseconds: 200), () {
+      if (mounted) _logoCtrl.forward();
+    });
   }
 
   @override
@@ -76,7 +84,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
   String? _validateEmail(String value) {
     if (value.trim().isEmpty) return 'Email address is required';
     final emailRegex = RegExp(r'^[\w.+-]+@[\w-]+\.[\w.]+$');
-    if (!emailRegex.hasMatch(value.trim())) return 'Enter a valid email address';
+    if (!emailRegex.hasMatch(value.trim())) {
+      return 'Enter a valid email address';
+    }
     return null;
   }
 
@@ -118,7 +128,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     setState(() {
       _newPasswordError = _validatePassword(_newPasswordCtrl.text);
       _confirmPasswordError = _validateConfirm(
-          _newPasswordCtrl.text, _confirmPasswordCtrl.text);
+        _newPasswordCtrl.text,
+        _confirmPasswordCtrl.text,
+      );
     });
     if (_newPasswordError != null || _confirmPasswordError != null) return;
 
@@ -156,20 +168,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
               ),
               child: Stack(
                 children: [
-                  Positioned.fill(
-                    child: CustomPaint(painter: _ForgotDotPainter()),
-                  ),
-                  Positioned(
-                    top: -60, right: -60,
-                    child: Container(
-                      width: 220, height: 220,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.07),
-                            width: 1)),
-                    ),
-                  ),
                   SafeArea(
                     bottom: false,
                     child: SizedBox.expand(
@@ -177,26 +175,33 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                         children: [
                           // Back button — pinned top-left, doesn't affect centering
                           Positioned(
-                            top: 4, left: 16,
+                            top: 4,
+                            left: 16,
                             child: GestureDetector(
                               onTap: () {
                                 if (Navigator.of(context).canPop()) {
                                   Navigator.of(context).pop();
                                 } else {
-                                  Navigator.of(context).pushReplacementNamed('/login');
+                                  Navigator.of(
+                                    context,
+                                  ).pushReplacementNamed('/login');
                                 }
                               },
                               child: Container(
-                                width: 36, height: 36,
+                                width: 36,
+                                height: 36,
                                 decoration: BoxDecoration(
                                   color: Colors.white.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.3)),
+                                    color: Colors.white.withValues(alpha: 0.3),
+                                  ),
                                 ),
                                 child: const Icon(
-                                    Icons.arrow_back_ios_new_rounded,
-                                    size: 16, color: Colors.white),
+                                  Icons.arrow_back_ios_new_rounded,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                           ),
@@ -205,14 +210,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                // Logo — pulsing rings same as splash screen
                                 ScaleTransition(
                                   scale: _logoScale,
-                                  child: VsPulsingRings(
-                                    color: Colors.white,
-                                    size: 220,
-                                    child: VsLogoAnimated(size: 110),
-                                  ),
+                                  child: VsLogo(size: 96),
                                 ),
                                 const SizedBox(height: 20),
                                 // App name — "Vision" white shimmer, "Screen" black shimmer
@@ -229,14 +229,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                                       children: [
                                         ShaderMask(
                                           blendMode: BlendMode.srcIn,
-                                          shaderCallback: (bounds) => LinearGradient(
-                                            colors: [
-                                              Colors.white.withValues(alpha: 0.55),
-                                              Colors.white,
-                                              Colors.white.withValues(alpha: 0.55),
-                                            ],
-                                            stops: stops(_shimmerAnim.value),
-                                          ).createShader(bounds),
+                                          shaderCallback: (bounds) =>
+                                              LinearGradient(
+                                                colors: [
+                                                  Colors.white.withValues(
+                                                    alpha: 0.55,
+                                                  ),
+                                                  Colors.white,
+                                                  Colors.white.withValues(
+                                                    alpha: 0.55,
+                                                  ),
+                                                ],
+                                                stops: stops(
+                                                  _shimmerAnim.value,
+                                                ),
+                                              ).createShader(bounds),
                                           child: Text(
                                             'Vision',
                                             style: GoogleFonts.plusJakartaSans(
@@ -249,14 +256,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                                         ),
                                         ShaderMask(
                                           blendMode: BlendMode.srcIn,
-                                          shaderCallback: (bounds) => LinearGradient(
-                                            colors: [
-                                              const Color(0xFF1A1A1A).withValues(alpha: 0.7),
-                                              Colors.black,
-                                              const Color(0xFF1A1A1A).withValues(alpha: 0.7),
-                                            ],
-                                            stops: stops(_shimmerAnim.value),
-                                          ).createShader(bounds),
+                                          shaderCallback: (bounds) =>
+                                              LinearGradient(
+                                                colors: [
+                                                  const Color(
+                                                    0xFF1A1A1A,
+                                                  ).withValues(alpha: 0.7),
+                                                  Colors.black,
+                                                  const Color(
+                                                    0xFF1A1A1A,
+                                                  ).withValues(alpha: 0.7),
+                                                ],
+                                                stops: stops(
+                                                  _shimmerAnim.value,
+                                                ),
+                                              ).createShader(bounds),
                                           child: Text(
                                             'Screen',
                                             style: GoogleFonts.plusJakartaSans(
@@ -272,11 +286,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                                   },
                                 ),
                                 const SizedBox(height: 8),
-                                Text('Reset Password',
-                                    style: GoogleFonts.inter(
-                                        fontSize: 14,
-                                        color: Colors.white.withValues(alpha: 0.80),
-                                        fontWeight: FontWeight.w500)),
+                                Text(
+                                  'Reset Password',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    color: Colors.white.withValues(alpha: 0.80),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
                                 const SizedBox(height: 14),
                                 // Step dots
                                 Row(
@@ -285,14 +302,20 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                                     final active = _step > i;
                                     final current = _step == i + 1;
                                     return AnimatedContainer(
-                                      duration: const Duration(milliseconds: 300),
-                                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                                      duration: const Duration(
+                                        milliseconds: 300,
+                                      ),
+                                      margin: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                      ),
                                       width: current ? 24 : 8,
                                       height: 8,
                                       decoration: BoxDecoration(
                                         color: active || current
                                             ? Colors.white
-                                            : Colors.white.withValues(alpha: 0.3),
+                                            : Colors.white.withValues(
+                                                alpha: 0.3,
+                                              ),
                                         borderRadius: BorderRadius.circular(99),
                                       ),
                                     );
@@ -315,8 +338,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             child: SingleChildScrollView(
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: EdgeInsets.fromLTRB(
-                  24, 24, 24,
-                  MediaQuery.of(context).viewInsets.bottom + 32),
+                24,
+                24,
+                24,
+                MediaQuery.of(context).viewInsets.bottom + 32,
+              ),
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 280),
                 switchInCurve: Curves.easeOut,
@@ -343,31 +369,32 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                         onBackToLogin: () => Navigator.of(context).pop(),
                       )
                     : _step == 2
-                        ? _NewPasswordStep(
-                            key: const ValueKey('step2'),
-                            newPasswordCtrl: _newPasswordCtrl,
-                            confirmPasswordCtrl: _confirmPasswordCtrl,
-                            newPasswordVisible: _newPasswordVisible,
-                            confirmPasswordVisible: _confirmPasswordVisible,
-                            newPasswordError: _newPasswordError,
-                            confirmPasswordError: _confirmPasswordError,
-                            loading: _resetLoading,
-                            onToggleNew: () => setState(
-                                () => _newPasswordVisible = !_newPasswordVisible),
-                            onToggleConfirm: () => setState(() =>
-                                _confirmPasswordVisible =
-                                    !_confirmPasswordVisible),
-                            onNewPasswordChanged: (_) =>
-                                setState(() => _newPasswordError = null),
-                            onConfirmPasswordChanged: (_) =>
-                                setState(() => _confirmPasswordError = null),
-                            onSubmit: _resetPassword,
-                          )
-                        : _SuccessStep(
-                            key: const ValueKey('step3'),
-                            onBackToLogin: () =>
-                                Navigator.of(context).pop(),
-                          ),
+                    ? _NewPasswordStep(
+                        key: const ValueKey('step2'),
+                        newPasswordCtrl: _newPasswordCtrl,
+                        confirmPasswordCtrl: _confirmPasswordCtrl,
+                        newPasswordVisible: _newPasswordVisible,
+                        confirmPasswordVisible: _confirmPasswordVisible,
+                        newPasswordError: _newPasswordError,
+                        confirmPasswordError: _confirmPasswordError,
+                        loading: _resetLoading,
+                        onToggleNew: () => setState(
+                          () => _newPasswordVisible = !_newPasswordVisible,
+                        ),
+                        onToggleConfirm: () => setState(
+                          () => _confirmPasswordVisible =
+                              !_confirmPasswordVisible,
+                        ),
+                        onNewPasswordChanged: (_) =>
+                            setState(() => _newPasswordError = null),
+                        onConfirmPasswordChanged: (_) =>
+                            setState(() => _confirmPasswordError = null),
+                        onSubmit: _resetPassword,
+                      )
+                    : _SuccessStep(
+                        key: const ValueKey('step3'),
+                        onBackToLogin: () => Navigator.of(context).pop(),
+                      ),
               ),
             ),
           ),
@@ -401,16 +428,22 @@ class _EmailStep extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Find your account',
-            style: GoogleFonts.plusJakartaSans(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: AppColors.textDark)),
+        Text(
+          'Find your account',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
+            color: AppColors.textDark,
+          ),
+        ),
         const SizedBox(height: 6),
         Text(
           'Enter the email address linked to your VisionScreen account.',
           style: GoogleFonts.inter(
-              fontSize: 12, color: AppColors.textMuted, height: 1.6),
+            fontSize: 12,
+            color: AppColors.textMuted,
+            height: 1.6,
+          ),
         ),
         const SizedBox(height: 28),
         AuthUnderlineField(
@@ -438,14 +471,17 @@ class _EmailStep extends StatelessWidget {
             child: RichText(
               text: TextSpan(
                 style: GoogleFonts.inter(
-                    fontSize: 12, color: AppColors.textMuted),
+                  fontSize: 12,
+                  color: AppColors.textMuted,
+                ),
                 children: [
                   const TextSpan(text: 'Remembered it? '),
                   TextSpan(
                     text: 'Sign In',
                     style: TextStyle(
-                        color: AppColors.greenDark,
-                        fontWeight: FontWeight.w700),
+                      color: AppColors.greenDark,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ],
               ),
@@ -493,16 +529,22 @@ class _NewPasswordStep extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Create new password',
-            style: GoogleFonts.plusJakartaSans(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: AppColors.textDark)),
+        Text(
+          'Create new password',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
+            color: AppColors.textDark,
+          ),
+        ),
         const SizedBox(height: 6),
         Text(
           'Your new password must be at least 8 characters.',
           style: GoogleFonts.inter(
-              fontSize: 12, color: AppColors.textMuted, height: 1.6),
+            fontSize: 12,
+            color: AppColors.textMuted,
+            height: 1.6,
+          ),
         ),
         const SizedBox(height: 28),
         AuthUnderlineField(
@@ -577,27 +619,40 @@ class _SuccessStep extends StatelessWidget {
       children: [
         const SizedBox(height: 20),
         Container(
-          width: 80, height: 80,
+          width: 80,
+          height: 80,
           decoration: BoxDecoration(
             color: AppColors.green.withValues(alpha: 0.1),
             shape: BoxShape.circle,
             border: Border.all(
-                color: AppColors.green.withValues(alpha: 0.3), width: 2),
+              color: AppColors.green.withValues(alpha: 0.3),
+              width: 2,
+            ),
           ),
-          child: const Icon(Icons.check_rounded, size: 40, color: AppColors.green),
+          child: const Icon(
+            Icons.check_rounded,
+            size: 40,
+            color: AppColors.green,
+          ),
         ),
         const SizedBox(height: 20),
-        Text('Password updated!',
-            style: GoogleFonts.plusJakartaSans(
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-                color: AppColors.textDark)),
+        Text(
+          'Password updated!',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 22,
+            fontWeight: FontWeight.w900,
+            color: AppColors.textDark,
+          ),
+        ),
         const SizedBox(height: 10),
         Text(
           'Your password has been successfully reset.\nYou can now sign in with your new password.',
           textAlign: TextAlign.center,
           style: GoogleFonts.inter(
-              fontSize: 13, color: AppColors.textMuted, height: 1.6),
+            fontSize: 13,
+            color: AppColors.textMuted,
+            height: 1.6,
+          ),
         ),
         const SizedBox(height: 32),
         AuthGreenPillButton(
@@ -615,23 +670,3 @@ class _SuccessStep extends StatelessWidget {
     );
   }
 }
-
-
-// ── Dot pattern painter ──────────────────────────────────────
-class _ForgotDotPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = Colors.white.withValues(alpha: 0.06)
-      ..style = PaintingStyle.fill;
-    const spacing = 24.0;
-    for (double y = 0; y < size.height; y += spacing) {
-      for (double x = 0; x < size.width; x += spacing) {
-        canvas.drawCircle(Offset(x, y), 1.6, p);
-      }
-    }
-  }
-  @override
-  bool shouldRepaint(_ForgotDotPainter old) => false;
-}
-

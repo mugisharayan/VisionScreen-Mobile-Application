@@ -50,15 +50,8 @@ class AuthRepository {
 
     final stored = profile['password'] as String;
 
-    // Verify password (supports both legacy SHA-256 and new salted format)
     if (!SecurityUtils.verifyPassword(password, stored)) {
       return const AuthResult.failure('Invalid email or password');
-    }
-
-    // Migrate legacy hash to salted hash on successful login
-    if (SecurityUtils.needsRehash(stored)) {
-      final newHash = SecurityUtils.hashPassword(password);
-      await _db.updateChwPassword(normalised, newHash);
     }
 
     await _persistSession(profile);

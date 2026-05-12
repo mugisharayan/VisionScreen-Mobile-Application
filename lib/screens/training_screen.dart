@@ -117,12 +117,11 @@ class _TrainingScreenState extends State<TrainingScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'TRAINING MODULES',
+                        'Modules',
                         style: GoogleFonts.inter(
-                          fontSize: 10,
+                          fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF475569),
-                          letterSpacing: 1.4,
                         ),
                       ),
                     ],
@@ -161,46 +160,6 @@ class _TrainingScreenState extends State<TrainingScreen> {
       child: Stack(
         clipBehavior: Clip.hardEdge,
         children: [
-          // Dot pattern
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(28),
-                bottomRight: Radius.circular(28),
-              ),
-              child: CustomPaint(painter: _TrainingDotPainter()),
-            ),
-          ),
-          Positioned(
-            top: -50,
-            right: -50,
-            child: Container(
-              width: 180,
-              height: 180,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.07),
-                  width: 1,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            top: -10,
-            right: -10,
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.10),
-                  width: 1,
-                ),
-              ),
-            ),
-          ),
           SafeArea(
             bottom: false,
             child: Padding(
@@ -235,7 +194,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'TRAINING CENTRE',
+                              'Training',
                               style: GoogleFonts.inter(
                                 fontSize: 9,
                                 fontWeight: FontWeight.w700,
@@ -312,18 +271,18 @@ class _TrainingScreenState extends State<TrainingScreen> {
                             tween: Tween(begin: 0, end: progress),
                             duration: const Duration(milliseconds: 900),
                             curve: Curves.easeOutCubic,
-                            builder:
-                                (context, value, child) =>
-                                    LinearProgressIndicator(
-                              value: value,
-                              minHeight: 6,
-                              backgroundColor: Colors.white.withValues(
-                                alpha: 0.15,
-                              ),
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                Color(0xFF34D399),
-                              ),
-                            ),
+                            builder: (context, value, child) =>
+                                LinearProgressIndicator(
+                                  value: value,
+                                  minHeight: 6,
+                                  backgroundColor: Colors.white.withValues(
+                                    alpha: 0.15,
+                                  ),
+                                  valueColor:
+                                      const AlwaysStoppedAnimation<Color>(
+                                        Color(0xFF34D399),
+                                      ),
+                                ),
                           ),
                         ),
                       ),
@@ -368,22 +327,6 @@ class _TrainingScreenState extends State<TrainingScreen> {
         borderRadius: BorderRadius.circular(16),
         child: Stack(
           children: [
-            Positioned.fill(child: CustomPaint(painter: _TrainingDotPainter())),
-            Positioned(
-              top: -30,
-              right: -30,
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.08),
-                    width: 1,
-                  ),
-                ),
-              ),
-            ),
             Padding(
               padding: const EdgeInsets.all(18),
               child: Row(
@@ -392,29 +335,6 @@ class _TrainingScreenState extends State<TrainingScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(99),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.25),
-                            ),
-                          ),
-                          child: Text(
-                            'WELCOME TO TRAINING',
-                            style: GoogleFonts.inter(
-                              fontSize: 8,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                              letterSpacing: 1.3,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
                         Text(
                           'Master VisionScreen\nin 4 Modules',
                           style: GoogleFonts.plusJakartaSans(
@@ -511,12 +431,6 @@ class _TrainingScreenState extends State<TrainingScreen> {
                   ),
                   child: Stack(
                     children: [
-                      // Dot pattern
-                      Positioned.fill(
-                        child: CustomPaint(
-                          painter: _CardDotPainter(color: Colors.white),
-                        ),
-                      ),
                       // Illustration
                       Center(
                         child: CustomPaint(
@@ -705,26 +619,6 @@ CustomPainter _moduleIllustration(int index) {
     default:
       return _Module4Painter();
   }
-}
-
-class _CardDotPainter extends CustomPainter {
-  const _CardDotPainter({required this.color});
-  final Color color;
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = color.withValues(alpha: 0.08)
-      ..style = PaintingStyle.fill;
-    const spacing = 14.0;
-    for (double y = 0; y < size.height; y += spacing) {
-      for (double x = 0; x < size.width; x += spacing) {
-        canvas.drawCircle(Offset(x, y), 1.2, p);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_CardDotPainter old) => false;
 }
 
 // Module 1: Patient registration illustration
@@ -1048,22 +942,4 @@ class _Module4Painter extends CustomPainter {
 
   @override
   bool shouldRepaint(_Module4Painter old) => false;
-}
-
-class _TrainingDotPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = Colors.white.withValues(alpha: 0.06)
-      ..style = PaintingStyle.fill;
-    const spacing = 26.0;
-    for (double y = 0; y < size.height; y += spacing) {
-      for (double x = 0; x < size.width; x += spacing) {
-        canvas.drawCircle(Offset(x, y), 1.8, p);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_TrainingDotPainter old) => false;
 }

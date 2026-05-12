@@ -609,45 +609,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Stack(
         clipBehavior: Clip.hardEdge,
         children: [
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(28),
-                bottomRight: Radius.circular(28),
-              ),
-              child: CustomPaint(painter: _SettingsDotPainter()),
-            ),
-          ),
-          Positioned(
-            top: -50,
-            right: -50,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.07),
-                  width: 1,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            top: -10,
-            right: -10,
-            child: Container(
-              width: 110,
-              height: 110,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.10),
-                  width: 1,
-                ),
-              ),
-            ),
-          ),
           SafeArea(
             bottom: false,
             child: Padding(
@@ -686,17 +647,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 width: 68,
                                 height: 68,
                                 fit: BoxFit.cover,
-                                errorBuilder:
-                                    (context, error, stackTrace) => Center(
-                                  child: Text(
-                                    initials,
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Center(
+                                      child: Text(
+                                        initials,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.white,
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
                               ),
                             )
                           : Center(
@@ -4522,23 +4483,4 @@ class _LegalSheet extends StatelessWidget {
       ),
     );
   }
-}
-
-// ── Dot pattern painter for settings header ─────────────────
-class _SettingsDotPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = Colors.white.withValues(alpha: 0.06)
-      ..style = PaintingStyle.fill;
-    const spacing = 26.0;
-    for (double y = 0; y < size.height; y += spacing) {
-      for (double x = 0; x < size.width; x += spacing) {
-        canvas.drawCircle(Offset(x, y), 1.8, p);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_SettingsDotPainter old) => false;
 }

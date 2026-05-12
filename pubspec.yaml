@@ -1,5 +1,5 @@
 name: visionscreen
-description: "A new Flutter project."
+description: "Mobile vision screening application for community health teams."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -77,10 +77,4 @@ flutter:
   uses-material-design: true
 
   assets:
-    - —Pngtree—male nurse female nurse hospital_7123812.png
-    - —Pngtree—visual acuity_7080163.png
-    - —Pngtree—medical clipboard with a red_18496671.png
-    - pngwing.com.png
-    - image.png
-    - Medical Staff Meeting-800x531.jpg
     - assets/fonts/

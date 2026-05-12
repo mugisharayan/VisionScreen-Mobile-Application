@@ -20,17 +20,13 @@ subprojects {
 }
 
 subprojects {
-    plugins.withId("com.android.application") {
-        dependencies.add(
-            "implementation",
-            "androidx.concurrent:concurrent-futures:1.1.0",
-        )
-    }
-    plugins.withId("com.android.library") {
-        dependencies.add(
-            "implementation",
-            "androidx.concurrent:concurrent-futures:1.1.0",
-        )
+    if (name == "camera_android_camerax") {
+        plugins.withId("com.android.library") {
+            dependencies.add(
+                "implementation",
+                "androidx.concurrent:concurrent-futures:1.1.0",
+            )
+        }
     }
 }
 

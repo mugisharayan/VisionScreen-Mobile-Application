@@ -505,46 +505,6 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
       child: Stack(
         clipBehavior: Clip.hardEdge,
         children: [
-          // Dot pattern
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(28),
-                bottomRight: Radius.circular(28),
-              ),
-              child: CustomPaint(painter: _BulkDotPainter()),
-            ),
-          ),
-          Positioned(
-            top: -50,
-            right: -50,
-            child: Container(
-              width: 180,
-              height: 180,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.07),
-                  width: 1,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            top: -10,
-            right: -10,
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.10),
-                  width: 1,
-                ),
-              ),
-            ),
-          ),
           SafeArea(
             bottom: false,
             child: Padding(
@@ -593,7 +553,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'CAMPAIGN MODE',
+                                  'Campaign mode',
                                   style: GoogleFonts.inter(
                                     fontSize: 9,
                                     fontWeight: FontWeight.w700,
@@ -2765,25 +2725,6 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
   );
 }
 
-// ── Dot pattern painter for bulk mode header ────────────────
-class _BulkDotPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = Colors.white.withValues(alpha: 0.06)
-      ..style = PaintingStyle.fill;
-    const spacing = 26.0;
-    for (double y = 0; y < size.height; y += spacing) {
-      for (double x = 0; x < size.width; x += spacing) {
-        canvas.drawCircle(Offset(x, y), 1.8, p);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_BulkDotPainter old) => false;
-}
-
 // ─────────────────────────────────────────────────────────────
 // Duplicate patient warning dialog (bulk mode)
 // ─────────────────────────────────────────────────────────────
@@ -2932,7 +2873,7 @@ class _BulkDuplicateDialog extends StatelessWidget {
             elevation: 0,
           ),
           child: Text(
-            'Register as New',
+            'Register patient',
             style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.w700,

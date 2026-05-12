@@ -198,8 +198,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool get _isSyncing => _controller.isSyncing;
   bool get _syncConfigured => _controller.syncConfigured;
   String get _lastSyncError => _controller.lastSyncError;
-  List<Map<String, dynamic>> get _recentScreenings => _controller.recentScreenings;
-  List<Map<String, dynamic>> get _referredPatients => _controller.referredPatients;
+  List<Map<String, dynamic>> get _recentScreenings =>
+      _controller.recentScreenings;
+  List<Map<String, dynamic>> get _referredPatients =>
+      _controller.referredPatients;
   bool get _isOffline => _controller.isOffline;
   String get _locationLabel => _controller.locationLabel;
   DateTime get _now => _controller.now;
@@ -499,23 +501,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         await Navigator.push(
           context,
           PageRouteBuilder(
-            pageBuilder: (
-              context,
-              primaryAnimation,
-              secondaryAnimation,
-            ) => const NotificationsScreen(),
-            transitionsBuilder: (
-              context,
-              animation,
-              secondaryAnimation,
-              child,
-            ) => FadeTransition(
-              opacity: CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeOut,
-              ),
-              child: child,
-            ),
+            pageBuilder: (context, primaryAnimation, secondaryAnimation) =>
+                const NotificationsScreen(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) =>
+                    FadeTransition(
+                      opacity: CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOut,
+                      ),
+                      child: child,
+                    ),
             transitionDuration: const Duration(milliseconds: 280),
           ),
         );
@@ -777,7 +773,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ? 'Last sync failed. Tap to retry.'
         : '$_unsyncedCount record${_unsyncedCount == 1 ? '' : 's'} pending sync';
     final pillColor = _syncConfigured ? VsColors.sky : VsColors.skyBg;
-    final pillTextColor = _syncConfigured ? Colors.white : const Color(0xFF0369A1);
+    final pillTextColor = _syncConfigured
+        ? Colors.white
+        : const Color(0xFF0369A1);
     final pillText = _syncConfigured ? 'Sync Now' : 'Local only';
 
     return GestureDetector(

@@ -15,15 +15,9 @@ import 'package:flutter/material.dart';
 // ─────────────────────────────────────────────────────────────
 
 class VsLogo extends StatelessWidget {
-  const VsLogo({
-    super.key,
-    this.size = 56,
-    this.color,          // kept for API compat — ignored, uses theme colors
-    this.showRing = true,
-  });
+  const VsLogo({super.key, this.size = 56, this.showRing = true});
 
   final double size;
-  final Color? color;
   final bool showRing;
 
   @override
@@ -31,9 +25,7 @@ class VsLogo extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: CustomPaint(
-        painter: _EyeballPainter(showRing: showRing),
-      ),
+      child: CustomPaint(painter: _EyeballPainter(showRing: showRing)),
     );
   }
 }
@@ -42,14 +34,9 @@ class VsLogo extends StatelessWidget {
 // Animated logo — iris slowly rotates + pupil dilates
 // ─────────────────────────────────────────────────────────────
 class VsLogoAnimated extends StatefulWidget {
-  const VsLogoAnimated({
-    super.key,
-    this.size = 56,
-    this.color,
-  });
+  const VsLogoAnimated({super.key, this.size = 56});
 
   final double size;
-  final Color? color;
 
   @override
   State<VsLogoAnimated> createState() => _VsLogoAnimatedState();
@@ -68,16 +55,20 @@ class _VsLogoAnimatedState extends State<VsLogoAnimated>
 
     // Slow iris rotation
     _rotateCtrl = AnimationController(
-        vsync: this, duration: const Duration(seconds: 12))
-      ..repeat();
+      vsync: this,
+      duration: const Duration(seconds: 12),
+    )..repeat();
     _rotation = Tween<double>(begin: 0, end: 2 * pi).animate(_rotateCtrl);
 
     // Pupil dilation — slow breathe
     _dilateCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 3000))
-      ..repeat(reverse: true);
-    _dilate = Tween<double>(begin: 0.85, end: 1.15).animate(
-        CurvedAnimation(parent: _dilateCtrl, curve: Curves.easeInOut));
+      vsync: this,
+      duration: const Duration(milliseconds: 3000),
+    )..repeat(reverse: true);
+    _dilate = Tween<double>(
+      begin: 0.85,
+      end: 1.15,
+    ).animate(CurvedAnimation(parent: _dilateCtrl, curve: Curves.easeInOut));
   }
 
   @override
@@ -120,11 +111,11 @@ class _EyeballPainter extends CustomPainter {
   final bool showRing;
 
   // App theme colors
-  static const _teal      = Color(0xFF0D9488);
+  static const _teal = Color(0xFF0D9488);
   static const _tealLight = Color(0xFF14B8A6);
-  static const _tealDark  = Color(0xFF0F766E);
-  static const _tealDeep  = Color(0xFF134E4A);
-  static const _amber     = Color(0xFFF59E0B);
+  static const _tealDark = Color(0xFF0F766E);
+  static const _tealDeep = Color(0xFF134E4A);
+  static const _amber = Color(0xFFF59E0B);
   static const _amberDark = Color(0xFFD97706);
 
   @override
@@ -139,10 +130,7 @@ class _EyeballPainter extends CustomPainter {
       r,
       Paint()
         ..shader = RadialGradient(
-          colors: [
-            const Color(0xFF0A2A28),
-            const Color(0xFF051A18),
-          ],
+          colors: [const Color(0xFF0A2A28), const Color(0xFF051A18)],
         ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: r)),
     );
 
@@ -233,8 +221,7 @@ class _EyeballPainter extends CustomPainter {
             const Color(0xFF92400E),
           ],
           stops: const [0.0, 0.35, 0.7, 1.0],
-        ).createShader(
-            Rect.fromCircle(center: Offset(cx, cy), radius: amberR)),
+        ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: amberR)),
     );
 
     // Amber ring texture lines
@@ -270,21 +257,24 @@ class _EyeballPainter extends CustomPainter {
             Colors.black,
           ],
           stops: const [0.0, 0.5, 1.0],
-        ).createShader(
-            Rect.fromCircle(center: Offset(cx, cy), radius: pupilR)),
+        ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: pupilR)),
     );
 
     // ── 7. Pupil glossy highlights ─────────────────────────
     // Main highlight — top-left
     final h1Paint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          Colors.white.withValues(alpha: 0.85),
-          Colors.white.withValues(alpha: 0.0),
-        ],
-      ).createShader(Rect.fromCircle(
-          center: Offset(cx - pupilR * 0.28, cy - pupilR * 0.32),
-          radius: pupilR * 0.32));
+      ..shader =
+          RadialGradient(
+            colors: [
+              Colors.white.withValues(alpha: 0.85),
+              Colors.white.withValues(alpha: 0.0),
+            ],
+          ).createShader(
+            Rect.fromCircle(
+              center: Offset(cx - pupilR * 0.28, cy - pupilR * 0.32),
+              radius: pupilR * 0.32,
+            ),
+          );
     canvas.drawCircle(
       Offset(cx - pupilR * 0.28, cy - pupilR * 0.32),
       pupilR * 0.32,
@@ -347,8 +337,7 @@ class VsLogoWordmark extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.black.withValues(alpha: 0.25),
             borderRadius: BorderRadius.circular(logoSize * 0.28),
-            border: Border.all(
-                color: color.withValues(alpha: 0.3), width: 1.5),
+            border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
           ),
           child: Center(
             child: animate
@@ -417,14 +406,17 @@ class _VsPulsingRingsState extends State<VsPulsingRings>
   void initState() {
     super.initState();
     _r1 = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 2000))
-      ..repeat(reverse: true);
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat(reverse: true);
     _r2 = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 2800))
-      ..repeat(reverse: true);
+      vsync: this,
+      duration: const Duration(milliseconds: 2800),
+    )..repeat(reverse: true);
     _r3 = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 3600))
-      ..repeat(reverse: true);
+      vsync: this,
+      duration: const Duration(milliseconds: 3600),
+    )..repeat(reverse: true);
   }
 
   @override
@@ -435,8 +427,13 @@ class _VsPulsingRingsState extends State<VsPulsingRings>
     super.dispose();
   }
 
-  Widget _ring(AnimationController ctrl, double baseSize,
-      double scaleEnd, double opacityStart, double opacityEnd) {
+  Widget _ring(
+    AnimationController ctrl,
+    double baseSize,
+    double scaleEnd,
+    double opacityStart,
+    double opacityEnd,
+  ) {
     return AnimatedBuilder(
       animation: ctrl,
       builder: (_, _) {
