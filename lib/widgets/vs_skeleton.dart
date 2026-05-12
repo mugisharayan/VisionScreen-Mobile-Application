@@ -46,7 +46,7 @@ class _VsSkeletonState extends State<VsSkeleton>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _shimmer,
-      builder: (_, __) => Container(
+      builder: (_, _) => Container(
         width: widget.width,
         height: widget.height,
         decoration: BoxDecoration(
@@ -153,8 +153,8 @@ class VsSkeletonList extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
       physics: const NeverScrollableScrollPhysics(),
       itemCount: count,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (_, __) => const VsPatientCardSkeleton(),
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemBuilder: (_, _) => const VsPatientCardSkeleton(),
     );
   }
 }

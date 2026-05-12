@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Visionscreen</string>
+	<string>VisionScreen</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>visionscreen</string>
+	<string>VisionScreen</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -50,7 +50,7 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>VisionScreen needs camera access to take your profile photo.</string>
+	<string>VisionScreen needs camera access to take profile and patient photos and measure patient distance during screening.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>VisionScreen needs your location while screening to record the community and facility context for each visit.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

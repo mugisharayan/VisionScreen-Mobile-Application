@@ -1,23 +1,21 @@
 import 'dart:async';
-import 'dart:math' show Random, sqrt;
+import 'dart:math' show sqrt;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:camera/camera.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:screen_brightness/screen_brightness.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'referral_letter_screen.dart';
 import 'face_distance_screen.dart';
-import '../services/chw_profile_preferences.dart';
+import '../features/screening/screening_constants.dart';
+import '../features/screening/screening_flow_controller.dart';
+import '../services/permission_coordinator.dart';
 import '../utils/patient_validators.dart';
 import '../utils/visual_acuity.dart';
-import '../repositories/patient_repository.dart';
-import '../repositories/screening_repository.dart';
 
 // ── Colours ──────────────────────────────────────────────────────────────────
 const _ink = Color(0xFF04091A);
@@ -26,33 +24,17 @@ const _teal3 = Color(0xFF5EEAD4);
 const _amber = Color(0xFFF59E0B);
 const _red = Color(0xFFEF4444);
 const _green = Color(0xFF22C55E);
-const double _kMinLux = 80.0;
+const _kMinLux = screeningMinLux;
 
 // ── Steps ─────────────────────────────────────────────────────────────────────
 // 0=patient, 1=checklist, 2=coverEye, 3=chart, 4=eyeResult, 5=summary
 // ── Eye order ─────────────────────────────────────────────────────────────────
-const _eyeOrder = ['OD', 'OS'];
+const _eyeOrder = screeningEyeOrder;
 
 // ── LogMAR rows (single E per row) ───────────────────────────────────────────
-// ── Staircase levels (logmar index into _rows) ────────────────────────────────
-// Initial jump sequence: 1.0 → 0.8 → 0.5 → 0.2 → 0.0 (indices 0,2,5,8,10)
-const _staircaseJumps = [0, 2, 5, 8, 10];
-
 // LogMAR rows — sizes in mm at 2m (formula: 29.1 × 10^(logmar-1.0))
 // Source: Visual Acuity app measurements at 2m testing distance
-const _rows = [
-  {'logmar': '1.0', 'mm': 29.10},
-  {'logmar': '0.9', 'mm': 23.12},
-  {'logmar': '0.8', 'mm': 18.36},
-  {'logmar': '0.7', 'mm': 14.59},
-  {'logmar': '0.6', 'mm': 11.59},
-  {'logmar': '0.5', 'mm': 9.21},
-  {'logmar': '0.4', 'mm': 7.31},
-  {'logmar': '0.3', 'mm': 5.81},
-  {'logmar': '0.2', 'mm': 4.61},
-  {'logmar': '0.1', 'mm': 3.66},
-  {'logmar': '0.0', 'mm': 2.91},
-];
+const _rows = screeningRows;
 
 // Convert mm to logical pixels using device DPI
 // Uses dart:ui window.physicalSize and devicePixelRatio to derive actual physical DPI.
@@ -91,70 +73,13 @@ class NewScreeningScreen extends StatefulWidget {
 
 class _NewScreeningScreenState extends State<NewScreeningScreen>
     with TickerProviderStateMixin {
-  // ── Step ──────────────────────────────────────────────────────────────────
-  int _step = 0;
-
-  // ── Feature: Patient ──────────────────────────────────────────────────────
-  String? _selectedPatientId;
+  late final ScreeningFlowController _controller;
   final _patientSearchCtrl = TextEditingController();
-  String _patientQuery = '';
-  bool _showNewPatientForm = false; // set in initState
   final _newNameCtrl = TextEditingController();
   final _newVillageCtrl = TextEditingController();
   final _newPhoneCtrl = TextEditingController();
-  String _newGender = 'M';
-  DateTime? _newDob;
-  bool _detectingLocation = false;
-  final List<String> _newConditions = [];
-  String? _newPhotoPath;
   CameraController? _photoCtrl;
   bool _showPhotoCamera = false;
-  List<Map<String, String>> _patientListRuntime = [];
-
-  int? _savedScreeningId;
-
-  // ── Feature: Checklist ────────────────────────────────────────────────────
-  // light
-  double _currentLux = 0.0;
-  bool _luxChecked = false;
-  bool _luxOk = false;
-  // brightness
-  bool _brightnessSet = false;
-  double? _originalBrightness;
-  bool get _checklistDone => _luxOk && _brightnessSet;
-
-  // ── Feature: Eye test ─────────────────────────────────────────────────────
-  int _currentEyeIndex = 0;
-  int _currentRow = 0; // index into _rows
-  int _currentRotation = 0;
-  int _lastPassedRow = 0;
-  // Staircase state
-  int _letterIndex = 0; // 0-4, which of the 5 letters in current row
-  int _correctCount = 0; // correct answers in current row
-  int _staircaseJumpIndex = 0; // where we are in _staircaseJumps
-  bool _staircasePhase = true; // true=initial jumps, false=fine search
-  final List<Map<String, dynamic>> _eyeResults = [];
-  int _cantTellCount = 0;
-
-  // Near vision (binocular, 40cm)
-  int _nearRow = 0;
-  int _nearLetterIndex = 0;
-  int _nearCorrectCount = 0;
-  int _nearLastPassedRow = 0;
-  int _nearRotation = 0;
-  bool _nearStaircasePhase = true;
-  int _nearStaircaseJumpIndex = 0;
-  int _nearCantTellCount = 0;
-  Map<String, dynamic>? _nearResult;
-
-  // ── Feature: Timer ────────────────────────────────────────────────────────
-  Timer? _testTimer;
-  int _testSeconds = 0;
-
-  // ── Feature: Offline / unsynced ───────────────────────────────────────────
-  bool _isOffline = false;
-  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
-  int _unsyncedCount = 0;
 
   // ── Animation ─────────────────────────────────────────────────────────────
   late AnimationController _pulseCtrl;
@@ -172,51 +97,24 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       begin: 0.85,
       end: 1.0,
     ).animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
-    _showNewPatientForm = widget.startWithNewPatient;
-    if (widget.existingPatientId != null) {
-      _selectedPatientId = widget.existingPatientId;
-      _step = 1;
-    }
-    _loadUnsyncedCount();
-    _loadPatients().then((_) {
-      if (widget.existingPatientId != null && mounted) {
-        _runChecklist();
-      }
-    });
-    _connectivitySub = Connectivity().onConnectivityChanged.listen((r) {
-      if (!mounted) return;
-      setState(() => _isOffline = r.every((x) => x == ConnectivityResult.none));
-    });
-  }
-
-  Future<void> _loadPatients() async {
-    final rows = await PatientRepository.instance.getPatients(pageSize: 500);
-    if (!mounted) return;
-    setState(() {
-      _patientListRuntime = rows
-          .map(
-            (r) => {
-              'id': r['id'] as String,
-              'name': r['name'] as String,
-              'age': r['age'].toString(),
-              'gender': r['gender'] as String,
-              'village': r['village'] as String,
-              'dob': (r['dob'] as String?) ?? '',
-              'conditions': (r['conditions'] as String?) ?? '',
-            },
-          )
-          .toList();
-    });
+    _controller = ScreeningFlowController()
+      ..addListener(_handleControllerChanged);
+    unawaited(
+      _controller.initialize(
+        startWithNewPatient: widget.startWithNewPatient,
+        existingPatientId: widget.existingPatientId,
+      ),
+    );
   }
 
   @override
   void dispose() {
+    _controller
+      ..removeListener(_handleControllerChanged)
+      ..disposeResources()
+      ..dispose();
     _pulseCtrl.dispose();
     _photoCtrl?.dispose();
-    _countdownTimer?.cancel();
-    _nearCountdownTimer?.cancel();
-    _testTimer?.cancel();
-    _connectivitySub?.cancel();
     _patientSearchCtrl.dispose();
     _newNameCtrl.dispose();
     _newVillageCtrl.dispose();
@@ -224,9 +122,49 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     super.dispose();
   }
 
+  int get _step => _controller.step;
+  String? get _selectedPatientId => _controller.selectedPatientId;
+  String get _patientQuery => _controller.patientQuery;
+  bool get _showNewPatientForm => _controller.showNewPatientForm;
+  String get _newGender => _controller.newGender;
+  DateTime? get _newDob => _controller.newDob;
+  bool get _detectingLocation => _controller.detectingLocation;
+  List<String> get _newConditions => _controller.newConditions;
+  String? get _newPhotoPath => _controller.newPhotoPath;
+  List<Map<String, String>> get _patientListRuntime => _controller.patientListRuntime;
+  int? get _savedScreeningId => _controller.savedScreeningId;
+  double get _currentLux => _controller.currentLux;
+  bool get _luxChecked => _controller.luxChecked;
+  bool get _luxOk => _controller.luxOk;
+  bool get _brightnessSet => _controller.brightnessSet;
+  double? get _originalBrightness => _controller.originalBrightness;
+  bool get _checklistDone => _controller.checklistDone;
+  int get _currentEyeIndex => _controller.currentEyeIndex;
+  int get _currentRow => _controller.currentRow;
+  int get _currentRotation => _controller.currentRotation;
+  int get _letterIndex => _controller.letterIndex;
+  List<Map<String, dynamic>> get _eyeResults => _controller.eyeResults;
+  int get _nearRow => _controller.nearRow;
+  int get _nearLetterIndex => _controller.nearLetterIndex;
+  int get _nearRotation => _controller.nearRotation;
+  Map<String, dynamic>? get _nearResult => _controller.nearResult;
+  bool get _isOffline => _controller.isOffline;
+  int get _unsyncedCount => _controller.unsyncedCount;
+  int get _countdown => _controller.countdown;
+  int get _nearCountdown => _controller.nearCountdown;
+  String get _testDuration => _controller.testDuration;
+  bool get _needsReferral => _controller.needsReferral;
+
+  void _handleControllerChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   Future<void> _openPhotoCamera() async {
-    final status = await Permission.camera.request();
-    if (!status.isGranted || !mounted) return;
+    final permission = await PermissionCoordinator.instance
+        .requestPatientPhotoCamera(context);
+    if (!permission.isGranted || !mounted) return;
     final cameras = await availableCameras();
     if (cameras.isEmpty) return;
     final front = cameras.firstWhere(
@@ -255,8 +193,8 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       await File(file.path).copy(permanentPath);
       final ctrl = _photoCtrl;
       _photoCtrl = null;
+      _controller.setNewPhotoPath(permanentPath);
       setState(() {
-        _newPhotoPath = permanentPath;
         _showPhotoCamera = false;
       });
       await ctrl?.dispose();
@@ -279,15 +217,13 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 
   // ── Checklist logic ───────────────────────────────────────────────────────
   void _runChecklist() {
+    _controller.runChecklist();
     _checkLight();
     _setMaxBrightness();
   }
 
   void _checkLight() {
-    setState(() {
-      _luxChecked = false;
-      _luxOk = false;
-    });
+    _controller.resetLightCheck();
     final channel = EventChannel('visionscreen/light');
     StreamSubscription? sub;
     bool received = false;
@@ -298,23 +234,14 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           received = true;
           sub?.cancel();
           if (!mounted) return;
-          setState(() {
-            _currentLux = (lux as double);
-            _luxChecked = true;
-            _luxOk = _currentLux >= _kMinLux;
-          });
+          _controller.setLuxResult(lux as double);
         },
         onError: (_) {
           if (received) return;
           received = true;
           sub?.cancel();
           if (!mounted) return;
-          const fallback = 120.0;
-          setState(() {
-            _currentLux = fallback;
-            _luxChecked = true;
-            _luxOk = fallback >= _kMinLux;
-          });
+          _controller.setLuxResult(120.0);
         },
       );
       // 3s timeout fallback for non-Android or unresponsive sensor
@@ -323,31 +250,21 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           received = true;
           sub?.cancel();
           if (!mounted) return;
-          const fallback = 120.0;
-          setState(() {
-            _currentLux = fallback;
-            _luxChecked = true;
-            _luxOk = fallback >= _kMinLux;
-          });
+          _controller.setLuxResult(120.0);
         }
       });
     } catch (_) {
-      const fallback = 120.0;
-      setState(() {
-        _currentLux = fallback;
-        _luxChecked = true;
-        _luxOk = fallback >= _kMinLux;
-      });
+      _controller.setLuxResult(120.0);
     }
   }
 
   Future<void> _setMaxBrightness() async {
     try {
-      _originalBrightness = await ScreenBrightness().current;
+      _controller.setOriginalBrightness(await ScreenBrightness().current);
       await ScreenBrightness().setScreenBrightness(1.0);
-      if (mounted) setState(() => _brightnessSet = true);
+      _controller.setBrightnessReady(true);
     } catch (_) {
-      if (mounted) setState(() => _brightnessSet = true);
+      _controller.setBrightnessReady(true);
     }
   }
 
@@ -361,335 +278,30 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     } catch (_) {}
   }
 
-  // ── Countdown before test ───────────────────────────────────────────────────────
-  int _countdown = 0;
-  Timer? _countdownTimer;
-  int _nearCountdown = 0;
-  Timer? _nearCountdownTimer;
-
   void _startCountdown() {
-    setState(() => _countdown = 3);
-    _countdownTimer?.cancel();
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (!mounted) return;
-      setState(() => _countdown--);
-      if (_countdown <= 0) {
-        t.cancel();
-        _generateRotation();
-        _startTestTimer();
-        setState(() => _step = 3);
-      }
-    });
+    _controller.startDistanceChart();
   }
 
   void _startNearCountdown() {
-    setState(() => _nearCountdown = 3);
-    _nearCountdownTimer?.cancel();
-    _nearCountdownTimer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (!mounted) return;
-      setState(() => _nearCountdown--);
-      if (_nearCountdown <= 0) {
-        t.cancel();
-        setState(() => _step = 7);
-        _generateNearRotation();
-        _startTestTimer();
-      }
-    });
-  }
-
-  void _generateRotation() {
-    setState(() => _currentRotation = Random().nextInt(4));
-  }
-
-  void _startTestTimer() {
-    _testSeconds = 0;
-    _testTimer?.cancel();
-    _testTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() => _testSeconds++);
-    });
-  }
-
-  void _stopTestTimer() {
-    _testTimer?.cancel();
-    _testTimer = null;
-  }
-
-  String get _testDuration {
-    final m = _testSeconds ~/ 60;
-    final s = _testSeconds % 60;
-    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+    _controller.startNearChart();
   }
 
   void _recordResponse(bool correct) {
-    setState(() {
-      if (correct) _correctCount++;
-      _letterIndex++;
-
-      if (_letterIndex < 5) {
-        // still letters left in this row
-        _generateRotation();
-        return;
-      }
-
-      // Row of 5 complete — evaluate
-      final passed = _correctCount >= 4;
-      _letterIndex = 0;
-      _correctCount = 0;
-
-      if (passed) {
-        _lastPassedRow = _currentRow;
-        _advanceStaircase(passed: true);
-      } else {
-        _advanceStaircase(passed: false);
-      }
-    });
+    _controller.recordResponse(correct);
   }
 
   void _recordCantTell() {
-    setState(() {
-      _cantTellCount++;
-      _letterIndex++;
-      if (_letterIndex < 5) {
-        _generateRotation();
-        return;
-      }
-      // row complete — cant tell counts as fail
-      final passed = _correctCount >= 4;
-      _letterIndex = 0;
-      _correctCount = 0;
-      if (passed) {
-        _lastPassedRow = _currentRow;
-        _advanceStaircase(passed: true);
-      } else {
-        _advanceStaircase(passed: false);
-      }
-    });
+    _controller.recordCantTell();
   }
 
-  void _advanceStaircase({required bool passed}) {
-    if (_staircasePhase) {
-      // ── Initial jump phase ──
-      if (passed) {
-        _staircaseJumpIndex++;
-        if (_staircaseJumpIndex >= _staircaseJumps.length) {
-          // reached finest level — done
-          _finishEye(_rows[_lastPassedRow]['logmar'] as String);
-          return;
-        }
-        _currentRow = _staircaseJumps[_staircaseJumpIndex];
-      } else {
-        // failed a jump level — switch to fine search going easier
-        _staircasePhase = false;
-        _currentRow = (_currentRow + 1).clamp(0, _rows.length - 1);
-        if (_currentRow >= _rows.length - 1) {
-          _finishEye(_rows[_lastPassedRow]['logmar'] as String);
-          return;
-        }
-      }
-    } else {
-      // ── Fine search phase ──
-      if (passed) {
-        _lastPassedRow = _currentRow;
-        // try one harder
-        final next = _currentRow - 1;
-        if (next < 0) {
-          _finishEye(_rows[_lastPassedRow]['logmar'] as String);
-          return;
-        }
-        _currentRow = next;
-      } else {
-        // failed — stop, last passed is the result
-        _finishEye(_rows[_lastPassedRow]['logmar'] as String);
-        return;
-      }
-    }
-    _generateRotation();
-  }
-
-  void _finishEye(String result) {
-    _stopTestTimer();
-    _restoreBrightness();
-    final isLastEye = _currentEyeIndex >= _eyeOrder.length - 1;
-    setState(() {
-      _eyeResults.add({
-        'eye': _eyeOrder[_currentEyeIndex],
-        'logmar': result,
-        'duration': _testDuration,
-        'cantTell': _cantTellCount,
-      });
-      if (isLastEye) {
-        // all distance eyes done — go to near vision
-        _nearRow = 0;
-        _nearLetterIndex = 0;
-        _nearCorrectCount = 0;
-        _nearLastPassedRow = 0;
-        _nearStaircasePhase = true;
-        _nearStaircaseJumpIndex = 0;
-        _nearCantTellCount = 0;
-        _nearResult = null;
-        _step = 6; // near vision intro
-      } else {
-        // more eyes to test — go straight to cover eye reminder
-        _currentEyeIndex++;
-        _currentRow = 0;
-        _lastPassedRow = 0;
-        _letterIndex = 0;
-        _correctCount = 0;
-        _staircaseJumpIndex = 0;
-        _staircasePhase = true;
-        _cantTellCount = 0;
-        _generateRotation();
-        _step = 2; // cover eye reminder
-      }
-    });
-  }
-
-  void _goToFinalSummary() => setState(() => _step = 5);
-
-  void _generateNearRotation() =>
-      setState(() => _nearRotation = Random().nextInt(4));
+  void _goToFinalSummary() => _controller.goToFinalSummary();
 
   void _recordNearResponse(bool correct) {
-    setState(() {
-      if (correct) _nearCorrectCount++;
-      _nearLetterIndex++;
-      if (_nearLetterIndex < 5) {
-        _generateNearRotation();
-        return;
-      }
-      final passed = _nearCorrectCount >= 4;
-      _nearLetterIndex = 0;
-      _nearCorrectCount = 0;
-      if (passed) {
-        _nearLastPassedRow = _nearRow;
-        _advanceNearStaircase(passed: true);
-      } else {
-        _advanceNearStaircase(passed: false);
-      }
-    });
+    _controller.recordNearResponse(correct);
   }
 
   void _recordNearCantTell() {
-    setState(() {
-      _nearCantTellCount++;
-      _nearLetterIndex++;
-      if (_nearLetterIndex < 5) {
-        _generateNearRotation();
-        return;
-      }
-      final passed = _nearCorrectCount >= 4;
-      _nearLetterIndex = 0;
-      _nearCorrectCount = 0;
-      _advanceNearStaircase(passed: passed);
-    });
-  }
-
-  void _advanceNearStaircase({required bool passed}) {
-    if (_nearStaircasePhase) {
-      if (passed) {
-        _nearStaircaseJumpIndex++;
-        if (_nearStaircaseJumpIndex >= _staircaseJumps.length) {
-          _finishNear(_rows[_nearLastPassedRow]['logmar'] as String);
-          return;
-        }
-        _nearRow = _staircaseJumps[_nearStaircaseJumpIndex];
-      } else {
-        _nearStaircasePhase = false;
-        _nearRow = (_nearRow + 1).clamp(0, _rows.length - 1);
-        if (_nearRow >= _rows.length - 1) {
-          _finishNear(_rows[_nearLastPassedRow]['logmar'] as String);
-          return;
-        }
-      }
-    } else {
-      if (passed) {
-        _nearLastPassedRow = _nearRow;
-        final next = _nearRow - 1;
-        if (next < 0) {
-          _finishNear(_rows[_nearLastPassedRow]['logmar'] as String);
-          return;
-        }
-        _nearRow = next;
-      } else {
-        _finishNear(_rows[_nearLastPassedRow]['logmar'] as String);
-        return;
-      }
-    }
-    _generateNearRotation();
-  }
-
-  void _finishNear(String logmar) {
-    _stopTestTimer();
-    setState(() {
-      _nearResult = {
-        'logmar': logmar,
-        'duration': _testDuration,
-        'cantTell': _nearCantTellCount,
-      };
-      _step = 5;
-    });
-    _saveScreening();
-  }
-
-  Future<void> _saveScreening() async {
-    if (_selectedPatientId == null) return;
-    final profile = await ChwProfilePreferences.load();
-
-    String odLogmar = '';
-    String osLogmar = '';
-    int odCantTell = 0;
-    int osCantTell = 0;
-    String odDuration = '';
-    String osDuration = '';
-
-    for (final r in _eyeResults) {
-      if (r['eye'] == 'OD') {
-        odLogmar = r['logmar'] as String;
-        odCantTell = r['cantTell'] as int;
-        odDuration = r['duration'] as String;
-      } else if (r['eye'] == 'OS') {
-        osLogmar = r['logmar'] as String;
-        osCantTell = r['cantTell'] as int;
-        osDuration = r['duration'] as String;
-      }
-    }
-
-    final nearLogmar = _nearResult?['logmar'] as String? ?? '';
-    final nearCantTell = _nearResult?['cantTell'] as int? ?? 0;
-    final nearDuration = _nearResult?['duration'] as String? ?? '';
-
-    final outcome = _needsReferral ? 'refer' : 'pass';
-
-    final id = await ScreeningRepository.instance.insertScreening({
-      'patient_id': _selectedPatientId,
-      'screening_date': DateTime.now().toIso8601String(),
-      'od_logmar': odLogmar,
-      'os_logmar': osLogmar,
-      'ou_near_logmar': nearLogmar,
-      'od_snellen': odLogmar.isNotEmpty ? VisualAcuity.toSnellen(odLogmar) : '',
-      'os_snellen': osLogmar.isNotEmpty ? VisualAcuity.toSnellen(osLogmar) : '',
-      'ou_near_snellen': nearLogmar.isNotEmpty ? VisualAcuity.toSnellen(nearLogmar) : '',
-      'od_cant_tell': odCantTell,
-      'os_cant_tell': osCantTell,
-      'near_cant_tell': nearCantTell,
-      'od_duration': odDuration,
-      'os_duration': osDuration,
-      'near_duration': nearDuration,
-      'outcome': outcome,
-      'referral_facility': '',
-      'referral_status': outcome == 'refer' ? 'pending' : '',
-      'chw_name': profile.name,
-      'synced': 0,
-    });
-    if (mounted) setState(() => _savedScreeningId = id);
-
-    await _loadUnsyncedCount();
-  }
-
-  // ── Unsynced ──────────────────────────────────────────────────────────────
-  Future<void> _loadUnsyncedCount() async {
-    final count = await ScreeningRepository.instance.getUnsyncedCount();
-    if (mounted) setState(() => _unsyncedCount = count);
+    _controller.recordNearCantTell();
   }
 
   // ── VA helpers ────────────────────────────────────────────────────────────
@@ -709,17 +321,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     if (v <= 0.5) return 4.0;
     if (v <= 1.0) return 9.0;
     return 18.0;
-  }
-
-  bool get _needsReferral {
-    final distancePoor = _eyeResults.any((r) {
-      final v = double.tryParse(r['logmar'] as String);
-      return v == null || v > 0.3;
-    });
-    final nearPoor =
-        _nearResult != null &&
-        (double.tryParse(_nearResult!['logmar'] as String) ?? 1.0) > 0.3;
-    return distancePoor || nearPoor;
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
@@ -1218,17 +819,15 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 
   // ── Location detection ────────────────────────────────────────────────────────────
   Future<void> _detectLocation() async {
-    setState(() => _detectingLocation = true);
+    _controller.setDetectingLocation(true);
+    final permission = await PermissionCoordinator.instance
+        .requestScreeningLocation(context);
+    if (!mounted) return;
+    if (!permission.isGranted) {
+      _controller.setDetectingLocation(false);
+      return;
+    }
     try {
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        setState(() => _detectingLocation = false);
-        return;
-      }
       final pos = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.medium,
@@ -1249,14 +848,18 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
         _newVillageCtrl.text = parts.take(2).join(', ');
       }
     } catch (_) {}
-    if (mounted) setState(() => _detectingLocation = false);
+    if (mounted) {
+      _controller.setDetectingLocation(false);
+    }
   }
 
   int _calcAge(DateTime dob) {
     final now = DateTime.now();
     int age = now.year - dob.year;
-    if (now.month < dob.month || (now.month == dob.month && now.day < dob.day))
+    if (now.month < dob.month ||
+        (now.month == dob.month && now.day < dob.day)) {
       age--;
+    }
     return age;
   }
 
@@ -1310,10 +913,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             if (_selectedPatientId != null) ...[
               const SizedBox(height: 8),
               GestureDetector(
-                onTap: () {
-                  setState(() => _step = 1);
-                  _runChecklist();
-                },
+                onTap: _runChecklist,
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 18),
@@ -1426,18 +1026,17 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
                   itemCount: filtered.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (_, i) => _patientCard(filtered[i]),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 8),
+                  itemBuilder: (context, index) =>
+                      _patientCard(filtered[index]),
                 ),
         ),
         if (_selectedPatientId != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
             child: GestureDetector(
-              onTap: () {
-                setState(() => _step = 1);
-                _runChecklist();
-              },
+              onTap: _runChecklist,
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 18),
@@ -1510,7 +1109,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     ),
     child: TextField(
       controller: _patientSearchCtrl,
-      onChanged: (v) => setState(() => _patientQuery = v),
+      onChanged: _controller.setPatientQuery,
       style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF1A2A3D)),
       decoration: InputDecoration(
         hintText: 'Search by name, ID or village...',
@@ -1533,7 +1132,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   );
 
   Widget _newPatientToggle() => GestureDetector(
-    onTap: () => setState(() => _showNewPatientForm = !_showNewPatientForm),
+    onTap: _controller.toggleNewPatientForm,
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
@@ -1631,7 +1230,8 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                               fit: BoxFit.cover,
                               width: 90,
                               height: 90,
-                              errorBuilder: (_, __, ___) => Column(
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   const Icon(
@@ -1722,7 +1322,9 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                         child: child!,
                       ),
                     );
-                    if (picked != null) setState(() => _newDob = picked);
+                    if (picked != null) {
+                      _controller.setNewDob(picked);
+                    }
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -1803,7 +1405,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   children: ['M', 'F'].map((g) {
                     final active = _newGender == g;
                     return GestureDetector(
-                      onTap: () => setState(() => _newGender = g),
+                      onTap: () => _controller.setNewGender(g),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
                         padding: const EdgeInsets.symmetric(
@@ -1913,11 +1515,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               final icon = c['icon'] as IconData;
               final selected = _newConditions.contains(label);
               return GestureDetector(
-                onTap: () => setState(
-                  () => selected
-                      ? _newConditions.remove(label)
-                      : _newConditions.add(label),
-                ),
+                onTap: () => _controller.toggleNewCondition(label),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
                   padding: const EdgeInsets.symmetric(
@@ -1998,12 +1596,11 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                 final age = _calcAge(_newDob!);
 
                 // ── Duplicate detection ──────────────────────
-                final duplicates = await PatientRepository.instance
-                    .findPotentialDuplicates(
-                      name: name,
-                      age: age,
-                      village: vil,
-                    );
+                final duplicates = await _controller.findPotentialDuplicates(
+                  name: name,
+                  age: age,
+                  village: vil,
+                );
 
                 if (duplicates.isNotEmpty && mounted) {
                   final proceed = await showDialog<bool>(
@@ -2016,32 +1613,17 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   if (proceed != true) return;
                 }
 
-                final id = 'PAT-${DateTime.now().millisecondsSinceEpoch}';
-                final newPatient = {
-                  'id': id,
-                  'name': name,
-                  'age': age,
-                  'dob': '${_newDob!.day}/${_newDob!.month}/${_newDob!.year}',
-                  'gender': _newGender,
-                  'village': vil,
-                  'phone': phone,
-                  'conditions': _newConditions.join(', '),
-                  'photo_path': _newPhotoPath ?? '',
-                  'created_at': DateTime.now().toIso8601String(),
-                };
-                await PatientRepository.instance.insertPatient(newPatient);
-                await _loadPatients();
+                await _controller.registerNewPatient(
+                  name: name,
+                  age: age,
+                  dob: _newDob!,
+                  village: vil,
+                  phone: phone,
+                );
                 if (!mounted) return;
-                setState(() {
-                  _selectedPatientId = id;
-                  _showNewPatientForm = false;
-                  _newNameCtrl.clear();
-                  _newVillageCtrl.clear();
-                  _newPhoneCtrl.clear();
-                  _newDob = null;
-                  _newConditions.clear();
-                  _newPhotoPath = null;
-                });
+                _newNameCtrl.clear();
+                _newVillageCtrl.clear();
+                _newPhoneCtrl.clear();
               },
               icon: const Icon(
                 Icons.check_rounded,
@@ -2075,7 +1657,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     final isSelected = _selectedPatientId == p['id'];
     final isNew = p['id']!.startsWith('PAT-NEW');
     return GestureDetector(
-      onTap: () => setState(() => _selectedPatientId = p['id']),
+      onTap: () => _controller.selectPatient(p['id']),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(14),
@@ -2391,7 +1973,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                     builder: (_) => FaceDistanceScreen(
                       onDistanceConfirmed: () {
                         Navigator.pop(context); // close face screen
-                        setState(() => _step = 2); // proceed to cover eye
+                        _controller.prepareNextEye();
                       },
                     ),
                   ),
@@ -2643,7 +2225,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           // Animated eye illustration
           AnimatedBuilder(
             animation: _pulseAnim,
-            builder: (_, __) => Transform.scale(
+            builder: (context, child) => Transform.scale(
               scale: _pulseAnim.value,
               child: Container(
                 width: 160,
@@ -3165,12 +2747,12 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           if (!isLastEye)
             _continueBtn(
               'Test Next Eye (${_eyeOrder[_currentEyeIndex + 1]})',
-              () => setState(() => _step = 2),
+              _controller.prepareNextEye,
             )
           else
             _continueBtn(
               'View Near Vision Test',
-              () => setState(() => _step = 6),
+              _controller.jumpToNearIntro,
             ),
         ],
       ),
@@ -3356,7 +2938,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           const SizedBox(height: 32),
           AnimatedBuilder(
             animation: _pulseAnim,
-            builder: (_, __) => Transform.scale(
+            builder: (context, child) => Transform.scale(
               scale: _pulseAnim.value,
               child: Container(
                 width: 140,
@@ -3627,12 +3209,13 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(5, (i) {
                     Color dotColor;
-                    if (i < _nearLetterIndex)
+                    if (i < _nearLetterIndex) {
                       dotColor = _green;
-                    else if (i == _nearLetterIndex)
+                    } else if (i == _nearLetterIndex) {
                       dotColor = _teal;
-                    else
+                    } else {
                       dotColor = const Color(0xFFEEF2F6);
+                    }
                     return AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       margin: const EdgeInsets.symmetric(horizontal: 4),

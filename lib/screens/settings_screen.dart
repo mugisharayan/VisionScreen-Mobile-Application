@@ -14,12 +14,14 @@ import '../db/database_helper.dart';
 import '../repositories/auth_repository.dart';
 import '../repositories/screening_repository.dart';
 import '../repositories/campaign_repository.dart';
+import '../services/permission_coordinator.dart';
 import '../services/sync/sync_service.dart';
 import '../utils/app_constants.dart';
 import '../utils/haptics.dart';
 import '../utils/id_utils.dart';
+import '../utils/legal_copy.dart';
 
-// â”€â”€ Colours â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Colours
 class _C {
   static const ink = Color(0xFF04091A);
   static const ink2 = Color(0xFF0B1530);
@@ -37,6 +39,8 @@ class _C {
   static const red = Color(0xFFEF4444);
 }
 
+enum _ProfilePhotoAction { camera, gallery, remove }
+
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -45,7 +49,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // â”€â”€ Profile (read-only, from registration) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   String _chwName = '';
   String _chwCenter = '';
   String _chwDistrict = '';
@@ -194,7 +197,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // â”€â”€ Toggles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   bool _hapticFeedback = true;
   bool _brightnessLock = true;
 
@@ -556,7 +558,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ],
                     ),
                     const SizedBox(height: 14),
-                    // â”€â”€ Footer â”€â”€
                     Text(
                       'VisionScreen v1.0',
                       textAlign: TextAlign.center,
@@ -580,7 +581,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // â”€â”€ HEADER â€” Profile Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Header: profile card
   Widget _buildHeader() {
     final initials = _chwName.trim().isNotEmpty
         ? _chwName
@@ -685,7 +686,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 width: 68,
                                 height: 68,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Center(
+                                errorBuilder:
+                                    (context, error, stackTrace) => Center(
                                   child: Text(
                                     initials,
                                     style: GoogleFonts.plusJakartaSans(
@@ -820,7 +822,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // â”€â”€ EDIT PROFILE SHEET â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  Future<bool> _ensureProfilePhotoPermission(_ProfilePhotoAction action) {
+    final uiContext = context;
+    final request = action == _ProfilePhotoAction.camera
+        ? PermissionCoordinator.instance.requestProfilePhotoCamera(uiContext)
+        : PermissionCoordinator.instance.requestProfilePhotoLibrary(uiContext);
+    return request.then((permission) => mounted && permission.isGranted);
+  }
+
   void _showEditProfileSheet() {
     final nameCtrl = TextEditingController(text: _chwName);
     final centerCtrl = TextEditingController(text: _chwCenter);
@@ -906,13 +915,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  // â”€â”€ Profile photo picker â”€â”€
                   Center(
                     child: StatefulBuilder(
                       builder: (_, setPhoto) => GestureDetector(
                         onTap: () async {
-                          final source =
-                              await showModalBottomSheet<ImageSource>(
+                          final action =
+                              await showModalBottomSheet<_ProfilePhotoAction>(
                                 context: ctx,
                                 backgroundColor: Colors.white,
                                 shape: const RoundedRectangleBorder(
@@ -966,7 +974,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                         ),
                                         onTap: () => Navigator.pop(
                                           sheetCtx,
-                                          ImageSource.camera,
+                                          _ProfilePhotoAction.camera,
                                         ),
                                       ),
                                       ListTile(
@@ -997,7 +1005,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                         ),
                                         onTap: () => Navigator.pop(
                                           sheetCtx,
-                                          ImageSource.gallery,
+                                          _ProfilePhotoAction.gallery,
                                         ),
                                       ),
                                       if (photoPath.isNotEmpty)
@@ -1026,25 +1034,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                               color: _C.red,
                                             ),
                                           ),
-                                          onTap: () =>
-                                              Navigator.pop(sheetCtx, null),
+                                          onTap: () => Navigator.pop(
+                                            sheetCtx,
+                                            _ProfilePhotoAction.remove,
+                                          ),
                                         ),
                                       const SizedBox(height: 8),
                                     ],
                                   ),
                                 ),
                               );
-                          if (source == null && photoPath.isNotEmpty) {
+                          if (action == _ProfilePhotoAction.remove) {
                             setPhoto(() => photoPath = '');
                             setSheet(() {});
                             return;
                           }
-                          if (source == null) return;
+                          if (action == null) return;
+                          if (!await _ensureProfilePhotoPermission(action)) {
+                            return;
+                          }
                           final picked = await picker.pickImage(
-                            source: source,
+                            source: action == _ProfilePhotoAction.camera
+                                ? ImageSource.camera
+                                : ImageSource.gallery,
                             imageQuality: 80,
                             maxWidth: 400,
                           );
+                          if (!mounted) return;
                           if (picked != null) {
                             setPhoto(() => photoPath = picked.path);
                             setSheet(() {});
@@ -1343,7 +1359,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // â”€â”€ SECTION CARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildSection({
     required String title,
     required List<Widget> children,
@@ -1419,7 +1434,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return result;
   }
 
-  // â”€â”€ UNIFIED ROW BUILDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildRow({
     required Color badgeColor,
     required IconData badgeIcon,
@@ -1512,7 +1526,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // â”€â”€ CHW BADGE ID ROW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildChwIdRow() {
     return ClipRRect(
       borderRadius: const BorderRadius.only(
@@ -1700,7 +1713,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // â”€â”€ CUSTOM TOGGLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildToggle({
     required bool value,
     required ValueChanged<bool> onChanged,
@@ -1742,7 +1754,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // â”€â”€ ABOUT & HELP HELPERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   void _showSnack(String msg, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1990,28 +2001,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: 'Terms of Service',
         icon: Icons.gavel_rounded,
         iconColor: _C.teal,
-        sections: const [
-          _LegalSection(
-            '1. Purpose',
-            'VisionScreen is a mobile screening application for trained Community Health Workers (CHWs) and organised community eye-health programmes.',
-          ),
-          _LegalSection(
-            '2. Authorised Use',
-            'This application is intended for registered CHWs, supervised trainees, and authorised programme administrators working within recognised health facilities and screening programmes.',
-          ),
-          _LegalSection(
-            '3. Patient Data',
-            'All patient data is subject to the Uganda Data Protection and Privacy Act 2019. CHWs must obtain verbal informed consent before screening.',
-          ),
-          _LegalSection(
-            '4. Clinical Disclaimer',
-            'VisionScreen is a screening tool, not a diagnostic instrument. All clinical decisions must be made by a licensed eye care professional.',
-          ),
-          _LegalSection(
-            '5. Amendments',
-            'These Terms may be updated periodically. Continued use of VisionScreen constitutes acceptance of the updated terms.',
-          ),
-        ],
+        sections: termsOfServiceSections
+            .map((section) => _LegalSection(section.heading, section.body))
+            .toList(growable: false),
       ),
     );
   }
@@ -2025,28 +2017,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: 'Privacy Policy',
         icon: Icons.lock_outline_rounded,
         iconColor: const Color(0xFF38BDF8),
-        sections: const [
-          _LegalSection(
-            '1. Data We Collect',
-            'Patient demographics, visual acuity scores, referral data, device calibration data, and CHW account information.',
-          ),
-          _LegalSection(
-            '2. How We Use It',
-            'Data is used exclusively for vision screening, referral tracking, and anonymised public health analytics. Never sold or shared commercially.',
-          ),
-          _LegalSection(
-            '3. Storage & Security',
-            'Data is stored locally on the device in SQLite and may be synchronized to the configured workspace database when cloud sync is enabled for the build. VisionScreen does not claim encryption or compliance guarantees unless they are explicitly configured and verified in the deployment environment.',
-          ),
-          _LegalSection(
-            '4. Your Rights',
-            'Under the Uganda Data Protection and Privacy Act 2019, you may access, correct, or request erasure of your data at any time.',
-          ),
-          _LegalSection(
-            '5. Contact',
-            'For privacy concerns, contact the VisionScreen programme coordinator or your district health office.',
-          ),
-        ],
+        sections: privacyPolicySections
+            .map((section) => _LegalSection(section.heading, section.body))
+            .toList(growable: false),
       ),
     );
   }
@@ -2719,7 +2692,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return;
       }
 
-      // â”€â”€ Colours â”€â”€
       final teal = PdfColor.fromHex('#0D9488');
       final teal2 = PdfColor.fromHex('#CCFBF1');
       final g900 = PdfColor.fromHex('#0F172A');
@@ -2735,7 +2707,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final amberL = PdfColor.fromHex('#FEF3C7');
       final white = PdfColors.white;
 
-      // â”€â”€ Embedded fonts â”€â”€
       final fontR = await PdfGoogleFonts.nunitoRegular();
       final fontB = await PdfGoogleFonts.nunitoBold();
 
@@ -2752,7 +2723,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final timeStr =
           '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
 
-      // â”€â”€ Helper: single info cell â”€â”€
       pw.Widget infoCell(String label, String value, PdfColor bg) =>
           pw.Expanded(
             child: pw.Container(
@@ -2776,7 +2746,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           );
 
-      // â”€â”€ Helper: outcome badge â”€â”€
       pw.Widget outcomeBadge(String outcome) {
         final label = outcome == 'pass'
             ? 'PASS'
@@ -2800,7 +2769,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       }
 
-      // â”€â”€ Helper: VA box â”€â”€
       pw.Widget vaBox(String eye, String? snellen, String? logmar) =>
           pw.Expanded(
             child: pw.Container(
@@ -2822,7 +2790,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           );
 
-      // â”€â”€ Build one patient card widget â”€â”€
       pw.Widget patientCard(Map<String, dynamic> p, int index) {
         final name = (p['name'] as String?) ?? 'Unknown';
         final age = (p['age'] as int?) ?? 0;
@@ -2863,7 +2830,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              // â”€â”€ Card header â”€â”€
               pw.Container(
                 color: cardBg,
                 padding: const pw.EdgeInsets.fromLTRB(10, 10, 10, 10),
@@ -2903,7 +2869,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
 
-              // â”€â”€ Info row: phone + screening date + CHW â”€â”€
               pw.Container(
                 color: g50,
                 padding: const pw.EdgeInsets.symmetric(
@@ -2927,7 +2892,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
 
-              // â”€â”€ Visual Acuity â”€â”€
               pw.Container(
                 padding: const pw.EdgeInsets.fromLTRB(10, 8, 10, 8),
                 child: pw.Column(
@@ -2948,7 +2912,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
 
-              // â”€â”€ Referral details (only if referred) â”€â”€
               if (isRefer)
                 pw.Container(
                   color: redL,
@@ -2988,7 +2951,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       }
 
-      // â”€â”€ Build PDF â”€â”€
       final pdf = pw.Document();
 
       pdf.addPage(
@@ -3110,7 +3072,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             pw.SizedBox(height: 16),
 
-            // All patient cards â€” flow naturally across pages
             ...patients.asMap().entries.map((e) => patientCard(e.value, e.key)),
           ],
         ),
@@ -3162,7 +3123,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final g100 = PdfColor.fromHex('#F0F4F7');
       final purple = PdfColor.fromHex('#8B5CF6');
 
-      // â”€â”€ Cover page â”€â”€
       pdf.addPage(
         pw.Page(
           pageFormat: PdfPageFormat.a4,
@@ -3251,7 +3211,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       );
 
-      // â”€â”€ One page per campaign â”€â”€
       for (final c in campaigns) {
         final campaignId = c['id'] as String;
         final total = (c['total'] as int?) ?? 0;
@@ -4422,9 +4381,7 @@ class _LegalSection {
   final String body;
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Reusable legal bottom sheet
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _LegalSheet extends StatelessWidget {
   const _LegalSheet({
     required this.title,

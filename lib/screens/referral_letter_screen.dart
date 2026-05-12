@@ -376,8 +376,9 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
     buf.writeln('');
     buf.writeln('${_t('from', 'FROM')}: $chwName');
     buf.writeln('      ${_chwTitleCtrl.text.trim()}');
-    if (_chwId.isNotEmpty)
+    if (_chwId.isNotEmpty) {
       buf.writeln('      ${_t('badge_id', 'Badge ID')}: $_chwId');
+    }
     buf.writeln('');
     buf.writeln('RE: ${_t('referral_letter', 'VISION SCREENING REFERRAL')}');
     buf.writeln('-' * 50);
@@ -446,8 +447,9 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
     buf.writeln('_' * 30);
     buf.writeln(chwName);
     buf.writeln(_chwTitleCtrl.text.trim());
-    if (_chwId.isNotEmpty)
+    if (_chwId.isNotEmpty) {
       buf.writeln('${_t('badge_id', 'Badge ID')}: $_chwId');
+    }
     buf.writeln('${_t('date', 'Date')}: ${widget.screeningDate}');
     return buf.toString();
   }
@@ -1039,11 +1041,12 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
               onPressed: _profileLoaded
                   ? () async {
                       final profile = await ChwProfilePreferences.load();
-                      if (mounted)
+                      if (mounted) {
                         setState(() {
                           _language = profile.referralLanguage;
                           _showLetter = true;
                         });
+                      }
                     }
                   : null,
               icon: const Icon(

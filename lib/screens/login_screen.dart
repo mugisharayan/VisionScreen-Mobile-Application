@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'splash_screen.dart' show AppColors;
 import '../repositories/auth_repository.dart';
+import '../utils/legal_copy.dart';
 import '../widgets/vs_logo.dart';
 
 // ─────────────────────────────────────────────────────────────
@@ -203,8 +204,9 @@ class _LoginScreenState extends State<LoginScreen>
   String? _validateEmail(String value) {
     if (value.trim().isEmpty) return 'Email address is required';
     final emailRegex = RegExp(r'^[\w.+-]+@[\w-]+\.[\w.]+$');
-    if (!emailRegex.hasMatch(value.trim()))
+    if (!emailRegex.hasMatch(value.trim())) {
       return 'Enter a valid email address';
+    }
     return null;
   }
 
@@ -619,7 +621,7 @@ class _AuthHeroZoneState extends State<_AuthHeroZone>
                         // App name — "Vision" white shimmer, "Screen" black shimmer
                         AnimatedBuilder(
                           animation: _shimmerAnim,
-                          builder: (_, __) {
+                          builder: (context, child) {
                             List<double> stops(double v) => [
                               (v - 0.35).clamp(0.0, 1.0),
                               v.clamp(0.0, 1.0),
@@ -1716,8 +1718,9 @@ class _GreenPasswordStrength extends StatelessWidget {
     if (password.length >= 8) s++;
     if (password.length >= 12) s++;
     if (RegExp(r'[A-Z]').hasMatch(password) &&
-        RegExp(r'[0-9]').hasMatch(password))
+        RegExp(r'[0-9]').hasMatch(password)) {
       s++;
+    }
     if (RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(password)) s++;
     if (s >= 4) return 3;
     if (s >= 2) return 2;
@@ -2036,7 +2039,7 @@ class _HeroSectionState extends State<_HeroSection>
             children: [
               AnimatedBuilder(
                 animation: _shimmerCtrl ?? const AlwaysStoppedAnimation(0),
-                builder: (_, __) => Positioned.fill(
+                builder: (context, child) => Positioned.fill(
                   child: CustomPaint(
                     painter: _ShimmerPainter(
                       progress: _shimmerAnim?.value ?? 0.0,
@@ -2063,7 +2066,7 @@ class _HeroSectionState extends State<_HeroSection>
                   const SizedBox(height: 8),
                   AnimatedBuilder(
                     animation: _blinkCtrl ?? const AlwaysStoppedAnimation(1),
-                    builder: (_, __) => Container(
+                    builder: (context, child) => Container(
                       width: 72,
                       height: 72,
                       decoration: BoxDecoration(
@@ -2183,7 +2186,7 @@ class _BlinkingCursorState extends State<_BlinkingCursor>
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: _ctrl,
-    builder: (_, __) => Opacity(
+    builder: (context, child) => Opacity(
       opacity: _ctrl.value,
       child: Text(
         '|',
@@ -2272,57 +2275,27 @@ class _ShimmerPainter extends CustomPainter {
 // ─────────────────────────────────────────────────────────────
 // Terms of Service bottom sheet
 // ─────────────────────────────────────────────────────────────
+List<_LegalSection> _buildLegalSections(Iterable<LegalSectionData> sections) {
+  return sections
+      .map(
+        (section) => _LegalSection(
+          heading: section.heading,
+          body: section.body,
+        ),
+      )
+      .toList(growable: false);
+}
+
 void showTermsOfService(BuildContext context) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => const _LegalSheet(
+    builder: (_) => _LegalSheet(
       title: 'Terms of Service',
       icon: Icons.gavel_rounded,
       iconColor: AppColors.teal,
-      sections: [
-        _LegalSection(
-          heading: '1. Purpose of VisionScreen',
-          body:
-              'VisionScreen is a mobile application designed for trained Community Health Workers (CHWs) and authorised health administrators operating under organised screening programmes. The application supports vision screening using the Tumbling E optotype chart and local patient record keeping.',
-        ),
-        _LegalSection(
-          heading: '2. Clinical Standards & Compliance',
-          body:
-              'VisionScreen uses a structured Tumbling E screening workflow. Results are screening indicators only and do not constitute a clinical diagnosis. Referral decisions and follow-up care must be reviewed by a qualified ophthalmologist, optometrist, or authorised clinician.',
-        ),
-        _LegalSection(
-          heading: '3. Authorised Use',
-          body:
-              'This application is authorised for use only by:\n\n• Registered Community Health Workers under a recognised Ugandan Health Centre (HC II–HC IV)\n• Health administrators with valid MOH credentials\n• Supervised trainees under direct CHW oversight\n\nUnauthorised use, sharing of login credentials or use outside a supervised health programme is strictly prohibited.',
-        ),
-        _LegalSection(
-          heading: '4. Patient Data & Confidentiality',
-          body:
-              'All patient data is subject to the Uganda Data Protection and Privacy Act 2019. CHWs are legally obligated to:\n\n• Obtain verbal informed consent before screening\n• Explain the purpose of data collection to each patient\n• Never share patient records with unauthorised persons\n• Report any data breach immediately to their supervising health officer',
-        ),
-        _LegalSection(
-          heading: '5. Clinical Limitations & Disclaimer',
-          body:
-              'VisionScreen is a screening tool, not a diagnostic instrument. A failed result indicates the need for further clinical evaluation and does not confirm any specific ocular pathology. CHWs must not:\n\n• Diagnose any eye condition based on screening results\n• Prescribe glasses or medication\n• Advise patients to discontinue existing treatment\n\nAll clinical decisions must be made by a licensed eye care professional.',
-        ),
-        _LegalSection(
-          heading: '6. Device & Screen Calibration',
-          body:
-              'Accurate vision screening requires proper device calibration. VisionScreen automatically detects screen PPI and physical dimensions to render optotypes at clinically correct sizes. Users must:\n\n• Ensure the device screen is clean and undamaged\n• Maintain the correct 3-metre testing distance\n• Conduct tests in adequate lighting (minimum 80 lux)\n• Recalibrate if the device or screen is changed',
-        ),
-        _LegalSection(
-          heading: '7. Referral Obligations',
-          body:
-              'When a patient fails the screening threshold, the CHW is obligated to:\n\n• Generate a formal referral document within VisionScreen\n• Communicate the referral to the patient clearly\n• Follow up within 14 days to confirm attendance\n• Record the outcome in the patient screening history\n\nFailure to follow up may constitute a breach of duty of care under the Uganda Allied Health Professionals Act.',
-        ),
-        _LegalSection(
-          heading: '8. Amendments',
-          body:
-              'These Terms may be updated periodically to reflect changes in clinical guidelines, MOH policy or application functionality. Users will be notified of material changes upon next login. Continued use of VisionScreen constitutes acceptance of the updated terms.',
-        ),
-      ],
+      sections: _buildLegalSections(termsOfServiceSections),
     ),
   );
 }
@@ -2335,52 +2308,11 @@ void showPrivacyPolicy(BuildContext context) {
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => const _LegalSheet(
+    builder: (_) => _LegalSheet(
       title: 'Privacy Policy',
       icon: Icons.lock_outline_rounded,
       iconColor: Color(0xFF38BDF8),
-      sections: [
-        _LegalSection(
-          heading: '1. Data Controller',
-          body:
-              'VisionScreen is operated under the supervision of the Uganda Ministry of Health Community Health Division. The data controller responsible for patient information is the registered health facility to which the CHW is assigned.',
-        ),
-        _LegalSection(
-          heading: '2. What Data We Collect',
-          body:
-              'VisionScreen collects the following data:\n\n• Patient demographics: name, age, gender, village, phone number\n• Clinical data: visual acuity scores (OD, OS, OU), LogMAR values, test date and time\n• Referral data: facility name, appointment date, referral status, follow-up outcomes\n• Device data: screen PPI, device model (for calibration only)\n• Account data: CHW name, health centre, district, email address',
-        ),
-        _LegalSection(
-          heading: '3. How We Use Your Data',
-          body:
-              'Data collected is used exclusively for:\n\n• Conducting and recording vision screening assessments\n• Generating clinical referral documents\n• Tracking referral follow-up and patient outcomes\n• Programme monitoring and public health analytics (anonymised)\n• Improving screening accuracy and application performance\n\nData is never sold, rented or shared with commercial third parties.',
-        ),
-        _LegalSection(
-          heading: '4. Data Storage & Security',
-          body:
-              'Patient data is stored locally on the device and may be synchronized to the configured workspace database when cloud sync is enabled for the build.\n\nVisionScreen only claims protections that are actually configured in the deployed environment. This app currently relies on:\n\n• Local account authentication per CHW\n• Role labels stored with account records\n• Workspace ownership metadata for synced records\n• Manual and automatic recovery paths through sync or backup when configured',
-        ),
-        _LegalSection(
-          heading: '5. Patient Consent',
-          body:
-              'Before screening, CHWs must obtain informed verbal consent from the patient or guardian (for minors). Patients have the right to:\n\n• Refuse screening without consequence\n• Request deletion of their records\n• Access their own screening history\n• Know how their data will be used',
-        ),
-        _LegalSection(
-          heading: '6. Data Retention',
-          body:
-              'Patient screening records are retained for a minimum of 5 years in accordance with the Uganda National Health Records and Information Policy. After this period, records may be anonymised for research or permanently deleted upon request from the supervising health officer.',
-        ),
-        _LegalSection(
-          heading: '7. Your Rights',
-          body:
-              'Under the Uganda Data Protection and Privacy Act 2019, you have the right to:\n\n• Access personal data held about you\n• Correct inaccurate or incomplete data\n• Request erasure of your data\n• Object to processing of your data\n• Lodge a complaint with the Personal Data Protection Office of Uganda',
-        ),
-        _LegalSection(
-          heading: '8. Contact',
-          body:
-              'For any privacy-related concerns, data requests or breach reports, contact the VisionScreen programme coordinator or your district health office.',
-        ),
-      ],
+      sections: _buildLegalSections(privacyPolicySections),
     ),
   );
 }

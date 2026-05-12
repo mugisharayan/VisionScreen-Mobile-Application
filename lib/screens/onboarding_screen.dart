@@ -251,7 +251,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             Positioned.fill(
               child: AnimatedBuilder(
                 animation: _particleCtrl,
-                builder: (_, __) => CustomPaint(
+                builder: (_, _) => CustomPaint(
                   painter: _ParticlePainter(
                     progress: _particleCtrl.value,
                     color: slide.accentColor,

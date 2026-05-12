@@ -285,11 +285,12 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
     final rows = await CampaignRepository.instance.getPatientsForCampaign(
       _campaignId!,
     );
-    if (mounted)
+    if (mounted) {
       setState(() {
         _sessionPatients = rows;
         _loadingSummary = false;
       });
+    }
   }
 
   Future<void> _saveFacility() async {
@@ -370,10 +371,12 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
     super.initState();
     if (widget.existingCampaignId != null) {
       _campaignId = widget.existingCampaignId;
-      if (widget.existingCampaignName != null)
+      if (widget.existingCampaignName != null) {
         _campaignNameCtrl.text = widget.existingCampaignName!;
-      if (widget.existingCampaignLocation != null)
+      }
+      if (widget.existingCampaignLocation != null) {
         _locationCtrl.text = widget.existingCampaignLocation!;
+      }
       CampaignRepository.instance
           .getPatientsForCampaign(widget.existingCampaignId!)
           .then((rows) {
@@ -2342,7 +2345,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                             ),
                           ),
                           Text(
-                            '${_locationCtrl.text} · ${_targetGroup}',
+                            '${_locationCtrl.text} · $_targetGroup',
                             style: GoogleFonts.inter(
                               fontSize: 11,
                               color: Colors.white.withValues(alpha: 0.5),

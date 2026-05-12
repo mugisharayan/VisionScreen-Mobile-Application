@@ -108,7 +108,9 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
   @override
   void dispose() {
     _fabCtrl.dispose();
-    for (final c in _itemCtrls) c.dispose();
+    for (final c in _itemCtrls) {
+      c.dispose();
+    }
     super.dispose();
   }
 

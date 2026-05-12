@@ -312,8 +312,10 @@ class _TrainingScreenState extends State<TrainingScreen> {
                             tween: Tween(begin: 0, end: progress),
                             duration: const Duration(milliseconds: 900),
                             curve: Curves.easeOutCubic,
-                            builder: (_, val, __) => LinearProgressIndicator(
-                              value: val,
+                            builder:
+                                (context, value, child) =>
+                                    LinearProgressIndicator(
+                              value: value,
                               minHeight: 6,
                               backgroundColor: Colors.white.withValues(
                                 alpha: 0.15,
@@ -492,7 +494,6 @@ class _TrainingScreenState extends State<TrainingScreen> {
           ),
           child: Row(
             children: [
-              // â”€â”€ Illustration panel (replaces image) â”€â”€
               ClipRRect(
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(14),
@@ -693,7 +694,6 @@ class _TrainingScreenState extends State<TrainingScreen> {
   }
 }
 
-// â”€â”€ Helper: pick illustration painter by module index â”€â”€
 CustomPainter _moduleIllustration(int index) {
   switch (index) {
     case 0:
@@ -707,7 +707,6 @@ CustomPainter _moduleIllustration(int index) {
   }
 }
 
-// â”€â”€ Card dot pattern â”€â”€
 class _CardDotPainter extends CustomPainter {
   const _CardDotPainter({required this.color});
   final Color color;
@@ -728,7 +727,7 @@ class _CardDotPainter extends CustomPainter {
   bool shouldRepaint(_CardDotPainter old) => false;
 }
 
-// â”€â”€ Module 1: Patient Registration â€” person + clipboard â”€â”€
+// Module 1: Patient registration illustration
 class _Module1Painter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -806,7 +805,7 @@ class _Module1Painter extends CustomPainter {
   bool shouldRepaint(_Module1Painter old) => false;
 }
 
-// â”€â”€ Module 2: Vision Testing â€” E chart + eye â”€â”€
+// Module 2: Vision testing illustration
 class _Module2Painter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -868,7 +867,7 @@ class _Module2Painter extends CustomPainter {
   bool shouldRepaint(_Module2Painter old) => false;
 }
 
-// â”€â”€ Module 3: Bulk Mode â€” group of people + campaign flag â”€â”€
+// Module 3: Bulk mode illustration
 class _Module3Painter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -952,7 +951,7 @@ class _Module3Painter extends CustomPainter {
   bool shouldRepaint(_Module3Painter old) => false;
 }
 
-// â”€â”€ Module 4: Referrals â€” letter + calendar + arrow â”€â”€
+// Module 4: Referral illustration
 class _Module4Painter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {

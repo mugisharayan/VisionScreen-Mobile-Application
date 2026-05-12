@@ -1,4 +1,4 @@
-﻿import 'dart:math';
+import 'dart:math';
 import 'package:flutter/material.dart';
 
 // ─────────────────────────────────────────────────────────────
@@ -91,7 +91,7 @@ class _VsLogoAnimatedState extends State<VsLogoAnimated>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: Listenable.merge([_rotation, _dilate]),
-      builder: (_, __) => SizedBox(
+      builder: (_, _) => SizedBox(
         width: widget.size,
         height: widget.size,
         child: CustomPaint(
@@ -439,7 +439,7 @@ class _VsPulsingRingsState extends State<VsPulsingRings>
       double scaleEnd, double opacityStart, double opacityEnd) {
     return AnimatedBuilder(
       animation: ctrl,
-      builder: (_, __) {
+      builder: (_, _) {
         final t = ctrl.value;
         final scale = 1.0 + (scaleEnd - 1.0) * t;
         final opacity = opacityStart + (opacityEnd - opacityStart) * t;

@@ -3,20 +3,13 @@ import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'training_screen.dart';
 import 'notifications_screen.dart';
 import 'patients_screen.dart';
 import 'new_screening_screen.dart';
 import 'bulk_mode_screen.dart';
 import 'analytics_screen.dart';
-import '../repositories/screening_repository.dart';
-import '../services/chw_profile_preferences.dart';
-import '../services/sync/sync_service.dart';
-import '../utils/app_constants.dart';
+import '../features/home/home_controller.dart';
 import '../utils/app_theme.dart';
 import '../utils/page_transitions.dart';
 import '../utils/haptics.dart';
@@ -29,27 +22,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  // -- Data --------------------------------------------------
-  String _chwName = '';
-  String _chwPhoto = '';
-  int _totalScreened = 0;
-  int _totalReferred = 0;
-  int _unsyncedCount = 0;
-  int _notificationCount = 0;
-  bool _isSyncing = false;
-  bool _syncConfigured = false;
-  String _lastSyncError = '';
-  List<Map<String, dynamic>> _recentScreenings = [];
-  List<Map<String, dynamic>> _referredPatients = [];
-
-  // -- UI state ----------------------------------------------
-  bool _isOffline = false;
-  String _locationLabel = 'Detecting location...';
-  DateTime _now = DateTime.now();
-
-  // -- Subscriptions / timers --------------------------------
-  late StreamSubscription<List<ConnectivityResult>> _connectivitySub;
-  late Timer _clockTimer;
+  late final HomeController _controller;
 
   // -- Animations --------------------------------------------
   // Pulse for online dot
@@ -72,9 +45,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late final AnimationController _syncCtrl;
 
   // Tips carousel auto-scroll
-  int _tipIndex = 0;
-  Timer? _tipTimer;
-
   static const _tips = [
     _TipData(
       Icons.wb_sunny_rounded,
@@ -112,6 +82,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _controller = HomeController(tipCount: _tips.length)
+      ..addListener(_handleControllerChanged);
 
     // Pulse
     _pulseCtrl = AnimationController(
@@ -161,84 +133,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 1000),
     )..repeat();
 
-    // Clock
-    _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() => _now = DateTime.now());
-    });
-
-    // Tips carousel
-    _tipTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (mounted) setState(() => _tipIndex = (_tipIndex + 1) % _tips.length);
-    });
-
-    // Connectivity
-    Connectivity().checkConnectivity().then((r) {
-      if (mounted)
-        setState(
-          () => _isOffline = r.every((x) => x == ConnectivityResult.none),
-        );
-    });
-    _connectivitySub = Connectivity().onConnectivityChanged.listen((r) {
-      if (mounted)
-        setState(
-          () => _isOffline = r.every((x) => x == ConnectivityResult.none),
-        );
-    });
-
-    // Load data then animate
-    _loadAll();
-    _fetchLocation();
-  }
-
-  Future<void> _loadAll() async {
-    await Future.wait([_loadChwProfile(), _loadDbStats()]);
-    if (mounted) {
-      _headerCtrl.forward();
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted) _statsCtrl.forward();
-      });
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) _cardCtrl.forward();
-      });
-    }
-  }
-
-  Future<void> _loadChwProfile() async {
-    final profile = await ChwProfilePreferences.load();
-    final p = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() {
-      _chwName = profile.name;
-      _chwPhoto = profile.photoPath;
-      _syncConfigured =
-          p.getBool(AppStrings.prefSyncConfigured) ??
-          SyncService.instance.isConfigured;
-      _lastSyncError = p.getString(AppStrings.prefLastSyncError) ?? '';
-    });
-  }
-
-  Future<void> _loadDbStats() async {
-    final sr = ScreeningRepository.instance;
-    final outcomes = await sr.getOutcomeCounts();
-    final unsynced = await sr.getUnsyncedCount();
-    final recent = await sr.getRecentScreeningsWithPatient(limit: 4);
-    final referred = await sr.getReferredPatients();
-    final notifs = await sr.getNotifications();
-    if (!mounted) return;
-    setState(() {
-      _totalScreened = (outcomes['pass'] ?? 0) + (outcomes['refer'] ?? 0);
-      _totalReferred = outcomes['refer'] ?? 0;
-      _unsyncedCount = unsynced;
-      _recentScreenings = recent;
-      _referredPatients = referred;
-      _notificationCount = notifs.where((n) => n['read'] == false).length;
-    });
+    unawaited(
+      _controller.initialize().then((_) {
+        if (mounted) {
+          _startEntranceAnimations();
+        }
+      }),
+    );
   }
 
   Future<void> _onRefresh() async {
     _statsCtrl.forward(from: 0);
     _cardCtrl.forward(from: 0);
-    await _loadAll();
+    await _controller.refresh();
   }
 
   Future<void> _doSync() async {
@@ -262,18 +169,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       return;
     }
     VsHaptics.medium();
-    setState(() => _isSyncing = true);
-    final result = await SyncService.instance.syncNow();
-    final prefs = await SharedPreferences.getInstance();
-    await _loadDbStats();
+    final result = await _controller.syncNow();
     if (!mounted) return;
-    setState(() {
-      _isSyncing = false;
-      _syncConfigured =
-          prefs.getBool(AppStrings.prefSyncConfigured) ??
-          SyncService.instance.isConfigured;
-      _lastSyncError = prefs.getString(AppStrings.prefLastSyncError) ?? '';
-    });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -291,117 +188,62 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _fetchLocation() async {
-    try {
-      final ok = await Geolocator.isLocationServiceEnabled();
-      if (!ok) {
-        if (mounted) setState(() => _locationLabel = 'Enable location services');
-        return;
-      }
-      var perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied)
-        perm = await Geolocator.requestPermission();
-      if (perm == LocationPermission.denied ||
-          perm == LocationPermission.deniedForever) {
-        if (mounted) setState(() => _locationLabel = 'Location denied');
-        return;
-      }
-      if (mounted) setState(() => _locationLabel = 'Checking location...');
-      final pos = await Geolocator.getLastKnownPosition();
-      if (pos == null) {
-        if (mounted) setState(() => _locationLabel = 'Location unavailable');
-        return;
-      }
-      if (mounted)
-        setState(
-          () => _locationLabel =
-              '${pos.latitude.toStringAsFixed(3)}, ${pos.longitude.toStringAsFixed(3)}',
-        );
-      try {
-        final marks = await placemarkFromCoordinates(
-          pos.latitude,
-          pos.longitude,
-        ).timeout(const Duration(seconds: 6));
-        if (marks.isNotEmpty && mounted) {
-          final parts = [
-            marks.first.subLocality,
-            marks.first.locality,
-            marks.first.administrativeArea,
-          ].whereType<String>().where((s) => s.isNotEmpty).toList();
-          if (parts.isNotEmpty) {
-            setState(() => _locationLabel = parts.join(', '));
-          }
-        }
-      } catch (_) {}
-    } catch (_) {
-      if (mounted) setState(() => _locationLabel = 'Location unavailable');
-    }
+    await _controller.refreshLocation(context);
   }
 
   @override
   void dispose() {
+    _controller
+      ..removeListener(_handleControllerChanged)
+      ..dispose();
     _pulseCtrl.dispose();
     _headerCtrl.dispose();
     _statsCtrl.dispose();
     _cardCtrl.dispose();
     _syncCtrl.dispose();
-    _clockTimer.cancel();
-    _tipTimer?.cancel();
-    _connectivitySub.cancel();
     super.dispose();
   }
 
   // -- Helpers -----------------------------------------------
-  String get _greeting {
-    final h = _now.hour;
-    if (h < 12) return 'Good morning';
-    if (h < 17) return 'Good afternoon';
-    return 'Good evening';
-  }
+  String get _chwPhoto => _controller.chwPhoto;
+  int get _totalScreened => _controller.totalScreened;
+  int get _totalReferred => _controller.totalReferred;
+  int get _unsyncedCount => _controller.unsyncedCount;
+  int get _notificationCount => _controller.notificationCount;
+  bool get _isSyncing => _controller.isSyncing;
+  bool get _syncConfigured => _controller.syncConfigured;
+  String get _lastSyncError => _controller.lastSyncError;
+  List<Map<String, dynamic>> get _recentScreenings => _controller.recentScreenings;
+  List<Map<String, dynamic>> get _referredPatients => _controller.referredPatients;
+  bool get _isOffline => _controller.isOffline;
+  String get _locationLabel => _controller.locationLabel;
+  DateTime get _now => _controller.now;
+  int get _tipIndex => _controller.tipIndex;
+  String get _greeting => _controller.greeting;
+  String get _firstName => _controller.firstName;
+  String get _initials => _controller.initials;
+  String _fmtTime(DateTime dateTime) => _controller.formatTime(dateTime);
+  String _fmtDate(DateTime dateTime) => _controller.formatDate(dateTime);
+  String _timeAgo(String iso) => _controller.timeAgo(iso);
 
-  String get _firstName =>
-      _chwName.trim().isEmpty ? 'CHW' : _chwName.trim().split(' ').first;
-
-  String get _initials => _chwName.trim().isEmpty
-      ? 'VS'
-      : _chwName
-            .trim()
-            .split(' ')
-            .map((w) => w.isEmpty ? '' : w[0])
-            .take(2)
-            .join()
-            .toUpperCase();
-
-  String _fmtTime(DateTime dt) =>
-      '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-
-  String _fmtDate(DateTime dt) {
-    const m = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    const d = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return '${d[dt.weekday - 1]}, ${dt.day} ${m[dt.month - 1]}';
-  }
-
-  String _timeAgo(String iso) {
-    try {
-      final diff = DateTime.now().difference(DateTime.parse(iso));
-      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-      if (diff.inHours < 24) return '${diff.inHours}h ago';
-      return '${diff.inDays}d ago';
-    } catch (_) {
-      return 'Today';
+  void _handleControllerChanged() {
+    if (mounted) {
+      setState(() {});
     }
+  }
+
+  void _startEntranceAnimations() {
+    _headerCtrl.forward();
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        _statsCtrl.forward();
+      }
+    });
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        _cardCtrl.forward();
+      }
+    });
   }
 
   // -- Build -------------------------------------------------
@@ -792,7 +634,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         children: [
           AnimatedBuilder(
             animation: _pulseAnim,
-            builder: (_, __) => Opacity(
+            builder: (context, child) => Opacity(
               opacity: _isOffline ? 1.0 : _pulseAnim.value,
               child: Container(
                 width: 6,
@@ -892,15 +734,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         await Navigator.push(
           context,
           PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const NotificationsScreen(),
-            transitionsBuilder: (_, anim, __, child) => FadeTransition(
-              opacity: CurvedAnimation(parent: anim, curve: Curves.easeOut),
+            pageBuilder: (
+              context,
+              primaryAnimation,
+              secondaryAnimation,
+            ) => const NotificationsScreen(),
+            transitionsBuilder: (
+              context,
+              animation,
+              secondaryAnimation,
+              child,
+            ) => FadeTransition(
+              opacity: CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOut,
+              ),
               child: child,
             ),
             transitionDuration: const Duration(milliseconds: 280),
           ),
         );
-        if (mounted) setState(() => _notificationCount = 0);
+        _controller.clearNotifications();
       },
       child: Stack(
         clipBehavior: Clip.none,
@@ -1005,7 +859,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildStatsRow() {
     return AnimatedBuilder(
       animation: _statsAnim,
-      builder: (_, __) {
+      builder: (context, child) {
         final t = _statsAnim.value;
         return Row(
           children: [
@@ -1297,8 +1151,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                     duration: const Duration(milliseconds: 1200),
                     curve: Curves.easeOutCubic,
-                    builder: (_, v, __) => CircularProgressIndicator(
-                      value: v,
+                    builder: (context, value, child) =>
+                        CircularProgressIndicator(
+                      value: value,
                       strokeWidth: 4,
                       backgroundColor: VsColors.slate200,
                       valueColor: const AlwaysStoppedAnimation(
@@ -1404,7 +1259,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
         ),
-        if (trailing != null) trailing,
+        ...switch (trailing) {
+          final trailingWidget? => [trailingWidget],
+          null => const <Widget>[],
+        },
       ],
     );
   }
@@ -1425,7 +1283,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           VsPageRoute(
             builder: (_) => const NewScreeningScreen(startWithNewPatient: true),
           ),
-        ).then((_) => _loadDbStats()),
+        ).then((_) => _controller.refresh()),
       ),
       _ActionData(
         icon: Icons.groups_rounded,
@@ -1438,7 +1296,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         onTap: () => Navigator.push(
           context,
           VsPageRoute(builder: (_) => const BulkModeScreen()),
-        ).then((_) => _loadDbStats()),
+        ).then((_) => _controller.refresh()),
       ),
       _ActionData(
         icon: Icons.school_rounded,

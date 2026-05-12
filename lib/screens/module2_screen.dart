@@ -120,8 +120,8 @@ class _Module2ScreenState extends State<Module2Screen> {
           GestureDetector(
             onTap: () => Navigator.pop(context),
             child: Container(width: 38, height: 38,
-                decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(11),
-                    border: Border.all(color: Colors.white.withOpacity(0.2))),
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(11),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.2))),
                 child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 18)),
           ),
           const SizedBox(width: 12),
@@ -139,7 +139,7 @@ class _Module2ScreenState extends State<Module2Screen> {
         const SizedBox(height: 14),
         Row(children: List.generate(_steps.length, (i) => Expanded(child: Row(children: [
           Expanded(child: AnimatedContainer(duration: const Duration(milliseconds: 300), height: 4,
-              decoration: BoxDecoration(color: i <= _currentStep ? Colors.white : Colors.white.withOpacity(0.25), borderRadius: BorderRadius.circular(99)))),
+              decoration: BoxDecoration(color: i <= _currentStep ? Colors.white : Colors.white.withValues(alpha: 0.25), borderRadius: BorderRadius.circular(99)))),
           if (i < _steps.length - 1) const SizedBox(width: 4),
         ])))),
         const SizedBox(height: 10),
@@ -172,13 +172,13 @@ class _Module2ScreenState extends State<Module2Screen> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14),
               border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))]),
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))]),
           child: Text(step['body'] as String, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF334155), height: 1.7)),
         ),
         const SizedBox(height: 14),
         Container(
           padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(color: color.withOpacity(0.06), borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withOpacity(0.2))),
+          decoration: BoxDecoration(color: color.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withValues(alpha: 0.2))),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Icon(Icons.lightbulb_rounded, size: 16, color: color),
             const SizedBox(width: 10),
@@ -222,9 +222,9 @@ class _Module2ScreenState extends State<Module2Screen> {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 14),
               decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [color, color.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                gradient: LinearGradient(colors: [color, color.withValues(alpha: 0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight),
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: [BoxShadow(color: color.withOpacity(0.35), blurRadius: 12, offset: const Offset(0, 4))],
+                boxShadow: [BoxShadow(color: color.withValues(alpha: 0.35), blurRadius: 12, offset: const Offset(0, 4))],
               ),
               child: Center(child: Text(isLast ? 'Complete Module ✓' : 'Next Step →',
                   style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white))),

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math';
 import '../repositories/screening_repository.dart';
@@ -1494,7 +1494,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       'Hypertension': (Color(0xFFFF6B35), Icons.favorite_rounded),
       'Previous Surgery': (Color(0xFF6366F1), Icons.medical_services_rounded),
     };
-    const Color _defaultColor = Color(0xFF8FA0B4);
+    const Color defaultColor = Color(0xFF8FA0B4);
 
     // Sort by count descending, take top 9
     final sorted = _conditionCounts.entries.toList()
@@ -1588,7 +1588,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   children: entries.map((entry) {
                     final name = entry.key;
                     final count = entry.value;
-                    final color = palette[name]?.$1 ?? _defaultColor;
+                    final color = palette[name]?.$1 ?? defaultColor;
                     final icon = palette[name]?.$2 ?? Icons.circle;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 10),
@@ -3048,7 +3048,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final elderly = _ageGroups['60+'] ?? 0;
     final total = _ageGroups.values.fold(0, (s, v) => s + v);
 
-    Widget _card(
+    Widget card(
       int count,
       String label,
       String ageRange,
@@ -3219,7 +3219,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: _card(
+                          child: card(
                             children,
                             'Children',
                             'Ages 0 \u2013 17',
@@ -3229,7 +3229,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         ),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: _card(
+                          child: card(
                             youth,
                             'Youth',
                             'Ages 18 \u2013 40',
@@ -3243,7 +3243,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: _card(
+                          child: card(
                             adults,
                             'Adults',
                             'Ages 41 \u2013 60',
@@ -3253,7 +3253,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         ),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: _card(
+                          child: card(
                             elderly,
                             'Elderly',
                             'Ages 60+',
@@ -3831,12 +3831,13 @@ class _PassRateTrendPainter extends CustomPainter {
       final x = xOf(i);
       final y = yOf(passData[i]);
       final isPeak = passData[i] == passData.reduce(max);
-      if (isPeak)
+      if (isPeak) {
         canvas.drawCircle(
           Offset(x, y),
           10,
           Paint()..color = _teal3.withValues(alpha: 0.2),
         );
+      }
       canvas.drawCircle(
         Offset(x, y),
         isPeak ? 6 : 4,

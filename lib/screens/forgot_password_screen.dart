@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'splash_screen.dart' show AppColors;
 import 'auth_widgets.dart';
@@ -218,7 +218,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                                 // App name — "Vision" white shimmer, "Screen" black shimmer
                                 AnimatedBuilder(
                                   animation: _shimmerAnim,
-                                  builder: (_, __) {
+                                  builder: (_, _) {
                                     List<double> stops(double v) => [
                                       (v - 0.35).clamp(0.0, 1.0),
                                       v.clamp(0.0, 1.0),

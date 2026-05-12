@@ -1,4 +1,4 @@
-﻿import 'dart:math';
+import 'dart:math';
 import 'package:flutter/material.dart';
 
 // ─────────────────────────────────────────────────────────────
@@ -40,7 +40,7 @@ class _ChwIllustrationState extends State<ChwIllustration>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: Listenable.merge([_floatCtrl, _pulseCtrl, _pingCtrl]),
-      builder: (_, __) => Transform.translate(
+      builder: (_, _) => Transform.translate(
         offset: Offset(0, _float.value),
         child: Transform.scale(
           scale: _pulse.value,
@@ -226,7 +226,7 @@ class _EChartIllustrationState extends State<EChartIllustration>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: Listenable.merge([_scanCtrl, _floatCtrl]),
-      builder: (_, __) => Transform.translate(
+      builder: (_, _) => Transform.translate(
         offset: Offset(0, _float.value),
         child: CustomPaint(
           size: const Size(280, 280),
@@ -378,7 +378,7 @@ class _PatientCareIllustrationState extends State<PatientCareIllustration>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: Listenable.merge([_checkCtrl, _floatCtrl]),
-      builder: (_, __) => Transform.translate(
+      builder: (_, _) => Transform.translate(
         offset: Offset(0, _float.value),
         child: CustomPaint(
           size: const Size(280, 280),
@@ -476,7 +476,7 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: Listenable.merge([_growCtrl, _floatCtrl]),
-      builder: (_, __) => Transform.translate(
+      builder: (_, _) => Transform.translate(
         offset: Offset(0, _float.value),
         child: CustomPaint(
           size: const Size(280, 280),

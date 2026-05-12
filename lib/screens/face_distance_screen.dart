@@ -1,11 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:camera/camera.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import '../services/permission_coordinator.dart';
 
 // ─────────────────────────────────────────────────────────────
 // FaceDistanceScreen
@@ -66,8 +67,7 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
   late final AnimationController _checkCtrl;
   late final Animation<double> _checkScale;
 
-  // ── Average IPD (interpupillary distance) in mm ─────────────
-  // WHO standard adult average: 63mm
+  // ── Assumed adult interpupillary distance in mm ─────────────
   static const double _ipdMm = 63.0;
 
   // ── Focal length — set from first real CameraImage ──────────
@@ -107,7 +107,11 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
     _checkScale = Tween<double>(begin: 0.0, end: 1.0).animate(
         CurvedAnimation(parent: _checkCtrl, curve: Curves.elasticOut));
 
-    _initCamera();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _initCamera();
+      }
+    });
     _initTts();
     // Clear buffer so old readings don't pollute this session
     _distBuffer.clear();
@@ -195,7 +199,8 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
 
   // ── Camera init ─────────────────────────────────────────────
   Future<void> _initCamera() async {
-    final status = await Permission.camera.request();
+    final status = await PermissionCoordinator.instance
+        .requestFaceDistanceCamera(context);
     if (!mounted) return;
     if (!status.isGranted) {
       setState(() => _camReady = false);
@@ -212,7 +217,9 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
       front,
       ResolutionPreset.medium,
       enableAudio: false,
-      imageFormatGroup: ImageFormatGroup.nv21,
+      imageFormatGroup: Platform.isIOS
+          ? ImageFormatGroup.bgra8888
+          : ImageFormatGroup.nv21,
     );
 
     await _camCtrl!.initialize();
@@ -270,7 +277,7 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
 
       // ── Distance estimation using hardware focal length ──────
       // dist_mm = (realSize_mm × focalLength_px) / apparentSize_px
-      // IPD average = 63mm (WHO standard)
+      // Uses the assumed adult average IPD of 63mm.
       final leftEye  = face.landmarks[FaceLandmarkType.leftEye];
       final rightEye = face.landmarks[FaceLandmarkType.rightEye];
 
@@ -290,7 +297,6 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
 
         if (eyeDistPx > 8) {
           // dist_mm = (IPD_mm × focalLength_px) / eyeDistPx
-          // IPD = 63mm (WHO adult average)
           final distMm = (_ipdMm * _focalLengthPx) / eyeDistPx;
           distM = distMm / 1000.0;
         }

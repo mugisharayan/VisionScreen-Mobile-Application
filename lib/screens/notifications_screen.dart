@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../repositories/screening_repository.dart';
 
@@ -51,7 +51,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   void _markAllRead() => setState(() {
-    for (final n in _notifications) n['read'] = true;
+    for (final n in _notifications) {
+      n['read'] = true;
+    }
   });
 
   @override

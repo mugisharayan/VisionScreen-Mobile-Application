@@ -37,7 +37,7 @@ class _Module1IllustrationState extends State<Module1Illustration>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _float,
-      builder: (_, __) => Transform.translate(
+      builder: (_, _) => Transform.translate(
         offset: Offset(0, _float.value),
         child: CustomPaint(
           size: const Size(double.infinity, 160),
@@ -162,7 +162,7 @@ class _Module2IllustrationState extends State<Module2Illustration>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _scan,
-      builder: (_, __) => CustomPaint(
+      builder: (_, _) => CustomPaint(
         size: const Size(double.infinity, 160),
         painter: _Module2Painter(color: widget.color, scanProgress: _scan.value),
       ),
@@ -293,7 +293,7 @@ class _Module3IllustrationState extends State<Module3Illustration>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _pulse,
-      builder: (_, __) => Transform.scale(
+      builder: (_, _) => Transform.scale(
         scale: _pulse.value,
         child: CustomPaint(
           size: const Size(double.infinity, 160),
@@ -418,7 +418,7 @@ class _Module4IllustrationState extends State<Module4Illustration>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _arrow,
-      builder: (_, __) => CustomPaint(
+      builder: (_, _) => CustomPaint(
         size: const Size(double.infinity, 160),
         painter: _Module4Painter(color: widget.color, arrowOffset: _arrow.value),
       ),
