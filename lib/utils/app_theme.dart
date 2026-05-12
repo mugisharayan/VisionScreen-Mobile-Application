@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'screen_utils.dart';
 
 // ─────────────────────────────────────────────────────────────
-// VisionScreen Design System — "Clinical Teal"
-// Single source of truth for all colors, typography, and theme.
+// VisionScreen Design System
+//
+// Single source of truth. Five type sizes, four palette roles,
+// six spacing values. Resist adding more.
 // ─────────────────────────────────────────────────────────────
 
 class VsColors {
   VsColors._();
 
-  // ── Brand ──────────────────────────────────────────────────
+  // ── Brand (primary actions only) ───────────────────────────
   static const brand      = Color(0xFF0D9488); // Teal 600 — primary
-  static const brandDark  = Color(0xFF0F766E); // Teal 700 — pressed / gradient end
-  static const brandDeep  = Color(0xFF134E4A); // Teal 900 — hero backgrounds
-  static const brandLight = Color(0xFFCCFBF1); // Teal 100 — tinted chips
-  static const brandFaint = Color(0xFFF0FDFA); // Teal 50  — card backgrounds
+  static const brandDark  = Color(0xFF0F766E); // Teal 700 — pressed
+  static const brandDeep  = Color(0xFF134E4A); // Teal 900 — hero / splash
+  static const brandLight = Color(0xFFCCFBF1); // Teal 100 — tinted chip bg
+  static const brandFaint = Color(0xFFF0FDFA); // Teal 50  — tinted surface
 
-  // ── Slate (neutral) ────────────────────────────────────────
+  // ── Slate (neutral chrome) ─────────────────────────────────
   static const slate900 = Color(0xFF0F172A);
   static const slate800 = Color(0xFF1E293B);
   static const slate700 = Color(0xFF334155);
@@ -29,148 +30,118 @@ class VsColors {
   static const slate100 = Color(0xFFF1F5F9);
   static const slate50  = Color(0xFFF8FAFC);
 
-  // ── Semantic ───────────────────────────────────────────────
+  // ── Semantic (state, not chrome) ───────────────────────────
   static const emerald    = Color(0xFF10B981); // pass
   static const emeraldBg  = Color(0xFFD1FAE5);
-  static const amber      = Color(0xFFF59E0B); // pending / refer
+  static const amber      = Color(0xFFF59E0B); // pending
   static const amberBg    = Color(0xFFFEF3C7);
-  static const rose       = Color(0xFFF43F5E); // urgent / overdue
+  static const rose       = Color(0xFFE11D48); // refer / error
   static const roseBg     = Color(0xFFFFE4E6);
   static const sky        = Color(0xFF0EA5E9); // info / sync
   static const skyBg      = Color(0xFFE0F2FE);
-  static const violet     = Color(0xFF8B5CF6); // training / modules
+  static const violet     = Color(0xFF8B5CF6); // optional accent
   static const violetBg   = Color(0xFFEDE9FE);
 
   // ── Surface ────────────────────────────────────────────────
   static const scaffold = Color(0xFFF8FAFC);
   static const card     = Color(0xFFFFFFFF);
   static const border   = Color(0xFFE2E8F0);
+
+  // Convenience aliases
+  static const text     = slate900;
+  static const muted    = slate500;
+  static const subtle   = slate400;
 }
 
 // ─────────────────────────────────────────────────────────────
-// Typography helpers
+// Typography — five sizes, period.
+// display 32/800   title 22/700   headline 16/600   body 14/400   label 12/500
 // ─────────────────────────────────────────────────────────────
 class VsText {
   VsText._();
 
-  // Display — hero numbers, splash title
   static TextStyle display({Color color = VsColors.slate900}) =>
       GoogleFonts.plusJakartaSans(
-        fontSize: ScreenUtils.sp(28), fontWeight: FontWeight.w800, color: color, height: 1.1);
+        fontSize: 32, fontWeight: FontWeight.w800, color: color, height: 1.1,
+      );
 
-  // H1 — screen titles
-  static TextStyle h1({Color color = VsColors.slate900}) =>
+  static TextStyle title({Color color = VsColors.slate900}) =>
       GoogleFonts.plusJakartaSans(
-        fontSize: ScreenUtils.sp(22), fontWeight: FontWeight.w700, color: color, height: 1.2);
+        fontSize: 22, fontWeight: FontWeight.w700, color: color, height: 1.2,
+      );
 
-  // H2 — section headers
-  static TextStyle h2({Color color = VsColors.slate900}) =>
+  static TextStyle headline({Color color = VsColors.slate900}) =>
       GoogleFonts.plusJakartaSans(
-        fontSize: ScreenUtils.sp(17), fontWeight: FontWeight.w700, color: color, height: 1.3);
+        fontSize: 16, fontWeight: FontWeight.w600, color: color, height: 1.3,
+      );
 
-  // H3 — card titles
-  static TextStyle h3({Color color = VsColors.slate900}) =>
-      GoogleFonts.plusJakartaSans(
-        fontSize: ScreenUtils.sp(15), fontWeight: FontWeight.w600, color: color, height: 1.3);
-
-  // Body — main content
-  static TextStyle body({Color color = VsColors.slate700}) =>
+  static TextStyle body({Color color = VsColors.slate700, FontWeight w = FontWeight.w400}) =>
       GoogleFonts.inter(
-        fontSize: ScreenUtils.sp(14), fontWeight: FontWeight.w400, color: color, height: 1.5);
+        fontSize: 14, fontWeight: w, color: color, height: 1.5,
+      );
 
-  // Body medium
-  static TextStyle bodyMd({Color color = VsColors.slate700}) =>
+  static TextStyle label({Color color = VsColors.slate500, FontWeight w = FontWeight.w500}) =>
       GoogleFonts.inter(
-        fontSize: ScreenUtils.sp(14), fontWeight: FontWeight.w500, color: color, height: 1.5);
+        fontSize: 12, fontWeight: w, color: color, height: 1.4,
+      );
 
-  // Label — metadata, subtitles
-  static TextStyle label({Color color = VsColors.slate500}) =>
-      GoogleFonts.inter(
-        fontSize: ScreenUtils.sp(12), fontWeight: FontWeight.w500, color: color, height: 1.4);
-
-  // Caption — timestamps, hints
-  static TextStyle caption({Color color = VsColors.slate400}) =>
-      GoogleFonts.inter(
-        fontSize: ScreenUtils.sp(11), fontWeight: FontWeight.w400, color: color, height: 1.4);
-
-  // Micro — badges, chips
-  static TextStyle micro({Color color = VsColors.slate600}) =>
-      GoogleFonts.inter(
-        fontSize: ScreenUtils.sp(10), fontWeight: FontWeight.w600, color: color,
-        letterSpacing: 0.3);
-
-  // Number — stat display
-  static TextStyle number({Color color = VsColors.slate900, double size = 28}) =>
-      GoogleFonts.plusJakartaSans(
-        fontSize: size, fontWeight: FontWeight.w800, color: color, height: 1.0);
-
-  // Button
+  // Buttons use body weight so they share the body baseline visually.
   static TextStyle button({Color color = Colors.white}) =>
       GoogleFonts.inter(
-        fontSize: 14, fontWeight: FontWeight.w600, color: color);
+        fontSize: 14, fontWeight: FontWeight.w600, color: color,
+      );
 }
 
 // ─────────────────────────────────────────────────────────────
-// Theme
+// Spacing — six values. No bespoke paddings.
 // ─────────────────────────────────────────────────────────────
-class VsTheme {
-  static ThemeData get light => ThemeData(
-    useMaterial3: true,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: VsColors.brand,
-      brightness: Brightness.light,
-      primary: VsColors.brand,
-      surface: VsColors.scaffold,
-    ),
-    scaffoldBackgroundColor: VsColors.scaffold,
-    textTheme: GoogleFonts.interTextTheme(),
-    appBarTheme: AppBarTheme(
-      backgroundColor: VsColors.scaffold,
-      elevation: 0,
-      titleTextStyle: VsText.h2(),
-      iconTheme: const IconThemeData(color: VsColors.slate900),
-    ),
-    cardTheme: CardThemeData(
-      color: VsColors.card,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: VsColors.border),
-      ),
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: VsColors.brand,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        textStyle: VsText.button(),
-      ),
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: VsColors.slate50,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: VsColors.border),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: VsColors.border),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: VsColors.brand, width: 1.5),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      hintStyle: VsText.body(color: VsColors.slate400),
-    ),
-  );
+class VsSpace {
+  VsSpace._();
+  static const double xs  = 4;
+  static const double sm  = 8;
+  static const double md  = 12;
+  static const double lg  = 16;
+  static const double xl  = 24;
+  static const double xxl = 32;
 }
 
 // ─────────────────────────────────────────────────────────────
-// Shared gradient presets
+// Radii
+// ─────────────────────────────────────────────────────────────
+class VsRadius {
+  VsRadius._();
+  static const double sm   = 8;
+  static const double md   = 12;
+  static const double lg   = 16;
+  static const double pill = 999;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Shadows — keep one card shadow, one elevated shadow. That's it.
+// ─────────────────────────────────────────────────────────────
+class VsShadows {
+  VsShadows._();
+
+  static List<BoxShadow> get card => [
+    BoxShadow(
+      color: VsColors.slate900.withValues(alpha: 0.04),
+      blurRadius: 8,
+      offset: const Offset(0, 2),
+    ),
+  ];
+
+  static List<BoxShadow> get elevated => [
+    BoxShadow(
+      color: VsColors.slate900.withValues(alpha: 0.08),
+      blurRadius: 16,
+      offset: const Offset(0, 4),
+    ),
+  ];
+}
+
+// ─────────────────────────────────────────────────────────────
+// Gradients — reserved for splash, onboarding, single home greeting card.
+// Do not use for buttons, list items, dividers.
 // ─────────────────────────────────────────────────────────────
 class VsGradients {
   VsGradients._();
@@ -186,65 +157,112 @@ class VsGradients {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-
-  static const heroSlide1 = LinearGradient(
-    colors: [Color(0xFF134E4A), Color(0xFF0D9488)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-
-  static const heroSlide2 = LinearGradient(
-    colors: [Color(0xFF1E3A5F), Color(0xFF0EA5E9)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-
-  static const heroSlide3 = LinearGradient(
-    colors: [Color(0xFF064E3B), Color(0xFF10B981)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-
-  static const heroSlide4 = LinearGradient(
-    colors: [Color(0xFF1C1917), Color(0xFF78716C)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
 }
 
 // ─────────────────────────────────────────────────────────────
-// Shared shadow presets
+// ThemeData — InputDecoration filled, app uses Material 3.
 // ─────────────────────────────────────────────────────────────
-class VsShadows {
-  VsShadows._();
-
-  static List<BoxShadow> get card => [
-    BoxShadow(
-      color: VsColors.slate900.withValues(alpha: 0.06),
-      blurRadius: 12,
-      offset: const Offset(0, 4),
+class VsTheme {
+  static ThemeData get light => ThemeData(
+    useMaterial3: true,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: VsColors.brand,
+      brightness: Brightness.light,
+      primary: VsColors.brand,
+      surface: VsColors.card,
     ),
-  ];
-
-  static List<BoxShadow> get brandGlow => [
-    BoxShadow(
-      color: VsColors.brand.withValues(alpha: 0.3),
-      blurRadius: 20,
-      offset: const Offset(0, 6),
+    scaffoldBackgroundColor: VsColors.scaffold,
+    textTheme: GoogleFonts.interTextTheme().apply(
+      bodyColor: VsColors.slate900,
+      displayColor: VsColors.slate900,
     ),
-  ];
-
-  static List<BoxShadow> get fab => [
-    BoxShadow(
-      color: VsColors.brand.withValues(alpha: 0.35),
-      blurRadius: 24,
-      spreadRadius: 2,
-      offset: const Offset(0, 4),
+    appBarTheme: AppBarTheme(
+      backgroundColor: VsColors.scaffold,
+      foregroundColor: VsColors.slate900,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      centerTitle: false,
+      titleTextStyle: VsText.headline(),
+      iconTheme: const IconThemeData(color: VsColors.slate900),
     ),
-    BoxShadow(
-      color: Colors.black.withValues(alpha: 0.08),
-      blurRadius: 8,
-      offset: const Offset(0, 2),
+    cardTheme: CardThemeData(
+      color: VsColors.card,
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(VsRadius.lg),
+        side: const BorderSide(color: VsColors.border),
+      ),
     ),
-  ];
+    dividerColor: VsColors.border,
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: VsColors.brand,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: VsSpace.xl, vertical: VsSpace.md + 2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(VsRadius.md)),
+        textStyle: VsText.button(),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: VsColors.brand,
+        textStyle: VsText.button(color: VsColors.brand),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: VsColors.slate700,
+        side: const BorderSide(color: VsColors.border, width: 1.5),
+        padding: const EdgeInsets.symmetric(horizontal: VsSpace.xl, vertical: VsSpace.md + 2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(VsRadius.md)),
+        textStyle: VsText.button(color: VsColors.slate700),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: VsColors.slate100,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(VsRadius.md),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(VsRadius.md),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(VsRadius.md),
+        borderSide: const BorderSide(color: VsColors.brand, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(VsRadius.md),
+        borderSide: const BorderSide(color: VsColors.rose, width: 1.5),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(VsRadius.md),
+        borderSide: const BorderSide(color: VsColors.rose, width: 1.5),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: VsSpace.lg, vertical: VsSpace.md + 2),
+      hintStyle: VsText.body(color: VsColors.slate400),
+      labelStyle: VsText.label(color: VsColors.slate500),
+      prefixIconColor: VsColors.slate400,
+      suffixIconColor: VsColors.slate400,
+    ),
+    chipTheme: ChipThemeData(
+      backgroundColor: VsColors.card,
+      selectedColor: VsColors.brand,
+      side: const BorderSide(color: VsColors.border),
+      labelStyle: VsText.label(color: VsColors.slate700),
+      secondaryLabelStyle: VsText.label(color: Colors.white),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(VsRadius.pill)),
+      padding: const EdgeInsets.symmetric(horizontal: VsSpace.md, vertical: VsSpace.sm),
+    ),
+    snackBarTheme: SnackBarThemeData(
+      backgroundColor: VsColors.slate900,
+      contentTextStyle: VsText.body(color: Colors.white),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(VsRadius.md)),
+    ),
+  );
 }

@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'auth_widgets.dart';
 import '../repositories/auth_repository.dart';
 import '../utils/app_constants.dart';
 import '../utils/legal_copy.dart';
+import '../utils/app_theme.dart';
 import '../widgets/vs_logo.dart';
 
 // ─────────────────────────────────────────────────────────────
@@ -62,9 +64,9 @@ class _LoginScreenState extends State<LoginScreen>
 
   Future<void> _loadRememberMe() async {
     final prefs = await SharedPreferences.getInstance();
-    final remember = prefs.getBool('remember_me') ?? false;
+    final remember = prefs.getBool(AppStrings.prefRememberMe) ?? false;
     if (remember) {
-      final savedEmail = prefs.getString('remembered_email') ?? '';
+      final savedEmail = prefs.getString(AppStrings.prefRememberedEmail) ?? '';
       setState(() {
         _rememberMe = remember;
         _loginEmailCtrl.text = savedEmail;
@@ -111,14 +113,14 @@ class _LoginScreenState extends State<LoginScreen>
 
     // Persist remember-me preference
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('remember_me', _rememberMe);
+    await prefs.setBool(AppStrings.prefRememberMe, _rememberMe);
     if (_rememberMe) {
       await prefs.setString(
-        'remembered_email',
+        AppStrings.prefRememberedEmail,
         _loginEmailCtrl.text.trim().toLowerCase(),
       );
     } else {
-      await prefs.remove('remembered_email');
+      await prefs.remove(AppStrings.prefRememberedEmail);
     }
 
     if (!mounted) return;
@@ -379,7 +381,7 @@ class _LoginScreenState extends State<LoginScreen>
                           if (_rememberMe) {
                             final prefs = await SharedPreferences.getInstance();
                             await prefs.setString(
-                              'remembered_email',
+                              AppStrings.prefRememberedEmail,
                               v.trim().toLowerCase(),
                             );
                           }
@@ -389,14 +391,14 @@ class _LoginScreenState extends State<LoginScreen>
                         onRememberMeChanged: (v) async {
                           setState(() => _rememberMe = v);
                           final prefs = await SharedPreferences.getInstance();
-                          await prefs.setBool('remember_me', v);
+                          await prefs.setBool(AppStrings.prefRememberMe, v);
                           if (v) {
                             await prefs.setString(
-                              'remembered_email',
+                              AppStrings.prefRememberedEmail,
                               _loginEmailCtrl.text.trim().toLowerCase(),
                             );
                           } else {
-                            await prefs.remove('remembered_email');
+                            await prefs.remove(AppStrings.prefRememberedEmail);
                           }
                         },
                         onLogin: _login,
@@ -474,255 +476,87 @@ class _AuthHeroZone extends StatefulWidget {
 }
 
 class _AuthHeroZoneState extends State<_AuthHeroZone>
-    with TickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   late final AnimationController _entryCtrl;
-  late final AnimationController _logoCtrl;
-  late final AnimationController _shimmerCtrl;
-  late final Animation<Offset> _heroSlide;
   late final Animation<double> _heroOpacity;
-  late final Animation<double> _logoScale;
-  late final Animation<double> _shimmerAnim;
+  late final Animation<Offset> _heroSlide;
 
   @override
   void initState() {
     super.initState();
     _entryCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 700),
-    );
+      duration: const Duration(milliseconds: 500),
+    )..forward();
+    _heroOpacity = CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOut);
     _heroSlide = Tween<Offset>(
-      begin: const Offset(0, -0.5),
+      begin: const Offset(0, -0.08),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic));
-    _heroOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _entryCtrl,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
-      ),
-    );
-
-    _logoCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700),
-    );
-    _logoScale = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _logoCtrl, curve: Curves.elasticOut));
-
-    _shimmerCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2200),
-    )..repeat();
-    _shimmerAnim = Tween<double>(
-      begin: -1.0,
-      end: 2.0,
-    ).animate(CurvedAnimation(parent: _shimmerCtrl, curve: Curves.easeInOut));
-
-    _entryCtrl.forward();
-    Future.delayed(const Duration(milliseconds: 280), () {
-      if (mounted) _logoCtrl.forward();
-    });
   }
 
   @override
   void dispose() {
     _entryCtrl.dispose();
-    _logoCtrl.dispose();
-    _shimmerCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    final keyboardOpen = mq.viewInsets.bottom > 0;
     return SlideTransition(
       position: _heroSlide,
       child: FadeTransition(
         opacity: _heroOpacity,
-        child: ClipPath(
-          clipper: _WaveClipper(),
-          child: Container(
-            width: double.infinity,
-            height: MediaQuery.of(context).size.height * 0.48,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF134E4A), Color(0xFF0D9488)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          width: double.infinity,
+          height: keyboardOpen ? 120 : 220,
+          decoration: const BoxDecoration(gradient: VsGradients.hero),
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      VsLogo(size: keyboardOpen ? 32 : 44, showRing: false),
+                      const SizedBox(width: 10),
+                      Text(
+                        'VisionScreen',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: keyboardOpen ? 18 : 22,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (!keyboardOpen) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.isSignUp ? 'Create your account' : 'Welcome back',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: Colors.white.withValues(alpha: 0.80),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
               ),
-            ),
-            child: Stack(
-              children: [
-                // Dot pattern
-                Positioned.fill(child: CustomPaint(painter: _HeroDotPainter())),
-                // Decorative arcs
-                Positioned(
-                  top: -60,
-                  right: -60,
-                  child: Container(
-                    width: 220,
-                    height: 220,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.07),
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: -15,
-                  right: -15,
-                  child: Container(
-                    width: 130,
-                    height: 130,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.10),
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: -40,
-                  left: -40,
-                  child: Container(
-                    width: 160,
-                    height: 160,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.06),
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                ),
-                // Content
-                SafeArea(
-                  bottom: false,
-                  child: SizedBox.expand(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Logo with pulsing rings — same as splash screen
-                        ScaleTransition(
-                          scale: _logoScale,
-                          child: VsPulsingRings(
-                            color: Colors.white,
-                            size: 220,
-                            child: VsLogoAnimated(size: 110),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        // App name — "Vision" white shimmer, "Screen" black shimmer
-                        AnimatedBuilder(
-                          animation: _shimmerAnim,
-                          builder: (context, child) {
-                            List<double> stops(double v) => [
-                              (v - 0.35).clamp(0.0, 1.0),
-                              v.clamp(0.0, 1.0),
-                              (v + 0.35).clamp(0.0, 1.0),
-                            ];
-                            return Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                ShaderMask(
-                                  blendMode: BlendMode.srcIn,
-                                  shaderCallback: (bounds) => LinearGradient(
-                                    colors: [
-                                      Colors.white.withValues(alpha: 0.55),
-                                      Colors.white,
-                                      Colors.white.withValues(alpha: 0.55),
-                                    ],
-                                    stops: stops(_shimmerAnim.value),
-                                  ).createShader(bounds),
-                                  child: Text(
-                                    'Vision',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 46,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                      letterSpacing: -1.0,
-                                    ),
-                                  ),
-                                ),
-                                ShaderMask(
-                                  blendMode: BlendMode.srcIn,
-                                  shaderCallback: (bounds) => LinearGradient(
-                                    colors: [
-                                      const Color(
-                                        0xFF1A1A1A,
-                                      ).withValues(alpha: 0.7),
-                                      Colors.black,
-                                      const Color(
-                                        0xFF1A1A1A,
-                                      ).withValues(alpha: 0.7),
-                                    ],
-                                    stops: stops(_shimmerAnim.value),
-                                  ).createShader(bounds),
-                                  child: Text(
-                                    'Screen',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 46,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.black,
-                                      letterSpacing: -1.0,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 8),
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 300),
-                          child: Text(
-                            widget.isSignUp
-                                ? 'Create your CHW account'
-                                : 'Sign in to continue',
-                            key: ValueKey(widget.isSignUp),
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              color: Colors.white.withValues(alpha: 0.80),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ), // SizedBox.expand
-              ],
             ),
           ),
         ),
       ),
     );
   }
-}
-
-// Dot pattern for hero
-class _HeroDotPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = Colors.white.withValues(alpha: 0.06)
-      ..style = PaintingStyle.fill;
-    const spacing = 24.0;
-    for (double y = 0; y < size.height; y += spacing) {
-      for (double x = 0; x < size.width; x += spacing) {
-        canvas.drawCircle(Offset(x, y), 1.6, p);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_HeroDotPainter old) => false;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -898,7 +732,7 @@ class _NewLoginFormState extends State<_NewLoginForm>
 
           _stagger(
             1,
-            _UnderlineInputField(
+            AuthUnderlineField(
               controller: widget.emailCtrl,
               label: 'Email',
               hint: 'yourname@gmail.com',
@@ -914,7 +748,7 @@ class _NewLoginFormState extends State<_NewLoginForm>
 
           _stagger(
             2,
-            _UnderlineInputField(
+            AuthUnderlineField(
               controller: widget.passwordCtrl,
               label: 'Password',
               hint: '••••••••',
@@ -1007,7 +841,7 @@ class _NewLoginFormState extends State<_NewLoginForm>
             4,
             Column(
               children: [
-                _GreenPillButton(
+                AuthGreenPillButton(
                   label: 'Sign In',
                   icon: Icons.login_rounded,
                   loading: widget.loading,
@@ -1209,7 +1043,7 @@ class _NewSignUpFormState extends State<_NewSignUpForm>
         const SizedBox(height: 22),
         _s(
           1,
-          _UnderlineInputField(
+          AuthUnderlineField(
             controller: widget.nameCtrl,
             label: 'Full Name',
             hint: 'Your full name',
@@ -1223,7 +1057,7 @@ class _NewSignUpFormState extends State<_NewSignUpForm>
         const SizedBox(height: 18),
         _s(
           2,
-          _UnderlineInputField(
+          AuthUnderlineField(
             controller: widget.centreCtrl,
             label: 'Health Center',
             hint: 'e.g. Nakawa HC III',
@@ -1237,7 +1071,7 @@ class _NewSignUpFormState extends State<_NewSignUpForm>
         const SizedBox(height: 18),
         _s(
           3,
-          _UnderlineInputField(
+          AuthUnderlineField(
             controller: widget.districtCtrl,
             label: 'District',
             hint: 'e.g. Kampala',
@@ -1251,7 +1085,7 @@ class _NewSignUpFormState extends State<_NewSignUpForm>
         const SizedBox(height: 18),
         _s(
           4,
-          _UnderlineInputField(
+          AuthUnderlineField(
             controller: widget.emailCtrl,
             label: 'Email Address',
             hint: 'yourname@gmail.com',
@@ -1276,7 +1110,7 @@ class _NewSignUpFormState extends State<_NewSignUpForm>
         const SizedBox(height: 18),
         _s(
           6,
-          _UnderlineInputField(
+          AuthUnderlineField(
             controller: widget.passwordCtrl,
             label: 'Password',
             hint: 'Create a strong password',
@@ -1308,7 +1142,7 @@ class _NewSignUpFormState extends State<_NewSignUpForm>
         const SizedBox(height: 18),
         _s(
           7,
-          _UnderlineInputField(
+          AuthUnderlineField(
             controller: widget.confirmPasswordCtrl,
             label: 'Confirm Password',
             hint: 'Re-enter your password',
@@ -1346,7 +1180,7 @@ class _NewSignUpFormState extends State<_NewSignUpForm>
           9,
           Column(
             children: [
-              _GreenPillButton(
+              AuthGreenPillButton(
                 label: 'Create Account',
                 icon: Icons.person_add_outlined,
                 onTap: widget.onSignUp,
@@ -1548,36 +1382,14 @@ class _UnderlinePhoneFieldState extends State<_UnderlinePhoneField> {
         const SizedBox(height: 2),
         Row(
           children: [
-            // +256 badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: _focused
-                    ? AppColors.green.withValues(alpha: 0.08)
-                    : AppColors.greenHero,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: _focused
-                      ? AppColors.green.withValues(alpha: 0.4)
-                      : AppColors.borderColor,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('🇺🇬', style: TextStyle(fontSize: 13)),
-                  const SizedBox(width: 4),
-                  Text(
-                    '+256',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: _focused
-                          ? AppColors.greenDark
-                          : AppColors.textMuted,
-                    ),
-                  ),
-                ],
+            // Inline +256 prefix — quieter than a teal pill
+            Text(
+              '+256',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMuted,
+                letterSpacing: 0.5,
               ),
             ),
             const SizedBox(width: 10),
@@ -2122,279 +1934,4 @@ class _LegalSectionWidget extends StatelessWidget {
       ],
     );
   }
-}
-
-// ─────────────────────────────────────────────────────────────
-// Phase 3 — Shared Auth UI Components
-// ─────────────────────────────────────────────────────────────
-
-// Underline-only input field (green focus border)
-class _UnderlineInputField extends StatefulWidget {
-  const _UnderlineInputField({
-    required this.controller,
-    required this.hint,
-    required this.label,
-    this.obscure = false,
-    this.keyboardType,
-    this.inputAction = TextInputAction.next,
-    this.suffixIcon,
-    this.hasError = false,
-    this.errorText,
-    this.onChanged,
-    this.prefixIcon,
-  });
-
-  final TextEditingController controller;
-  final String hint;
-  final String label;
-  final bool obscure;
-  final TextInputType? keyboardType;
-  final TextInputAction inputAction;
-  final Widget? suffixIcon;
-  final bool hasError;
-  final String? errorText;
-  final ValueChanged<String>? onChanged;
-  final IconData? prefixIcon;
-
-  @override
-  State<_UnderlineInputField> createState() => _UnderlineInputFieldState();
-}
-
-class _UnderlineInputFieldState extends State<_UnderlineInputField> {
-  final _focus = FocusNode();
-  bool _focused = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _focus.addListener(() => setState(() => _focused = _focus.hasFocus));
-  }
-
-  @override
-  void dispose() {
-    _focus.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final lineColor = widget.hasError
-        ? const Color(0xFFEF4444)
-        : _focused
-        ? AppColors.green
-        : AppColors.borderColor;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          widget.label,
-          style: GoogleFonts.inter(
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textMuted,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            if (widget.prefixIcon != null) ...[
-              Icon(
-                widget.prefixIcon,
-                size: 16,
-                color: _focused ? AppColors.green : AppColors.textMuted,
-              ),
-              const SizedBox(width: 8),
-            ],
-            Expanded(
-              child: TextField(
-                controller: widget.controller,
-                focusNode: _focus,
-                obscureText: widget.obscure,
-                keyboardType: widget.keyboardType,
-                textInputAction: widget.inputAction,
-                onChanged: widget.onChanged,
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textDark,
-                ),
-                cursorColor: AppColors.green,
-                decoration: InputDecoration(
-                  hintText: widget.hint,
-                  hintStyle: GoogleFonts.inter(
-                    fontSize: 13,
-                    color: AppColors.textMuted.withValues(alpha: 0.5),
-                  ),
-                  suffixIcon: widget.suffixIcon,
-                  suffixIconConstraints: const BoxConstraints(
-                    minWidth: 0,
-                    minHeight: 0,
-                  ),
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 6),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                ),
-              ),
-            ),
-          ],
-        ),
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          height: 2,
-          decoration: BoxDecoration(
-            color: lineColor,
-            borderRadius: BorderRadius.circular(99),
-          ),
-        ),
-        if (widget.hasError && widget.errorText != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 5),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.error_outline_rounded,
-                  size: 12,
-                  color: Color(0xFFEF4444),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  widget.errorText!,
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    color: const Color(0xFFEF4444),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-// Full-width green pill gradient button
-class _GreenPillButton extends StatefulWidget {
-  const _GreenPillButton({
-    required this.label,
-    required this.onTap,
-    this.loading = false,
-    this.icon,
-  });
-
-  final String label;
-  final VoidCallback onTap;
-  final bool loading;
-  final IconData? icon;
-
-  @override
-  State<_GreenPillButton> createState() => _GreenPillButtonState();
-}
-
-class _GreenPillButtonState extends State<_GreenPillButton> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) {
-        if (!widget.loading) setState(() => _pressed = true);
-      },
-      onTapUp: (_) {
-        if (widget.loading) return;
-        setState(() => _pressed = false);
-        HapticFeedback.mediumImpact();
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedScale(
-        scale: _pressed ? 0.97 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: widget.loading
-                  ? [
-                      AppColors.green.withValues(alpha: 0.5),
-                      AppColors.greenDark.withValues(alpha: 0.5),
-                    ]
-                  : [AppColors.green, AppColors.greenDark],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.green.withValues(alpha: 0.4),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: widget.loading
-              ? const Center(
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (widget.icon != null) ...[
-                      Icon(widget.icon, color: Colors.white, size: 16),
-                      const SizedBox(width: 8),
-                    ],
-                    Text(
-                      widget.label,
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                  ],
-                ),
-        ),
-      ),
-    );
-  }
-}
-
-// Curved wave clipper — white wave transition from hero to form
-class _WaveClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    path.lineTo(0, size.height - 40);
-    path.quadraticBezierTo(
-      size.width * 0.25,
-      size.height,
-      size.width * 0.5,
-      size.height - 20,
-    );
-    path.quadraticBezierTo(
-      size.width * 0.75,
-      size.height - 40,
-      size.width,
-      size.height - 10,
-    );
-    path.lineTo(size.width, 0);
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(_WaveClipper old) => false;
 }

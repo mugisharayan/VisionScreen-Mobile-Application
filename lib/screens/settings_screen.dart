@@ -227,20 +227,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           children: [
             _buildHeader(),
-            // Teal separator line
-            Container(
-              height: 1,
-              margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    _C.teal.withValues(alpha: 0.0),
-                    _C.teal.withValues(alpha: 0.35),
-                    _C.teal.withValues(alpha: 0.0),
-                  ],
-                ),
-              ),
-            ),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(0, 12, 0, 24),
@@ -1430,15 +1416,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
           child: Row(
             children: [
-              // Icon badge
+              // Icon — neutral slate tile, calmer than colored block
               Container(
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: badgeColor,
+                  color: _C.g100,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(badgeIcon, size: 18, color: Colors.white),
+                child: Icon(badgeIcon, size: 18, color: _C.g500),
               ),
               const SizedBox(width: 14),
               // Label + optional subtitle
@@ -1917,10 +1903,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onPressed: () {
                         Navigator.pop(context);
                         SharedPreferences.getInstance().then((prefs) {
-                          prefs.setBool('remember_me', false);
-                          prefs.remove('remembered_email');
-                          prefs.remove('remembered_password');
-                          prefs.remove('remembered_role');
+                          prefs.setBool(AppStrings.prefRememberMe, false);
+                          prefs.remove(AppStrings.prefRememberedEmail);
                         });
                         Navigator.of(
                           context,

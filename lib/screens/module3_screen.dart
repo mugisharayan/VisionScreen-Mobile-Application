@@ -90,7 +90,8 @@ class _Module3ScreenState extends State<Module3Screen> {
   @override
   Widget build(BuildContext context) {
     final step = _steps[_currentStep];
-    final color = step['color'] as Color;
+    // Brand teal for all modules — see module2_screen.dart for rationale.
+    const color = Color(0xFF0D9488);
     final isLast = _currentStep == _steps.length - 1;
 
     return Scaffold(

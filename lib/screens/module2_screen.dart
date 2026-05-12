@@ -90,7 +90,9 @@ class _Module2ScreenState extends State<Module2Screen> {
   @override
   Widget build(BuildContext context) {
     final step = _steps[_currentStep];
-    final color = step['color'] as Color;
+    // Hold brand teal across all steps — the module icon and number
+    // already differentiate this module from the others.
+    const color = Color(0xFF0D9488);
     final isLast = _currentStep == _steps.length - 1;
 
     return Scaffold(

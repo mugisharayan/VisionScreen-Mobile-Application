@@ -1,77 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../utils/app_constants.dart';
 
-// ─────────────────────────────────────────────────────────────
-// Shared Auth Widgets — used by login & forgot password screens
-// ─────────────────────────────────────────────────────────────
+import '../utils/app_theme.dart';
 
-// Curved wave clipper
-class AuthWaveClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    path.lineTo(0, size.height - 40);
-    path.quadraticBezierTo(
-      size.width * 0.25,
-      size.height,
-      size.width * 0.5,
-      size.height - 20,
-    );
-    path.quadraticBezierTo(
-      size.width * 0.75,
-      size.height - 40,
-      size.width,
-      size.height - 10,
-    );
-    path.lineTo(size.width, 0);
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(AuthWaveClipper old) => false;
-}
-
-// Eye painter for hero zones
-class AuthEyePainter extends CustomPainter {
-  const AuthEyePainter({required this.color});
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2, cy = size.height / 2;
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0;
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(cx, cy),
-        width: size.width * 0.9,
-        height: size.height * 0.52,
-      ),
-      paint,
-    );
-    canvas.drawCircle(Offset(cx, cy), size.width * 0.18, paint);
-    canvas.drawCircle(
-      Offset(cx, cy),
-      size.width * 0.09,
-      Paint()..color = color,
-    );
-    canvas.drawCircle(
-      Offset(cx, cy),
-      size.width * 0.04,
-      Paint()..color = Colors.white.withValues(alpha: 0.8),
-    );
-  }
-
-  @override
-  bool shouldRepaint(AuthEyePainter old) => old.color != color;
-}
-
-// Underline-only input field (green focus)
 class AuthUnderlineField extends StatefulWidget {
   const AuthUnderlineField({
     super.key,
@@ -123,33 +54,23 @@ class _AuthUnderlineFieldState extends State<AuthUnderlineField> {
   @override
   Widget build(BuildContext context) {
     final lineColor = widget.hasError
-        ? const Color(0xFFEF4444)
+        ? VsColors.rose
         : _focused
-        ? AppColors.green
-        : AppColors.borderColor;
+        ? VsColors.brand
+        : VsColors.border;
+    final iconColor = _focused ? VsColors.brand : VsColors.muted;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          widget.label,
-          style: GoogleFonts.inter(
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textMuted,
-          ),
-        ),
-        const SizedBox(height: 2),
+        Text(widget.label, style: VsText.label()),
+        const SizedBox(height: VsSpace.xs),
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             if (widget.prefixIcon != null) ...[
-              Icon(
-                widget.prefixIcon,
-                size: 16,
-                color: _focused ? AppColors.green : AppColors.textMuted,
-              ),
-              const SizedBox(width: 8),
+              Icon(widget.prefixIcon, size: 16, color: iconColor),
+              const SizedBox(width: VsSpace.sm),
             ],
             Expanded(
               child: TextField(
@@ -159,25 +80,20 @@ class _AuthUnderlineFieldState extends State<AuthUnderlineField> {
                 keyboardType: widget.keyboardType,
                 textInputAction: widget.inputAction,
                 onChanged: widget.onChanged,
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textDark,
-                ),
-                cursorColor: AppColors.green,
+                style: VsText.body(color: VsColors.text, w: FontWeight.w500),
+                cursorColor: VsColors.brand,
                 decoration: InputDecoration(
                   hintText: widget.hint,
-                  hintStyle: GoogleFonts.inter(
-                    fontSize: 13,
-                    color: AppColors.textMuted.withValues(alpha: 0.5),
-                  ),
+                  hintStyle: VsText.body(color: VsColors.subtle),
                   suffixIcon: widget.suffixIcon,
                   suffixIconConstraints: const BoxConstraints(
                     minWidth: 0,
                     minHeight: 0,
                   ),
                   isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 6),
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: VsSpace.sm,
+                  ),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
@@ -187,30 +103,31 @@ class _AuthUnderlineFieldState extends State<AuthUnderlineField> {
           ],
         ),
         AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 180),
           height: 2,
           decoration: BoxDecoration(
             color: lineColor,
-            borderRadius: BorderRadius.circular(99),
+            borderRadius: BorderRadius.circular(VsRadius.pill),
           ),
         ),
         if (widget.hasError && widget.errorText != null)
           Padding(
-            padding: const EdgeInsets.only(top: 5),
+            padding: const EdgeInsets.only(top: VsSpace.xs + 1),
             child: Row(
               children: [
                 const Icon(
                   Icons.error_outline_rounded,
                   size: 12,
-                  color: Color(0xFFEF4444),
+                  color: VsColors.rose,
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  widget.errorText!,
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    color: const Color(0xFFEF4444),
-                    fontWeight: FontWeight.w500,
+                const SizedBox(width: VsSpace.xs),
+                Expanded(
+                  child: Text(
+                    widget.errorText!,
+                    style: VsText.label(
+                      color: VsColors.rose,
+                      w: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -221,7 +138,6 @@ class _AuthUnderlineFieldState extends State<AuthUnderlineField> {
   }
 }
 
-// Full-width green pill button
 class AuthGreenPillButton extends StatefulWidget {
   const AuthGreenPillButton({
     super.key,
@@ -245,9 +161,15 @@ class _AuthGreenPillButtonState extends State<AuthGreenPillButton> {
 
   @override
   Widget build(BuildContext context) {
+    final background = widget.loading
+        ? VsColors.brand.withValues(alpha: 0.55)
+        : VsColors.brand;
+
     return GestureDetector(
       onTapDown: (_) {
-        if (!widget.loading) setState(() => _pressed = true);
+        if (!widget.loading) {
+          setState(() => _pressed = true);
+        }
       },
       onTapUp: (_) {
         if (widget.loading) return;
@@ -257,30 +179,17 @@ class _AuthGreenPillButtonState extends State<AuthGreenPillButton> {
       },
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedScale(
-        scale: _pressed ? 0.97 : 1.0,
+        scale: _pressed ? 0.98 : 1,
         duration: const Duration(milliseconds: 100),
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          height: 52,
+          padding: const EdgeInsets.symmetric(horizontal: VsSpace.xl),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: widget.loading
-                  ? [
-                      AppColors.green.withValues(alpha: 0.5),
-                      AppColors.greenDark.withValues(alpha: 0.5),
-                    ]
-                  : [AppColors.green, AppColors.greenDark],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.green.withValues(alpha: 0.4),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
-              ),
-            ],
+            color: background,
+            borderRadius: BorderRadius.circular(VsRadius.pill),
+            boxShadow: VsShadows.elevated,
           ),
           child: widget.loading
               ? const Center(
@@ -297,18 +206,10 @@ class _AuthGreenPillButtonState extends State<AuthGreenPillButton> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     if (widget.icon != null) ...[
-                      Icon(widget.icon, color: Colors.white, size: 16),
-                      const SizedBox(width: 8),
+                      Icon(widget.icon, size: 18, color: Colors.white),
+                      const SizedBox(width: VsSpace.sm),
                     ],
-                    Text(
-                      widget.label,
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
+                    Text(widget.label, style: VsText.button()),
                   ],
                 ),
         ),

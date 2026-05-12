@@ -203,87 +203,36 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   // stubs
   Widget _buildHeader() {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF134E4A), Color(0xFF0D9488)],
-        ),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
-        ),
-      ),
-      child: Stack(
-        clipBehavior: Clip.hardEdge,
-        children: [
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'PROGRAMME DATA',
-                            style: GoogleFonts.inter(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white.withValues(alpha: 0.65),
-                              letterSpacing: 1.8,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Analytics',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      // Animated chart icon
-                      TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0.0, end: 1.0),
-                        duration: const Duration(milliseconds: 600),
-                        curve: Curves.elasticOut,
-                        builder: (_, t, child) =>
-                            Transform.scale(scale: t, child: child),
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.25),
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.bar_chart_rounded,
-                            color: Colors.white,
-                            size: 22,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  // Period selector — full width segmented control
-                  _buildPeriodSelector(),
-                ],
+      color: const Color(0xFFF8FAFC),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Analytics',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF0F172A),
+                ),
               ),
-            ),
+              const SizedBox(height: 2),
+              Text(
+                'Programme data',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildPeriodSelector(),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -292,9 +241,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
+        color: const Color(0xFFE2E8F0),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: _periods.map((p) {
@@ -306,17 +254,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 _loadStats();
               },
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 7),
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
                   color: isSelected ? Colors.white : Colors.transparent,
                   borderRadius: BorderRadius.circular(9),
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.12),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
+                            color: Colors.black.withValues(alpha: 0.06),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
                           ),
                         ]
                       : null,
@@ -325,11 +273,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   p,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
                     color: isSelected
                         ? const Color(0xFF0D9488)
-                        : Colors.white.withValues(alpha: 0.75),
+                        : const Color(0xFF64748B),
                   ),
                 ),
               ),
@@ -341,149 +289,55 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Widget _buildStatsCards() {
-    final passRate = _totalScreened > 0 ? (_totalPassed / _totalScreened) : 0.0;
-    final referRate = _totalScreened > 0
-        ? (_totalReferred / _totalScreened)
-        : 0.0;
-    final totalAll = _totalScreened + _totalPending;
-    final pendRate = totalAll > 0 ? (_totalPending / totalAll) : 0.0;
     return Column(
       children: [
         Row(
           children: [
-            _buildStatCard(
-              '$_totalScreened',
-              'Screened',
-              'All time',
-              const Color(0xFF0D9488),
-              Icons.visibility_rounded,
-              1.0,
-            ),
+            _buildStatCard('$_totalScreened', 'Screened', const Color(0xFF0D9488)),
             const SizedBox(width: 8),
-            _buildStatCard(
-              '$_totalPassed',
-              'Passed',
-              '${(passRate * 100).toStringAsFixed(0)}%',
-              const Color(0xFF22C55E),
-              Icons.check_circle_rounded,
-              passRate,
-            ),
+            _buildStatCard('$_totalPassed', 'Passed', const Color(0xFF10B981)),
           ],
         ),
         const SizedBox(height: 8),
         Row(
           children: [
-            _buildStatCard(
-              '$_totalReferred',
-              'Referred',
-              '${(referRate * 100).toStringAsFixed(0)}%',
-              const Color(0xFFF59E0B),
-              Icons.assignment_rounded,
-              referRate,
-            ),
+            _buildStatCard('$_totalReferred', 'Referred', const Color(0xFFE11D48)),
             const SizedBox(width: 8),
-            _buildStatCard(
-              '$_totalPending',
-              'Pending',
-              'Awaiting test',
-              const Color(0xFF8B5CF6),
-              Icons.hourglass_top_rounded,
-              pendRate,
-            ),
+            _buildStatCard('$_totalPending', 'Pending', const Color(0xFFF59E0B)),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildStatCard(
-    String number,
-    String label,
-    String change,
-    Color color,
-    IconData icon,
-    double progress,
-  ) {
+  Widget _buildStatCard(String number, String label, Color tone) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.10),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Icon + change badge row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(9),
-                  ),
-                  child: Icon(icon, color: color, size: 15),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                  child: Text(
-                    change,
-                    style: GoogleFonts.inter(
-                      fontSize: 8,
-                      fontWeight: FontWeight.w700,
-                      color: color,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            // Number
             Text(
               number,
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 22,
+                fontSize: 26,
                 fontWeight: FontWeight.w800,
-                color: const Color(0xFF0F172A),
+                color: tone,
                 height: 1.0,
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 6),
             Text(
               label,
               style: GoogleFonts.inter(
-                fontSize: 10,
+                fontSize: 12,
                 fontWeight: FontWeight.w500,
                 color: const Color(0xFF64748B),
-              ),
-            ),
-            const SizedBox(height: 8),
-            // Thin progress bar
-            ClipRRect(
-              borderRadius: BorderRadius.circular(99),
-              child: LinearProgressIndicator(
-                value: progress.clamp(0.0, 1.0),
-                minHeight: 3,
-                backgroundColor: color.withValues(alpha: 0.10),
-                valueColor: AlwaysStoppedAnimation<Color>(color),
               ),
             ),
           ],

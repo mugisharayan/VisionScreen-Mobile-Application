@@ -151,7 +151,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   int get _nearRotation => _controller.nearRotation;
   Map<String, dynamic>? get _nearResult => _controller.nearResult;
   bool get _isOffline => _controller.isOffline;
-  int get _unsyncedCount => _controller.unsyncedCount;
   int get _countdown => _controller.countdown;
   int get _nearCountdown => _controller.nearCountdown;
   String get _testDuration => _controller.testDuration;
@@ -795,44 +794,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                             color: Colors.white,
                           ),
                         ),
-                        const Spacer(),
-                        if (_unsyncedCount > 0)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(
-                                0xFFF59E0B,
-                              ).withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(99),
-                              border: Border.all(
-                                color: const Color(
-                                  0xFFF59E0B,
-                                ).withValues(alpha: 0.4),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.cloud_off_rounded,
-                                  size: 11,
-                                  color: Color(0xFFF59E0B),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '$_unsyncedCount unsynced',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                    color: const Color(0xFFF59E0B),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
                       ],
                     ],
                   ),

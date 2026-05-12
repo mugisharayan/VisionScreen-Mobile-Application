@@ -253,8 +253,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   child: _buildOfflineBanner(),
                 ),
               ),
-            // Sync banner — only when there's a real sync state to show
-            if (!_syncConfigured || _unsyncedCount > 0)
+            // Sync banner — only when there are unsynced records pending
+            if (_syncConfigured && _unsyncedCount > 0)
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -266,6 +266,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
+                  _buildTodaySummary(),
+                  const SizedBox(height: 20),
                   _buildSectionHeader('Quick Actions', null),
                   _buildActionGrid(),
                   const SizedBox(height: 20),
@@ -480,10 +482,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ],
                       ),
 
-                      const SizedBox(height: 12),
-
-                      // -- Stats row --
-                      _buildStatsRow(),
                     ],
                   ),
                 ),
@@ -492,6 +490,56 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
         ),
       ),
+    );
+  }
+
+  // -- TODAY SUMMARY (stats card under the hero) ------------
+  Widget _buildTodaySummary() {
+    final passed = _totalScreened - _totalReferred;
+    final items = [
+      ('Screened', _totalScreened, VsColors.sky),
+      ('Passed', passed, VsColors.emerald),
+      ('Referred', _totalReferred, VsColors.rose),
+      ('Unsynced', _unsyncedCount, VsColors.amber),
+    ];
+    return AnimatedBuilder(
+      animation: _statsAnim,
+      builder: (_, _) {
+        final t = _statsAnim.value;
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: VsColors.card,
+            borderRadius: BorderRadius.circular(VsRadius.lg),
+            border: Border.all(color: VsColors.border),
+          ),
+          child: Row(
+            children: [
+              for (var i = 0; i < items.length; i++) ...[
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${(items[i].$2 * t).round()}',
+                        style: VsText.title(color: items[i].$3),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(items[i].$1, style: VsText.label()),
+                    ],
+                  ),
+                ),
+                if (i < items.length - 1)
+                  Container(
+                    width: 1,
+                    height: 28,
+                    color: VsColors.border,
+                  ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -598,102 +646,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildStatsRow() {
-    return AnimatedBuilder(
-      animation: _statsAnim,
-      builder: (context, child) {
-        final t = _statsAnim.value;
-        return Row(
-          children: [
-            _statCard(
-              label: 'Screened',
-              value: (_totalScreened * t).round(),
-              icon: Icons.remove_red_eye_rounded,
-              color: VsColors.sky,
-              bg: Colors.white.withValues(alpha: 0.15),
-            ),
-            const SizedBox(width: 8),
-            _statCard(
-              label: 'Passed',
-              value: ((_totalScreened - _totalReferred) * t).round(),
-              icon: Icons.check_circle_rounded,
-              color: VsColors.emerald,
-              bg: Colors.white.withValues(alpha: 0.15),
-            ),
-            const SizedBox(width: 8),
-            _statCard(
-              label: 'Referred',
-              value: (_totalReferred * t).round(),
-              icon: Icons.warning_rounded,
-              color: VsColors.rose,
-              bg: Colors.white.withValues(alpha: 0.15),
-            ),
-            const SizedBox(width: 8),
-            _statCard(
-              label: 'Unsynced',
-              value: (_unsyncedCount * t).round(),
-              icon: Icons.cloud_upload_rounded,
-              color: VsColors.amber,
-              bg: Colors.white.withValues(alpha: 0.15),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _statCard({
-    required String label,
-    required int value,
-    required IconData icon,
-    required Color color,
-    required Color bg,
-  }) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.25),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, size: 14, color: Colors.white),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              '$value',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                height: 1.0,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-              style: GoogleFonts.inter(
-                fontSize: 9,
-                color: Colors.white.withValues(alpha: 0.8),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   // -- BANNERS -----------------------------------------------
   Widget _buildOfflineBanner() {
@@ -883,11 +835,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildActionGrid() {
     final actions = [
       _ActionData(
+        primary: true,
         icon: Icons.remove_red_eye_rounded,
         title: 'New Screening',
         subtitle: 'Register & test patient',
-        color: VsColors.brand,
-        gradientColors: const [Color(0xFF0D9488), Color(0xFF0F766E)],
+        accent: VsColors.brand,
         illustration: const _EyeScanIllustration(),
         onTap: () => Navigator.push(
           context,
@@ -897,11 +849,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ).then((_) => _controller.refresh()),
       ),
       _ActionData(
+        primary: true,
         icon: Icons.groups_rounded,
         title: 'Bulk Mode',
         subtitle: 'Campaign screening',
-        color: VsColors.sky,
-        gradientColors: const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
+        accent: VsColors.brand,
         illustration: const _GroupIllustration(),
         onTap: () => Navigator.push(
           context,
@@ -909,24 +861,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ).then((_) => _controller.refresh()),
       ),
       _ActionData(
+        primary: false,
         icon: Icons.school_rounded,
         title: 'Training',
         subtitle: 'Learn the system',
-        color: VsColors.amber,
-        gradientColors: const [Color(0xFFF59E0B), Color(0xFFD97706)],
-        illustration: const _BookIllustration(),
+        accent: VsColors.amber,
+        illustration: const SizedBox.shrink(),
         onTap: () => Navigator.push(
           context,
           VsPageRoute(builder: (_) => const TrainingScreen()),
         ),
       ),
       _ActionData(
+        primary: false,
         icon: Icons.bar_chart_rounded,
         title: 'Analytics',
         subtitle: 'Programme data',
-        color: VsColors.violet,
-        gradientColors: const [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
-        illustration: const _ChartIllustration(),
+        accent: VsColors.violet,
+        illustration: const SizedBox.shrink(),
         onTap: () => Navigator.push(
           context,
           VsPageRoute(builder: (_) => const AnalyticsScreen()),
@@ -937,7 +889,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return LayoutBuilder(
       builder: (context, constraints) {
         final cardW = (constraints.maxWidth - 12) / 2;
-        const cardH = 148.0;
+        const cardH = 140.0;
         final ratio = cardW / cardH;
 
         return GridView.count(
@@ -948,14 +900,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
           childAspectRatio: ratio,
-          children: actions.map(_buildActionCard).toList(),
+          children: actions.map((a) => _PressableActionCard(data: a)).toList(),
         );
       },
     );
-  }
-
-  Widget _buildActionCard(_ActionData a) {
-    return _PressableActionCard(data: a);
   }
 
   // -- TIP CARD ----------------------------------------------
@@ -975,11 +923,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
       child: Container(
         key: ValueKey(_tipIndex),
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(VsSpace.lg),
         decoration: BoxDecoration(
-          color: tip.color.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: tip.color.withValues(alpha: 0.2)),
+          color: VsColors.card,
+          borderRadius: BorderRadius.circular(VsRadius.lg),
+          border: Border.all(color: VsColors.border),
         ),
         child: Row(
           children: [
@@ -987,34 +935,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: tip.color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
+                color: tip.color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(VsRadius.md),
               ),
               child: Icon(tip.icon, color: tip.color, size: 20),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: VsSpace.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Clinical Tip',
-                    style: GoogleFonts.inter(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: tip.color,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
+                  Text('Tip', style: VsText.label(color: VsColors.slate500)),
+                  const SizedBox(height: 2),
                   Text(
                     tip.text,
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: VsColors.slate700,
-                      fontWeight: FontWeight.w400,
-                      height: 1.4,
-                    ),
+                    style: VsText.body(color: VsColors.slate800),
                   ),
                 ],
               ),
@@ -1579,25 +1514,34 @@ class _TipData {
 
 class _ActionData {
   const _ActionData({
+    required this.primary,
     required this.icon,
     required this.title,
     required this.subtitle,
-    required this.color,
-    required this.gradientColors,
+    required this.accent,
     required this.illustration,
     required this.onTap,
   });
+  final bool primary;
   final IconData icon;
   final String title;
   final String subtitle;
-  final Color color;
-  final List<Color> gradientColors;
+  final Color accent;
   final Widget illustration;
   final VoidCallback onTap;
 }
 
 // -------------------------------------------------------------
-// Pressable Action Card, clinical gradient design
+// Pressable Action Card.
+//
+//   primary  → teal gradient surface, white-on-teal (used for
+//              "New Screening" and "Bulk Mode" — actions the
+//              user is most likely to take on opening the app)
+//   secondary → flat white card with subtle border, slate copy
+//               (used for "Training" and "Analytics" — reference
+//               actions). Accent color appears only on the icon
+//               tile to keep visual hierarchy with the primary
+//               cards.
 // -------------------------------------------------------------
 class _PressableActionCard extends StatefulWidget {
   const _PressableActionCard({required this.data});
@@ -1609,21 +1553,10 @@ class _PressableActionCard extends StatefulWidget {
 
 class _PressableActionCardState extends State<_PressableActionCard>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _pressCtrl;
-  late final Animation<double> _pressScale;
-
-  @override
-  void initState() {
-    super.initState();
-    _pressCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 130),
-    );
-    _pressScale = Tween<double>(
-      begin: 1.0,
-      end: 0.94,
-    ).animate(CurvedAnimation(parent: _pressCtrl, curve: Curves.easeInOut));
-  }
+  late final AnimationController _pressCtrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 100),
+  );
 
   @override
   void dispose() {
@@ -1636,7 +1569,7 @@ class _PressableActionCardState extends State<_PressableActionCard>
     final a = widget.data;
     return GestureDetector(
       onTapDown: (_) {
-        VsHaptics.medium();
+        VsHaptics.light();
         _pressCtrl.forward();
       },
       onTapUp: (_) {
@@ -1647,82 +1580,103 @@ class _PressableActionCardState extends State<_PressableActionCard>
       child: AnimatedBuilder(
         animation: _pressCtrl,
         builder: (_, child) =>
-            Transform.scale(scale: _pressScale.value, child: child),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: a.gradientColors,
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                color: a.color.withValues(alpha: 0.20),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            Transform.scale(scale: 1 - (_pressCtrl.value * 0.03), child: child),
+        child: a.primary ? _primaryCard(a) : _secondaryCard(a),
+      ),
+    );
+  }
+
+  Widget _primaryCard(_ActionData a) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: VsGradients.brand,
+        borderRadius: BorderRadius.circular(VsRadius.lg),
+        boxShadow: [
+          BoxShadow(
+            color: VsColors.brand.withValues(alpha: 0.18),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.20),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(a.icon, color: Colors.white, size: 18),
-                ),
-                SizedBox(height: 32, child: a.illustration),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(child: Center(child: a.illustration)),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            a.title,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              height: 1.1,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            a.subtitle,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                            style: GoogleFonts.inter(
-                              fontSize: 10,
-                              color: Colors.white.withValues(alpha: 0.80),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
+                    Text(
+                      a.title,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: VsText.headline(color: Colors.white),
                     ),
-                    const Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 16,
-                      color: Colors.white,
+                    const SizedBox(height: 2),
+                    Text(
+                      a.subtitle,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: VsText.label(color: Colors.white.withValues(alpha: 0.85)),
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+              const Icon(Icons.arrow_forward_rounded, size: 18, color: Colors.white),
+            ],
           ),
-        ),
+        ],
+      ),
+    );
+  }
+
+  Widget _secondaryCard(_ActionData a) {
+    return Container(
+      decoration: BoxDecoration(
+        color: VsColors.card,
+        borderRadius: BorderRadius.circular(VsRadius.lg),
+        border: Border.all(color: VsColors.border),
+      ),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: a.accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(VsRadius.md),
+            ),
+            child: Icon(a.icon, color: a.accent, size: 20),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                a.title,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: VsText.headline(),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                a.subtitle,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: VsText.label(),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -1953,221 +1907,4 @@ class _GroupPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_GroupPainter old) => false;
-}
-
-// ── 3. Training / Book — open book with graduation cap ──
-class _BookIllustration extends StatelessWidget {
-  const _BookIllustration();
-  @override
-  Widget build(BuildContext context) => CustomPaint(
-    size: const Size(double.infinity, 44),
-    painter: _BookPainter(),
-  );
-}
-
-class _BookPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width, h = size.height;
-    final cx = w * 0.46, cy = h * 0.60;
-
-    final fill = Paint()
-      ..color = Colors.white.withValues(alpha: 0.20)
-      ..style = PaintingStyle.fill;
-
-    final stroke = Paint()
-      ..color = Colors.white.withValues(alpha: 0.90)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.8
-      ..strokeCap = StrokeCap.round;
-
-    final bright = Paint()
-      ..color = Colors.white.withValues(alpha: 0.85)
-      ..style = PaintingStyle.fill;
-
-    // Left page
-    final leftPage = Path();
-    leftPage.moveTo(cx, cy - 16);
-    leftPage.lineTo(cx - 20, cy - 14);
-    leftPage.lineTo(cx - 20, cy + 12);
-    leftPage.lineTo(cx, cy + 10);
-    leftPage.close();
-    canvas.drawPath(leftPage, fill);
-    canvas.drawPath(leftPage, stroke);
-
-    // Right page
-    final rightPage = Path();
-    rightPage.moveTo(cx, cy - 16);
-    rightPage.lineTo(cx + 20, cy - 14);
-    rightPage.lineTo(cx + 20, cy + 12);
-    rightPage.lineTo(cx, cy + 10);
-    rightPage.close();
-    canvas.drawPath(rightPage, fill);
-    canvas.drawPath(rightPage, stroke);
-
-    // Spine line
-    canvas.drawLine(
-      Offset(cx, cy - 16),
-      Offset(cx, cy + 10),
-      stroke..strokeWidth = 2.0,
-    );
-
-    // Lines on left page
-    for (int i = 0; i < 3; i++) {
-      canvas.drawLine(
-        Offset(cx - 16, cy - 8 + i * 6.0),
-        Offset(cx - 4, cy - 8 + i * 6.0),
-        stroke
-          ..strokeWidth = 1.0
-          ..color = Colors.white.withValues(alpha: 0.5),
-      );
-    }
-    // Lines on right page
-    for (int i = 0; i < 3; i++) {
-      canvas.drawLine(
-        Offset(cx + 4, cy - 8 + i * 6.0),
-        Offset(cx + 16, cy - 8 + i * 6.0),
-        stroke
-          ..strokeWidth = 1.0
-          ..color = Colors.white.withValues(alpha: 0.5),
-      );
-    }
-
-    // Graduation cap (top right)
-    final capCx = w * 0.78, capCy = h * 0.22;
-    // Board (diamond)
-    final cap = Path();
-    cap.moveTo(capCx, capCy - 7);
-    cap.lineTo(capCx + 10, capCy - 2);
-    cap.lineTo(capCx, capCy + 3);
-    cap.lineTo(capCx - 10, capCy - 2);
-    cap.close();
-    canvas.drawPath(cap, bright);
-    // Tassel
-    canvas.drawLine(
-      Offset(capCx + 10, capCy - 2),
-      Offset(capCx + 10, capCy + 6),
-      stroke
-        ..strokeWidth = 1.5
-        ..color = Colors.white.withValues(alpha: 0.7),
-    );
-    canvas.drawCircle(Offset(capCx + 10, capCy + 7), 2, bright);
-  }
-
-  @override
-  bool shouldRepaint(_BookPainter old) => false;
-}
-
-// ── 4. Analytics — bar chart + trend line + data points ──
-class _ChartIllustration extends StatelessWidget {
-  const _ChartIllustration();
-  @override
-  Widget build(BuildContext context) => CustomPaint(
-    size: const Size(double.infinity, 44),
-    painter: _ChartPainter(),
-  );
-}
-
-class _ChartPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width, h = size.height;
-    final baseY = h * 0.88;
-    final chartW = w * 0.72;
-    final startX = w * 0.08;
-
-    final barFill = Paint()
-      ..color = Colors.white.withValues(alpha: 0.25)
-      ..style = PaintingStyle.fill;
-
-    final barStroke = Paint()
-      ..color = Colors.white.withValues(alpha: 0.70)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-
-    final linePaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.90)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    final dotFill = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-
-    // Bar heights (normalized 0–1)
-    final bars = [0.45, 0.70, 0.55, 0.85, 0.65];
-    final barW = (chartW / bars.length) * 0.55;
-    final gap = chartW / bars.length;
-
-    // Draw bars
-    for (int i = 0; i < bars.length; i++) {
-      final x = startX + i * gap + gap * 0.22;
-      final barH = bars[i] * h * 0.72;
-      final rect = RRect.fromRectAndRadius(
-        Rect.fromLTWH(x, baseY - barH, barW, barH),
-        const Radius.circular(3),
-      );
-      canvas.drawRRect(rect, barFill);
-      canvas.drawRRect(rect, barStroke);
-    }
-
-    // Trend line over bars (connecting top-center of each bar)
-    final trendPath = Path();
-    for (int i = 0; i < bars.length; i++) {
-      final x = startX + i * gap + gap * 0.22 + barW / 2;
-      final y = baseY - bars[i] * h * 0.72;
-      if (i == 0) {
-        trendPath.moveTo(x, y);
-      } else {
-        // Smooth curve
-        final prevX = startX + (i - 1) * gap + gap * 0.22 + barW / 2;
-        final prevY = baseY - bars[i - 1] * h * 0.72;
-        trendPath.cubicTo(prevX + gap * 0.4, prevY, x - gap * 0.4, y, x, y);
-      }
-    }
-    canvas.drawPath(trendPath, linePaint);
-
-    // Dots on trend line
-    for (int i = 0; i < bars.length; i++) {
-      final x = startX + i * gap + gap * 0.22 + barW / 2;
-      final y = baseY - bars[i] * h * 0.72;
-      canvas.drawCircle(Offset(x, y), 2.8, dotFill);
-    }
-
-    // Baseline
-    canvas.drawLine(
-      Offset(startX - 2, baseY),
-      Offset(startX + chartW + 2, baseY),
-      Paint()
-        ..color = Colors.white.withValues(alpha: 0.35)
-        ..strokeWidth = 1.0,
-    );
-
-    // Up arrow badge (top right)
-    final arrowCx = w * 0.90, arrowCy = h * 0.22;
-    canvas.drawCircle(
-      Offset(arrowCx, arrowCy),
-      9,
-      Paint()
-        ..color = Colors.white.withValues(alpha: 0.22)
-        ..style = PaintingStyle.fill,
-    );
-    final arrow = Path();
-    arrow.moveTo(arrowCx, arrowCy + 4);
-    arrow.lineTo(arrowCx, arrowCy - 4);
-    arrow.moveTo(arrowCx - 3.5, arrowCy - 1);
-    arrow.lineTo(arrowCx, arrowCy - 5);
-    arrow.lineTo(arrowCx + 3.5, arrowCy - 1);
-    canvas.drawPath(
-      arrow,
-      linePaint
-        ..strokeWidth = 1.8
-        ..color = Colors.white.withValues(alpha: 0.9),
-    );
-  }
-
-  @override
-  bool shouldRepaint(_ChartPainter old) => false;
 }

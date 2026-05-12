@@ -12,6 +12,7 @@ import 'bulk_mode_screen.dart';
 import '../widgets/vs_skeleton.dart';
 import '../utils/page_transitions.dart';
 import '../utils/haptics.dart';
+import '../utils/app_theme.dart';
 
 // -- Colours (shared with the rest of the app) --
 const _teal = Color(0xFF0D9488);
@@ -398,385 +399,138 @@ class _PatientsScreenState extends State<PatientsScreen> {
     );
   }
 
-  // -- Header --
+  // -- Header (flat) --
   Widget _buildHeader(int total, int passed, int referred, int pending) {
-    final passRate = total > 0 ? (passed / total * 100).round() : 0;
-
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF0F4C45), Color(0xFF0D9488)],
-        ),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(32),
-          bottomRight: Radius.circular(32),
-        ),
-      ),
-      child: Stack(
-        clipBehavior: Clip.hardEdge,
-        children: [
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      color: VsColors.scaffold,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // -- Title row --
+              Row(
                 children: [
-                  // -- Top bar: title + total badge ----------
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Left: label + title
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Breadcrumb label
-                            Row(
-                              children: [
-                                Container(
-                                  width: 6,
-                                  height: 6,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF5EEAD4),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'PATIENT REGISTRY',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white.withValues(alpha: 0.6),
-                                    letterSpacing: 2.0,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            // Title
-                            Text(
-                              'Patients',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                                height: 1.0,
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                            Text(
-                              '& Referrals',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w800,
-                                color: const Color(0xFF5EEAD4),
-                                height: 1.0,
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Right: animated total circle
-                      TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0.0, end: 1.0),
-                        duration: const Duration(milliseconds: 700),
-                        curve: Curves.elasticOut,
-                        builder: (_, t, child) =>
-                            Transform.scale(scale: t, child: child),
-                        child: Container(
-                          width: 76,
-                          height: 76,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: RadialGradient(
-                              colors: [
-                                Colors.white.withValues(alpha: 0.22),
-                                Colors.white.withValues(alpha: 0.08),
-                              ],
-                            ),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.35),
-                              width: 2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.15),
-                                blurRadius: 16,
-                                offset: const Offset(0, 6),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              TweenAnimationBuilder<int>(
-                                tween: IntTween(begin: 0, end: total),
-                                duration: const Duration(milliseconds: 900),
-                                curve: Curves.easeOutCubic,
-                                builder: (context, value, child) => Text(
-                                  '$value',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    height: 1.0,
-                                  ),
-                                ),
-                              ),
-                              Text(
-                                'total',
-                                style: GoogleFonts.inter(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white.withValues(alpha: 0.65),
-                                ),
-                              ),
-                            ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Patients',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: VsColors.slate900,
+                            height: 1.2,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  // -- Stats row -----------------------------
-                  Row(
-                    children: [
-                      _statChip(
-                        '$passed',
-                        'Passed',
-                        const Color(0xFF34D399),
-                        Icons.check_circle_rounded,
-                        passed / (total == 0 ? 1 : total),
-                      ),
-                      const SizedBox(width: 8),
-                      _statChip(
-                        '$referred',
-                        'Referred',
-                        const Color(0xFFF87171),
-                        Icons.warning_rounded,
-                        referred / (total == 0 ? 1 : total),
-                      ),
-                      const SizedBox(width: 8),
-                      _statChip(
-                        '$pending',
-                        'Pending',
-                        const Color(0xFFFBBF24),
-                        Icons.schedule_rounded,
-                        pending / (total == 0 ? 1 : total),
-                      ),
-                      const SizedBox(width: 8),
-                      _statChip(
-                        '$passRate%',
-                        'Pass Rate',
-                        const Color(0xFF5EEAD4),
-                        Icons.insights_rounded,
-                        passed / (total == 0 ? 1 : total),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  // -- Search bar ----------------------------
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.12),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                        const SizedBox(height: 2),
+                        Text(
+                          '$total registered · $referred referrals',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: VsColors.slate500,
+                          ),
                         ),
                       ],
-                    ),
-                    child: Row(
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.only(left: 14),
-                          child: Icon(
-                            Icons.search_rounded,
-                            size: 18,
-                            color: _teal,
-                          ),
-                        ),
-                        Expanded(
-                          child: TextField(
-                            controller: _searchCtrl,
-                            onChanged: _controller.setQuery,
-                            style: GoogleFonts.inter(
-                              fontSize: 13,
-                              color: const Color(0xFF0F172A),
-                            ),
-                            decoration: InputDecoration(
-                              hintText: 'Search name, ID, village...',
-                              hintStyle: GoogleFonts.inter(
-                                fontSize: 13,
-                                color: const Color(0xFF94A3B8),
-                              ),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 14,
-                              ),
-                            ),
-                          ),
-                        ),
-                        if (_query.isNotEmpty)
-                          GestureDetector(
-                            onTap: () {
-                              _searchCtrl.clear();
-                              _controller.setQuery('');
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.only(right: 12),
-                              child: Container(
-                                width: 22,
-                                height: 22,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFF1F5F9),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.close_rounded,
-                                  size: 13,
-                                  color: Color(0xFF94A3B8),
-                                ),
-                              ),
-                            ),
-                          )
-                        else
-                          Padding(
-                            padding: const EdgeInsets.only(right: 12),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _teal.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                'Search',
-                                style: GoogleFonts.inter(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                  color: _teal,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  // -- Filter chips --------------------------
-                  SizedBox(
-                    height: 32,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      children: [
-                        'All',
-                        'Pass',
-                        'Refer',
-                        'Pending',
-                        'Child',
-                        'Adult',
-                        'Elderly',
-                        'Overdue',
-                        'Notified',
-                        'Attended',
-                        'Completed',
-                        'Cancelled',
-                      ].map((f) => _filterChip(f)).toList(),
                     ),
                   ),
                 ],
               ),
-            ),
+
+              const SizedBox(height: 14),
+
+              // -- Stats row --
+              if (total > 0)
+                Row(
+                  children: [
+                    _statTile('$passed', 'Passed', VsColors.emerald),
+                    const SizedBox(width: 8),
+                    _statTile('$referred', 'Referred', VsColors.rose),
+                    const SizedBox(width: 8),
+                    _statTile('$pending', 'Pending', VsColors.amber),
+                  ],
+                ),
+              if (total > 0) const SizedBox(height: 14),
+
+              // -- Search bar (filled) --
+              TextField(
+                controller: _searchCtrl,
+                onChanged: _controller.setQuery,
+                style: GoogleFonts.inter(fontSize: 14, color: VsColors.slate900),
+                decoration: InputDecoration(
+                  hintText: 'Search name, ID or village',
+                  prefixIcon: const Icon(Icons.search_rounded, size: 20, color: VsColors.slate400),
+                  suffixIcon: _query.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 18),
+                          color: VsColors.slate400,
+                          onPressed: () {
+                            _searchCtrl.clear();
+                            _controller.setQuery('');
+                          },
+                        )
+                      : null,
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // -- Filter chips (essential set only) --
+              SizedBox(
+                height: 36,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    'All',
+                    'Pass',
+                    'Refer',
+                    'Pending',
+                    'Child',
+                    'Adult',
+                    'Elderly',
+                  ].map((f) => _filterChip(f)).toList(),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _statChip(
-    String number,
-    String label,
-    Color color,
-    IconData icon,
-    double ratio,
-  ) {
+  // Flat stat tile (white card with one number + label, accent on number)
+  Widget _statTile(String value, String label, Color tone) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.fromLTRB(10, 9, 10, 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+          color: VsColors.card,
+          borderRadius: BorderRadius.circular(VsRadius.md),
+          border: Border.all(color: VsColors.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 18,
-                  height: 18,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Icon(icon, size: 10, color: color),
-                ),
-                const Spacer(),
-                TweenAnimationBuilder<int>(
-                  tween: IntTween(
-                    begin: 0,
-                    end: int.tryParse(number.replaceAll('%', '')) ?? 0,
-                  ),
-                  duration: const Duration(milliseconds: 800),
-                  curve: Curves.easeOutCubic,
-                  builder: (context, value, child) => Text(
-                    number.contains('%') ? '$value%' : '$value',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                      height: 1.0,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 5),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(99),
-              child: LinearProgressIndicator(
-                value: ratio.clamp(0.0, 1.0),
-                minHeight: 2.5,
-                backgroundColor: Colors.white.withValues(alpha: 0.1),
-                valueColor: AlwaysStoppedAnimation<Color>(color),
+            Text(
+              value,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: tone,
+                height: 1.0,
               ),
             ),
             const SizedBox(height: 4),
             Text(
-              label.toUpperCase(),
+              label,
               style: GoogleFonts.inter(
-                fontSize: 7,
-                fontWeight: FontWeight.w700,
-                color: Colors.white.withValues(alpha: 0.5),
-                letterSpacing: 0.8,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: VsColors.slate500,
               ),
             ),
           ],
@@ -793,32 +547,24 @@ class _PatientsScreenState extends State<PatientsScreen> {
         _controller.setFilter(label);
       },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.only(right: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        duration: const Duration(milliseconds: 180),
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: active ? Colors.white : Colors.white.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(99),
+          color: active ? VsColors.brand : VsColors.card,
+          borderRadius: BorderRadius.circular(VsRadius.pill),
           border: Border.all(
-            color: active ? Colors.white : Colors.white.withValues(alpha: 0.2),
-            width: 1.5,
+            color: active ? VsColors.brand : VsColors.border,
           ),
-          boxShadow: active
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
         ),
-        child: Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 11,
-            fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-            color: active ? _teal : Colors.white.withValues(alpha: 0.7),
+        child: Center(
+          child: Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+              color: active ? Colors.white : VsColors.slate700,
+            ),
           ),
         ),
       ),

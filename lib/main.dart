@@ -281,16 +281,16 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                   color: active ? VsColors.brand : VsColors.slate400,
                 ),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 4),
               Text(
                 item.label,
                 style: GoogleFonts.inter(
-                  fontSize: 9.5,
+                  fontSize: 11,
                   fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                   color: active ? VsColors.brand : VsColors.slate400,
                 ),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 4),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeOutCubic,
