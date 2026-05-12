@@ -13,7 +13,6 @@ import 'screens/forgot_password_screen.dart';
 import 'utils/app_theme.dart';
 import 'utils/page_transitions.dart';
 import 'utils/haptics.dart';
-import 'widgets/vs_logo.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -191,7 +190,7 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
 
           // ── FAB — floats above the bar ──
           Positioned(
-            top: -52,
+            top: -32,
             child: GestureDetector(
               onTapDown: (_) { VsHaptics.medium(); _fabCtrl.forward(); },
               onTapUp: (_) {
@@ -203,34 +202,25 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                 animation: _fabScale,
                 builder: (_, child) =>
                     Transform.scale(scale: _fabScale.value, child: child),
-                child: VsPulsingRings(
-                  color: VsColors.brand,
-                  size: 120,
-                  child: Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.transparent,
-                      border: Border.all(color: Colors.white, width: 4),
-                      boxShadow: [
-                        BoxShadow(
-                          color: VsColors.brand.withValues(alpha: 0.45),
-                          blurRadius: 24,
-                          spreadRadius: 3,
-                          offset: const Offset(0, 4),
-                        ),
-                        BoxShadow(
-                          color: VsColors.brand.withValues(alpha: 0.2),
-                          blurRadius: 40,
-                          spreadRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: ClipOval(
-                      child: VsLogoAnimated(size: 72),
-                    ),
+                child: Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: VsColors.brand,
+                    border: Border.all(color: Colors.white, width: 3),
+                    boxShadow: [
+                      BoxShadow(
+                        color: VsColors.brand.withValues(alpha: 0.35),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.remove_red_eye_rounded,
+                    color: Colors.white,
+                    size: 28,
                   ),
                 ),
               ),

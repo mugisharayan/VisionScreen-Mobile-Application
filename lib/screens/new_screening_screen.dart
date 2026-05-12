@@ -705,8 +705,12 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                       ],
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  _buildStepProgressBar(displayStep, stepLabels),
+                  // Hide the multi-step stepper during the chart steps —
+                  // the examiner is mid-test and already sees per-letter progress.
+                  if (!isDistanceChart && !isNearChart) ...[
+                    const SizedBox(height: 12),
+                    _buildStepProgressBar(displayStep, stepLabels),
+                  ],
                 ],
               ),
             ),
@@ -2414,45 +2418,13 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     // ── Normal chart ─────────────────────────────────────────────────────
     return Column(
       children: [
-        // Row progress
-        LinearProgressIndicator(
-          value: (_currentRow + 1) / _rows.length,
-          backgroundColor: const Color(0xFFEEF2F6),
-          color: _teal,
-          minHeight: 3,
-        ),
-        // Single E display with bounding box + 5-dot progress
+        // Single E display with bounding box — header counter shows letter progress
         Expanded(
           child: Container(
             color: Colors.white,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Spacer(),
-                // 5-dot progress indicator
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(5, (i) {
-                    Color dotColor;
-                    if (i < _letterIndex) {
-                      dotColor = _green;
-                    } else if (i == _letterIndex) {
-                      dotColor = _teal;
-                    } else {
-                      dotColor = const Color(0xFFEEF2F6);
-                    }
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      width: i == _letterIndex ? 20 : 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: dotColor,
-                        borderRadius: BorderRadius.circular(99),
-                      ),
-                    );
-                  }),
-                ),
                 const Spacer(),
                 // E with ETDRS bounding box (hidden when examiner masking on)
                 LayoutBuilder(
@@ -2503,27 +2475,13 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     _dirBtn(Icons.arrow_back_rounded, 2),
-                    const SizedBox(width: 10),
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEEF2F6),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.remove_red_eye_rounded,
-                        size: 20,
-                        color: Color(0xFF8FA0B4),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 60),
                     _dirBtn(Icons.arrow_forward_rounded, 0),
                   ],
                 ),
                 const SizedBox(height: 5),
                 _dirBtn(Icons.arrow_downward_rounded, 1),
-                const SizedBox(height: 6),
+                const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
@@ -3193,42 +3151,12 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 
     return Column(
       children: [
-        LinearProgressIndicator(
-          value: (_nearRow + 1) / _rows.length,
-          backgroundColor: const Color(0xFFEEF2F6),
-          color: _teal,
-          minHeight: 3,
-        ),
         Expanded(
           child: Container(
             color: Colors.white,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(5, (i) {
-                    Color dotColor;
-                    if (i < _nearLetterIndex) {
-                      dotColor = _green;
-                    } else if (i == _nearLetterIndex) {
-                      dotColor = _teal;
-                    } else {
-                      dotColor = const Color(0xFFEEF2F6);
-                    }
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      width: i == _nearLetterIndex ? 20 : 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: dotColor,
-                        borderRadius: BorderRadius.circular(99),
-                      ),
-                    );
-                  }),
-                ),
-                const SizedBox(height: 32),
                 CustomPaint(
                   painter: _BoundingBoxPainter(size: size),
                   child: Padding(
@@ -3269,27 +3197,13 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     _nearDirBtn(Icons.arrow_back_rounded, 2),
-                    const SizedBox(width: 10),
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEEF2F6),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.remove_red_eye_rounded,
-                        size: 20,
-                        color: Color(0xFF8FA0B4),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 60),
                     _nearDirBtn(Icons.arrow_forward_rounded, 0),
                   ],
                 ),
                 const SizedBox(height: 5),
                 _nearDirBtn(Icons.arrow_downward_rounded, 1),
-                const SizedBox(height: 6),
+                const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(

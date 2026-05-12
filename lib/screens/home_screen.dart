@@ -25,10 +25,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late final HomeController _controller;
 
   // -- Animations --------------------------------------------
-  // Pulse for online dot
-  late final AnimationController _pulseCtrl;
-  late final Animation<double> _pulseAnim;
-
   // Header entry (slide + fade)
   late final AnimationController _headerCtrl;
   late final Animation<double> _headerOpacity;
@@ -84,16 +80,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.initState();
     _controller = HomeController(tipCount: _tips.length)
       ..addListener(_handleControllerChanged);
-
-    // Pulse
-    _pulseCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    )..repeat(reverse: true);
-    _pulseAnim = Tween<double>(
-      begin: 0.4,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
 
     // Header entry
     _headerCtrl = AnimationController(
@@ -196,7 +182,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _controller
       ..removeListener(_handleControllerChanged)
       ..dispose();
-    _pulseCtrl.dispose();
     _headerCtrl.dispose();
     _statsCtrl.dispose();
     _cardCtrl.dispose();
@@ -222,7 +207,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String get _greeting => _controller.greeting;
   String get _firstName => _controller.firstName;
   String get _initials => _controller.initials;
-  String _fmtTime(DateTime dateTime) => _controller.formatTime(dateTime);
   String _fmtDate(DateTime dateTime) => _controller.formatDate(dateTime);
   String _timeAgo(String iso) => _controller.timeAgo(iso);
 
@@ -267,8 +251,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   child: _buildOfflineBanner(),
                 ),
               ),
-            // Sync banner (only when unsynced)
-            if (_unsyncedCount > 0)
+            // Sync banner — only when there's a real sync state to show
+            if (!_syncConfigured || _unsyncedCount > 0)
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -280,8 +264,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  _buildImpactBanner(),
-                  const SizedBox(height: 12),
                   _buildSectionHeader('Quick Actions', null),
                   _buildActionGrid(),
                   const SizedBox(height: 20),
@@ -362,38 +344,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   child: CustomPaint(painter: _DotPainter()),
                 ),
               ),
-              // Decorative arcs
-              Positioned(
-                top: -60,
-                right: -60,
-                child: Container(
-                  width: 220,
-                  height: 220,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.07),
-                      width: 1,
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                top: -20,
-                right: -20,
-                child: Container(
-                  width: 130,
-                  height: 130,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.10),
-                      width: 1,
-                    ),
-                  ),
-                ),
-              ),
-
               SafeArea(
                 bottom: false,
                 child: Padding(
@@ -409,12 +359,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                VsPulsingRings(
-                                  color: Colors.white,
-                                  size: 40,
-                                  child: VsLogoAnimated(size: 20),
-                                ),
-                                const SizedBox(width: 6),
+                                VsLogo(size: 24, showRing: false),
+                                const SizedBox(width: 8),
                                 Flexible(
                                   child: RichText(
                                     overflow: TextOverflow.ellipsis,
@@ -424,7 +370,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         TextSpan(
                                           text: 'Vision',
                                           style: GoogleFonts.plusJakartaSans(
-                                            fontSize: 14,
+                                            fontSize: 15,
                                             fontWeight: FontWeight.w800,
                                             color: Colors.white,
                                           ),
@@ -432,9 +378,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         TextSpan(
                                           text: 'Screen',
                                           style: GoogleFonts.plusJakartaSans(
-                                            fontSize: 14,
+                                            fontSize: 15,
                                             fontWeight: FontWeight.w800,
-                                            color: Colors.black,
+                                            color: Colors.white.withValues(
+                                              alpha: 0.6,
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -445,157 +393,88 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             ),
                           ),
                           // Right side — compact fixed items
-                          const SizedBox(width: 6),
-                          _buildSyncButton(),
-                          const SizedBox(width: 6),
                           _buildNotifBell(),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 8),
                           _buildAvatar(),
                         ],
                       ),
 
                       const SizedBox(height: 12),
 
-                      // -- Greeting + illustration row --
+                      // -- Greeting --
+                      Text(
+                        _greeting,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: Colors.white.withValues(alpha: 0.80),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$_firstName 👋',
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          height: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                       Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Greeting + online pill on same row
-                                Row(
-                                  children: [
-                                    Flexible(
-                                      child: Text(
-                                        _greeting,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.inter(
-                                          fontSize: 12,
-                                          color: Colors.white.withValues(
-                                            alpha: 0.80,
-                                          ),
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    _buildOnlinePill(),
-                                  ],
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '$_firstName 👋',
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    height: 1.1,
+                          Flexible(
+                            child: GestureDetector(
+                              onTap: _fetchLocation,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.location_on_rounded,
+                                    size: 12,
+                                    color: Colors.white.withValues(alpha: 0.8),
                                   ),
-                                ),
-                                const SizedBox(height: 8),
-                                // Location + time
-                                Row(
-                                  children: [
-                                    Flexible(
-                                      child: GestureDetector(
-                                        onTap: _fetchLocation,
-                                        child: Row(
-                                          children: [
-                                            Icon(
-                                              Icons.location_on_rounded,
-                                              size: 12,
-                                              color: Colors.white.withValues(
-                                                alpha: 0.8,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Flexible(
-                                              child: Text(
-                                                _locationLabel,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: GoogleFonts.inter(
-                                                  fontSize: 11,
-                                                  color: Colors.white
-                                                      .withValues(alpha: 0.8),
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 3,
-                                      ),
-                                      decoration: BoxDecoration(
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      _locationLabel,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 11,
                                         color: Colors.white.withValues(
-                                          alpha: 0.15,
+                                          alpha: 0.8,
                                         ),
-                                        borderRadius: BorderRadius.circular(99),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.access_time_rounded,
-                                            size: 10,
-                                            color: Colors.white.withValues(
-                                              alpha: 0.9,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            _fmtTime(_now),
-                                            style: GoogleFonts.inter(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w700,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ],
+                                        fontWeight: FontWeight.w500,
                                       ),
                                     ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.calendar_today_rounded,
-                                      size: 11,
-                                      color: Colors.white.withValues(
-                                        alpha: 0.7,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Flexible(
-                                      child: Text(
-                                        _fmtDate(_now),
-                                        overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.inter(
-                                          fontSize: 11,
-                                          color: Colors.white.withValues(
-                                            alpha: 0.7,
-                                          ),
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                          // Sight Mark illustration (right side of header)
-                          _buildHeaderIllustration(),
+                          const SizedBox(width: 10),
+                          Text(
+                            '·',
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: Colors.white.withValues(alpha: 0.5),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Flexible(
+                            child: Text(
+                              _fmtDate(_now),
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                color: Colors.white.withValues(alpha: 0.7),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
 
@@ -607,120 +486,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOnlinePill() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: _isOffline
-            ? VsColors.rose.withValues(alpha: 0.25)
-            : Colors.white.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(99),
-        border: Border.all(
-          color: _isOffline
-              ? VsColors.rose.withValues(alpha: 0.6)
-              : Colors.white.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AnimatedBuilder(
-            animation: _pulseAnim,
-            builder: (context, child) => Opacity(
-              opacity: _isOffline ? 1.0 : _pulseAnim.value,
-              child: Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: _isOffline ? VsColors.rose : Colors.white,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 5),
-          Text(
-            _isOffline ? 'Offline' : 'Online',
-            style: GoogleFonts.inter(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: _isOffline ? VsColors.rose : Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSyncButton() {
-    return GestureDetector(
-      onTap: _isSyncing ? null : _doSync,
-      child: AnimatedBuilder(
-        animation: _syncCtrl,
-        builder: (_, child) => Transform.rotate(
-          angle: _isSyncing ? _syncCtrl.value * 2 * 3.14159 : 0,
-          child: child,
-        ),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            color: !_syncConfigured
-                ? VsColors.rose.withValues(alpha: 0.25)
-                : _unsyncedCount > 0
-                ? VsColors.amber.withValues(alpha: 0.25)
-                : Colors.white.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: !_syncConfigured
-                  ? VsColors.rose.withValues(alpha: 0.6)
-                  : _unsyncedCount > 0
-                  ? VsColors.amber.withValues(alpha: 0.6)
-                  : Colors.white.withValues(alpha: 0.25),
-            ),
-          ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Icon(
-                _isSyncing
-                    ? Icons.sync_rounded
-                    : !_syncConfigured
-                    ? Icons.cloud_off_rounded
-                    : _unsyncedCount > 0
-                    ? Icons.cloud_upload_rounded
-                    : Icons.cloud_done_rounded,
-                color: !_syncConfigured
-                    ? VsColors.rose
-                    : _unsyncedCount > 0
-                    ? VsColors.amber
-                    : Colors.white,
-                size: 18,
-              ),
-              // Badge showing unsynced count
-              if (_unsyncedCount > 0 && !_isSyncing)
-                Positioned(
-                  top: 2,
-                  right: 2,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: VsColors.amber,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: VsColors.brandDeep, width: 1),
-                    ),
-                  ),
-                ),
             ],
           ),
         ),
@@ -777,28 +542,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
           if (_notificationCount > 0)
             Positioned(
-              top: -5,
-              right: -5,
-              child: AnimatedBuilder(
-                animation: _pulseAnim,
-                builder: (_, child) => Transform.scale(
-                  scale: 0.9 + _pulseAnim.value * 0.1,
-                  child: child,
+              top: -4,
+              right: -4,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: VsColors.rose,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: VsColors.brandDeep, width: 1.5),
                 ),
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: VsColors.rose,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: VsColors.brandDeep, width: 1.5),
-                  ),
-                  child: Text(
-                    '$_notificationCount',
-                    style: GoogleFonts.inter(
-                      fontSize: 8,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
+                child: Text(
+                  '$_notificationCount',
+                  style: GoogleFonts.inter(
+                    fontSize: 8,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -840,18 +598,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ),
               ),
-      ),
-    );
-  }
-
-  Widget _buildHeaderIllustration() {
-    return SizedBox(
-      width: 72,
-      height: 72,
-      child: VsPulsingRings(
-        color: Colors.white,
-        size: 72,
-        child: VsLogoAnimated(size: 36),
       ),
     );
   }
@@ -1110,138 +856,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // -- IMPACT BANNER -----------------------------------------
-  Widget _buildImpactBanner() {
-    final passed = _totalScreened - _totalReferred;
-    final passRate = _totalScreened > 0
-        ? (passed / _totalScreened * 100).round()
-        : 0;
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 600),
-      curve: Curves.easeOutCubic,
-      builder: (_, t, child) => Opacity(
-        opacity: t,
-        child: Transform.translate(
-          offset: Offset(0, 20 * (1 - t)),
-          child: child,
-        ),
-      ),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: VsColors.card,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: VsColors.border),
-          boxShadow: VsShadows.card,
-        ),
-        child: Row(
-          children: [
-            // Circular progress — smaller
-            SizedBox(
-              width: 44,
-              height: 44,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  TweenAnimationBuilder<double>(
-                    tween: Tween(
-                      begin: 0.0,
-                      end: _totalScreened > 0 ? passed / _totalScreened : 0.0,
-                    ),
-                    duration: const Duration(milliseconds: 1200),
-                    curve: Curves.easeOutCubic,
-                    builder: (context, value, child) =>
-                        CircularProgressIndicator(
-                      value: value,
-                      strokeWidth: 4,
-                      backgroundColor: VsColors.slate200,
-                      valueColor: const AlwaysStoppedAnimation(
-                        VsColors.emerald,
-                      ),
-                    ),
-                  ),
-                  Center(
-                    child: Text(
-                      _totalScreened == 0 ? '—' : '$passRate%',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: VsColors.slate900,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Today\'s Impact',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: VsColors.slate900,
-                    ),
-                  ),
-                  const SizedBox(height: 1),
-                  // Stats on ONE line — use FittedBox to shrink if needed
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      _totalScreened == 0
-                          ? 'No screenings yet — start your first test!'
-                          : '$passed passed · $_totalReferred referred · $_totalScreened total',
-                      maxLines: 1,
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        color: VsColors.slate500,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.location_on_rounded,
-                        size: 10,
-                        color: VsColors.slate400,
-                      ),
-                      const SizedBox(width: 3),
-                      Flexible(
-                        child: Text(
-                          _locationLabel,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
-                            fontSize: 10,
-                            color: VsColors.slate400,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Sight mark — smaller
-            VsPulsingRings(
-              color: VsColors.brand,
-              size: 48,
-              child: VsLogoAnimated(size: 24),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // -- SECTION HEADER ----------------------------------------
   Widget _buildSectionHeader(String title, Widget? trailing) {
     return Row(
@@ -1274,7 +888,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         icon: Icons.remove_red_eye_rounded,
         title: 'New Screening',
         subtitle: 'Register & test patient',
-        tag: 'START TEST',
         color: VsColors.brand,
         gradientColors: const [Color(0xFF0D9488), Color(0xFF0F766E)],
         illustration: const _EyeScanIllustration(),
@@ -1289,7 +902,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         icon: Icons.groups_rounded,
         title: 'Bulk Mode',
         subtitle: 'Campaign screening',
-        tag: 'CAMPAIGN',
         color: VsColors.sky,
         gradientColors: const [Color(0xFF0EA5E9), Color(0xFF0284C7)],
         illustration: const _GroupIllustration(),
@@ -1302,7 +914,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         icon: Icons.school_rounded,
         title: 'Training',
         subtitle: 'Learn the system',
-        tag: 'LEARN',
         color: VsColors.amber,
         gradientColors: const [Color(0xFFF59E0B), Color(0xFFD97706)],
         illustration: const _BookIllustration(),
@@ -1315,7 +926,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         icon: Icons.bar_chart_rounded,
         title: 'Analytics',
         subtitle: 'Programme data',
-        tag: 'INSIGHTS',
         color: VsColors.violet,
         gradientColors: const [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
         illustration: const _ChartIllustration(),
@@ -1328,10 +938,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Dynamically calculate aspect ratio based on available width
-        // Card width = (screen - spacing) / 2 columns
         final cardW = (constraints.maxWidth - 12) / 2;
-        // Fixed content height: icon(40) + illus(36) + text(36) + padding(22) + gaps(14) = 148
         const cardH = 148.0;
         final ratio = cardW / cardH;
 
@@ -1343,19 +950,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
           childAspectRatio: ratio,
-          children: actions.asMap().entries.map((e) {
-            final delay = e.key * 90;
-            return TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0.0, end: 1.0),
-              duration: Duration(milliseconds: 450 + delay),
-              curve: Curves.easeOutBack,
-              builder: (_, t, child) => Opacity(
-                opacity: t.clamp(0.0, 1.0),
-                child: Transform.scale(scale: 0.7 + 0.3 * t, child: child),
-              ),
-              child: _buildActionCard(e.value),
-            );
-          }).toList(),
+          children: actions.map(_buildActionCard).toList(),
         );
       },
     );
@@ -1424,23 +1019,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                   ),
                 ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Dot indicators
-            Column(
-              children: List.generate(
-                _tips.length,
-                (i) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  margin: const EdgeInsets.symmetric(vertical: 2),
-                  width: 4,
-                  height: i == _tipIndex ? 14 : 4,
-                  decoration: BoxDecoration(
-                    color: i == _tipIndex ? tip.color : VsColors.slate300,
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
               ),
             ),
           ],
@@ -2006,7 +1584,6 @@ class _ActionData {
     required this.icon,
     required this.title,
     required this.subtitle,
-    required this.tag,
     required this.color,
     required this.gradientColors,
     required this.illustration,
@@ -2015,7 +1592,6 @@ class _ActionData {
   final IconData icon;
   final String title;
   final String subtitle;
-  final String tag;
   final Color color;
   final List<Color> gradientColors;
   final Widget illustration;
@@ -2081,174 +1657,69 @@ class _PressableActionCardState extends State<_PressableActionCard>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
-                color: a.color.withValues(alpha: 0.38),
-                blurRadius: 16,
-                spreadRadius: 0,
-                offset: const Offset(0, 6),
-              ),
-              BoxShadow(
-                color: a.color.withValues(alpha: 0.15),
-                blurRadius: 32,
-                spreadRadius: 4,
-                offset: const Offset(0, 2),
+                color: a.color.withValues(alpha: 0.20),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Stack(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // -- Dot pattern overlay --
-                Positioned.fill(child: CustomPaint(painter: _CardDotPainter())),
-                // -- Decorative arc top-right --
-                Positioned(
-                  top: -24,
-                  right: -24,
-                  child: Container(
-                    width: 90,
-                    height: 90,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.10),
-                        width: 1.5,
-                      ),
-                    ),
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.20),
+                    borderRadius: BorderRadius.circular(10),
                   ),
+                  child: Icon(a.icon, color: Colors.white, size: 18),
                 ),
-                Positioned(
-                  top: -8,
-                  right: -8,
-                  child: Container(
-                    width: 54,
-                    height: 54,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                ),
-                // -- Content --
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(11, 10, 11, 10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Top row: icon + tag
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                SizedBox(height: 32, child: a.illustration),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Icon with glow container
-                          Container(
-                            width: 34,
-                            height: 34,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.22),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.35),
-                                width: 1.5,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.18),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Icon(a.icon, color: Colors.white, size: 17),
-                          ),
-                          // Tag pill
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.22),
-                              borderRadius: BorderRadius.circular(99),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.4),
-                              ),
-                            ),
-                            child: Text(
-                              a.tag,
-                              style: GoogleFonts.inter(
-                                fontSize: 7.5,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                                letterSpacing: 0.7,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      // Middle: illustration
-                      SizedBox(height: 36, child: a.illustration),
-
-                      // Bottom: title + subtitle + arrow
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  a.title,
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    height: 1.1,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  a.subtitle,
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 10,
-                                    color: Colors.white.withValues(alpha: 0.75),
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            width: 26,
-                            height: 26,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.22),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.35),
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 13,
+                          Text(
+                            a.title,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
                               color: Colors.white,
+                              height: 1.1,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            a.subtitle,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              color: Colors.white.withValues(alpha: 0.80),
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
                       ),
-                    ],
-                  ),
+                    ),
+                    const Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 16,
+                      color: Colors.white,
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -2259,27 +1730,8 @@ class _PressableActionCardState extends State<_PressableActionCard>
   }
 }
 
-// Dot pattern for action cards
-class _CardDotPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = Colors.white.withValues(alpha: 0.07)
-      ..style = PaintingStyle.fill;
-    const spacing = 18.0;
-    for (double y = 0; y < size.height; y += spacing) {
-      for (double x = 0; x < size.width; x += spacing) {
-        canvas.drawCircle(Offset(x, y), 1.4, p);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_CardDotPainter old) => false;
-}
-
 // -------------------------------------------------------------
-// Dot pattern painter
+// Dot pattern painter — used on the home header
 // -------------------------------------------------------------
 class _DotPainter extends CustomPainter {
   @override
