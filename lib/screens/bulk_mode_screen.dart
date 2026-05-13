@@ -542,15 +542,17 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                     ),
                   ),
                   child: Text(
-                    'Testing: $eye · LogMAR ${_rows[_currentRow]['logmar']}',
+                    '$eye · LogMAR ${_rows[_currentRow]['logmar']}',
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const Spacer(),
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -1565,6 +1567,8 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                   ),
                   child: Text(
                     'Testing: ${_eyeOrder[_eyeIndex]} · LogMAR ${_rows[_currentRow]['logmar']}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,

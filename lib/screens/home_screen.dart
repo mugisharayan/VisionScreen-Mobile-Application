@@ -5,7 +5,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'activity_screen.dart';
 import 'bulk_mode_screen.dart';
 import 'new_screening_screen.dart';
 import 'notifications_screen.dart';
@@ -14,6 +13,7 @@ import '../features/home/home_controller.dart';
 import '../utils/app_theme.dart';
 import '../utils/haptics.dart';
 import '../utils/page_transitions.dart';
+import '../widgets/main_shell_scope.dart';
 import '../widgets/vs_logo.dart';
 import '../widgets/vs_ui.dart';
 
@@ -208,7 +208,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             // Body content
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   _buildTodaySummary(),
@@ -323,64 +323,36 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildTodaySummary() {
     final passed = _totalScreened - _totalReferred;
     final items = [
-      (
-        'Screened',
-        _totalScreened,
-        VsColors.sky,
-        Icons.people_alt_rounded,
-        'Today',
-      ),
-      ('Passed', passed, VsColors.emerald, Icons.check_circle_rounded, 'Today'),
-      (
-        'Referred',
-        _totalReferred,
-        VsColors.rose,
-        Icons.warning_rounded,
-        'Today',
-      ),
-      (
-        'Unsynced',
-        _unsyncedCount,
-        VsColors.amber,
-        Icons.sync_problem_rounded,
-        !_syncConfigured
-            ? 'Local only'
-            : _unsyncedCount == 0
-            ? 'Synced'
-            : 'Queued for sync',
-      ),
+      ('Screened', _totalScreened, VsColors.sky),
+      ('Passed', passed, VsColors.emerald),
+      ('Referred', _totalReferred, VsColors.rose),
+      ('Unsynced', _unsyncedCount, VsColors.amber),
     ];
     return AnimatedBuilder(
       animation: _statsAnim,
       builder: (_, _) {
         final t = _statsAnim.value;
-        Widget tile(int index) => VsStatTile(
+        Widget tile(int index) => _CompactSummaryTile(
           value: '${(items[index].$2 * t).round()}',
           label: items[index].$1,
           color: items[index].$3,
-          icon: items[index].$4,
-          caption: items[index].$5,
-          dense: true,
         );
 
-        return Column(
-          children: [
-            Row(
-              children: [
-                Expanded(child: tile(0)),
-                const SizedBox(width: VsSpace.md),
-                Expanded(child: tile(1)),
-              ],
-            ),
-            const SizedBox(height: VsSpace.md),
-            Row(
-              children: [
-                Expanded(child: tile(2)),
-                const SizedBox(width: VsSpace.md),
-                Expanded(child: tile(3)),
-              ],
-            ),
-          ],
+        return VsCard(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          child: Row(
+            children: List.generate(items.length * 2 - 1, (index) {
+              if (index.isOdd) {
+                return Container(
+                  width: 1,
+                  height: 26,
+                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                  color: VsColors.border,
+                );
+              }
+              return Expanded(child: tile(index ~/ 2));
+            }),
+          ),
         );
       },
     );
@@ -720,10 +692,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         subtitle: 'Screenings and follow-ups',
         accent: VsColors.violet,
         illustration: const SizedBox.shrink(),
-        onTap: () => Navigator.push(
-          context,
-          VsPageRoute(builder: (_) => const ActivityScreen()),
-        ),
+        onTap: () =>
+            MainShellScope.of(context).selectTab(MainShellTab.activity),
       ),
     ];
 
@@ -744,6 +714,48 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           children: actions.map((a) => _PressableActionCard(data: a)).toList(),
         );
       },
+    );
+  }
+}
+
+class _CompactSummaryTile extends StatelessWidget {
+  const _CompactSummaryTile({
+    required this.value,
+    required this.label,
+    required this.color,
+  });
+
+  final String value;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            value,
+            maxLines: 1,
+            style: VsText.display(
+              color: color,
+            ).copyWith(fontSize: 20, height: 1),
+          ),
+        ),
+        const SizedBox(height: 1),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: VsText.label(
+            color: VsColors.slate700,
+            w: FontWeight.w700,
+          ).copyWith(fontSize: 10),
+        ),
+      ],
     );
   }
 }

@@ -139,6 +139,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   double get _currentLux => _controller.currentLux;
   bool get _luxChecked => _controller.luxChecked;
   bool get _luxOk => _controller.luxOk;
+  bool get _manualLightCheckRequired => _controller.manualLightCheckRequired;
   bool get _brightnessSet => _controller.brightnessSet;
   double? get _originalBrightness => _controller.originalBrightness;
   bool get _checklistDone => _controller.checklistDone;
@@ -359,6 +360,10 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 
   void _checkLight() {
     _controller.resetLightCheck();
+    if (Platform.isIOS) {
+      _controller.requireManualLightCheck();
+      return;
+    }
     final channel = EventChannel('visionscreen/light');
     StreamSubscription? sub;
     bool received = false;
@@ -376,20 +381,20 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           received = true;
           sub?.cancel();
           if (!mounted) return;
-          _controller.setLuxResult(120.0);
+          _controller.requireManualLightCheck();
         },
       );
-      // 3s timeout fallback for non-Android or unresponsive sensor
+      // Fallback when the sensor is unavailable or unresponsive.
       Future.delayed(const Duration(seconds: 3), () {
         if (!received) {
           received = true;
           sub?.cancel();
           if (!mounted) return;
-          _controller.setLuxResult(120.0);
+          _controller.requireManualLightCheck();
         }
       });
     } catch (_) {
-      _controller.setLuxResult(120.0);
+      _controller.requireManualLightCheck();
     }
   }
 
@@ -677,15 +682,18 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          'LogMAR ${_rows[_currentRow]['logmar']}',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white.withValues(alpha: 0.9),
+                        Expanded(
+                          child: Text(
+                            'LogMAR ${_rows[_currentRow]['logmar']}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white.withValues(alpha: 0.9),
+                            ),
                           ),
                         ),
-                        const Spacer(),
                         // Letter counter
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -743,15 +751,18 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          'LogMAR ${_rows[_nearRow]['logmar']}',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white.withValues(alpha: 0.9),
+                        Expanded(
+                          child: Text(
+                            'LogMAR ${_rows[_nearRow]['logmar']}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white.withValues(alpha: 0.9),
+                            ),
                           ),
                         ),
-                        const Spacer(),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
@@ -1769,15 +1780,108 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           _checkTile(
             icon: Icons.wb_sunny_rounded,
             title: 'Ambient Light',
-            subtitle: _luxChecked
+            subtitle: _manualLightCheckRequired
+                ? (_luxChecked
+                      ? (_luxOk
+                            ? 'Confirmed manually by the operator'
+                            : 'Operator marked the room as too dim')
+                      : 'Confirm that the room is bright enough to see the chart clearly')
+                : _luxChecked
                 ? (_luxOk
                       ? '${_currentLux.toStringAsFixed(0)} lux — meets screening threshold'
                       : '${_currentLux.toStringAsFixed(0)} lux — too low (min ${_kMinLux.toInt()} lux)')
                 : 'Measuring ambient light...',
-            state: _luxChecked
+            state: _manualLightCheckRequired
+                ? (_luxChecked
+                      ? (_luxOk ? _CheckState.pass : _CheckState.fail)
+                      : _CheckState.loading)
+                : _luxChecked
                 ? (_luxOk ? _CheckState.pass : _CheckState.fail)
                 : _CheckState.loading,
           ),
+          if (_manualLightCheckRequired && !_luxChecked) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: _amber.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _amber.withValues(alpha: 0.2)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Light sensor not available on this device.',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1A2A3D),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Check that the chart is clearly visible and the patient faces the light source before continuing.',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: const Color(0xFF5E7291),
+                      height: 1.45,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () =>
+                              _controller.confirmManualLightCheck(false),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color: _red.withValues(alpha: 0.28),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          child: Text(
+                            'Need more light',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: _red,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () =>
+                              _controller.confirmManualLightCheck(true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _teal,
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          child: Text(
+                            'Room is ready',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
           if (_luxChecked && !_luxOk) ...[
             const SizedBox(height: 8),
             Container(

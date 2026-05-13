@@ -29,13 +29,14 @@ class FaceDistanceScreen extends StatefulWidget {
     this.toleranceM = 0.25,
   });
 
-  /// Called when patient holds correct distance for 3 seconds
+  /// Called when patient holds correct distance for 3 seconds.
   final VoidCallback onDistanceConfirmed;
 
-  /// Target distance in metres (default 3m for Snellen test)
+  /// Target distance in metres. Distance screening uses 2m; near vision
+  /// passes a shorter explicit value.
   final double targetDistanceM;
 
-  /// Acceptable tolerance in metres (±0.3m)
+  /// Acceptable tolerance in metres around the target distance.
   final double toleranceM;
 
   @override
@@ -98,15 +99,22 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
     );
 
     _pulseCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 900))
-      ..repeat(reverse: true);
-    _pulse = Tween<double>(begin: 0.95, end: 1.05)
-        .animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    _pulse = Tween<double>(
+      begin: 0.95,
+      end: 1.05,
+    ).animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
 
     _checkCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 600));
-    _checkScale = Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(parent: _checkCtrl, curve: Curves.elasticOut));
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _checkScale = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _checkCtrl, curve: Curves.elasticOut));
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -158,6 +166,7 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
       }
     });
   }
+
   Future<void> _speak(String text) async {
     if (text.trim().isEmpty) return;
     final now = DateTime.now();
@@ -230,7 +239,7 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
       _camReady = true;
       _previewSize = Size(
         _camCtrl!.value.previewSize!.height, // portrait width
-        _camCtrl!.value.previewSize!.width,  // portrait height
+        _camCtrl!.value.previewSize!.width, // portrait height
       );
     });
 
@@ -259,27 +268,37 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
 
     try {
       final inputImage = _buildInputImage(image);
-      if (inputImage == null) { _processing = false; return; }
+      if (inputImage == null) {
+        _processing = false;
+        return;
+      }
 
       final faces = await _detector.processImage(inputImage);
 
-      if (!mounted) { _processing = false; return; }
+      if (!mounted) {
+        _processing = false;
+        return;
+      }
 
       if (faces.isEmpty) {
-        setState(() { _face = null; _distanceM = null; });
+        setState(() {
+          _face = null;
+          _distanceM = null;
+        });
         _stopHoldTimer();
         _processing = false;
         return;
       }
 
       // Use the largest face (closest to camera)
-      final face = faces.reduce((a, b) =>
-          a.boundingBox.width > b.boundingBox.width ? a : b);
+      final face = faces.reduce(
+        (a, b) => a.boundingBox.width > b.boundingBox.width ? a : b,
+      );
 
       // ── Distance estimation using hardware focal length ──────
       // dist_mm = (realSize_mm × focalLength_px) / apparentSize_px
       // Uses the assumed adult average IPD of 63mm.
-      final leftEye  = face.landmarks[FaceLandmarkType.leftEye];
+      final leftEye = face.landmarks[FaceLandmarkType.leftEye];
       final rightEye = face.landmarks[FaceLandmarkType.rightEye];
 
       double? distM;
@@ -293,8 +312,8 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
         // Use only horizontal component for consistency with focal length axis
         // (eyes are primarily separated horizontally in a face-on view)
         final eyeDistPx = dx.abs() > dy.abs()
-            ? sqrt(dx * dx + dy * dy)  // face-on: use full distance
-            : dx.abs();                // tilted head: use horizontal only
+            ? sqrt(dx * dx + dy * dy) // face-on: use full distance
+            : dx.abs(); // tilted head: use horizontal only
 
         if (eyeDistPx > 8) {
           // dist_mm = (IPD_mm × focalLength_px) / eyeDistPx
@@ -332,25 +351,33 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
           final diff = widget.targetDistanceM - distM;
           if (isNear) {
             final cm = (diff * 100).round();
-            _queueSpeak(cm > 10
-                ? 'Move the device closer by $cm centimetres.'
-                : 'Just a little closer.');
+            _queueSpeak(
+              cm > 10
+                  ? 'Move the device closer by $cm centimetres.'
+                  : 'Just a little closer.',
+            );
           } else {
-            _queueSpeak(diff > 0.5
-                ? 'Move back about ${diff.toStringAsFixed(1)} metres.'
-                : 'A little further back.');
+            _queueSpeak(
+              diff > 0.5
+                  ? 'Move back about ${diff.toStringAsFixed(1)} metres.'
+                  : 'A little further back.',
+            );
           }
         } else {
           final diff = distM - widget.targetDistanceM;
           if (isNear) {
             final cm = (diff * 100).round();
-            _queueSpeak(cm > 10
-                ? 'Move the device back by $cm centimetres.'
-                : 'Just a little further.');
+            _queueSpeak(
+              cm > 10
+                  ? 'Move the device back by $cm centimetres.'
+                  : 'Just a little further.',
+            );
           } else {
-            _queueSpeak(diff > 0.5
-                ? 'Move closer about ${diff.toStringAsFixed(1)} metres.'
-                : 'A little closer.');
+            _queueSpeak(
+              diff > 0.5
+                  ? 'Move closer about ${diff.toStringAsFixed(1)} metres.'
+                  : 'A little closer.',
+            );
           }
         }
       } else {
@@ -402,7 +429,10 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
     if (_holdTimer != null) return;
     _speak('Good. Hold still.');
     _holdTimer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (!mounted) { t.cancel(); return; }
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
       setState(() => _holdSeconds++);
       if (_holdSeconds == 1) _speak('Two.');
       if (_holdSeconds == 2) _speak('One.');
@@ -456,6 +486,8 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
 
   @override
   Widget build(BuildContext context) {
+    final shortestSide = MediaQuery.sizeOf(context).shortestSide;
+    final targetRingSize = (shortestSide * 0.68).clamp(160.0, 230.0).toDouble();
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -480,7 +512,9 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
 
           // ── Top header ──────────────────────────────────────
           Positioned(
-            top: 0, left: 0, right: 0,
+            top: 0,
+            left: 0,
+            right: 0,
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -504,21 +538,28 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('DISTANCE CHECK',
-                                style: GoogleFonts.inter(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white.withValues(alpha: 0.6),
-                                    letterSpacing: 1.8)),
+                            Text(
+                              'DISTANCE CHECK',
+                              style: GoogleFonts.inter(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white.withValues(alpha: 0.6),
+                                letterSpacing: 1.8,
+                              ),
+                            ),
                             const SizedBox(height: 2),
                             Text(
-                                widget.targetDistanceM < 1.0
-                                    ? 'Hold Device at ${(widget.targetDistanceM * 100).round()}cm'
-                                    : 'Position Patient at ${widget.targetDistanceM.toStringAsFixed(0)}m',
-                                style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white)),
+                              widget.targetDistanceM < 1.0
+                                  ? 'Hold device at ${(widget.targetDistanceM * 100).round()} cm'
+                                  : 'Position patient at ${widget.targetDistanceM.toStringAsFixed(0)} m',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -533,12 +574,15 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
                         ),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 8),
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: _statusColor.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(99),
                             border: Border.all(
-                                color: _statusColor.withValues(alpha: 0.6)),
+                              color: _statusColor.withValues(alpha: 0.6),
+                            ),
                           ),
                           child: Text(
                             _distanceText,
@@ -561,7 +605,7 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
           if (_camReady)
             Center(
               child: CustomPaint(
-                size: const Size(200, 200),
+                size: Size.square(targetRingSize),
                 painter: _TargetRingPainter(
                   color: _statusColor,
                   progress: _holdSeconds / _holdRequired,
@@ -571,7 +615,9 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
 
           // ── Bottom status panel ──────────────────────────────
           Positioned(
-            bottom: 0, left: 0, right: 0,
+            bottom: 0,
+            left: 0,
+            right: 0,
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -584,12 +630,14 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
                 ),
               ),
               padding: EdgeInsets.fromLTRB(
-                  24, 32, 24,
-                  MediaQuery.of(context).padding.bottom + 24),
+                24,
+                32,
+                24,
+                MediaQuery.of(context).padding.bottom + 24,
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-
                   // ── Live distance meter ──────────────────────
                   _buildDistanceMeter(),
                   const SizedBox(height: 16),
@@ -700,21 +748,26 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
                   child: Transform.scale(
                     scale: _checkScale.value,
                     child: Container(
-                      width: 120, height: 120,
+                      width: 120,
+                      height: 120,
                       decoration: BoxDecoration(
                         color: const Color(0xFF22C55E),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF22C55E)
-                                .withValues(alpha: 0.4),
+                            color: const Color(
+                              0xFF22C55E,
+                            ).withValues(alpha: 0.4),
                             blurRadius: 40,
                             spreadRadius: 8,
                           ),
                         ],
                       ),
-                      child: const Icon(Icons.check_rounded,
-                          color: Colors.white, size: 60),
+                      child: const Icon(
+                        Icons.check_rounded,
+                        color: Colors.white,
+                        size: 60,
+                      ),
                     ),
                   ),
                 ),
@@ -782,75 +835,88 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
         const SizedBox(height: 12),
 
         // Horizontal ruler bar
-        LayoutBuilder(builder: (_, constraints) {
-          final w = constraints.maxWidth;
-          return Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // Track background
-              Container(
-                height: 10,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(99),
-                ),
-              ),
-              // Fill bar
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 120),
-                height: 10,
-                width: w * fillRatio,
-                decoration: BoxDecoration(
-                  color: _statusColor,
-                  borderRadius: BorderRadius.circular(99),
-                  boxShadow: [
-                    BoxShadow(
-                      color: _statusColor.withValues(alpha: 0.5),
-                      blurRadius: 8,
-                    ),
-                  ],
-                ),
-              ),
-              // Target marker
-              Positioned(
-                left: w * targetRatio - 1.5,
-                top: -4,
-                child: Container(
-                  width: 3, height: 18,
+        LayoutBuilder(
+          builder: (_, constraints) {
+            final w = constraints.maxWidth;
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // Track background
+                Container(
+                  height: 10,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Colors.white.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(99),
                   ),
                 ),
-              ),
-              // Target label
-              Positioned(
-                left: (w * targetRatio - 16).clamp(0.0, w - 32),
-                top: 16,
-                child: Text(
-                  isNear ? '${(target * 100).round()}cm' : '${target.toStringAsFixed(0)}m',
-                  style: GoogleFonts.inter(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white.withValues(alpha: 0.7),
+                // Fill bar
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 120),
+                  height: 10,
+                  width: w * fillRatio,
+                  decoration: BoxDecoration(
+                    color: _statusColor,
+                    borderRadius: BorderRadius.circular(99),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _statusColor.withValues(alpha: 0.5),
+                        blurRadius: 8,
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ],
-          );
-        }),
+                // Target marker
+                Positioned(
+                  left: w * targetRatio - 1.5,
+                  top: -4,
+                  child: Container(
+                    width: 3,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  ),
+                ),
+                // Target label
+                Positioned(
+                  left: (w * targetRatio - 16).clamp(0.0, w - 32),
+                  top: 16,
+                  child: Text(
+                    isNear
+                        ? '${(target * 100).round()}cm'
+                        : '${target.toStringAsFixed(0)}m',
+                    style: GoogleFonts.inter(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
         const SizedBox(height: 22),
         // Scale labels
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: scaleLabels.map((l) => Text(l,
-              style: GoogleFonts.inter(
-                  fontSize: 9,
-                  color: Colors.white.withValues(
-                      alpha: l.contains(isNear ? '40' : '2') ? 0.7 : 0.4),
-                  fontWeight: l.contains(isNear ? '40' : '2')
-                      ? FontWeight.w700
-                      : FontWeight.w400))).toList(),
+          children: scaleLabels
+              .map(
+                (l) => Text(
+                  l,
+                  style: GoogleFonts.inter(
+                    fontSize: 9,
+                    color: Colors.white.withValues(
+                      alpha: l.contains(isNear ? '40' : '2') ? 0.7 : 0.4,
+                    ),
+                    fontWeight: l.contains(isNear ? '40' : '2')
+                        ? FontWeight.w700
+                        : FontWeight.w400,
+                  ),
+                ),
+              )
+              .toList(),
         ),
       ],
     );
@@ -864,26 +930,36 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 72, height: 72,
+              width: 72,
+              height: 72,
               decoration: BoxDecoration(
                 color: const Color(0xFF0D9488).withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.camera_alt_rounded,
-                  color: Color(0xFF0D9488), size: 32),
+              child: const Icon(
+                Icons.camera_alt_rounded,
+                color: Color(0xFF0D9488),
+                size: 32,
+              ),
             ),
             const SizedBox(height: 16),
-            Text('Camera permission required',
-                style: GoogleFonts.plusJakartaSans(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white)),
+            Text(
+              'Camera permission required',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
             const SizedBox(height: 8),
-            Text('Allow camera access to detect\npatient distance',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
-                    fontSize: 13,
-                    color: Colors.white.withValues(alpha: 0.6))),
+            Text(
+              'Allow camera access to detect\npatient distance',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: Colors.white.withValues(alpha: 0.6),
+              ),
+            ),
             const SizedBox(height: 24),
             Material(
               color: Colors.transparent,
@@ -942,9 +1018,9 @@ class _FaceBoxPainter extends CustomPainter {
     final box = face.boundingBox;
 
     // Mirror X for front camera
-    final left   = screenSize.width - box.right  * scaleX;
-    final right  = screenSize.width - box.left   * scaleX;
-    final top    = box.top    * scaleY;
+    final left = screenSize.width - box.right * scaleX;
+    final right = screenSize.width - box.left * scaleX;
+    final top = box.top * scaleY;
     final bottom = box.bottom * scaleY;
 
     final rect = Rect.fromLTRB(left, top, right, bottom);
@@ -959,45 +1035,81 @@ class _FaceBoxPainter extends CustomPainter {
     const cornerLen = 24.0;
 
     // Top-left
-    canvas.drawLine(Offset(rect.left, rect.top + cornerLen),
-        Offset(rect.left, rect.top), paint);
-    canvas.drawLine(Offset(rect.left, rect.top),
-        Offset(rect.left + cornerLen, rect.top), paint);
+    canvas.drawLine(
+      Offset(rect.left, rect.top + cornerLen),
+      Offset(rect.left, rect.top),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(rect.left, rect.top),
+      Offset(rect.left + cornerLen, rect.top),
+      paint,
+    );
     // Top-right
-    canvas.drawLine(Offset(rect.right - cornerLen, rect.top),
-        Offset(rect.right, rect.top), paint);
-    canvas.drawLine(Offset(rect.right, rect.top),
-        Offset(rect.right, rect.top + cornerLen), paint);
+    canvas.drawLine(
+      Offset(rect.right - cornerLen, rect.top),
+      Offset(rect.right, rect.top),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(rect.right, rect.top),
+      Offset(rect.right, rect.top + cornerLen),
+      paint,
+    );
     // Bottom-left
-    canvas.drawLine(Offset(rect.left, rect.bottom - cornerLen),
-        Offset(rect.left, rect.bottom), paint);
-    canvas.drawLine(Offset(rect.left, rect.bottom),
-        Offset(rect.left + cornerLen, rect.bottom), paint);
+    canvas.drawLine(
+      Offset(rect.left, rect.bottom - cornerLen),
+      Offset(rect.left, rect.bottom),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(rect.left, rect.bottom),
+      Offset(rect.left + cornerLen, rect.bottom),
+      paint,
+    );
     // Bottom-right
-    canvas.drawLine(Offset(rect.right - cornerLen, rect.bottom),
-        Offset(rect.right, rect.bottom), paint);
-    canvas.drawLine(Offset(rect.right, rect.bottom),
-        Offset(rect.right, rect.bottom - cornerLen), paint);
+    canvas.drawLine(
+      Offset(rect.right - cornerLen, rect.bottom),
+      Offset(rect.right, rect.bottom),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(rect.right, rect.bottom),
+      Offset(rect.right, rect.bottom - cornerLen),
+      paint,
+    );
 
     // Subtle fill
     canvas.drawRect(
       rect,
-      Paint()..color = color.withValues(alpha: 0.06)..style = PaintingStyle.fill,
+      Paint()
+        ..color = color.withValues(alpha: 0.06)
+        ..style = PaintingStyle.fill,
     );
 
     // Eye landmark dots
-    final leftEye  = face.landmarks[FaceLandmarkType.leftEye];
+    final leftEye = face.landmarks[FaceLandmarkType.leftEye];
     final rightEye = face.landmarks[FaceLandmarkType.rightEye];
 
     for (final eye in [leftEye, rightEye]) {
       if (eye == null) continue;
       final ex = screenSize.width - eye.position.x.toDouble() * scaleX;
       final ey = eye.position.y.toDouble() * scaleY;
-      canvas.drawCircle(Offset(ex, ey), 5,
-          Paint()..color = color..style = PaintingStyle.fill);
-      canvas.drawCircle(Offset(ex, ey), 5,
-          Paint()..color = Colors.white.withValues(alpha: 0.8)
-            ..style = PaintingStyle.stroke..strokeWidth = 1.5);
+      canvas.drawCircle(
+        Offset(ex, ey),
+        5,
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.fill,
+      );
+      canvas.drawCircle(
+        Offset(ex, ey),
+        5,
+        Paint()
+          ..color = Colors.white.withValues(alpha: 0.8)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5,
+      );
     }
   }
 
@@ -1021,7 +1133,8 @@ class _TargetRingPainter extends CustomPainter {
 
     // Background ring
     canvas.drawCircle(
-      Offset(cx, cy), r,
+      Offset(cx, cy),
+      r,
       Paint()
         ..color = Colors.white.withValues(alpha: 0.08)
         ..style = PaintingStyle.stroke

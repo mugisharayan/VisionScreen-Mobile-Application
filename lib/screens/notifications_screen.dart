@@ -172,7 +172,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Widget _buildHeader(BuildContext context, int unread) {
     return VsGradientHeader(
-      eyebrow: 'Alerts',
       title: 'Notifications',
       subtitle: unread > 0
           ? '$unread unread item${unread == 1 ? '' : 's'}'

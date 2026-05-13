@@ -4,9 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../repositories/screening_repository.dart';
 import '../utils/app_theme.dart';
-import '../utils/page_transitions.dart';
+import '../widgets/main_shell_scope.dart';
 import '../widgets/vs_ui.dart';
-import 'patients_screen.dart';
 
 class ActivityScreen extends StatefulWidget {
   const ActivityScreen({super.key});
@@ -25,11 +24,27 @@ class _ActivityScreenState extends State<ActivityScreen> {
   String _loadError = '';
   List<Map<String, dynamic>> _recentScreenings = const [];
   List<Map<String, dynamic>> _followUps = const [];
+  bool _hasSeenShellActivation = false;
+  bool _wasActive = false;
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final shell = MainShellScope.maybeOf(context);
+    final isActive = shell?.currentTab == MainShellTab.activity;
+    if (isActive && !_wasActive) {
+      if (_hasSeenShellActivation) {
+        _load();
+      }
+      _hasSeenShellActivation = true;
+    }
+    _wasActive = isActive;
   }
 
   Future<void> _load() async {
@@ -93,14 +108,13 @@ class _ActivityScreenState extends State<ActivityScreen> {
           slivers: [
             const SliverToBoxAdapter(
               child: VsGradientHeader(
-                eyebrow: 'Operations',
                 icon: Icons.list_alt_rounded,
                 title: 'Activity',
                 subtitle: 'Recent screenings and referral follow-up work',
               ),
             ),
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   VsSegmentedControl(
@@ -126,17 +140,10 @@ class _ActivityScreenState extends State<ActivityScreen> {
                       _selectedFilter == 'Today'
                           ? 'Today\'s Screenings'
                           : 'Recent Screenings',
-                      '${_visibleScreenings.length} loaded',
+                      '${_visibleScreenings.length} recorded',
                     ),
                     const SizedBox(height: VsSpace.md),
                     _buildScreeningsList(_visibleScreenings),
-                    const SizedBox(height: VsSpace.xl),
-                    _buildSectionHeader(
-                      'Follow-Ups',
-                      '${_followUps.length} waiting',
-                    ),
-                    const SizedBox(height: VsSpace.md),
-                    _buildFollowUpsPreview(),
                   ],
                 ]),
               ),
@@ -179,7 +186,6 @@ class _ActivityScreenState extends State<ActivityScreen> {
 
   Widget _buildScreeningCard(Map<String, dynamic> screening) {
     final name = _readString(screening['name'], fallback: 'Unknown patient');
-    final patientId = _readString(screening['patient_id']);
     final gender = _readString(screening['gender']);
     final age = screening['age'];
     final photoPath = _readString(screening['photo_path']);
@@ -224,11 +230,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            _patientMeta(
-                              patientId: patientId,
-                              gender: gender,
-                              age: age,
-                            ),
+                            _patientMeta(gender: gender, age: age),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: VsText.label(),
@@ -260,33 +262,6 @@ class _ActivityScreenState extends State<ActivityScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildFollowUpsPreview() {
-    if (_followUps.isEmpty) {
-      return _EmptyActivityState(
-        icon: Icons.assignment_turned_in_outlined,
-        title: 'No follow-ups waiting',
-        subtitle: 'Referred patients will appear here when action is needed.',
-        actionLabel: 'Open patients',
-        onTap: _openPatients,
-      );
-    }
-
-    final preview = _followUps.take(3).toList(growable: false);
-    return Column(
-      children: [
-        _buildFollowUpsList(preview),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: () => setState(() => _selectedFilter = 'Follow-Ups'),
-            icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-            label: const Text('View all follow-ups'),
-          ),
-        ),
-      ],
     );
   }
 
@@ -411,13 +386,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
   }
 
   Future<void> _openPatients() async {
-    await Navigator.push(
-      context,
-      VsPageRoute(builder: (_) => const PatientsScreen()),
-    );
-    if (mounted) {
-      await _load();
-    }
+    MainShellScope.of(context).selectTab(MainShellTab.patients);
   }
 
   DateTime? _parseDate(String? value) {
@@ -457,15 +426,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
     return 'Due ${parsed.day}/${parsed.month}/${parsed.year}';
   }
 
-  String _patientMeta({
-    String patientId = '',
-    String gender = '',
-    Object? age,
-  }) {
+  String _patientMeta({String gender = '', Object? age}) {
     final parts = <String>[];
-    if (patientId.isNotEmpty) {
-      parts.add(patientId);
-    }
     if (gender.isNotEmpty) {
       parts.add(gender);
     }

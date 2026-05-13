@@ -13,6 +13,7 @@ import '../widgets/vs_skeleton.dart';
 import '../utils/page_transitions.dart';
 import '../utils/haptics.dart';
 import '../utils/app_theme.dart';
+import '../widgets/main_shell_scope.dart';
 import '../widgets/vs_ui.dart';
 
 // -- Colours (shared with the rest of the app) --
@@ -235,12 +236,28 @@ class PatientsScreen extends StatefulWidget {
 class _PatientsScreenState extends State<PatientsScreen> {
   final _searchCtrl = TextEditingController();
   late final PatientsController _controller;
+  bool _hasSeenShellActivation = false;
+  bool _wasActive = false;
 
   @override
   void initState() {
     super.initState();
     _controller = PatientsController()..addListener(_handleControllerChanged);
     unawaited(_controller.loadPatients());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final shell = MainShellScope.maybeOf(context);
+    final isActive = shell?.currentTab == MainShellTab.patients;
+    if (isActive && !_wasActive) {
+      if (_hasSeenShellActivation) {
+        _loadPatients();
+      }
+      _hasSeenShellActivation = true;
+    }
+    _wasActive = isActive;
   }
 
   @override
@@ -408,40 +425,56 @@ class _PatientsScreenState extends State<PatientsScreen> {
     return Column(
       children: [
         VsGradientHeader(
-          eyebrow: 'Patient Registry',
           title: 'Patients',
           subtitle: '$total registered · $referred referrals',
           icon: Icons.groups_rounded,
           bottom: total > 0
-              ? Row(
-                  children: [
-                    Expanded(
-                      child: VsStatTile(
-                        value: '$passed',
-                        label: 'Passed',
-                        color: VsColors.emerald,
-                        dense: true,
-                      ),
+              ? Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.72),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: VsStatTile(
-                        value: '$referred',
-                        label: 'Referred',
-                        color: VsColors.rose,
-                        dense: true,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: VsStatTile(
-                        value: '$pending',
-                        label: 'Pending',
-                        color: VsColors.amber,
-                        dense: true,
+                    ],
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 6,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _PatientsSummaryTile(
+                          value: '$passed',
+                          label: 'Passed',
+                          color: VsColors.emerald,
+                        ),
                       ),
-                    ),
-                  ],
+                      _summaryDivider(),
+                      Expanded(
+                        child: _PatientsSummaryTile(
+                          value: '$referred',
+                          label: 'Referred',
+                          color: VsColors.rose,
+                        ),
+                      ),
+                      _summaryDivider(),
+                      Expanded(
+                        child: _PatientsSummaryTile(
+                          value: '$pending',
+                          label: 'Pending',
+                          color: VsColors.amber,
+                        ),
+                      ),
+                    ],
+                  ),
                 )
               : null,
         ),
@@ -497,6 +530,13 @@ class _PatientsScreenState extends State<PatientsScreen> {
       ],
     );
   }
+
+  Widget _summaryDivider() => Container(
+    width: 1,
+    height: 26,
+    margin: const EdgeInsets.symmetric(horizontal: 2),
+    color: VsColors.border,
+  );
 
   Widget _filterChip(String label) {
     final active = _filter == label;
@@ -695,40 +735,52 @@ class _PatientsScreenState extends State<PatientsScreen> {
                             color: Colors.white.withValues(alpha: 0.2),
                           ),
                         ),
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _campStatNew(
-                              total.toString(),
-                              'Screened',
-                              Colors.white,
-                            ),
-                            _campStatNew(
-                              passed.toString(),
-                              'Passed',
-                              const Color(0xFF6EE7B7),
-                            ),
-                            _campStatNew(
-                              referred.toString(),
-                              'Referred',
-                              const Color(0xFFFCA5A5),
-                            ),
-                            _campStatNew(
-                              '$passRate%',
-                              'Pass Rate',
-                              const Color(0xFF5EEAD4),
-                            ),
-                            const Spacer(),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
+                            Wrap(
+                              spacing: 16,
+                              runSpacing: 10,
                               children: [
-                                Text(
-                                  dateLabel,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 9,
-                                    color: Colors.white.withValues(alpha: 0.55),
+                                _campStatNew(
+                                  total.toString(),
+                                  'Screened',
+                                  Colors.white,
+                                ),
+                                _campStatNew(
+                                  passed.toString(),
+                                  'Passed',
+                                  const Color(0xFF6EE7B7),
+                                ),
+                                _campStatNew(
+                                  referred.toString(),
+                                  'Referred',
+                                  const Color(0xFFFCA5A5),
+                                ),
+                                _campStatNew(
+                                  '$passRate%',
+                                  'Pass Rate',
+                                  const Color(0xFF5EEAD4),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    dateLabel,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 9,
+                                      color: Colors.white.withValues(
+                                        alpha: 0.55,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(height: 3),
+                                const SizedBox(width: 8),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 8,
@@ -774,32 +826,32 @@ class _PatientsScreenState extends State<PatientsScreen> {
     );
   }
 
-  Widget _campStatNew(String value, String label, Color color) => Padding(
-    padding: const EdgeInsets.only(right: 16),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          value,
-          overflow: TextOverflow.ellipsis,
-          maxLines: 1,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: color,
-            height: 1.0,
-          ),
+  Widget _campStatNew(String value, String label, Color color) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Text(
+        value,
+        overflow: TextOverflow.ellipsis,
+        maxLines: 1,
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 18,
+          fontWeight: FontWeight.w800,
+          color: color,
+          height: 1.0,
         ),
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 9,
-            fontWeight: FontWeight.w500,
-            color: Colors.white.withValues(alpha: 0.55),
-          ),
+      ),
+      Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: GoogleFonts.inter(
+          fontSize: 9,
+          fontWeight: FontWeight.w500,
+          color: Colors.white.withValues(alpha: 0.55),
         ),
-      ],
-    ),
+      ),
+    ],
   );
 
   void _confirmDeleteCampaign(Map<String, dynamic> c) {
@@ -1080,39 +1132,6 @@ class _PatientsScreenState extends State<PatientsScreen> {
                                   _vaPill('OS', p.os, p.outcome),
                                   const SizedBox(width: 4),
                                   _vaPill('OU', p.ou, p.outcome),
-                                ],
-                              ),
-                            )
-                          else
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _amber.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: _amber.withValues(alpha: 0.2),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.hourglass_top_rounded,
-                                    size: 11,
-                                    color: _amber,
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    'Awaiting screening',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 11,
-                                      color: _amber,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
                                 ],
                               ),
                             ),
@@ -1759,6 +1778,48 @@ class _PatientsScreenState extends State<PatientsScreen> {
 
   Future<void> _callPatient(PatientListItem p) async {
     await PatientActions.callPatient(context, p);
+  }
+}
+
+class _PatientsSummaryTile extends StatelessWidget {
+  const _PatientsSummaryTile({
+    required this.value,
+    required this.label,
+    required this.color,
+  });
+
+  final String value;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            value,
+            maxLines: 1,
+            style: VsText.display(
+              color: color,
+            ).copyWith(fontSize: 20, height: 1),
+          ),
+        ),
+        const SizedBox(height: 1),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: VsText.label(
+            color: VsColors.slate700,
+            w: FontWeight.w700,
+          ).copyWith(fontSize: 10),
+        ),
+      ],
+    );
   }
 }
 
@@ -2851,39 +2912,6 @@ class _CampaignPatientCardState extends State<_CampaignPatientCard> {
                                 const SizedBox(width: 5),
                                 _vaPill('OU', p.ou, p.outcome),
                               ],
-                            )
-                          else
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 9,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _amber.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: _amber.withValues(alpha: 0.2),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.hourglass_top_rounded,
-                                    size: 11,
-                                    color: _amber,
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    'Awaiting screening',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 11,
-                                      color: _amber,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
                             ),
                           if (p.safeConditions.isNotEmpty) ...[
                             const SizedBox(height: 6),

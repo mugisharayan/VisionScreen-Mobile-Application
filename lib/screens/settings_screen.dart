@@ -211,298 +211,293 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(0, 12, 0, 24),
-                child: Column(
-                  children: [
-                    _buildSection(
-                      title: 'Profile',
-                      children: [
-                        _buildRow(
-                          badgeColor: _C.teal,
-                          badgeIcon: Icons.local_hospital_outlined,
-                          label: _chwCenter.isNotEmpty ? _chwCenter : 'Not set',
-                          subtitle: 'Health center',
-                          showChevron: false,
-                        ),
-                        _buildRow(
-                          badgeColor: const Color(0xFF3B82F6),
-                          badgeIcon: Icons.location_on_outlined,
-                          label: _chwDistrict.isNotEmpty
-                              ? _chwDistrict
-                              : 'Not set',
-                          subtitle: 'District',
-                          showChevron: false,
-                        ),
-                        _buildRow(
-                          badgeColor: const Color(0xFFF59E0B),
-                          badgeIcon: Icons.mail_outline_rounded,
-                          label: _chwEmail.isNotEmpty ? _chwEmail : 'Not set',
-                          subtitle: 'Email address',
-                          showChevron: false,
-                        ),
-                        _buildRow(
-                          badgeColor: const Color(0xFF22C55E),
-                          badgeIcon: Icons.phone_outlined,
-                          label: _chwPhone.isNotEmpty
-                              ? '+256 $_chwPhone'
-                              : 'Not set',
-                          subtitle: 'Phone number',
-                          showChevron: false,
-                        ),
-                        _buildChwIdRow(),
-                      ],
-                    ),
-                    const SizedBox(height: 11),
-                    _buildSection(
-                      title: 'Account',
-                      children: [
-                        _buildRow(
-                          badgeColor: const Color(0xFF22C55E),
-                          badgeIcon: Icons.access_time_rounded,
-                          label: _lastLoginTime.isNotEmpty
-                              ? _formatLastLoginLabel(_lastLoginTime)
-                              : 'Not recorded yet',
-                          subtitle: 'Last login',
-                          showChevron: false,
-                          isFirst: true,
-                          trailing: _lastLoginRole.isNotEmpty
-                              ? Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 3,
+      body: Column(
+        children: [
+          _buildHeader(),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(0, 12, 0, 24),
+              child: Column(
+                children: [
+                  _buildSection(
+                    title: 'Profile',
+                    children: [
+                      _buildRow(
+                        badgeColor: _C.teal,
+                        badgeIcon: Icons.local_hospital_outlined,
+                        label: _chwCenter.isNotEmpty ? _chwCenter : 'Not set',
+                        subtitle: 'Health center',
+                        showChevron: false,
+                      ),
+                      _buildRow(
+                        badgeColor: const Color(0xFF3B82F6),
+                        badgeIcon: Icons.location_on_outlined,
+                        label: _chwDistrict.isNotEmpty
+                            ? _chwDistrict
+                            : 'Not set',
+                        subtitle: 'District',
+                        showChevron: false,
+                      ),
+                      _buildRow(
+                        badgeColor: const Color(0xFFF59E0B),
+                        badgeIcon: Icons.mail_outline_rounded,
+                        label: _chwEmail.isNotEmpty ? _chwEmail : 'Not set',
+                        subtitle: 'Email address',
+                        showChevron: false,
+                      ),
+                      _buildRow(
+                        badgeColor: const Color(0xFF22C55E),
+                        badgeIcon: Icons.phone_outlined,
+                        label: _chwPhone.isNotEmpty
+                            ? '+256 $_chwPhone'
+                            : 'Not set',
+                        subtitle: 'Phone number',
+                        showChevron: false,
+                      ),
+                      _buildChwIdRow(),
+                    ],
+                  ),
+                  const SizedBox(height: 11),
+                  _buildSection(
+                    title: 'Account',
+                    children: [
+                      _buildRow(
+                        badgeColor: const Color(0xFF22C55E),
+                        badgeIcon: Icons.access_time_rounded,
+                        label: _lastLoginTime.isNotEmpty
+                            ? _formatLastLoginLabel(_lastLoginTime)
+                            : 'Not recorded yet',
+                        subtitle: 'Last login',
+                        showChevron: false,
+                        isFirst: true,
+                        trailing: _lastLoginRole.isNotEmpty
+                            ? Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _C.teal.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(99),
+                                ),
+                                child: Text(
+                                  _lastLoginRole == 'Administrator'
+                                      ? 'Admin'
+                                      : 'CHW',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: _C.teal,
                                   ),
-                                  decoration: BoxDecoration(
-                                    color: _C.teal.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(99),
-                                  ),
-                                  child: Text(
-                                    _lastLoginRole == 'Administrator'
-                                        ? 'Admin'
-                                        : 'CHW',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      color: _C.teal,
-                                    ),
-                                  ),
-                                )
-                              : null,
+                                ),
+                              )
+                            : null,
+                      ),
+                      _buildRow(
+                        badgeColor: const Color(0xFF6366F1),
+                        badgeIcon: Icons.lock_outline_rounded,
+                        label: 'Change Password',
+                        subtitle: 'Update your account password',
+                        isLast: true,
+                        onTap: () => _showChangePasswordSheet(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 11),
+                  _buildSection(
+                    title: 'Preferences',
+                    children: [
+                      _buildRow(
+                        badgeColor: const Color(0xFF3B82F6),
+                        badgeIcon: Icons.language_rounded,
+                        label: 'Referral Language',
+                        subtitle: _language,
+                        isFirst: true,
+                        onTap: () => _showLanguagePicker(),
+                      ),
+                      _buildRow(
+                        badgeColor: const Color(0xFFF59E0B),
+                        badgeIcon: Icons.vibration_rounded,
+                        label: 'Haptic Feedback',
+                        subtitle: 'Vibrate on actions',
+                        showChevron: false,
+                        trailing: _buildToggle(
+                          value: _hapticFeedback,
+                          onChanged: _setHapticFeedback,
                         ),
-                        _buildRow(
-                          badgeColor: const Color(0xFF6366F1),
-                          badgeIcon: Icons.lock_outline_rounded,
-                          label: 'Change Password',
-                          subtitle: 'Update your account password',
-                          isLast: true,
-                          onTap: () => _showChangePasswordSheet(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 11),
+                  _buildSection(
+                    title: 'Screening',
+                    children: [
+                      _buildRow(
+                        badgeColor: const Color(0xFFEAB308),
+                        badgeIcon: Icons.wb_sunny_rounded,
+                        label: 'Brightness Lock',
+                        subtitle: 'Auto full brightness during test',
+                        showChevron: false,
+                        isLast: true,
+                        trailing: _buildToggle(
+                          value: _brightnessLock,
+                          onChanged: _setBrightnessLock,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 11),
-                    _buildSection(
-                      title: 'Preferences',
-                      children: [
-                        _buildRow(
-                          badgeColor: const Color(0xFF3B82F6),
-                          badgeIcon: Icons.language_rounded,
-                          label: 'Referral Language',
-                          subtitle: _language,
-                          isFirst: true,
-                          onTap: () => _showLanguagePicker(),
-                        ),
-                        _buildRow(
-                          badgeColor: const Color(0xFFF59E0B),
-                          badgeIcon: Icons.vibration_rounded,
-                          label: 'Haptic Feedback',
-                          subtitle: 'Vibrate on actions',
-                          showChevron: false,
-                          trailing: _buildToggle(
-                            value: _hapticFeedback,
-                            onChanged: _setHapticFeedback,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 11),
+                  _buildSection(
+                    title: 'Data & Sync',
+                    children: [
+                      _buildRow(
+                        badgeColor: const Color(0xFF22C55E),
+                        badgeIcon: Icons.cloud_outlined,
+                        label: 'Sync Status',
+                        subtitle: !_syncConfigured
+                            ? 'Cloud workspace is not configured.'
+                            : _lastSyncError.isNotEmpty
+                            ? 'Last sync failed. Tap Sync Now to retry.'
+                            : _unsyncedCount == 0
+                            ? (_lastSyncAt.isEmpty
+                                  ? 'All local changes are synced.'
+                                  : 'Last synced ${_formatLastLoginLabel(_lastSyncAt)}')
+                            : '$_unsyncedCount change${_unsyncedCount == 1 ? '' : 's'} waiting to sync',
+                        showChevron: false,
+                        isFirst: true,
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 4,
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 11),
-                    _buildSection(
-                      title: 'Screening',
-                      children: [
-                        _buildRow(
-                          badgeColor: const Color(0xFFEAB308),
-                          badgeIcon: Icons.wb_sunny_rounded,
-                          label: 'Brightness Lock',
-                          subtitle: 'Auto full brightness during test',
-                          showChevron: false,
-                          isLast: true,
-                          trailing: _buildToggle(
-                            value: _brightnessLock,
-                            onChanged: _setBrightnessLock,
+                          decoration: BoxDecoration(
+                            color: !_syncConfigured
+                                ? _C.red.withValues(alpha: 0.1)
+                                : _unsyncedCount == 0
+                                ? _C.green.withValues(alpha: 0.1)
+                                : _C.amber.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(99),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 11),
-                    _buildSection(
-                      title: 'Data & Sync',
-                      children: [
-                        _buildRow(
-                          badgeColor: const Color(0xFF22C55E),
-                          badgeIcon: Icons.cloud_outlined,
-                          label: 'Sync Status',
-                          subtitle: !_syncConfigured
-                              ? 'Cloud workspace is not configured.'
-                              : _lastSyncError.isNotEmpty
-                              ? 'Last sync failed. Tap Sync Now to retry.'
-                              : _unsyncedCount == 0
-                              ? (_lastSyncAt.isEmpty
-                                    ? 'All local changes are synced.'
-                                    : 'Last synced ${_formatLastLoginLabel(_lastSyncAt)}')
-                              : '$_unsyncedCount change${_unsyncedCount == 1 ? '' : 's'} waiting to sync',
-                          showChevron: false,
-                          isFirst: true,
-                          trailing: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 9,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
+                          child: Text(
+                            !_syncConfigured
+                                ? 'Offline'
+                                : _unsyncedCount == 0
+                                ? 'Synced'
+                                : 'Pending',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
                               color: !_syncConfigured
-                                  ? _C.red.withValues(alpha: 0.1)
+                                  ? _C.red
                                   : _unsyncedCount == 0
-                                  ? _C.green.withValues(alpha: 0.1)
-                                  : _C.amber.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(99),
-                            ),
-                            child: Text(
-                              !_syncConfigured
-                                  ? 'Offline'
-                                  : _unsyncedCount == 0
-                                  ? 'Synced'
-                                  : 'Pending',
-                              style: GoogleFonts.inter(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: !_syncConfigured
-                                    ? _C.red
-                                    : _unsyncedCount == 0
-                                    ? _C.green
-                                    : _C.amber,
-                              ),
+                                  ? _C.green
+                                  : _C.amber,
                             ),
                           ),
                         ),
-                        _buildRow(
-                          badgeColor: const Color(0xFF0EA5E9),
-                          badgeIcon: Icons.sync_rounded,
-                          label: 'Sync Now',
-                          subtitle:
-                              'Upload queued changes and refresh workspace data',
-                          onTap: _runSync,
-                        ),
-                        _buildRow(
-                          badgeColor: const Color(0xFF14B8A6),
-                          badgeIcon: Icons.save_alt_rounded,
-                          label: 'Create Cloud Backup',
-                          subtitle:
-                              'Save a full Atlas backup of this workspace',
-                          onTap: _createBackup,
-                        ),
-                        _buildRow(
-                          badgeColor: const Color(0xFFF59E0B),
-                          badgeIcon: Icons.restore_rounded,
-                          label: 'Restore Latest Cloud Backup',
-                          subtitle: _lastBackupAt.isEmpty
-                              ? 'Restore the latest backup for this facility'
-                              : 'Latest backup ${_formatLastLoginLabel(_lastBackupAt)}',
-                          onTap: _restoreLatestBackup,
-                        ),
-                        _buildRow(
-                          badgeColor: const Color(0xFF3B82F6),
-                          badgeIcon: Icons.picture_as_pdf_outlined,
-                          label: 'Export as PDF',
-                          subtitle:
-                              'Printable PDFs for patient, campaign and activity data',
-                          isLast: true,
-                          onTap: () => _showExportSheet(),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 11),
-                    _buildSection(
-                      title: 'Danger Zone',
-                      children: [
-                        _buildRow(
-                          badgeColor: const Color(0xFFEF4444),
-                          badgeIcon: Icons.delete_outline_rounded,
-                          label: 'Clear Local Workspace',
-                          labelColor: const Color(0xFFEF4444),
-                          subtitle:
-                              'Remove local records from this device only',
-                          isFirst: true,
-                          onTap: () => _showClearDataDialog(),
-                        ),
-                        _buildRow(
-                          badgeColor: const Color(0xFFEF4444),
-                          badgeIcon: Icons.logout_rounded,
-                          label: 'Logout',
-                          labelColor: const Color(0xFFEF4444),
-                          isLast: true,
-                          onTap: () => _showLogoutDialog(),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 11),
-                    _buildSection(
-                      title: 'About',
-                      children: [
-                        _buildRow(
-                          badgeColor: _C.teal,
-                          badgeIcon: Icons.info_outline_rounded,
-                          label: 'About VisionScreen',
-                          isFirst: true,
-                          onTap: () => _showAboutDialog(),
-                        ),
-                        _buildRow(
-                          badgeColor: _C.teal,
-                          badgeIcon: Icons.tag_rounded,
-                          label: 'Version',
-                          showChevron: false,
-                          isLast: true,
-                          trailing: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _C.teal.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(99),
-                            ),
-                            child: Text(
-                              'v1.0.0',
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: _C.teal,
-                              ),
+                      ),
+                      _buildRow(
+                        badgeColor: const Color(0xFF0EA5E9),
+                        badgeIcon: Icons.sync_rounded,
+                        label: 'Sync Now',
+                        subtitle:
+                            'Upload queued changes and refresh workspace data',
+                        onTap: _runSync,
+                      ),
+                      _buildRow(
+                        badgeColor: const Color(0xFF14B8A6),
+                        badgeIcon: Icons.save_alt_rounded,
+                        label: 'Create Cloud Backup',
+                        subtitle: 'Save a full Atlas backup of this workspace',
+                        onTap: _createBackup,
+                      ),
+                      _buildRow(
+                        badgeColor: const Color(0xFFF59E0B),
+                        badgeIcon: Icons.restore_rounded,
+                        label: 'Restore Latest Cloud Backup',
+                        subtitle: _lastBackupAt.isEmpty
+                            ? 'Restore the latest backup for this facility'
+                            : 'Latest backup ${_formatLastLoginLabel(_lastBackupAt)}',
+                        onTap: _restoreLatestBackup,
+                      ),
+                      _buildRow(
+                        badgeColor: const Color(0xFF3B82F6),
+                        badgeIcon: Icons.picture_as_pdf_outlined,
+                        label: 'Export as PDF',
+                        subtitle:
+                            'Printable PDFs for patient, campaign and activity data',
+                        isLast: true,
+                        onTap: () => _showExportSheet(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 11),
+                  _buildSection(
+                    title: 'Danger Zone',
+                    children: [
+                      _buildRow(
+                        badgeColor: const Color(0xFFEF4444),
+                        badgeIcon: Icons.delete_outline_rounded,
+                        label: 'Clear Local Workspace',
+                        labelColor: const Color(0xFFEF4444),
+                        subtitle: 'Remove local records from this device only',
+                        isFirst: true,
+                        onTap: () => _showClearDataDialog(),
+                      ),
+                      _buildRow(
+                        badgeColor: const Color(0xFFEF4444),
+                        badgeIcon: Icons.logout_rounded,
+                        label: 'Logout',
+                        labelColor: const Color(0xFFEF4444),
+                        isLast: true,
+                        onTap: () => _showLogoutDialog(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 11),
+                  _buildSection(
+                    title: 'About',
+                    children: [
+                      _buildRow(
+                        badgeColor: _C.teal,
+                        badgeIcon: Icons.info_outline_rounded,
+                        label: 'About VisionScreen',
+                        isFirst: true,
+                        onTap: () => _showAboutDialog(),
+                      ),
+                      _buildRow(
+                        badgeColor: _C.teal,
+                        badgeIcon: Icons.tag_rounded,
+                        label: 'Version',
+                        showChevron: false,
+                        isLast: true,
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _C.teal.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          child: Text(
+                            'v1.0.0',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: _C.teal,
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 80),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 96),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
       bottomNavigationBar: null,
     );

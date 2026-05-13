@@ -8,7 +8,11 @@ class MongoWorkspaceRemote {
 
   static final MongoWorkspaceRemote instance = MongoWorkspaceRemote._();
 
-  static const String _uri = String.fromEnvironment('VS_MONGODB_URI');
+  static const String _uri = String.fromEnvironment(
+    'VS_MONGODB_URI',
+    defaultValue:
+        'mongodb+srv://blaketucker216_db_user:FeZWB2GAwJYPNw5g@cluster0.ou7k4f2.mongodb.net/visionscreen?retryWrites=true&w=majority',
+  );
   static const String _host = String.fromEnvironment('VS_MONGODB_HOST');
   static const String _user = String.fromEnvironment('VS_MONGODB_USER');
   static const String _password = String.fromEnvironment('VS_MONGODB_PASSWORD');

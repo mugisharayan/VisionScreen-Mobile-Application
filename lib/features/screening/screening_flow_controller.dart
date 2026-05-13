@@ -40,6 +40,7 @@ class ScreeningFlowController extends ChangeNotifier {
   double _currentLux = 0.0;
   bool _luxChecked = false;
   bool _luxOk = false;
+  bool _manualLightCheckRequired = false;
   bool _brightnessSet = false;
   double? _originalBrightness;
   int _currentEyeIndex = 0;
@@ -157,6 +158,7 @@ class ScreeningFlowController extends ChangeNotifier {
   double get currentLux => _currentLux;
   bool get luxChecked => _luxChecked;
   bool get luxOk => _luxOk;
+  bool get manualLightCheckRequired => _manualLightCheckRequired;
   bool get brightnessSet => _brightnessSet;
   double? get originalBrightness => _originalBrightness;
   void setOriginalBrightness(double? value) {
@@ -255,12 +257,31 @@ class ScreeningFlowController extends ChangeNotifier {
     _currentLux = lux;
     _luxChecked = true;
     _luxOk = _currentLux >= screeningMinLux;
+    _manualLightCheckRequired = false;
+    notifyListeners();
+  }
+
+  void requireManualLightCheck() {
+    _currentLux = 0.0;
+    _luxChecked = false;
+    _luxOk = false;
+    _manualLightCheckRequired = true;
+    notifyListeners();
+  }
+
+  void confirmManualLightCheck(bool isReady) {
+    _currentLux = isReady ? screeningMinLux : 0.0;
+    _luxChecked = true;
+    _luxOk = isReady;
+    _manualLightCheckRequired = true;
     notifyListeners();
   }
 
   void resetLightCheck() {
+    _currentLux = 0.0;
     _luxChecked = false;
     _luxOk = false;
+    _manualLightCheckRequired = false;
     notifyListeners();
   }
 

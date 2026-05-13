@@ -13,10 +13,13 @@ import 'screens/forgot_password_screen.dart';
 import 'utils/app_theme.dart';
 import 'utils/page_transitions.dart';
 import 'utils/haptics.dart';
+import 'widgets/main_shell_scope.dart';
+import 'widgets/vs_logo.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = false;
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   // Status bar: transparent so the teal header bleeds through
   SystemChrome.setSystemUIOverlayStyle(
@@ -73,6 +76,8 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
+  static const double _navHeight = 54;
+
   late int _index;
 
   // FAB press animation
@@ -137,21 +142,27 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
     );
   }
 
+  void _selectTab(MainShellTab tab) => _onNavTap(tab.index);
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true,
-      backgroundColor: VsColors.scaffold,
-      body: IndexedStack(
-        index: _index,
-        children: const [
-          HomeScreen(),
-          PatientsScreen(),
-          ActivityScreen(),
-          SettingsScreen(),
-        ],
+    return MainShellScope(
+      currentTab: MainShellTab.values[_index],
+      onTabSelected: _selectTab,
+      child: Scaffold(
+        extendBody: true,
+        backgroundColor: VsColors.scaffold,
+        body: IndexedStack(
+          index: _index,
+          children: const [
+            HomeScreen(),
+            PatientsScreen(),
+            ActivityScreen(),
+            SettingsScreen(),
+          ],
+        ),
+        bottomNavigationBar: _buildNav(context),
       ),
-      bottomNavigationBar: _buildNav(context),
     );
   }
 
@@ -159,7 +170,7 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
     final bottomPad = MediaQuery.of(context).padding.bottom;
 
     return SizedBox(
-      height: 72 + bottomPad,
+      height: _navHeight + bottomPad,
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.topCenter,
@@ -176,7 +187,7 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
           Align(
             alignment: Alignment.topCenter,
             child: SizedBox(
-              height: 72,
+              height: _navHeight,
               child: Row(
                 children: [
                   ..._items
@@ -197,7 +208,7 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
 
           // ── FAB — nests inside the notch ──
           Positioned(
-            top: -40,
+            top: -38,
             child: Material(
               color: Colors.transparent,
               child: InkWell(
@@ -214,8 +225,8 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                   builder: (_, child) =>
                       Transform.scale(scale: _fabScale.value, child: child),
                   child: Container(
-                    width: 64,
-                    height: 64,
+                    width: 58,
+                    height: 58,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: VsColors.brand,
@@ -230,10 +241,8 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.remove_red_eye_rounded,
-                      color: Colors.white,
-                      size: 28,
+                    child: const Center(
+                      child: VsLogo(size: 27, showRing: false, onDark: true),
                     ),
                   ),
                 ),
@@ -257,7 +266,7 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
           highlightColor: VsColors.brand.withValues(alpha: 0.06),
           splashColor: VsColors.brand.withValues(alpha: 0.10),
           child: SizedBox(
-            height: 72,
+            height: _navHeight,
             child: AnimatedBuilder(
               animation: _itemCtrls[i],
               builder: (_, child) => Transform.scale(
@@ -273,8 +282,8 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 260),
                     curve: Curves.easeOutCubic,
-                    width: active ? 56 : 36,
-                    height: 32,
+                    width: active ? 44 : 28,
+                    height: 23,
                     decoration: BoxDecoration(
                       color: active
                           ? VsColors.brand.withValues(alpha: 0.13)
@@ -297,18 +306,18 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                         child: Icon(
                           active ? item.activeIcon : item.icon,
                           key: ValueKey<bool>(active),
-                          size: 20,
+                          size: 18,
                           color: tint,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 2),
                   AnimatedDefaultTextStyle(
                     duration: const Duration(milliseconds: 200),
                     curve: Curves.easeOut,
                     style: GoogleFonts.inter(
-                      fontSize: 11,
+                      fontSize: 10,
                       fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                       color: tint,
                       letterSpacing: active ? 0.1 : 0.0,
@@ -350,8 +359,8 @@ class _NavItem {
 class _NotchedNavPainter extends CustomPainter {
   const _NotchedNavPainter();
 
-  static const double _shoulderHalf = 64;
-  static const double _depth = 30;
+  static const double _shoulderHalf = 58;
+  static const double _depth = 24;
   static const double _flatness = 0.38;
 
   /// Horizontal gap the nav-items Row should leave at the centre. Includes a

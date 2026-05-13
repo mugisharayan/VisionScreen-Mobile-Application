@@ -137,11 +137,7 @@ class PatientActions {
       if (report == null) {
         return;
       }
-      await PdfService.openOrShare(
-        context,
-        report.filePath,
-        report.subject,
-      );
+      await PdfService.openOrShare(context, report.filePath, report.subject);
     } catch (error) {
       if (!context.mounted) {
         return;
@@ -163,16 +159,16 @@ class PatientActions {
     PatientListItem patient,
   ) async {
     final phone = normaliseWhatsAppPhone(patient.phone);
-    final encoded = Uri.encodeComponent(patient.whatsappMessage);
-    final uri = phone.isNotEmpty
-        ? Uri.parse('whatsapp://send?phone=$phone&text=$encoded')
-        : Uri.parse('whatsapp://send?text=$encoded');
+    final uri = Uri.https('api.whatsapp.com', '/send', {
+      if (phone.isNotEmpty) 'phone': phone,
+      'text': patient.whatsappMessage,
+    });
     final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!launched && context.mounted) {
       _showErrorSnackBar(
         context,
-        title: 'WhatsApp not available',
-        message: 'Could not open WhatsApp on this device.',
+        title: 'Unable to open WhatsApp',
+        message: 'This device could not open the WhatsApp share link.',
       );
     }
   }
@@ -242,9 +238,8 @@ class PatientActions {
     PatientListItem patient,
     String status,
   ) async {
-    final screenings = await ScreeningRepository.instance.getScreeningsForPatient(
-      patient.id,
-    );
+    final screenings = await ScreeningRepository.instance
+        .getScreeningsForPatient(patient.id);
     if (screenings.isEmpty) {
       return;
     }

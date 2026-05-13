@@ -74,8 +74,6 @@
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="tel" />
         </intent>
-        <package android:name="com.whatsapp" />
-        <package android:name="com.whatsapp.w4b" />
         <!-- TTS engine query -->
         <intent>
             <action android:name="android.intent.action.TTS_SERVICE" />

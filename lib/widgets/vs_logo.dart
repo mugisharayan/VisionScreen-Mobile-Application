@@ -14,17 +14,25 @@ import '../utils/app_theme.dart';
 // ─────────────────────────────────────────────────────────────
 
 class VsLogo extends StatelessWidget {
-  const VsLogo({super.key, this.size = 56, this.showRing = true});
+  const VsLogo({
+    super.key,
+    this.size = 56,
+    this.showRing = true,
+    this.onDark = false,
+  });
 
   final double size;
   final bool showRing;
+  final bool onDark;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: size,
       height: size,
-      child: CustomPaint(painter: _EyeMarkPainter(showRing: showRing)),
+      child: CustomPaint(
+        painter: _EyeMarkPainter(showRing: showRing, onDark: onDark),
+      ),
     );
   }
 }
@@ -73,9 +81,10 @@ class _VsLogoAnimatedState extends State<VsLogoAnimated>
 }
 
 class _EyeMarkPainter extends CustomPainter {
-  const _EyeMarkPainter({required this.showRing});
+  const _EyeMarkPainter({required this.showRing, required this.onDark});
 
   final bool showRing;
+  final bool onDark;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -84,40 +93,53 @@ class _EyeMarkPainter extends CustomPainter {
     final outerRadius = radius * 0.74;
     final irisRadius = outerRadius * 0.63;
     final pupilRadius = outerRadius * 0.29;
+    final ringColor = onDark
+        ? Colors.white.withValues(alpha: 0.42)
+        : VsColors.brandLight.withValues(alpha: 0.34);
+    final outerColor = onDark ? Colors.white : VsColors.brand;
+    final irisColor = onDark
+        ? VsColors.brandLight.withValues(alpha: 0.98)
+        : VsColors.brandLight;
+    final highlightColor = onDark
+        ? VsColors.brandDeep.withValues(alpha: 0.18)
+        : Colors.white.withValues(alpha: 0.94);
+    final secondaryHighlightColor = onDark
+        ? VsColors.brand.withValues(alpha: 0.22)
+        : Colors.white.withValues(alpha: 0.55);
 
     if (showRing) {
       canvas.drawCircle(
         center,
         radius * 0.92,
         Paint()
-          ..color = VsColors.brandLight.withValues(alpha: 0.34)
+          ..color = ringColor
           ..style = PaintingStyle.stroke
           ..strokeWidth = size.shortestSide * 0.055,
       );
     }
 
-    canvas.drawCircle(center, outerRadius, Paint()..color = VsColors.brand);
+    canvas.drawCircle(center, outerRadius, Paint()..color = outerColor);
 
-    canvas.drawCircle(center, irisRadius, Paint()..color = VsColors.brandLight);
+    canvas.drawCircle(center, irisRadius, Paint()..color = irisColor);
 
     canvas.drawCircle(center, pupilRadius, Paint()..color = VsColors.brandDeep);
 
     canvas.drawCircle(
       Offset(center.dx - outerRadius * 0.18, center.dy - outerRadius * 0.17),
       outerRadius * 0.085,
-      Paint()..color = Colors.white.withValues(alpha: 0.94),
+      Paint()..color = highlightColor,
     );
 
     canvas.drawCircle(
       Offset(center.dx + outerRadius * 0.11, center.dy + outerRadius * 0.12),
       outerRadius * 0.035,
-      Paint()..color = Colors.white.withValues(alpha: 0.55),
+      Paint()..color = secondaryHighlightColor,
     );
   }
 
   @override
   bool shouldRepaint(_EyeMarkPainter oldDelegate) =>
-      oldDelegate.showRing != showRing;
+      oldDelegate.showRing != showRing || oldDelegate.onDark != onDark;
 }
 
 class VsLogoWordmark extends StatelessWidget {
