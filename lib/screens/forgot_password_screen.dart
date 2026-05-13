@@ -5,6 +5,7 @@ import 'auth_widgets.dart';
 import '../repositories/auth_repository.dart';
 import '../utils/app_theme.dart';
 import '../widgets/vs_auth_hero.dart';
+import '../widgets/vs_line_loader.dart';
 import '../widgets/vs_ui.dart';
 
 // ─────────────────────────────────────────────────────────────
@@ -172,6 +173,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               },
             ),
           ),
+          // In-flight strip loader for the two async steps:
+          // identity verification (step 2) and password reset (step 3).
+          VsLineLoader(active: _phoneLoading || _resetLoading),
           if (!keyboardOpen)
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 4),

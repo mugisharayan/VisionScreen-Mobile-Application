@@ -8,6 +8,8 @@ import '../utils/app_constants.dart';
 import '../utils/legal_copy.dart';
 import '../utils/app_theme.dart';
 import '../widgets/vs_auth_hero.dart';
+import '../widgets/vs_line_loader.dart';
+import '../widgets/vs_toast.dart';
 import '../widgets/vs_ui.dart';
 
 // ─────────────────────────────────────────────────────────────
@@ -36,6 +38,7 @@ class _LoginScreenState extends State<LoginScreen>
   // Login form extras
   bool _rememberMe = false;
   bool _loginLoading = false;
+  bool _signUpLoading = false;
 
   // Sign up form
   final _signUpNameCtrl = TextEditingController();
@@ -131,22 +134,10 @@ class _LoginScreenState extends State<LoginScreen>
 
   void _signUp() {
     if (!_termsAgreed) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: VsColors.slate900,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          content: Text(
-            'Please read and agree to the Terms of Service & Privacy Policy.',
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              color: const Color(0xFFEF4444),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
+      VsToast.showText(
+        context,
+        'Please read and agree to the Terms of Service and Privacy Policy.',
+        backgroundColor: VsColors.rose,
       );
       return;
     }
@@ -181,6 +172,7 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _saveSignUp() async {
+    setState(() => _signUpLoading = true);
     final result = await AuthRepository.instance.signUp(
       name: _signUpNameCtrl.text,
       center: _signUpCentreCtrl.text,
@@ -192,9 +184,13 @@ class _LoginScreenState extends State<LoginScreen>
     );
     if (!mounted) return;
     if (!result.success) {
-      setState(() => _signUpEmailError = result.errorMessage);
+      setState(() {
+        _signUpLoading = false;
+        _signUpEmailError = result.errorMessage;
+      });
       return;
     }
+    setState(() => _signUpLoading = false);
     Navigator.of(context).pushReplacementNamed('/home');
   }
 
@@ -337,6 +333,13 @@ class _LoginScreenState extends State<LoginScreen>
           // ── Branded auth hero (no tab switcher) ──
           _AuthHeroZone(isSignUp: _showSignUp),
 
+          // ── In-flight action indicator ──
+          // Thin strip flushes against the hero's bottom edge and
+          // animates left-to-right while sign-in / sign-up is in
+          // progress, giving the user immediate feedback that the
+          // tap registered without a heavy modal spinner.
+          VsLineLoader(active: _loginLoading || _signUpLoading),
+
           // ── White scrollable form area ──
           Expanded(
             child: SingleChildScrollView(
@@ -417,6 +420,7 @@ class _LoginScreenState extends State<LoginScreen>
                         passwordVisible: _signUpPasswordVisible,
                         confirmPasswordVisible: _signUpConfirmPasswordVisible,
                         passwordValue: _signUpPasswordValue,
+                        loading: _signUpLoading,
                         nameError: _signUpNameError,
                         centreError: _signUpCentreError,
                         districtError: _signUpDistrictError,
@@ -792,6 +796,7 @@ class _NewSignUpForm extends StatefulWidget {
     required this.termsAgreed,
     required this.onTermsAgreedChanged,
     required this.onGoLogin,
+    required this.loading,
     this.nameError,
     this.centreError,
     this.districtError,
@@ -824,6 +829,7 @@ class _NewSignUpForm extends StatefulWidget {
   final bool termsAgreed;
   final ValueChanged<bool> onTermsAgreedChanged;
   final VoidCallback onGoLogin;
+  final bool loading;
   final String? nameError;
   final String? centreError;
   final String? districtError;
@@ -1054,6 +1060,7 @@ class _NewSignUpFormState extends State<_NewSignUpForm>
               AuthGreenPillButton(
                 label: 'Create account',
                 icon: Icons.person_add_outlined,
+                loading: widget.loading,
                 onTap: widget.onSignUp,
               ),
               const SizedBox(height: 24),

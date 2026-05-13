@@ -283,13 +283,5 @@ class VsTheme {
         vertical: VsSpace.sm,
       ),
     ),
-    snackBarTheme: SnackBarThemeData(
-      backgroundColor: VsColors.slate900,
-      contentTextStyle: VsText.body(color: Colors.white),
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(VsRadius.md),
-      ),
-    ),
   );
 }

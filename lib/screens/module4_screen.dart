@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/module_illustrations.dart';
+import '../widgets/vs_toast.dart';
 import '../widgets/vs_ui.dart';
 
 class Module4Screen extends StatefulWidget {
@@ -375,22 +376,11 @@ class _Module4ScreenState extends State<Module4Screen> {
                   onTap: () {
                     if (isLast) {
                       widget.onCompleted?.call();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Module 4 completed.',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: Colors.white,
-                            ),
-                          ),
-                          backgroundColor: color,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          duration: const Duration(seconds: 3),
-                        ),
+                      VsToast.showText(
+                        context,
+                        'Module 4 completed.',
+                        backgroundColor: color,
+                        duration: const Duration(seconds: 3),
                       );
                       Navigator.pop(context);
                     } else {

@@ -14,6 +14,7 @@ import '../utils/page_transitions.dart';
 import '../utils/haptics.dart';
 import '../utils/app_theme.dart';
 import '../widgets/main_shell_scope.dart';
+import '../widgets/vs_toast.dart';
 import '../widgets/vs_ui.dart';
 
 // -- Colours (shared with the rest of the app) --
@@ -145,22 +146,10 @@ Future<void> _showReferralStatusSheet(
                   if (!context.mounted) {
                     return;
                   }
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Status updated to ${statusOption.label}${patient.name.isEmpty ? '' : ' for ${patient.name}'}',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: Colors.white,
-                        ),
-                      ),
-                      backgroundColor: statusOption.color,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      duration: const Duration(seconds: 2),
-                    ),
+                  VsToast.showText(
+                    context,
+                    'Status updated to ${statusOption.label}${patient.name.isEmpty ? '' : ' for ${patient.name}'}',
+                    backgroundColor: statusOption.color,
                   );
                 },
                 borderRadius: BorderRadius.circular(14),
@@ -908,22 +897,10 @@ class _PatientsScreenState extends State<PatientsScreen> {
               await _controller.deleteCampaign(c['id'] as String);
               await _loadPatients();
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Campaign "${c['name']}" deleted.',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: Colors.white,
-                      ),
-                    ),
-                    backgroundColor: _red,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    duration: const Duration(seconds: 2),
-                  ),
+                VsToast.showText(
+                  context,
+                  'Campaign "${c['name']}" deleted.',
+                  backgroundColor: _red,
                 );
               }
             },
@@ -1501,22 +1478,10 @@ class _PatientsScreenState extends State<PatientsScreen> {
               await _controller.deletePatient(p.id);
               await _loadPatients();
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      '${p.name} deleted',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: Colors.white,
-                      ),
-                    ),
-                    backgroundColor: _red,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    duration: const Duration(seconds: 2),
-                  ),
+                VsToast.showText(
+                  context,
+                  '${p.name} deleted',
+                  backgroundColor: _red,
                 );
               }
             },

@@ -16,6 +16,7 @@ import '../features/screening/screening_flow_controller.dart';
 import '../services/permission_coordinator.dart';
 import '../utils/patient_validators.dart';
 import '../utils/visual_acuity.dart';
+import '../widgets/vs_toast.dart';
 import '../widgets/vs_ui.dart';
 
 // ── Colours ──────────────────────────────────────────────────────────────────
@@ -1484,22 +1485,11 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 
               final firstError = nameErr ?? dobErr ?? vilErr ?? phoneErr;
               if (firstError != null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      firstError,
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: Colors.white,
-                      ),
-                    ),
-                    backgroundColor: _red,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    duration: const Duration(seconds: 3),
-                  ),
+                VsToast.showText(
+                  context,
+                  firstError,
+                  backgroundColor: _red,
+                  duration: const Duration(seconds: 3),
                 );
                 return;
               }

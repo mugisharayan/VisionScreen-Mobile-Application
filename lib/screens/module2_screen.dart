@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/module_illustrations.dart';
+import '../widgets/vs_toast.dart';
 import '../widgets/vs_ui.dart';
 
 class Module2Screen extends StatefulWidget {
@@ -358,30 +359,18 @@ class _Module2ScreenState extends State<Module2Screen> {
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: () {
-                  if (isLast) {
-                    widget.onCompleted?.call();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Module 2 completed.',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: Colors.white,
-                          ),
-                        ),
+                    if (isLast) {
+                      widget.onCompleted?.call();
+                      VsToast.showText(
+                        context,
+                        'Module 2 completed.',
                         backgroundColor: color,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                    Navigator.pop(context);
-                  } else {
-                    setState(() => _currentStep++);
-                  }
-                },
+                      );
+                      Navigator.pop(context);
+                    } else {
+                      setState(() => _currentStep++);
+                    }
+                  },
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 14),

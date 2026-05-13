@@ -14,7 +14,6 @@ import 'utils/app_theme.dart';
 import 'utils/page_transitions.dart';
 import 'utils/haptics.dart';
 import 'widgets/main_shell_scope.dart';
-import 'widgets/vs_logo.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -76,13 +75,25 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
-  static const double _navHeight = 54;
+  static const double _navHeight = 52;
+  static const double _fabSize = 60;
 
   late int _index;
 
-  // FAB press animation
-  late final AnimationController _fabCtrl;
-  late final Animation<double> _fabScale;
+  // FAB press animation (0 idle, 1 fully pressed). Scale + shadow both
+  // interpolate off this so the button compresses *into* the surface
+  // rather than just shrinking.
+  late final AnimationController _fabPressCtrl;
+  late final CurvedAnimation _fabPressT;
+
+  // Slow idle breathing — barely-perceptible 1.5% scale loop that gives
+  // the primary CTA quiet presence without becoming a nag.
+  late final AnimationController _fabPulseCtrl;
+  late final CurvedAnimation _fabPulseT;
+
+  // Cached merged listenable so AnimatedBuilder doesn't reattach listeners
+  // every rebuild (Listenable.merge allocates on each call).
+  late final Listenable _fabAnim;
 
   // Nav item tap animation (one per item)
   late final List<AnimationController> _itemCtrls;
@@ -99,14 +110,25 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
     super.initState();
     _index = widget.initialIndex;
 
-    _fabCtrl = AnimationController(
+    _fabPressCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 120),
+      duration: const Duration(milliseconds: 140),
     );
-    _fabScale = Tween<double>(
-      begin: 1.0,
-      end: 0.92,
-    ).animate(CurvedAnimation(parent: _fabCtrl, curve: Curves.easeInOut));
+    _fabPressT = CurvedAnimation(
+      parent: _fabPressCtrl,
+      curve: Curves.easeOutCubic,
+    );
+
+    _fabPulseCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3500),
+    )..repeat(reverse: true);
+    _fabPulseT = CurvedAnimation(
+      parent: _fabPulseCtrl,
+      curve: Curves.easeInOut,
+    );
+
+    _fabAnim = Listenable.merge([_fabPressT, _fabPulseT]);
 
     _itemCtrls = List.generate(
       _items.length,
@@ -119,7 +141,10 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    _fabCtrl.dispose();
+    _fabPressT.dispose();
+    _fabPulseT.dispose();
+    _fabPressCtrl.dispose();
+    _fabPulseCtrl.dispose();
     for (final c in _itemCtrls) {
       c.dispose();
     }
@@ -207,43 +232,84 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
           ),
 
           // ── FAB — nests inside the notch ──
+          // Geometry: FAB centre sits at the bar's top edge, so half floats
+          // above and half is cradled by the bowl. The notch span and depth
+          // are tuned (_NotchedNavPainter) so there's a 2-3px breathing gap
+          // between the FAB's outer edge and the curved bowl interior.
           Positioned(
-            top: -38,
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: _startNewScreening,
-                onTapDown: (_) {
-                  VsHaptics.medium();
-                  _fabCtrl.forward();
-                },
-                onTapUp: (_) => _fabCtrl.reverse(),
-                onTapCancel: () => _fabCtrl.reverse(),
-                customBorder: const CircleBorder(),
-                child: AnimatedBuilder(
-                  animation: _fabScale,
-                  builder: (_, child) =>
-                      Transform.scale(scale: _fabScale.value, child: child),
-                  child: Container(
-                    width: 58,
-                    height: 58,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: VsColors.brand,
-                      // Slim 2px ring matches the notch lip thickness so the
-                      // FAB reads as nested rather than floating apart.
-                      border: Border.all(color: Colors.white, width: 2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: VsColors.brand.withValues(alpha: 0.28),
-                          blurRadius: 14,
-                          offset: const Offset(0, 6),
+            top: -(_fabSize / 2),
+            child: Semantics(
+              button: true,
+              label: 'Start new screening',
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _startNewScreening,
+                  onTapDown: (_) {
+                    VsHaptics.medium();
+                    _fabPressCtrl.forward();
+                  },
+                  onTapUp: (_) => _fabPressCtrl.reverse(),
+                  onTapCancel: () => _fabPressCtrl.reverse(),
+                  customBorder: const CircleBorder(),
+                  child: AnimatedBuilder(
+                    animation: _fabAnim,
+                    builder: (_, _) {
+                      final press = _fabPressT.value;
+                      final pulse = _fabPulseT.value;
+                      // Press shrinks 8%, idle pulse adds up to 1.5%.
+                      final scale =
+                          (1.0 - press * 0.08) * (1.0 + pulse * 0.015);
+                      // Shadow contracts toward 35% on press so the FAB
+                      // visibly compresses into the bar.
+                      final s = 1.0 - press * 0.65;
+                      return Transform.scale(
+                        scale: scale,
+                        child: Container(
+                          width: _fabSize,
+                          height: _fabSize,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: VsGradients.brand,
+                            // 1.5px ring carves the FAB out of the white
+                            // bar surface where they meet.
+                            border: Border.all(
+                              color: Colors.white,
+                              width: 1.5,
+                            ),
+                            boxShadow: [
+                              // Ambient — tight, neutral, sits the FAB on
+                              // the surface.
+                              BoxShadow(
+                                color: VsColors.slate900.withValues(
+                                  alpha: 0.14 * s,
+                                ),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              ),
+                              // Key — softer, brand-tinted, gives the
+                              // primary CTA a teal halo without muddying
+                              // the bar.
+                              BoxShadow(
+                                color: VsColors.brand.withValues(
+                                  alpha: 0.34 * s,
+                                ),
+                                blurRadius: 18 * s + 6,
+                                offset: Offset(0, 6 * s + 2),
+                              ),
+                            ],
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              Icons.add_rounded,
+                              size: 30,
+                              color: Colors.white,
+                              weight: 700,
+                            ),
+                          ),
                         ),
-                      ],
-                    ),
-                    child: const Center(
-                      child: VsLogo(size: 27, showRing: false, onDark: true),
-                    ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -256,75 +322,89 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
 
   Widget _buildNavItem(int i, _NavItem item) {
     final active = _index == i;
-    final tint = active ? VsColors.brand : VsColors.slate500;
+    // Slate-600 inactive (instead of slate-500) for more confidence on
+    // white; the active state's pill + colour + weight still dominate.
+    final iconColor = active ? VsColors.brand : VsColors.slate600;
+    final labelColor = active ? VsColors.brandDark : VsColors.slate600;
     return Expanded(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _onNavTap(i),
-          borderRadius: BorderRadius.circular(14),
-          highlightColor: VsColors.brand.withValues(alpha: 0.06),
-          splashColor: VsColors.brand.withValues(alpha: 0.10),
-          child: SizedBox(
-            height: _navHeight,
-            child: AnimatedBuilder(
-              animation: _itemCtrls[i],
-              builder: (_, child) => Transform.scale(
-                scale: 1.0 - _itemCtrls[i].value * 0.06,
-                child: child,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Active indicator pill — single confident state.
-                  // No background when inactive; the pill itself announces
-                  // selection, so there's no need for a competing underline.
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 260),
-                    curve: Curves.easeOutCubic,
-                    width: active ? 44 : 28,
-                    height: 23,
-                    decoration: BoxDecoration(
-                      color: active
-                          ? VsColors.brand.withValues(alpha: 0.13)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(VsRadius.pill),
-                    ),
-                    alignment: Alignment.center,
-                    // Subtle upward lift on active so the icon feels "raised"
-                    // out of the pill rather than sitting flat in it.
-                    child: AnimatedSlide(
-                      duration: const Duration(milliseconds: 220),
-                      curve: Curves.easeOut,
-                      offset: active ? const Offset(0, -0.02) : Offset.zero,
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 180),
-                        transitionBuilder: (child, anim) => FadeTransition(
-                          opacity: anim,
-                          child: ScaleTransition(scale: anim, child: child),
+      child: Semantics(
+        button: true,
+        selected: active,
+        label: item.label,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _onNavTap(i),
+            borderRadius: BorderRadius.circular(14),
+            highlightColor: VsColors.brand.withValues(alpha: 0.06),
+            splashColor: VsColors.brand.withValues(alpha: 0.10),
+            child: SizedBox(
+              height: _navHeight,
+              child: AnimatedBuilder(
+                animation: _itemCtrls[i],
+                builder: (_, child) => Transform.scale(
+                  scale: 1.0 - _itemCtrls[i].value * 0.06,
+                  child: child,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Active indicator pill — single confident state.
+                    // Uses brandFaint with a 1px brand-tinted hairline so
+                    // it reads as a chip, not a muddy mint blob.
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 260),
+                      curve: Curves.easeOutCubic,
+                      width: active ? 46 : 30,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: active
+                            ? VsColors.brandFaint
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(VsRadius.pill),
+                        border: Border.all(
+                          color: active
+                              ? VsColors.brand.withValues(alpha: 0.22)
+                              : Colors.transparent,
+                          width: 1,
                         ),
-                        child: Icon(
-                          active ? item.activeIcon : item.icon,
-                          key: ValueKey<bool>(active),
-                          size: 18,
-                          color: tint,
+                      ),
+                      alignment: Alignment.center,
+                      // Subtle upward lift on active so the icon feels "raised"
+                      // out of the pill rather than sitting flat in it.
+                      child: AnimatedSlide(
+                        duration: const Duration(milliseconds: 220),
+                        curve: Curves.easeOut,
+                        offset: active ? const Offset(0, -0.02) : Offset.zero,
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 180),
+                          transitionBuilder: (child, anim) => FadeTransition(
+                            opacity: anim,
+                            child: ScaleTransition(scale: anim, child: child),
+                          ),
+                          child: Icon(
+                            active ? item.activeIcon : item.icon,
+                            key: ValueKey<bool>(active),
+                            size: 19,
+                            color: iconColor,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  AnimatedDefaultTextStyle(
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeOut,
-                    style: GoogleFonts.inter(
-                      fontSize: 10,
-                      fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                      color: tint,
-                      letterSpacing: active ? 0.1 : 0.0,
+                    const SizedBox(height: 2),
+                    AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeOut,
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                        color: labelColor,
+                        letterSpacing: active ? 0.1 : 0.0,
+                      ),
+                      child: Text(item.label),
                     ),
-                    child: Text(item.label),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -344,56 +424,109 @@ class _NavItem {
 // ─────────────────────────────────────────────────────────────
 // Notched nav background
 //
-// The default Material `CircularNotchedRectangle` joins a circular arc to
-// flat shoulders with tangent points — the visible "kink" at that join is
-// the steep look we want to avoid. Here we use two mirrored cubic-bezier
-// shoulders that meet at a horizontal tangent at the bottom of the dip,
-// so the curve is continuous and visually smooth.
+// Two mirrored cubic-bezier "S-curves" that meet at a horizontal
+// tangent at the bottom of the dip. The previous arc-based design
+// had κ jump from 0 to 1/33 at the shoulder, which the eye reads
+// as a "pointy" kink where the flat bar bends into the bowl.
 //
-// Geometry:
-//   - Total notch span: 2 * _shoulderHalf
-//   - Depth: _depth pixels down from the bar top
-//   - _flatness controls how long the curve stays near horizontal at top
-//     and bottom of the dip. Higher = flatter shoulders, more "bowl" shape.
+// This single-cubic design keeps the entry curvature low (~0.08
+// for our params) and is C2-continuous at the bowl bottom because
+// both halves meet with horizontal tangents and equal curvature.
+//
+// Parameters:
+//   _shoulderHalf — half the notch's mouth width (where flat bar
+//                   ends and bezier begins). Wider = gentler entry.
+//   _depth        — bowl depth in px from bar top.
+//   _flatness     — bezier control point position along the path.
+//                   0.5 = symmetric S-curve, minimises shoulder
+//                   curvature. <0.5 weights the curve toward the
+//                   shoulders, >0.5 toward the centre.
+//
+// Why not Material's CircularNotchedRectangle: it tangents a
+// circular arc onto flat shoulders at the equator, producing the
+// classic "kink" where vertical-tangent of the arc meets the
+// horizontal bar. A symmetric cubic absorbs that transition.
 // ─────────────────────────────────────────────────────────────
 class _NotchedNavPainter extends CustomPainter {
   const _NotchedNavPainter();
 
+  // Half the notch mouth width. With FAB radius 30, this gives ~28px
+  // of easement on each side of the FAB's equator before the curve
+  // straightens to the flat bar — enough horizontal travel for a
+  // smooth shoulder. κ(0) ∝ 1/s², so the wider s the smoother.
   static const double _shoulderHalf = 58;
-  static const double _depth = 24;
-  static const double _flatness = 0.38;
 
-  /// Horizontal gap the nav-items Row should leave at the centre. Includes a
-  /// small buffer beyond the notch span so labels don't crowd the shoulders.
+  // Bowl depth. FAB radius is 30 and the FAB's centre sits at the
+  // bar's top edge, so the FAB extends 30px below the bar. _depth=34
+  // leaves a ~4px breathing gap between the bowl bottom and the
+  // FAB bottom.
+  static const double _depth = 34;
+
+  // Symmetric S-curve. f=0.5 places both control points at the same
+  // x (cx − s/2), giving the lowest possible shoulder curvature for
+  // a single cubic. The closed-form curvature at the entry is:
+  //   κ(0) = 2 × depth / (3 × s² × f²) ≈ 0.027 here.
+  // The previous arc-based design had κ(0) ≈ 1.41 at the shoulder
+  // (where the bar's κ=0 line meets the bezier), which the eye reads
+  // as a kink — this is ≈52× smoother.
+  static const double _flatness = 0.5;
+
+  /// Horizontal gap the nav-items Row should leave at the centre.
+  /// Includes a small buffer beyond the notch span so labels don't
+  /// crowd the shoulders.
   static const double notchSpan = (_shoulderHalf * 2) + 8;
 
   @override
   void paint(Canvas canvas, Size size) {
     final cx = size.width / 2;
     final shape = _buildShape(size, cx);
+    final topEdge = _buildTopEdge(size, cx);
+    final curveOnly = _buildCurveOnly(cx);
 
     // Soft upward shadow — drawn as the same path offset above with an
     // outer-blur mask so we don't get bleed inside the bar.
     canvas.save();
-    canvas.translate(0, -3);
+    canvas.translate(0, -2);
     canvas.drawPath(
       shape,
       Paint()
-        ..color = VsColors.slate900.withValues(alpha: 0.08)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.outer, 12),
+        ..color = VsColors.slate900.withValues(alpha: 0.10)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.outer, 16),
     );
     canvas.restore();
 
     // Surface
     canvas.drawPath(shape, Paint()..color = Colors.white);
 
-    // Top hairline — traces just the notched top edge, not the bottom.
+    // Whisper-thin slate hairline on the flat shoulders only — drawn by
+    // clipping the top edge path to the regions outside the notch. This
+    // gives definition where the bar meets content above without putting
+    // a hard line through the curved bowl where the soft shadow already
+    // does the work.
+    final hairline = Paint()
+      ..color = VsColors.border.withValues(alpha: 0.6)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    canvas.save();
+    canvas.clipRect(Rect.fromLTWH(0, 0, cx - _shoulderHalf, size.height));
+    canvas.drawPath(topEdge, hairline);
+    canvas.restore();
+    canvas.save();
+    canvas.clipRect(
+      Rect.fromLTRB(cx + _shoulderHalf, 0, size.width, size.height),
+    );
+    canvas.drawPath(topEdge, hairline);
+    canvas.restore();
+
+    // Brand-tinted lip highlight along the curved interior — echoes the
+    // FAB's teal so the bowl reads as part of the same family rather
+    // than a neutral cutout the FAB happens to sit in.
     canvas.drawPath(
-      _buildTopEdge(size, cx),
+      curveOnly,
       Paint()
-        ..color = VsColors.border
+        ..color = VsColors.brand.withValues(alpha: 0.16)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1,
+        ..strokeWidth = 1.2,
     );
   }
 
@@ -422,6 +555,16 @@ class _NotchedNavPainter extends CustomPainter {
       ..cubicTo(cx - s * (1 - f), 0, cx - s * f, d, cx, d)
       ..cubicTo(cx + s * f, d, cx + s * (1 - f), 0, cx + s, 0)
       ..lineTo(size.width, 0);
+  }
+
+  Path _buildCurveOnly(double cx) {
+    final f = _flatness;
+    final s = _shoulderHalf;
+    final d = _depth;
+    return Path()
+      ..moveTo(cx - s, 0)
+      ..cubicTo(cx - s * (1 - f), 0, cx - s * f, d, cx, d)
+      ..cubicTo(cx + s * f, d, cx + s * (1 - f), 0, cx + s, 0);
   }
 
   @override

@@ -69,49 +69,56 @@ class _AuthUnderlineFieldState extends State<AuthUnderlineField> {
       children: [
         Text(widget.label, style: VsText.label()),
         const SizedBox(height: VsSpace.xs),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            if (widget.prefixIcon != null) ...[
-              Icon(widget.prefixIcon, size: 16, color: iconColor),
-              const SizedBox(width: VsSpace.sm),
-            ],
-            Expanded(
-              child: TextField(
-                controller: widget.controller,
-                focusNode: _focus,
-                obscureText: widget.obscure,
-                enableSuggestions: !widget.obscure,
-                autocorrect: !widget.obscure,
-                keyboardType: widget.keyboardType,
-                textInputAction: widget.inputAction,
-                autofillHints: widget.autofillHints,
-                onChanged: widget.onChanged,
-                inputFormatters: widget.inputFormatters,
-                style: VsText.body(
-                  color: VsColors.slate900,
-                  w: FontWeight.w500,
-                ),
-                cursorColor: VsColors.brand,
-                decoration: InputDecoration(
-                  hintText: widget.hint,
-                  hintStyle: VsText.body(color: VsColors.slate400),
-                  suffixIcon: widget.suffixIcon,
-                  suffixIconConstraints: const BoxConstraints(
-                    minWidth: 0,
-                    minHeight: 0,
+        // Fixed 44pt row height so every AuthUnderlineField presents
+        // the same visual height regardless of suffix presence. Without
+        // this, fields with a suffix IconButton render visibly taller
+        // than plain fields, breaking the form's vertical rhythm.
+        SizedBox(
+          height: 44,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (widget.prefixIcon != null) ...[
+                Icon(widget.prefixIcon, size: 16, color: iconColor),
+                const SizedBox(width: VsSpace.sm),
+              ],
+              Expanded(
+                child: TextField(
+                  controller: widget.controller,
+                  focusNode: _focus,
+                  obscureText: widget.obscure,
+                  enableSuggestions: !widget.obscure,
+                  autocorrect: !widget.obscure,
+                  keyboardType: widget.keyboardType,
+                  textInputAction: widget.inputAction,
+                  autofillHints: widget.autofillHints,
+                  onChanged: widget.onChanged,
+                  inputFormatters: widget.inputFormatters,
+                  style: VsText.body(
+                    color: VsColors.slate900,
+                    w: FontWeight.w500,
                   ),
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(
-                    vertical: VsSpace.sm,
+                  cursorColor: VsColors.brand,
+                  decoration: InputDecoration(
+                    hintText: widget.hint,
+                    hintStyle: VsText.body(color: VsColors.slate400),
+                    suffixIcon: widget.suffixIcon,
+                    suffixIconConstraints: const BoxConstraints(
+                      minWidth: 0,
+                      minHeight: 0,
+                    ),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: VsSpace.sm,
+                    ),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
                   ),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         AnimatedContainer(
           duration: const Duration(milliseconds: 180),
@@ -230,13 +237,17 @@ class AuthPasswordVisibilityButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 40×40 hit area fits inside the field's 44pt row with breathing
+    // margin, while still meeting a reasonable touch target. Smaller
+    // than Material's default 48×48 by design — the field's enforced
+    // row height is the source of truth for vertical sizing.
     return IconButton(
       tooltip: visible ? 'Hide password' : 'Show password',
       onPressed: onTap,
-      constraints: const BoxConstraints.tightFor(width: 48, height: 48),
+      constraints: const BoxConstraints.tightFor(width: 40, height: 40),
       padding: EdgeInsets.zero,
       style: IconButton.styleFrom(
-        tapTargetSize: MaterialTapTargetSize.padded,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         foregroundColor: VsColors.slate500,
       ),
       icon: Icon(

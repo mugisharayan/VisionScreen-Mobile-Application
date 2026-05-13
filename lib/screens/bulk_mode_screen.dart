@@ -11,6 +11,7 @@ import 'face_distance_screen.dart';
 import '../utils/app_theme.dart';
 import '../utils/patient_validators.dart';
 import '../utils/visual_acuity.dart';
+import '../widgets/vs_toast.dart';
 import '../widgets/vs_ui.dart';
 
 const _ink = Color(0xFF04091A);
@@ -422,19 +423,10 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
     final name = _campaignNameCtrl.text.trim();
     final location = _locationCtrl.text.trim();
     if (name.isEmpty || location.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Please fill in campaign name and location.',
-            style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
-          ),
-          backgroundColor: _red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          duration: const Duration(seconds: 2),
-        ),
+      VsToast.showText(
+        context,
+        'Please fill in campaign name and location.',
+        backgroundColor: _red,
       );
       return;
     }
@@ -927,19 +919,11 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
 
     final firstError = nameErr ?? ageErr ?? phoneErr;
     if (firstError != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            firstError,
-            style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
-          ),
-          backgroundColor: _red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          duration: const Duration(seconds: 3),
-        ),
+      VsToast.showText(
+        context,
+        firstError,
+        backgroundColor: _red,
+        duration: const Duration(seconds: 3),
       );
       return;
     }

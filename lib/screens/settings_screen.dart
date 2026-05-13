@@ -16,6 +16,8 @@ import '../utils/app_theme.dart';
 import '../utils/haptics.dart';
 import '../utils/id_utils.dart';
 import '../utils/legal_copy.dart';
+import '../widgets/vs_logo.dart';
+import '../widgets/vs_toast.dart';
 import '../widgets/vs_ui.dart';
 import '../features/settings/settings_export_service.dart';
 
@@ -137,6 +139,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return '${days[local.weekday - 1]}, ${local.day} ${months[local.month - 1]} $hh:$mm';
   }
 
+  String get _roleLabel => _lastLoginRole == 'Administrator' ? 'Admin' : 'CHW';
+
+  String get _profileSummary {
+    final location = [
+      _chwCenter,
+      _chwDistrict,
+    ].where((part) => part.trim().isNotEmpty).join(' · ');
+    if (location.isNotEmpty) {
+      return location;
+    }
+    if (_chwEmail.isNotEmpty) {
+      return _chwEmail;
+    }
+    return 'Health center, contact and badge details';
+  }
+
+  String get _accountSummary {
+    if (_lastLoginTime.isEmpty) {
+      return 'Password, role and sign-in details';
+    }
+    return 'Last login ${_formatLastLoginLabel(_lastLoginTime)}';
+  }
+
+  String get _preferencesSummary =>
+      '$_language · ${_hapticFeedback ? 'Haptics on' : 'Haptics off'}';
+
+  String get _screeningSummary =>
+      _brightnessLock ? 'Brightness lock is on' : 'Brightness lock is off';
+
+  String get _dataSyncSummary {
+    if (!_syncConfigured) {
+      return 'Cloud workspace ready by default';
+    }
+    if (_lastSyncError.isNotEmpty) {
+      return 'Last sync failed. Open to retry or restore.';
+    }
+    if (_unsyncedCount == 0) {
+      if (_lastSyncAt.isEmpty) {
+        return 'All local changes are synced';
+      }
+      return 'Last synced ${_formatLastLoginLabel(_lastSyncAt)}';
+    }
+    return '$_unsyncedCount change${_unsyncedCount == 1 ? '' : 's'} waiting to sync';
+  }
+
   Future<void> _setBrightnessLock(bool value) async {
     setState(() => _brightnessLock = value);
     final p = await SharedPreferences.getInstance();
@@ -154,7 +201,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final result = await SyncService.instance.syncNow();
     await _loadProfile();
     if (!mounted) return;
-    _showSnack(
+    _showToast(
       result.success
           ? 'Sync finished: ${result.appliedChanges} uploaded, ${result.restoredRecords} refreshed.'
           : result.errorMessage ?? 'Sync failed.',
@@ -166,7 +213,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final result = await SyncService.instance.createBackup();
     await _loadProfile();
     if (!mounted) return;
-    _showSnack(
+    _showToast(
       result.success
           ? 'Cloud backup saved with ${result.rowsCaptured} rows.'
           : result.errorMessage ?? 'Backup failed.',
@@ -178,7 +225,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final result = await SyncService.instance.restoreLatestBackup();
     await _loadProfile();
     if (!mounted) return;
-    _showSnack(
+    _showToast(
       result.success
           ? 'Cloud backup restored: ${result.rowsRestored} rows across ${result.tablesRestored} tables.'
           : result.errorMessage ?? 'Restore failed.',
@@ -203,11 +250,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   ];
 
   @override
-  void dispose() {
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -219,152 +261,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
               padding: const EdgeInsets.fromLTRB(0, 12, 0, 24),
               child: Column(
                 children: [
-                  _buildSection(
-                    title: 'Profile',
-                    children: [
-                      _buildRow(
-                        badgeColor: _C.teal,
-                        badgeIcon: Icons.local_hospital_outlined,
-                        label: _chwCenter.isNotEmpty ? _chwCenter : 'Not set',
-                        subtitle: 'Health center',
-                        showChevron: false,
-                      ),
-                      _buildRow(
-                        badgeColor: const Color(0xFF3B82F6),
-                        badgeIcon: Icons.location_on_outlined,
-                        label: _chwDistrict.isNotEmpty
-                            ? _chwDistrict
-                            : 'Not set',
-                        subtitle: 'District',
-                        showChevron: false,
-                      ),
-                      _buildRow(
-                        badgeColor: const Color(0xFFF59E0B),
-                        badgeIcon: Icons.mail_outline_rounded,
-                        label: _chwEmail.isNotEmpty ? _chwEmail : 'Not set',
-                        subtitle: 'Email address',
-                        showChevron: false,
-                      ),
-                      _buildRow(
-                        badgeColor: const Color(0xFF22C55E),
-                        badgeIcon: Icons.phone_outlined,
-                        label: _chwPhone.isNotEmpty
-                            ? '+256 $_chwPhone'
-                            : 'Not set',
-                        subtitle: 'Phone number',
-                        showChevron: false,
-                      ),
-                      _buildChwIdRow(),
-                    ],
-                  ),
-                  const SizedBox(height: 11),
+                  // ── Account group ──
+                  // Identity-and-preferences cluster. Three drill-down
+                  // rows live in one card so the section header earns
+                  // its keep (was 1-row-per-header before).
                   _buildSection(
                     title: 'Account',
                     children: [
                       _buildRow(
-                        badgeColor: const Color(0xFF22C55E),
-                        badgeIcon: Icons.access_time_rounded,
-                        label: _lastLoginTime.isNotEmpty
-                            ? _formatLastLoginLabel(_lastLoginTime)
-                            : 'Not recorded yet',
-                        subtitle: 'Last login',
-                        showChevron: false,
+                        badgeColor: _C.teal,
+                        badgeIcon: Icons.person_outline_rounded,
+                        label: _chwName.isNotEmpty ? _chwName : 'Profile',
+                        subtitle: _profileSummary,
                         isFirst: true,
-                        trailing: _lastLoginRole.isNotEmpty
-                            ? Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: _C.teal.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(99),
-                                ),
-                                child: Text(
-                                  _lastLoginRole == 'Administrator'
-                                      ? 'Admin'
-                                      : 'CHW',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: _C.teal,
-                                  ),
-                                ),
-                              )
-                            : null,
+                        onTap: _showProfileOverviewSheet,
                       ),
                       _buildRow(
                         badgeColor: const Color(0xFF6366F1),
                         badgeIcon: Icons.lock_outline_rounded,
-                        label: 'Change Password',
-                        subtitle: 'Update your account password',
-                        isLast: true,
-                        onTap: () => _showChangePasswordSheet(),
+                        label: 'Sign-in & security',
+                        subtitle: _accountSummary,
+                        onTap: _showAccountSheet,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 11),
-                  _buildSection(
-                    title: 'Preferences',
-                    children: [
                       _buildRow(
                         badgeColor: const Color(0xFF3B82F6),
-                        badgeIcon: Icons.language_rounded,
-                        label: 'Referral Language',
-                        subtitle: _language,
-                        isFirst: true,
-                        onTap: () => _showLanguagePicker(),
-                      ),
-                      _buildRow(
-                        badgeColor: const Color(0xFFF59E0B),
-                        badgeIcon: Icons.vibration_rounded,
-                        label: 'Haptic Feedback',
-                        subtitle: 'Vibrate on actions',
-                        showChevron: false,
-                        trailing: _buildToggle(
-                          value: _hapticFeedback,
-                          onChanged: _setHapticFeedback,
-                        ),
+                        badgeIcon: Icons.tune_rounded,
+                        label: 'Preferences',
+                        subtitle: _preferencesSummary,
+                        isLast: true,
+                        onTap: _showPreferencesSheet,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 11),
+                  const SizedBox(height: 14),
+                  // ── App group ──
+                  // Workflow + data plumbing + product info. Status
+                  // pill on Data & Sync is preserved here.
                   _buildSection(
-                    title: 'Screening',
+                    title: 'App',
                     children: [
                       _buildRow(
                         badgeColor: const Color(0xFFEAB308),
-                        badgeIcon: Icons.wb_sunny_rounded,
-                        label: 'Brightness Lock',
-                        subtitle: 'Auto full brightness during test',
-                        showChevron: false,
-                        isLast: true,
-                        trailing: _buildToggle(
-                          value: _brightnessLock,
-                          onChanged: _setBrightnessLock,
-                        ),
+                        badgeIcon: Icons.remove_red_eye_outlined,
+                        label: 'Screening',
+                        subtitle: _screeningSummary,
+                        isFirst: true,
+                        onTap: _showScreeningSheet,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 11),
-                  _buildSection(
-                    title: 'Data & Sync',
-                    children: [
                       _buildRow(
                         badgeColor: const Color(0xFF22C55E),
                         badgeIcon: Icons.cloud_outlined,
-                        label: 'Sync Status',
-                        subtitle: !_syncConfigured
-                            ? 'Cloud workspace is not configured.'
-                            : _lastSyncError.isNotEmpty
-                            ? 'Last sync failed. Tap Sync Now to retry.'
-                            : _unsyncedCount == 0
-                            ? (_lastSyncAt.isEmpty
-                                  ? 'All local changes are synced.'
-                                  : 'Last synced ${_formatLastLoginLabel(_lastSyncAt)}')
-                            : '$_unsyncedCount change${_unsyncedCount == 1 ? '' : 's'} waiting to sync',
-                        showChevron: false,
-                        isFirst: true,
+                        label: 'Data & Sync',
+                        subtitle: _dataSyncSummary,
                         trailing: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 9,
@@ -395,100 +343,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                         ),
+                        onTap: _showDataAndSyncSheet,
                       ),
-                      _buildRow(
-                        badgeColor: const Color(0xFF0EA5E9),
-                        badgeIcon: Icons.sync_rounded,
-                        label: 'Sync Now',
-                        subtitle:
-                            'Upload queued changes and refresh workspace data',
-                        onTap: _runSync,
-                      ),
-                      _buildRow(
-                        badgeColor: const Color(0xFF14B8A6),
-                        badgeIcon: Icons.save_alt_rounded,
-                        label: 'Create Cloud Backup',
-                        subtitle: 'Save a full Atlas backup of this workspace',
-                        onTap: _createBackup,
-                      ),
-                      _buildRow(
-                        badgeColor: const Color(0xFFF59E0B),
-                        badgeIcon: Icons.restore_rounded,
-                        label: 'Restore Latest Cloud Backup',
-                        subtitle: _lastBackupAt.isEmpty
-                            ? 'Restore the latest backup for this facility'
-                            : 'Latest backup ${_formatLastLoginLabel(_lastBackupAt)}',
-                        onTap: _restoreLatestBackup,
-                      ),
-                      _buildRow(
-                        badgeColor: const Color(0xFF3B82F6),
-                        badgeIcon: Icons.picture_as_pdf_outlined,
-                        label: 'Export as PDF',
-                        subtitle:
-                            'Printable PDFs for patient, campaign and activity data',
-                        isLast: true,
-                        onTap: () => _showExportSheet(),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 11),
-                  _buildSection(
-                    title: 'Danger Zone',
-                    children: [
-                      _buildRow(
-                        badgeColor: const Color(0xFFEF4444),
-                        badgeIcon: Icons.delete_outline_rounded,
-                        label: 'Clear Local Workspace',
-                        labelColor: const Color(0xFFEF4444),
-                        subtitle: 'Remove local records from this device only',
-                        isFirst: true,
-                        onTap: () => _showClearDataDialog(),
-                      ),
-                      _buildRow(
-                        badgeColor: const Color(0xFFEF4444),
-                        badgeIcon: Icons.logout_rounded,
-                        label: 'Logout',
-                        labelColor: const Color(0xFFEF4444),
-                        isLast: true,
-                        onTap: () => _showLogoutDialog(),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 11),
-                  _buildSection(
-                    title: 'About',
-                    children: [
                       _buildRow(
                         badgeColor: _C.teal,
                         badgeIcon: Icons.info_outline_rounded,
                         label: 'About VisionScreen',
-                        isFirst: true,
-                        onTap: () => _showAboutDialog(),
-                      ),
-                      _buildRow(
-                        badgeColor: _C.teal,
-                        badgeIcon: Icons.tag_rounded,
-                        label: 'Version',
-                        showChevron: false,
+                        subtitle: 'Version, support, privacy and release notes',
                         isLast: true,
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _C.teal.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(99),
-                          ),
-                          child: Text(
-                            'v1.0.0',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: _C.teal,
-                            ),
-                          ),
-                        ),
+                        onTap: _showAboutDialog,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  // ── Danger row ──
+                  // Separated into its own card (no group header) so it
+                  // doesn't sit next to neutral rows. Red badge + red
+                  // label are the only visual difference needed.
+                  _buildSection(
+                    children: [
+                      _buildRow(
+                        badgeColor: const Color(0xFFEF4444),
+                        badgeIcon: Icons.shield_outlined,
+                        label: 'Device & Session',
+                        labelColor: const Color(0xFFEF4444),
+                        subtitle: 'Clear local workspace or log out',
+                        isFirst: true,
+                        isLast: true,
+                        onTap: _showDangerZoneSheet,
                       ),
                     ],
                   ),
@@ -1132,7 +1014,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               await _loadProfile();
                               if (mounted) {
                                 Navigator.pop(context);
-                                _showSnack('Profile updated', _C.teal);
+                                _showToast('Profile updated', _C.teal);
                               }
                             },
                       style: ElevatedButton.styleFrom(
@@ -1235,40 +1117,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSection({
-    required String title,
-    required List<Widget> children,
-  }) {
+  Widget _buildSection({String? title, required List<Widget> children}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 2, bottom: 8),
-            child: Row(
-              children: [
-                Container(
-                  width: 3,
-                  height: 13,
-                  decoration: BoxDecoration(
-                    color: _C.teal,
-                    borderRadius: BorderRadius.circular(99),
+          if (title != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 2, bottom: 8),
+              child: Row(
+                children: [
+                  Container(
+                    width: 3,
+                    height: 13,
+                    decoration: BoxDecoration(
+                      color: _C.teal,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 7),
-                Text(
-                  title.toUpperCase(),
-                  style: GoogleFonts.inter(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF475569),
-                    letterSpacing: 1.4,
+                  const SizedBox(width: 7),
+                  Text(
+                    title.toUpperCase(),
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF475569),
+                      letterSpacing: 1.4,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -1401,69 +1281,389 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildChwIdRow() {
-    return ClipRRect(
-      borderRadius: const BorderRadius.only(
-        bottomLeft: Radius.circular(16),
-        bottomRight: Radius.circular(16),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: _C.teal,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.badge_outlined,
-                size: 18,
-                color: Colors.white,
-              ),
+  void _showProfileOverviewSheet() {
+    _showSettingsDetailSheet(
+      title: 'Profile',
+      icon: Icons.person_outline_rounded,
+      iconColor: _C.teal,
+      subtitle: 'Contact and badge details for this device',
+      rows: [
+        _buildRow(
+          badgeColor: _C.teal,
+          badgeIcon: Icons.local_hospital_outlined,
+          label: _chwCenter.isNotEmpty ? _chwCenter : 'Not set',
+          subtitle: 'Health center',
+          showChevron: false,
+          isFirst: true,
+        ),
+        _buildRow(
+          badgeColor: const Color(0xFF3B82F6),
+          badgeIcon: Icons.location_on_outlined,
+          label: _chwDistrict.isNotEmpty ? _chwDistrict : 'Not set',
+          subtitle: 'District',
+          showChevron: false,
+        ),
+        _buildRow(
+          badgeColor: const Color(0xFFF59E0B),
+          badgeIcon: Icons.mail_outline_rounded,
+          label: _chwEmail.isNotEmpty ? _chwEmail : 'Not set',
+          subtitle: 'Email address',
+          showChevron: false,
+        ),
+        _buildRow(
+          badgeColor: const Color(0xFF22C55E),
+          badgeIcon: Icons.phone_outlined,
+          label: _chwPhone.isNotEmpty ? '+256 $_chwPhone' : 'Not set',
+          subtitle: 'Phone number',
+          showChevron: false,
+        ),
+        _buildRow(
+          badgeColor: _C.teal,
+          badgeIcon: Icons.badge_outlined,
+          label: _chwId.isNotEmpty ? _chwId : 'No ID assigned',
+          subtitle: 'CHW badge ID',
+          showChevron: false,
+          isLast: true,
+          trailing: _chwId.isNotEmpty
+              ? _buildStatusPill(
+                  'Active',
+                  _C.teal,
+                  _C.teal.withValues(alpha: 0.1),
+                )
+              : null,
+        ),
+      ],
+      footer: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+            Future<void>.delayed(Duration.zero, _showEditProfileSheet);
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _C.teal,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _chwId.isNotEmpty ? _chwId : 'No ID assigned',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: _chwId.isNotEmpty
-                          ? const Color(0xFF1C1C1E)
-                          : _C.g400,
+            elevation: 0,
+          ),
+          child: Text(
+            'Edit Profile',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAccountSheet() {
+    _showSettingsDetailSheet(
+      title: 'Sign-in & security',
+      icon: Icons.lock_outline_rounded,
+      iconColor: const Color(0xFF6366F1),
+      subtitle: 'Password and sign-in details',
+      rows: [
+        _buildRow(
+          badgeColor: const Color(0xFF22C55E),
+          badgeIcon: Icons.access_time_rounded,
+          label: _lastLoginTime.isNotEmpty
+              ? _formatLastLoginLabel(_lastLoginTime)
+              : 'Not recorded yet',
+          subtitle: 'Last login',
+          showChevron: false,
+          isFirst: true,
+          trailing: _lastLoginRole.isNotEmpty
+              ? _buildStatusPill(
+                  _roleLabel,
+                  _C.teal,
+                  _C.teal.withValues(alpha: 0.1),
+                )
+              : null,
+        ),
+        _buildRow(
+          badgeColor: const Color(0xFF6366F1),
+          badgeIcon: Icons.lock_outline_rounded,
+          label: 'Change Password',
+          subtitle: 'Update your account password',
+          isLast: true,
+          onTap: _showChangePasswordSheet,
+        ),
+      ],
+    );
+  }
+
+  void _showPreferencesSheet() {
+    _showSettingsDetailSheet(
+      title: 'Preferences',
+      icon: Icons.tune_rounded,
+      iconColor: const Color(0xFF3B82F6),
+      subtitle: 'Language and feedback preferences',
+      rows: [
+        _buildRow(
+          badgeColor: const Color(0xFF3B82F6),
+          badgeIcon: Icons.language_rounded,
+          label: 'Referral Language',
+          subtitle: _language,
+          isFirst: true,
+          onTap: _showLanguagePicker,
+        ),
+        _buildRow(
+          badgeColor: const Color(0xFFF59E0B),
+          badgeIcon: Icons.vibration_rounded,
+          label: 'Haptic Feedback',
+          subtitle: 'Vibrate on actions',
+          showChevron: false,
+          isLast: true,
+          trailing: _buildToggle(
+            value: _hapticFeedback,
+            onChanged: _setHapticFeedback,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showScreeningSheet() {
+    _showSettingsDetailSheet(
+      title: 'Screening',
+      icon: Icons.remove_red_eye_outlined,
+      iconColor: const Color(0xFFEAB308),
+      subtitle: 'Behavior during active tests',
+      rows: [
+        _buildRow(
+          badgeColor: const Color(0xFFEAB308),
+          badgeIcon: Icons.wb_sunny_rounded,
+          label: 'Brightness Lock',
+          subtitle: 'Auto full brightness during test',
+          showChevron: false,
+          isFirst: true,
+          isLast: true,
+          trailing: _buildToggle(
+            value: _brightnessLock,
+            onChanged: _setBrightnessLock,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showDataAndSyncSheet() {
+    _showSettingsDetailSheet(
+      title: 'Data & Sync',
+      icon: Icons.cloud_outlined,
+      iconColor: _C.teal,
+      subtitle: 'Cloud sync, backup, restore and exports',
+      rows: [
+        _buildRow(
+          badgeColor: const Color(0xFF22C55E),
+          badgeIcon: Icons.cloud_outlined,
+          label: 'Sync Status',
+          subtitle: _dataSyncSummary,
+          showChevron: false,
+          isFirst: true,
+          trailing: _buildStatusPill(
+            !_syncConfigured
+                ? 'Offline'
+                : _unsyncedCount == 0
+                ? 'Synced'
+                : 'Pending',
+            !_syncConfigured
+                ? _C.red
+                : _unsyncedCount == 0
+                ? _C.green
+                : _C.amber,
+            (!_syncConfigured
+                    ? _C.red
+                    : _unsyncedCount == 0
+                    ? _C.green
+                    : _C.amber)
+                .withValues(alpha: 0.1),
+          ),
+        ),
+        _buildRow(
+          badgeColor: const Color(0xFF0EA5E9),
+          badgeIcon: Icons.sync_rounded,
+          label: 'Sync Now',
+          subtitle: 'Upload queued changes and refresh workspace data',
+          onTap: _runSync,
+        ),
+        _buildRow(
+          badgeColor: const Color(0xFF14B8A6),
+          badgeIcon: Icons.save_alt_rounded,
+          label: 'Create Cloud Backup',
+          subtitle: 'Save a full Atlas backup of this workspace',
+          onTap: _createBackup,
+        ),
+        _buildRow(
+          badgeColor: const Color(0xFFF59E0B),
+          badgeIcon: Icons.restore_rounded,
+          label: 'Restore Latest Cloud Backup',
+          subtitle: _lastBackupAt.isEmpty
+              ? 'Restore the latest backup for this facility'
+              : 'Latest backup ${_formatLastLoginLabel(_lastBackupAt)}',
+          onTap: _restoreLatestBackup,
+        ),
+        _buildRow(
+          badgeColor: const Color(0xFF3B82F6),
+          badgeIcon: Icons.picture_as_pdf_outlined,
+          label: 'Export as PDF',
+          subtitle: 'Patient, campaign and activity PDFs',
+          isLast: true,
+          onTap: _showExportSheet,
+        ),
+      ],
+    );
+  }
+
+  void _showDangerZoneSheet() {
+    _showSettingsDetailSheet(
+      title: 'Device & Session',
+      icon: Icons.shield_outlined,
+      iconColor: _C.red,
+      subtitle: 'Device-only cleanup and sign-out actions',
+      rows: [
+        _buildRow(
+          badgeColor: _C.red,
+          badgeIcon: Icons.delete_outline_rounded,
+          label: 'Clear Local Workspace',
+          labelColor: _C.red,
+          subtitle: 'Remove local records from this device only',
+          isFirst: true,
+          onTap: _showClearDataDialog,
+        ),
+        _buildRow(
+          badgeColor: _C.red,
+          badgeIcon: Icons.logout_rounded,
+          label: 'Logout',
+          labelColor: _C.red,
+          subtitle: 'Return to the sign-in screen',
+          isLast: true,
+          onTap: _showLogoutDialog,
+        ),
+      ],
+    );
+  }
+
+  void _showSettingsDetailSheet({
+    required String title,
+    required IconData icon,
+    required Color iconColor,
+    required String subtitle,
+    required List<Widget> rows,
+    Widget? footer,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetCtx) => Container(
+        // White surface extends edge-to-edge at the bottom so there's
+        // no gray gap behind the home indicator. SafeArea is moved
+        // INSIDE the container to pad content above the indicator
+        // without pulling the white surface up.
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+              20,
+              16,
+              20,
+              28 + MediaQuery.of(sheetCtx).viewInsets.bottom,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: _C.g200,
+                      borderRadius: BorderRadius.circular(99),
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'CHW Badge ID - Prints on referrals',
-                    style: GoogleFonts.inter(fontSize: 12, color: _C.g400),
+                ),
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: iconColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(icon, color: iconColor, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              color: _C.g800,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: _C.g400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFFE2E8F0),
+                      width: 1,
+                    ),
                   ),
-                ],
-              ),
+                  child: Column(children: _intersperse(rows)),
+                ),
+                if (footer != null) ...[const SizedBox(height: 16), footer],
+              ],
             ),
-            if (_chwId.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: _C.teal.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(99),
-                ),
-                child: Text(
-                  'Active',
-                  style: GoogleFonts.inter(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: _C.teal,
-                  ),
-                ),
-              ),
-          ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusPill(String label, Color color, Color background) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(99),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.inter(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: color,
         ),
       ),
     );
@@ -1605,20 +1805,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showSnack(String msg, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          msg,
-          style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
-        ),
-        backgroundColor: color,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: const Duration(seconds: 2),
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      ),
-    );
+  void _showToast(String msg, Color color) {
+    VsToast.showText(context, msg, backgroundColor: color);
   }
 
   void _showClearDataDialog() {
@@ -1699,7 +1887,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         Navigator.pop(context);
                         await DatabaseHelper.instance.clearWorkspaceData();
                         if (mounted) {
-                          _showSnack(
+                          _showToast(
                             'Local workspace cleared from this device.',
                             _C.teal,
                           );
@@ -1807,15 +1995,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        SharedPreferences.getInstance().then((prefs) {
-                          prefs.setBool(AppStrings.prefRememberMe, false);
-                          prefs.remove(AppStrings.prefRememberedEmail);
-                        });
-                        Navigator.of(
-                          context,
-                        ).pushNamedAndRemoveUntil('/login', (_) => false);
+                      onPressed: () async {
+                        final nav = Navigator.of(context, rootNavigator: true);
+                        nav.pop();
+                        VsToast.hide();
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.setBool(AppStrings.prefRememberMe, false);
+                        await prefs.remove(AppStrings.prefRememberedEmail);
+                        if (!mounted) return;
+                        nav.pushNamedAndRemoveUntil('/login', (_) => false);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _C.teal,
@@ -1883,65 +2071,110 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 28),
         child: Container(
+          // clipBehavior so the dark-gradient header's rectangular
+          // edges are trimmed to the dialog's rounded outline.
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.20),
+                blurRadius: 32,
+                offset: const Offset(0, 14),
+              ),
+            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // ── Header: brand mark on dark ink gradient ──
+              // Uses the actual VsLogo eye mark (onDark variant) so the
+              // dialog carries real brand identity instead of a generic
+              // eye icon. Radial teal halo behind the mark anchors it
+              // visually against the dark backdrop.
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(22),
+                padding: const EdgeInsets.fromLTRB(24, 30, 24, 26),
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     colors: [_C.ink, _C.ink2],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                 ),
                 child: Column(
                   children: [
                     Container(
-                      width: 56,
-                      height: 56,
+                      width: 96,
+                      height: 96,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [_C.teal, _C.teal2],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            _C.teal.withValues(alpha: 0.32),
+                            _C.teal.withValues(alpha: 0.0),
+                          ],
+                          stops: const [0.4, 1.0],
                         ),
-                        borderRadius: BorderRadius.circular(16),
                       ),
-                      child: const Icon(
-                        Icons.remove_red_eye_rounded,
-                        color: Colors.white,
-                        size: 26,
+                      child: const Center(
+                        child: VsLogo(size: 64, onDark: true),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'VisionScreen',
-                      style: GoogleFonts.inter(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
+                    const SizedBox(height: 16),
+                    // Wordmark — matches the splash/login treatment.
+                    RichText(
+                      text: TextSpan(
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                        ),
+                        children: const [
+                          TextSpan(
+                            text: 'Vision',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          TextSpan(
+                            text: 'Screen',
+                            style: TextStyle(color: _C.teal3),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Version 1.0.0',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: _C.teal3.withValues(alpha: 0.7),
+                    const SizedBox(height: 10),
+                    // Quiet version chip — outlined, not filled, so it
+                    // doesn't compete with the wordmark for attention.
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(99),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.18),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        'Version 1.0.0',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white.withValues(alpha: 0.85),
+                          letterSpacing: 0.3,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
+              // ── Body: info rows ──
               Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
                 child: Column(
                   children: [
                     _aboutRow(
@@ -1951,7 +2184,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     _aboutRow(
                       Icons.visibility_rounded,
-                      'Test Method',
+                      'Test method',
                       'Tumbling E with LogMAR scoring',
                     ),
                     _aboutRow(
@@ -1961,7 +2194,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     _aboutRow(
                       Icons.cloud_sync_rounded,
-                      'Cloud Sync',
+                      'Cloud sync',
                       _syncConfigured
                           ? 'MongoDB workspace enabled'
                           : 'Not configured in this build',
@@ -1971,82 +2204,88 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       'Support',
                       'support@visionscreen.ug',
                     ),
-                    const SizedBox(height: 16),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        OutlinedButton.icon(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            Future<void>.delayed(
-                              Duration.zero,
-                              _showChangelogSheet,
-                            );
-                          },
-                          icon: const Icon(
-                            Icons.auto_awesome_rounded,
-                            size: 16,
-                          ),
-                          label: const Text("What's New"),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            Future<void>.delayed(
-                              Duration.zero,
-                              _showTermsOfService,
-                            );
-                          },
-                          icon: const Icon(Icons.gavel_rounded, size: 16),
-                          label: const Text('Terms'),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            Future<void>.delayed(
-                              Duration.zero,
-                              _showPrivacyPolicy,
-                            );
-                          },
-                          icon: const Icon(
-                            Icons.lock_outline_rounded,
-                            size: 16,
-                          ),
-                          label: const Text('Privacy'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _C.teal,
-                          padding: const EdgeInsets.symmetric(vertical: 13),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: Text(
-                          'Close',
-                          style: GoogleFonts.inter(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
+                  ],
+                ),
+              ),
+              // ── Inline links ──
+              // Replaces the three competing OutlinedButton.icon
+              // widgets with quiet text links + bullet separators.
+              // The dialog now ends on info, not button clutter.
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 14),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _aboutLink("What's new", () {
+                      Navigator.pop(context);
+                      Future<void>.delayed(Duration.zero, _showChangelogSheet);
+                    }),
+                    _aboutDot(),
+                    _aboutLink('Terms', () {
+                      Navigator.pop(context);
+                      Future<void>.delayed(Duration.zero, _showTermsOfService);
+                    }),
+                    _aboutDot(),
+                    _aboutLink('Privacy', () {
+                      Navigator.pop(context);
+                      Future<void>.delayed(Duration.zero, _showPrivacyPolicy);
+                    }),
+                  ],
+                ),
+              ),
+              // ── Close: subdued, divider-separated ──
+              const Divider(height: 1, thickness: 1, color: Color(0xFFEEF2F6)),
+              InkWell(
+                onTap: () => Navigator.pop(context),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    child: Text(
+                      'Close',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: _C.teal,
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  // Inline text link used in the About dialog footer.
+  Widget _aboutLink(String label, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: _C.teal,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Tiny bullet separator between About-dialog links.
+  Widget _aboutDot() {
+    return Container(
+      width: 3,
+      height: 3,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      decoration: const BoxDecoration(color: _C.g300, shape: BoxShape.circle),
     );
   }
 
@@ -2300,7 +2539,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               }
                               if (ctx.mounted) Navigator.pop(ctx);
                               if (mounted) {
-                                _showSnack(
+                                _showToast(
                                   'Password updated successfully!',
                                   _C.teal,
                                 );
@@ -2574,7 +2813,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _exportPDF() async {
     try {
-      _showSnack('Generating patient records PDF...', _C.teal);
+      _showToast('Generating patient records PDF...', _C.teal);
       final file = await SettingsExportService.exportPatientRecordsPdf(
         SettingsExportProfile(
           chwName: _chwName,
@@ -2584,25 +2823,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       );
       if (file == null) {
-        _showSnack('No patients to export.', _C.amber);
+        _showToast('No patients to export.', _C.amber);
         return;
       }
 
       if (mounted) {
-        _showSnack(
+        _showToast(
           'Patient records PDF saved: ${file.path.split('/').last}',
           _C.green,
         );
         await OpenFilex.open(file.path);
       }
     } catch (e) {
-      if (mounted) _showSnack('Export failed: ${e.toString()}', _C.red);
+      if (mounted) _showToast('Export failed: ${e.toString()}', _C.red);
     }
   }
 
   Future<void> _exportCampaignPDF() async {
     try {
-      _showSnack('Generating campaign records PDF...', _C.teal);
+      _showToast('Generating campaign records PDF...', _C.teal);
       final file = await SettingsExportService.exportCampaignRecordsPdf(
         SettingsExportProfile(
           chwName: _chwName,
@@ -2612,25 +2851,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       );
       if (file == null) {
-        if (mounted) _showSnack('No campaigns found to export.', _C.amber);
+        if (mounted) _showToast('No campaigns found to export.', _C.amber);
         return;
       }
 
       if (mounted) {
-        _showSnack(
+        _showToast(
           'Campaign PDF saved: ${file.path.split('/').last}',
           _C.green,
         );
         await OpenFilex.open(file.path);
       }
     } catch (e) {
-      if (mounted) _showSnack('Export failed. Please try again.', _C.red);
+      if (mounted) _showToast('Export failed. Please try again.', _C.red);
     }
   }
 
   Future<void> _exportActivityPDF() async {
     try {
-      _showSnack('Generating activity report...', _C.teal);
+      _showToast('Generating activity report...', _C.teal);
       final file = await SettingsExportService.exportActivityPdf(
         SettingsExportProfile(
           chwName: _chwName,
@@ -2641,14 +2880,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
 
       if (mounted) {
-        _showSnack(
+        _showToast(
           'Activity PDF saved: ${file.path.split('/').last}',
           _C.green,
         );
         await OpenFilex.open(file.path);
       }
     } catch (e) {
-      if (mounted) _showSnack('Export failed: ${e.toString()}', _C.red);
+      if (mounted) _showToast('Export failed: ${e.toString()}', _C.red);
     }
   }
 

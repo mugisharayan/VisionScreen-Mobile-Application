@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../widgets/vs_toast.dart';
+
 enum AppPermissionStatus {
   granted,
   denied,
@@ -35,9 +37,7 @@ class PermissionCoordinator {
     PermissionStatus.restricted,
   };
 
-  Future<AppPermissionResult> requestPatientPhotoCamera(
-    BuildContext context,
-  ) {
+  Future<AppPermissionResult> requestPatientPhotoCamera(BuildContext context) {
     return _requestPermission(
       context,
       permission: Permission.camera,
@@ -53,9 +53,7 @@ class PermissionCoordinator {
     );
   }
 
-  Future<AppPermissionResult> requestFaceDistanceCamera(
-    BuildContext context,
-  ) {
+  Future<AppPermissionResult> requestFaceDistanceCamera(BuildContext context) {
     return _requestPermission(
       context,
       permission: Permission.camera,
@@ -71,16 +69,13 @@ class PermissionCoordinator {
     );
   }
 
-  Future<AppPermissionResult> requestProfilePhotoCamera(
-    BuildContext context,
-  ) {
+  Future<AppPermissionResult> requestProfilePhotoCamera(BuildContext context) {
     return _requestPermission(
       context,
       permission: Permission.camera,
       icon: Icons.camera_alt_rounded,
       rationaleTitle: 'Camera access required',
-      rationaleMessage:
-          'Allow camera access to take your profile photo.',
+      rationaleMessage: 'Allow camera access to take your profile photo.',
       deniedMessage: 'Camera access is required to take a profile photo.',
       blockedTitle: 'Turn on camera access',
       blockedMessage:
@@ -110,9 +105,7 @@ class PermissionCoordinator {
     );
   }
 
-  Future<AppPermissionResult> requestScreeningLocation(
-    BuildContext context,
-  ) {
+  Future<AppPermissionResult> requestScreeningLocation(BuildContext context) {
     return _requestLocationPermission(
       context,
       icon: Icons.location_on_rounded,
@@ -129,9 +122,7 @@ class PermissionCoordinator {
     );
   }
 
-  Future<AppPermissionResult> requestHomeLocation(
-    BuildContext context,
-  ) {
+  Future<AppPermissionResult> requestHomeLocation(BuildContext context) {
     return _requestLocationPermission(
       context,
       icon: Icons.location_on_rounded,
@@ -197,7 +188,10 @@ class PermissionCoordinator {
     bool allowLimited = false,
   }) async {
     final current = await permission.status;
-    final currentResult = _resultFromStatus(current, allowLimited: allowLimited);
+    final currentResult = _resultFromStatus(
+      current,
+      allowLimited: allowLimited,
+    );
     if (currentResult.isGranted) {
       return currentResult;
     }
@@ -245,7 +239,7 @@ class PermissionCoordinator {
       return requestedResult;
     }
 
-    _showRetrySnackBar(context, deniedMessage);
+    _showRetryToast(context, deniedMessage);
     return requestedResult;
   }
 
@@ -360,9 +354,7 @@ class PermissionCoordinator {
     );
   }
 
-  void _showRetrySnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+  void _showRetryToast(BuildContext context, String message) {
+    VsToast.showText(context, message);
   }
 }

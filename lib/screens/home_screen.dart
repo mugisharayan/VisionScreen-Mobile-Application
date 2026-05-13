@@ -15,6 +15,7 @@ import '../utils/haptics.dart';
 import '../utils/page_transitions.dart';
 import '../widgets/main_shell_scope.dart';
 import '../widgets/vs_logo.dart';
+import '../widgets/vs_toast.dart';
 import '../widgets/vs_ui.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -95,38 +96,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     if (_isSyncing) return;
     if (!_syncConfigured) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Cloud workspace is not configured. Records remain on this device.',
-            style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
-          ),
-          backgroundColor: VsColors.sky,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          duration: const Duration(seconds: 2),
-        ),
+      VsToast.showText(
+        context,
+        'Cloud workspace is not configured. Records remain on this device.',
+        backgroundColor: VsColors.sky,
       );
       return;
     }
     VsHaptics.medium();
     final result = await _controller.syncNow();
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          result.success
-              ? 'Sync finished: ${result.appliedChanges} uploaded, ${result.restoredRecords} refreshed.'
-              : result.errorMessage ?? 'Sync failed.',
-          style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
-        ),
-        backgroundColor: result.success ? VsColors.emerald : VsColors.rose,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: const Duration(seconds: 2),
-      ),
+    VsToast.showText(
+      context,
+      result.success
+          ? 'Sync finished: ${result.appliedChanges} uploaded, ${result.restoredRecords} refreshed.'
+          : result.errorMessage ?? 'Sync failed.',
+      backgroundColor: result.success ? VsColors.emerald : VsColors.rose,
     );
   }
 

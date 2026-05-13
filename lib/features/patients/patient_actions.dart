@@ -7,6 +7,7 @@ import '../../repositories/screening_repository.dart';
 import '../../services/patient_report_service.dart';
 import '../../services/pdf_service.dart';
 import '../../utils/page_transitions.dart';
+import '../../widgets/vs_toast.dart';
 import '../../screens/bulk_mode_screen.dart';
 import '../../screens/new_screening_screen.dart';
 import 'patient_list_item.dart';
@@ -75,7 +76,7 @@ class PatientActions {
     if (closeSheet && context.mounted) {
       Navigator.pop(context);
     }
-    _showSnackBar(
+    _showToast(
       context,
       content: Row(
         children: [
@@ -103,8 +104,8 @@ class PatientActions {
         return;
       }
       if (patient.outcome == 'pending') {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        _showSnackBar(
+        VsToast.hide();
+        _showToast(
           context,
           content: Text(
             'No screening results yet for ${patient.name}.',
@@ -133,7 +134,7 @@ class PatientActions {
       if (!context.mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      VsToast.hide();
       if (report == null) {
         return;
       }
@@ -142,8 +143,8 @@ class PatientActions {
       if (!context.mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      _showSnackBar(
+      VsToast.hide();
+      _showToast(
         context,
         content: Text(
           'PDF failed: $error',
@@ -165,7 +166,7 @@ class PatientActions {
     });
     final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!launched && context.mounted) {
-      _showErrorSnackBar(
+      _showErrorToast(
         context,
         title: 'Unable to open WhatsApp',
         message: 'This device could not open the WhatsApp share link.',
@@ -178,7 +179,7 @@ class PatientActions {
     PatientListItem patient,
   ) async {
     if (patient.phone.isEmpty) {
-      _showSnackBar(
+      _showToast(
         context,
         content: Text(
           'No phone number for ${patient.name}.',
@@ -190,7 +191,7 @@ class PatientActions {
     }
     final uri = Uri(scheme: 'tel', path: patient.phone);
     if (!await launchUrl(uri) && context.mounted) {
-      _showErrorSnackBar(
+      _showErrorToast(
         context,
         title: 'Call failed',
         message:
@@ -249,29 +250,26 @@ class PatientActions {
     );
   }
 
-  static void _showSnackBar(
+  static void _showToast(
     BuildContext context, {
     required Widget content,
     required Color backgroundColor,
     Duration duration = const Duration(seconds: 2),
   }) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: content,
-        backgroundColor: backgroundColor,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: duration,
-      ),
+    VsToast.show(
+      context,
+      content: content,
+      backgroundColor: backgroundColor,
+      duration: duration,
     );
   }
 
-  static void _showErrorSnackBar(
+  static void _showErrorToast(
     BuildContext context, {
     required String title,
     required String message,
   }) {
-    _showSnackBar(
+    _showToast(
       context,
       content: Row(
         children: [

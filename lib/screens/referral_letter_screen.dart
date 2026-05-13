@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 import '../repositories/screening_repository.dart';
 import '../services/chw_profile_preferences.dart';
 import '../utils/visual_acuity.dart';
+import '../widgets/vs_toast.dart';
 import '../widgets/vs_ui.dart';
 
 const _teal = Color(0xFF0D9488);
@@ -934,27 +935,30 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
             color: Colors.transparent,
             child: InkWell(
               onTap: () async {
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: DateTime.now().add(const Duration(days: 7)),
-                firstDate: DateTime.now(),
-                lastDate: DateTime.now().add(const Duration(days: 365)),
-                helpText: 'Select Appointment Date',
-                builder: (ctx, child) => Theme(
-                  data: Theme.of(ctx).copyWith(
-                    colorScheme: const ColorScheme.light(
-                      primary: _teal,
-                      onPrimary: Colors.white,
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.now().add(const Duration(days: 7)),
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                  helpText: 'Select Appointment Date',
+                  builder: (ctx, child) => Theme(
+                    data: Theme.of(ctx).copyWith(
+                      colorScheme: const ColorScheme.light(
+                        primary: _teal,
+                        onPrimary: Colors.white,
+                      ),
                     ),
+                    child: child!,
                   ),
-                  child: child!,
-                ),
-              );
-              if (picked != null) setState(() => _appointmentDate = picked);
+                );
+                if (picked != null) setState(() => _appointmentDate = picked);
               },
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 14,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
@@ -1429,22 +1433,10 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
                   : () async {
                       await _saveToDb();
                       if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Referral saved to patient record',
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: Colors.white,
-                              ),
-                            ),
-                            backgroundColor: _green,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            duration: const Duration(seconds: 2),
-                          ),
+                        VsToast.showText(
+                          context,
+                          'Referral saved to patient record',
+                          backgroundColor: _green,
                         );
                       }
                     },
@@ -1598,19 +1590,10 @@ class _ReferralLetterScreenState extends State<ReferralLetterScreen> {
         VsIconButton(
           icon: Icons.lock_outline_rounded,
           tooltip: 'Profile name is managed in Settings',
-          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Edit your name in Settings',
-                style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
-              ),
-              backgroundColor: _teal,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              duration: const Duration(seconds: 2),
-            ),
+          onTap: () => VsToast.showText(
+            context,
+            'Edit your name in Settings',
+            backgroundColor: _teal,
           ),
           size: 20,
           iconSize: 14,
