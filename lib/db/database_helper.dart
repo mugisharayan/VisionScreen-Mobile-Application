@@ -22,7 +22,7 @@ class DatabaseHelper {
     final path = join(await getDatabasesPath(), 'visionscreen.db');
     return openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: (db, _) async {
         await _createBaseTables(db);
         await _createSyncTables(db);
@@ -108,6 +108,15 @@ class DatabaseHelper {
           await _ensureSyncColumns(db, 'screenings', idColumn: 'record_id');
           await _backfillScreeningRecordIds(db);
           await _backfillOwnership(db);
+        }
+        if (oldVersion < 6) {
+          // Fix: empty-string deleted_at values cause WHERE deleted_at IS NULL
+          // to exclude rows that should be visible. Normalise them to NULL.
+          for (final table in const ['patients', 'campaigns', 'screenings']) {
+            await db.execute(
+              "UPDATE $table SET deleted_at = NULL WHERE deleted_at = ''",
+            );
+          }
         }
       },
     );
@@ -470,20 +479,16 @@ class DatabaseHelper {
 
   Future<List<Map<String, dynamic>>> getAllPatients() async {
     final database = await db;
-    return database.query(
-      'patients',
-      where: 'deleted_at IS NULL',
-      orderBy: 'created_at DESC',
+    return database.rawQuery(
+      "SELECT * FROM patients WHERE (deleted_at IS NULL OR deleted_at = '') ORDER BY created_at DESC",
     );
   }
 
   Future<Map<String, dynamic>?> getPatient(String id) async {
     final database = await db;
-    final rows = await database.query(
-      'patients',
-      where: 'id = ? AND deleted_at IS NULL',
-      whereArgs: [id],
-      limit: 1,
+    final rows = await database.rawQuery(
+      "SELECT * FROM patients WHERE id = ? AND (deleted_at IS NULL OR deleted_at = '') LIMIT 1",
+      [id],
     );
     return rows.isEmpty ? null : rows.first;
   }
@@ -510,7 +515,7 @@ class DatabaseHelper {
     final database = await db;
     final q = '%${query.toLowerCase()}%';
     return database.rawQuery(
-      'SELECT * FROM patients WHERE deleted_at IS NULL AND (LOWER(name) LIKE ? OR LOWER(id) LIKE ? OR LOWER(village) LIKE ?) ORDER BY created_at DESC',
+      "SELECT * FROM patients WHERE (deleted_at IS NULL OR deleted_at = '') AND (LOWER(name) LIKE ? OR LOWER(id) LIKE ? OR LOWER(village) LIKE ?) ORDER BY created_at DESC",
       [q, q, q],
     );
   }
@@ -544,20 +549,16 @@ class DatabaseHelper {
 
   Future<List<Map<String, dynamic>>> getAllCampaigns() async {
     final database = await db;
-    return database.query(
-      'campaigns',
-      where: 'deleted_at IS NULL',
-      orderBy: 'created_at DESC',
+    return database.rawQuery(
+      "SELECT * FROM campaigns WHERE (deleted_at IS NULL OR deleted_at = '') ORDER BY created_at DESC",
     );
   }
 
   Future<Map<String, dynamic>?> getCampaign(String id) async {
     final database = await db;
-    final rows = await database.query(
-      'campaigns',
-      where: 'id = ? AND deleted_at IS NULL',
-      whereArgs: [id],
-      limit: 1,
+    final rows = await database.rawQuery(
+      "SELECT * FROM campaigns WHERE id = ? AND (deleted_at IS NULL OR deleted_at = '') LIMIT 1",
+      [id],
     );
     return rows.isEmpty ? null : rows.first;
   }
