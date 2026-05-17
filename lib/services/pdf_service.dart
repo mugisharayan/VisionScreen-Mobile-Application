@@ -562,7 +562,13 @@ class PdfService {
   // ── Helpers ──────────────────────────────────────────────────────────────
 
   static Future<String> _save(pw.Document doc, String filename) async {
-    final dir  = await getApplicationDocumentsDirectory();
+    // On Android, getApplicationDocumentsDirectory() is internal storage
+    // not accessible by external PDF viewer apps. Use external storage
+    // instead so open_filex and share_plus can reach the file.
+    final dir = Platform.isAndroid
+        ? (await getExternalStorageDirectory() ??
+              await getApplicationDocumentsDirectory())
+        : await getApplicationDocumentsDirectory();
     final file = File('${dir.path}/$filename');
     await file.writeAsBytes(await doc.save());
     return file.path;

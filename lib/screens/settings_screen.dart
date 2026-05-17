@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
@@ -818,7 +819,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             );
                             if (!mounted) return;
                             if (picked != null) {
-                              setPhoto(() => photoPath = picked.path);
+                              // Copy to permanent app documents directory so
+                              // the path stays valid across app restarts.
+                              // image_picker returns a temp cache path that
+                              // becomes stale after the session ends.
+                              final appDir =
+                                  await getApplicationDocumentsDirectory();
+                              final fileName =
+                                  'chw_photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
+                              final permanent = await File(
+                                picked.path,
+                              ).copy('${appDir.path}/$fileName');
+                              setPhoto(() => photoPath = permanent.path);
                               setSheet(() {});
                             }
                           },

@@ -17,8 +17,6 @@ class _Module4ScreenState extends State<Module4Screen> {
   final List<Map<String, dynamic>> _steps = [
     {
       'icon': Icons.warning_rounded,
-      'image':
-          'https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=400&q=80',
       'title': 'When to Refer a Patient',
       'body':
           'A patient is automatically flagged for referral when:\n\n'
@@ -36,8 +34,6 @@ class _Module4ScreenState extends State<Module4Screen> {
     },
     {
       'icon': Icons.description_rounded,
-      'image':
-          'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=400&q=80',
       'title': 'Generating a Referral Letter',
       'body':
           'To generate a referral letter:\n\n'
@@ -57,8 +53,6 @@ class _Module4ScreenState extends State<Module4Screen> {
     },
     {
       'icon': Icons.local_hospital_rounded,
-      'image':
-          'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=400&q=80',
       'title': 'Referral Facilities',
       'body':
           'The app includes a preset list of Uganda eye clinics:\n\n'
@@ -77,8 +71,6 @@ class _Module4ScreenState extends State<Module4Screen> {
     },
     {
       'icon': Icons.notifications_active_rounded,
-      'image':
-          'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&q=80',
       'title': 'Patient Notifications',
       'body':
           'From the Patients screen, you can notify referred patients:\n\n'
@@ -96,8 +88,6 @@ class _Module4ScreenState extends State<Module4Screen> {
     },
     {
       'icon': Icons.track_changes_rounded,
-      'image':
-          'https://images.unsplash.com/photo-1584515933487-779824d29309?w=400&q=80',
       'title': 'Tracking Referral Status',
       'body':
           'Each referral has a status that you update manually:\n\n'
