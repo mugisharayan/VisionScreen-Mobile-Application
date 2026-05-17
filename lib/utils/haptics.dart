@@ -7,21 +7,37 @@ class VsHaptics {
 
   /// Light tap — nav items, filter chips, toggles
   static void light() {
-    try { HapticFeedback.lightImpact(); } catch (_) {}
+    try {
+      HapticFeedback.lightImpact();
+    } catch (_) {
+      try { HapticFeedback.vibrate(); } catch (_) {}
+    }
   }
 
   /// Medium tap — action buttons, card taps
   static void medium() {
-    try { HapticFeedback.mediumImpact(); } catch (_) {}
+    try {
+      HapticFeedback.mediumImpact();
+    } catch (_) {
+      try { HapticFeedback.vibrate(); } catch (_) {}
+    }
   }
 
   /// Heavy — destructive actions, FAB press
   static void heavy() {
-    try { HapticFeedback.heavyImpact(); } catch (_) {}
+    try {
+      HapticFeedback.heavyImpact();
+    } catch (_) {
+      try { HapticFeedback.vibrate(); } catch (_) {}
+    }
   }
 
   /// Selection click — filter chips, radio buttons
   static void selection() {
-    try { HapticFeedback.selectionClick(); } catch (_) {}
+    try {
+      HapticFeedback.selectionClick();
+    } catch (_) {
+      try { HapticFeedback.vibrate(); } catch (_) {}
+    }
   }
 }

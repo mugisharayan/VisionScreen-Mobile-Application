@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import '../repositories/patient_repository.dart';
 import '../repositories/campaign_repository.dart';
 import '../repositories/screening_repository.dart';
@@ -16,6 +18,7 @@ import '../utils/app_theme.dart';
 import '../widgets/main_shell_scope.dart';
 import '../widgets/vs_toast.dart';
 import '../widgets/vs_ui.dart';
+import '../db/database_helper.dart';
 
 // -- Colours (shared with the rest of the app) --
 const _teal = Color(0xFF0D9488);
@@ -684,6 +687,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
                                   name,
@@ -1039,6 +1043,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           // Name + age group
                           Row(
@@ -1100,17 +1105,15 @@ class _PatientsScreenState extends State<PatientsScreen> {
                           const SizedBox(height: 8),
                           // VA pills or pending badge
                           if (p.outcome != 'pending')
-                            Flexible(
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  _vaPill('OD', p.od, p.outcome),
-                                  const SizedBox(width: 4),
-                                  _vaPill('OS', p.os, p.outcome),
-                                  const SizedBox(width: 4),
-                                  _vaPill('OU', p.ou, p.outcome),
-                                ],
-                              ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _vaPill('OD', p.od, p.outcome),
+                                const SizedBox(width: 4),
+                                _vaPill('OS', p.os, p.outcome),
+                                const SizedBox(width: 4),
+                                _vaPill('OU', p.ou, p.outcome),
+                              ],
                             ),
                           // Conditions
                           if (p.safeConditions.isNotEmpty) ...[
@@ -1799,10 +1802,12 @@ class _PatientHistorySheet extends StatefulWidget {
 class _PatientHistorySheetState extends State<_PatientHistorySheet> {
   List<Map<String, dynamic>> _history = [];
   bool _loading = true;
+  late String _photoUrl;
 
   @override
   void initState() {
     super.initState();
+    _photoUrl = widget.patient.photoUrl;
     _load();
   }
 
@@ -1815,6 +1820,85 @@ class _PatientHistorySheetState extends State<_PatientHistorySheet> {
         _history = rows;
         _loading = false;
       });
+    }
+  }
+
+  Future<void> _pickAndSavePhoto() async {
+    final picker = ImagePicker();
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFDDE4EC),
+                borderRadius: BorderRadius.circular(99),
+              ),
+            ),
+            ListTile(
+              leading: Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  color: _teal.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.camera_alt_rounded, color: _teal, size: 18),
+              ),
+              title: Text('Take a photo',
+                  style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14, fontWeight: FontWeight.w600)),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            ListTile(
+              leading: Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  color: _blue.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.photo_library_rounded, color: _blue, size: 18),
+              ),
+              title: Text('Choose from gallery',
+                  style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14, fontWeight: FontWeight.w600)),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (source == null || !mounted) return;
+    final picked = await picker.pickImage(
+      source: source,
+      imageQuality: 80,
+      maxWidth: 400,
+    );
+    if (picked == null || !mounted) return;
+    // Copy to permanent storage so path survives app restarts
+    final appDir = await getApplicationDocumentsDirectory();
+    final fileName = 'patient_photo_${widget.patient.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final permanent = await File(picked.path).copy('${appDir.path}/$fileName');
+    // Update in database
+    final database = await DatabaseHelper.instance.db;
+    await database.update(
+      'patients',
+      {'photo_path': permanent.path},
+      where: 'id = ?',
+      whereArgs: [widget.patient.id],
+    );
+    if (mounted) {
+      setState(() => _photoUrl = permanent.path);
+      VsToast.showText(context, 'Photo updated', backgroundColor: _teal);
     }
   }
 
@@ -1875,36 +1959,64 @@ class _PatientHistorySheetState extends State<_PatientHistorySheet> {
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
               child: Row(
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child:
-                        p.photoUrl.isNotEmpty && File(p.photoUrl).existsSync()
-                        ? Image.file(
-                            File(p.photoUrl),
-                            width: 44,
-                            height: 44,
-                            fit: BoxFit.cover,
-                          )
-                        : Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: p.avatarGradient,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Center(
-                              child: Text(
-                                p.initials,
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
+                  // Tappable avatar — tap to add or update photo
+                  GestureDetector(
+                    onTap: _pickAndSavePhoto,
+                    child: Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: _photoUrl.isNotEmpty &&
+                                  File(_photoUrl).existsSync()
+                              ? Image.file(
+                                  File(_photoUrl),
+                                  width: 44,
+                                  height: 44,
+                                  fit: BoxFit.cover,
+                                )
+                              : Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: widget.patient.avatarGradient,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      widget.patient.initials,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                              ),
+                        ),
+                        // Camera badge
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            width: 18,
+                            height: 18,
+                            decoration: BoxDecoration(
+                              color: _teal,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                  color: Colors.white, width: 1.5),
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt_rounded,
+                              size: 9,
+                              color: Colors.white,
                             ),
                           ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -2237,58 +2349,83 @@ class _CampaignDetailScreenState extends State<_CampaignDetailScreen> {
   }
 
   Future<void> _load() async {
-    final rows = await CampaignRepository.instance.getPatientsForCampaign(
-      widget.campaign['id'] as String,
-    );
-    final list = <PatientListItem>[];
-    for (final r in rows) {
-      final age = (r['age'] as int?) ?? 0;
-      final conditions = ((r['conditions'] as String?) ?? '')
-          .split(',')
-          .map((s) => s.trim())
-          .where((s) => s.isNotEmpty)
-          .toList();
-      final outcome = (r['outcome'] as String?) ?? 'pending';
-      final screeningDate = r['screening_date'] as String?;
-      list.add(
-        PatientListItem(
-          initials: (r['name'] as String)
-              .split(' ')
-              .map((w) => w.isEmpty ? '' : w[0])
-              .take(2)
-              .join(),
-          avatarGradient: [_teal, _teal2],
-          photoUrl: (r['photo_path'] as String?) ?? '',
-          name: r['name'] as String,
-          age: age,
-          gender: r['gender'] as String,
-          village: (r['village'] as String?) ?? '',
-          ageGroup: age < 18
-              ? 'child'
-              : age > 60
-              ? 'elderly'
-              : 'adult',
-          od: normaliseVisualAcuity(r['od_snellen'] as String?),
-          os: normaliseVisualAcuity(r['os_snellen'] as String?),
-          ou: normaliseVisualAcuity(r['ou_near_snellen'] as String?),
-          outcome: outcome,
-          date: screeningDate != null
-              ? _formatDate(screeningDate)
-              : 'Not screened',
-          id: r['id'] as String,
-          phone: (r['phone'] as String?) ?? '',
-          facility: _nullIfEmpty(r['referral_facility'] as String?),
-          referralStatus: _nullIfEmpty(r['referral_status'] as String?),
-          campaignId: widget.campaign['id'] as String,
-          conditions: conditions,
-        ),
+    try {
+      final rows = await CampaignRepository.instance.getPatientsForCampaign(
+        (widget.campaign['id'] as Object?)?.toString() ?? '',
       );
-    }
-    if (mounted) {
-      setState(() {
-        _patients = list;
-        _loading = false;
-      });
+      final list = <PatientListItem>[];
+      for (final r in rows) {
+        try {
+          final patientId = (r['id'] as Object?)?.toString() ?? '';
+          if (patientId.isEmpty) continue;
+          final age = (r['age'] as int?) ?? 0;
+          final conditions =
+              ((r['conditions'] as Object?)?.toString() ?? '')
+                  .split(',')
+                  .map((s) => s.trim())
+                  .where((s) => s.isNotEmpty)
+                  .toList();
+          final outcome =
+              (r['outcome'] as Object?)?.toString() ?? 'pending';
+          final screeningDate =
+              (r['screening_date'] as Object?)?.toString();
+          final name = (r['name'] as Object?)?.toString() ?? '';
+          list.add(
+            PatientListItem(
+              initials: name
+                  .split(' ')
+                  .map((w) => w.isEmpty ? '' : w[0])
+                  .take(2)
+                  .join(),
+              avatarGradient: [_teal, _teal2],
+              photoUrl: (r['photo_path'] as String?) ?? '',
+              name: name,
+              age: age,
+              gender: (r['gender'] as Object?)?.toString() ?? '',
+              village: (r['village'] as Object?)?.toString() ?? '',
+              ageGroup: age < 18
+                  ? 'child'
+                  : age > 60
+                      ? 'elderly'
+                      : 'adult',
+              od: normaliseVisualAcuity(
+                  (r['od_snellen'] as Object?)?.toString()),
+              os: normaliseVisualAcuity(
+                  (r['os_snellen'] as Object?)?.toString()),
+              ou: normaliseVisualAcuity(
+                  (r['ou_near_snellen'] as Object?)?.toString()),
+              outcome: outcome,
+              date: screeningDate != null
+                  ? _formatDate(screeningDate)
+                  : 'Not screened',
+              id: patientId,
+              phone: (r['phone'] as Object?)?.toString() ?? '',
+              facility: _nullIfEmpty(
+                  (r['referral_facility'] as Object?)?.toString()),
+              referralStatus: _nullIfEmpty(
+                  (r['referral_status'] as Object?)?.toString()),
+              campaignId:
+                  (widget.campaign['id'] as Object?)?.toString() ?? '',
+              conditions: conditions,
+            ),
+          );
+        } catch (rowErr) {
+          debugPrint('[CampaignDetail] Skipping malformed row: $rowErr');
+        }
+      }
+      if (mounted) {
+        setState(() {
+          _patients = list;
+          _loading = false;
+        });
+      }
+    } catch (e, stack) {
+      debugPrint('[CampaignDetail] _load error: $e\n$stack');
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -2806,6 +2943,7 @@ class _CampaignPatientCardState extends State<_CampaignPatientCard> {
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Row(
                             children: [
