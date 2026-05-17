@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' show sqrt;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,8 +8,8 @@ import 'package:camera/camera.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
-import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import 'referral_letter_screen.dart';
 import 'face_distance_screen.dart';
 import '../features/screening/screening_constants.dart';
@@ -83,6 +84,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   CameraController? _photoCtrl;
   bool _showPhotoCamera = false;
   bool _newPatientSheetOpen = false;
+  StreamSubscription<dynamic>? _lightSub;
 
   // ── Animation ─────────────────────────────────────────────────────────────
   late AnimationController _pulseCtrl;
@@ -117,6 +119,8 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       ..disposeResources()
       ..dispose();
     _pulseCtrl.dispose();
+    _lightSub?.cancel();
+    _lightSub = null;
     _photoCtrl?.dispose();
     _patientSearchCtrl.dispose();
     _newNameCtrl.dispose();
@@ -365,37 +369,54 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       _controller.requireManualLightCheck();
       return;
     }
-    final channel = EventChannel('visionscreen/light');
-    StreamSubscription? sub;
+
+    // Cancel any previous subscription before opening a new one.
+    // EventChannel only allows one active listener — a second call to
+    // receiveBroadcastStream() without cancelling the first throws a
+    // platform exception that silently falls through to manual check.
+    _lightSub?.cancel();
+    _lightSub = null;
+
     bool received = false;
+
+    // Fallback: if no reading arrives within 4 seconds, switch to manual.
+    final fallback = Future.delayed(const Duration(seconds: 4), () {
+      if (!received && mounted) {
+        received = true;
+        _lightSub?.cancel();
+        _lightSub = null;
+        _controller.requireManualLightCheck();
+      }
+    });
+
     try {
-      sub = channel.receiveBroadcastStream().listen(
-        (dynamic lux) {
-          if (received) return;
-          received = true;
-          sub?.cancel();
-          if (!mounted) return;
-          _controller.setLuxResult(lux as double);
-        },
-        onError: (_) {
-          if (received) return;
-          received = true;
-          sub?.cancel();
-          if (!mounted) return;
-          _controller.requireManualLightCheck();
-        },
-      );
-      // Fallback when the sensor is unavailable or unresponsive.
-      Future.delayed(const Duration(seconds: 3), () {
-        if (!received) {
-          received = true;
-          sub?.cancel();
-          if (!mounted) return;
-          _controller.requireManualLightCheck();
-        }
-      });
+      _lightSub = const EventChannel('visionscreen/light')
+          .receiveBroadcastStream()
+          .listen(
+            (dynamic lux) {
+              if (received) return;
+              received = true;
+              _lightSub?.cancel();
+              _lightSub = null;
+              if (!mounted) return;
+              _controller.setLuxResult((lux as num).toDouble());
+            },
+            onError: (dynamic _) {
+              if (received) return;
+              received = true;
+              _lightSub?.cancel();
+              _lightSub = null;
+              if (!mounted) return;
+              _controller.requireManualLightCheck();
+            },
+            cancelOnError: true,
+          );
+      // Suppress unused variable warning — fallback is intentionally fire-and-forget.
+      fallback.ignore();
     } catch (_) {
-      _controller.requireManualLightCheck();
+      received = true;
+      _lightSub = null;
+      if (mounted) _controller.requireManualLightCheck();
     }
   }
 
@@ -403,6 +424,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     try {
       _controller.setOriginalBrightness(await ScreenBrightness().current);
       await ScreenBrightness().setScreenBrightness(1.0);
+      await WakelockPlus.enable();
       _controller.setBrightnessReady(true);
     } catch (_) {
       _controller.setBrightnessReady(true);
@@ -411,6 +433,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 
   Future<void> _restoreBrightness() async {
     try {
+      await WakelockPlus.disable();
       if (_originalBrightness != null) {
         await ScreenBrightness().setScreenBrightness(_originalBrightness!);
       } else {
@@ -933,6 +956,17 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
         pos.longitude,
       );
       if (!mounted) return;
+      // Warn if Android 12+ granted only approximate location
+      try {
+        final accuracy = await Geolocator.getLocationAccuracy();
+        if (accuracy == LocationAccuracyStatus.reduced && mounted) {
+          VsToast.showText(
+            context,
+            'Only approximate location available. Village name may be imprecise.',
+            backgroundColor: _amber,
+          );
+        }
+      } catch (_) {}
       if (placemarks.isNotEmpty) {
         final p = placemarks.first;
         final parts = [

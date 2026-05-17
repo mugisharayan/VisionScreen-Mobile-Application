@@ -18,8 +18,6 @@ class _Module1ScreenState extends State<Module1Screen> {
     {
       'icon': Icons.person_add_rounded,
       'color': Color(0xFF0D9488),
-      'image':
-          'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&q=80',
       'title': 'Two Ways to Register',
       'body':
           'VisionScreen supports two registration modes:\n\n'
@@ -35,8 +33,6 @@ class _Module1ScreenState extends State<Module1Screen> {
     {
       'icon': Icons.edit_note_rounded,
       'color': Color(0xFF3B82F6),
-      'image':
-          'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400&q=80',
       'title': 'Required Registration Fields',
       'body':
           'For INDIVIDUAL screening, fill in:\n\n'
@@ -54,8 +50,6 @@ class _Module1ScreenState extends State<Module1Screen> {
     {
       'icon': Icons.child_care_rounded,
       'color': Color(0xFF8B5CF6),
-      'image':
-          'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=400&q=80',
       'title': 'Age Groups & Thresholds',
       'body':
           'The app automatically assigns an age group based on the patient\'s age:\n\n'
@@ -70,8 +64,6 @@ class _Module1ScreenState extends State<Module1Screen> {
     {
       'icon': Icons.medical_information_rounded,
       'color': Color(0xFF10B981),
-      'image':
-          'https://images.unsplash.com/photo-1494869042583-f6c911f04b4c?w=400&q=80',
       'title': 'Eye Conditions',
       'body':
           'Before testing, record any current eye conditions the patient reports:\n\n'
@@ -91,8 +83,6 @@ class _Module1ScreenState extends State<Module1Screen> {
     {
       'icon': Icons.people_alt_rounded,
       'color': Color(0xFF0D9488),
-      'image':
-          'https://images.unsplash.com/1529156069898-49953e39b3ac?w=400&q=80',
       'title': 'Patients Screen',
       'body':
           'All registered patients appear in the Patients screen (bottom nav).\n\n'
@@ -259,7 +249,7 @@ class _Module1ScreenState extends State<Module1Screen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Illustration
+          // Illustration — local CustomPainter, works fully offline
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: Module1Illustration(color: color),

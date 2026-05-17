@@ -17,8 +17,6 @@ class _Module3ScreenState extends State<Module3Screen> {
   final List<Map<String, dynamic>> _steps = [
     {
       'icon': Icons.groups_rounded,
-      'image':
-          'https://images.unsplash.com/1529156069898-49953e39b3ac?w=400&q=80',
       'title': 'What is Bulk Mode?',
       'body':
           'Bulk Mode is designed for campaign screenings — schools, health camps, community outreach — where you need to screen many patients quickly.\n\n'
@@ -34,8 +32,6 @@ class _Module3ScreenState extends State<Module3Screen> {
     },
     {
       'icon': Icons.campaign_rounded,
-      'image':
-          'https://images.unsplash.com/photo-1584515933487-779824d29309?w=400&q=80',
       'title': 'Setting Up a Campaign',
       'body':
           'Before screening begins, set up the campaign session:\n\n'
@@ -49,8 +45,6 @@ class _Module3ScreenState extends State<Module3Screen> {
     },
     {
       'icon': Icons.how_to_reg_rounded,
-      'image':
-          'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=400&q=80',
       'title': 'Registering Each Patient',
       'body':
           'For each patient in the session:\n\n'
@@ -66,8 +60,6 @@ class _Module3ScreenState extends State<Module3Screen> {
     },
     {
       'icon': Icons.bar_chart_rounded,
-      'image':
-          'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&q=80',
       'title': 'Session Summary',
       'body':
           'When all patients are screened, tap "End session and view summary".\n\n'
@@ -83,8 +75,6 @@ class _Module3ScreenState extends State<Module3Screen> {
     },
     {
       'icon': Icons.folder_special_rounded,
-      'image':
-          'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&q=80',
       'title': 'Campaigns in Patients Screen',
       'body':
           'After a bulk session, the campaign appears as a card at the top of the Patients screen.\n\n'
