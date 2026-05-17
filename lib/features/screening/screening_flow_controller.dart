@@ -204,11 +204,11 @@ class ScreeningFlowController extends ChangeNotifier {
   bool get needsReferral {
     final distancePoor = _eyeResults.any((result) {
       final value = double.tryParse(result['logmar'] as String);
-      return value == null || value > 0.3;
+      return value == null || value > 0.5;
     });
     final nearPoor =
         _nearResult != null &&
-        (double.tryParse(_nearResult!['logmar'] as String) ?? 1.0) > 0.3;
+        (double.tryParse(_nearResult!['logmar'] as String) ?? 1.0) > 0.5;
     return distancePoor || nearPoor;
   }
 

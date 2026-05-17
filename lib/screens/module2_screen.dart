@@ -17,8 +17,6 @@ class _Module2ScreenState extends State<Module2Screen> {
   final List<Map<String, dynamic>> _steps = [
     {
       'icon': Icons.remove_red_eye_rounded,
-      'image':
-          'https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=400&q=80',
       'title': 'The Tumbling E Test',
       'body':
           'VisionScreen uses the ETDRS Tumbling E optotype — a letter "E" that rotates in 4 directions (right, left, up, down).\n\n'
@@ -33,8 +31,6 @@ class _Module2ScreenState extends State<Module2Screen> {
     },
     {
       'icon': Icons.straighten_rounded,
-      'image':
-          'https://images.unsplash.com/photo-1584515933487-779824d29309?w=400&q=80',
       'title': 'Testing Distance & Setup',
       'body':
           'DISTANCE VISION TEST:\n'
@@ -52,8 +48,6 @@ class _Module2ScreenState extends State<Module2Screen> {
     },
     {
       'icon': Icons.visibility_rounded,
-      'image':
-          'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&q=80',
       'title': 'Testing Each Eye',
       'body':
           'The test follows this order:\n\n'
@@ -67,8 +61,6 @@ class _Module2ScreenState extends State<Module2Screen> {
     },
     {
       'icon': Icons.bar_chart_rounded,
-      'image':
-          'https://images.unsplash.com/photo-1494869042583-f6c911f04b4c?w=400&q=80',
       'title': 'The Staircase Algorithm',
       'body':
           'VisionScreen uses an adaptive staircase algorithm:\n\n'
@@ -83,8 +75,6 @@ class _Module2ScreenState extends State<Module2Screen> {
     },
     {
       'icon': Icons.check_circle_rounded,
-      'image':
-          'https://images.unsplash.com/photo-1516307365426-bea591f05011?w=400&q=80',
       'title': 'Understanding Results',
       'body':
           'Results are shown in both LogMAR and Snellen:\n\n'
