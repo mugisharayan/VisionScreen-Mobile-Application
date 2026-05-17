@@ -973,6 +973,8 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
         builder: (_) => FaceDistanceScreen(
           onDistanceConfirmed: () {
             Navigator.pop(context);
+            _resetEyeTest();
+            _startTestTimer();
             setState(() => _section = 2);
           },
         ),
@@ -1948,7 +1950,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                             .map((s) => s.trim())
                             .where((s) => s.isNotEmpty)
                             .toList(),
-                        screeningId: null,
+                        screeningId: _currentScreeningId,
                       ),
                     ),
                   );

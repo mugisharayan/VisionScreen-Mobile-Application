@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:camera/camera.dart';
@@ -132,8 +133,10 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
       await _tts.setSpeechRate(0.42);
       await _tts.setVolume(1.0);
       await _tts.setPitch(1.0);
-      // On Android, set audio stream to STREAM_MUSIC for max volume
-      await _tts.setSharedInstance(true);
+      // setSharedInstance is iOS-only; on Android set volume directly
+      if (Platform.isIOS) {
+        await _tts.setSharedInstance(true);
+      }
 
       // Wait a moment then speak the welcome message
       await Future.delayed(const Duration(milliseconds: 1200));
@@ -408,15 +411,23 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
     final format = InputImageFormatValue.fromRawValue(image.format.raw);
     if (format == null) return null;
 
-    final plane = image.planes.first;
+    // NV21 (Android) is a multi-plane format: Y plane + interleaved UV plane.
+    // Reading only planes.first gives an incomplete buffer and ML Kit silently
+    // produces no detections. Concatenate all planes for Android; iOS bgra8888
+    // is single-plane so planes.first is correct there.
+    final bytes = Platform.isAndroid
+        ? Uint8List.fromList(
+            image.planes.expand((p) => p.bytes).toList(),
+          )
+        : image.planes.first.bytes;
 
     return InputImage.fromBytes(
-      bytes: plane.bytes,
+      bytes: bytes,
       metadata: InputImageMetadata(
         size: Size(image.width.toDouble(), image.height.toDouble()),
         rotation: rotation,
         format: format,
-        bytesPerRow: plane.bytesPerRow,
+        bytesPerRow: image.planes.first.bytesPerRow,
       ),
     );
   }
