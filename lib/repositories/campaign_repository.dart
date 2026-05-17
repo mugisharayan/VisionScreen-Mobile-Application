@@ -18,7 +18,8 @@ class CampaignRepository {
   Future<List<Map<String, dynamic>>> getAllCampaigns() async {
     final database = await _db.db;
 
-    // Single bulk UPDATE: recalculate stats for all campaigns at once
+    // Single bulk UPDATE: recalculate stats for all campaigns at once.
+    // Guard against both NULL and empty-string deleted_at values.
     await database.execute('''
       UPDATE campaigns
       SET
@@ -26,7 +27,7 @@ class CampaignRepository {
           SELECT COUNT(DISTINCT p.id)
           FROM patients p
           WHERE p.campaign_id = campaigns.id
-            AND p.deleted_at IS NULL
+            AND (p.deleted_at IS NULL OR p.deleted_at = '')
         ),
         passed = (
           SELECT COUNT(DISTINCT p.id)
@@ -37,12 +38,12 @@ class CampaignRepository {
             WHERE id IN (
               SELECT MAX(id)
               FROM screenings
-              WHERE deleted_at IS NULL
+              WHERE (deleted_at IS NULL OR deleted_at = '')
               GROUP BY patient_id
             )
           ) latest ON latest.patient_id = p.id
           WHERE p.campaign_id = campaigns.id
-            AND p.deleted_at IS NULL
+            AND (p.deleted_at IS NULL OR p.deleted_at = '')
             AND latest.outcome = 'pass'
         ),
         referred = (
@@ -54,21 +55,19 @@ class CampaignRepository {
             WHERE id IN (
               SELECT MAX(id)
               FROM screenings
-              WHERE deleted_at IS NULL
+              WHERE (deleted_at IS NULL OR deleted_at = '')
               GROUP BY patient_id
             )
           ) latest ON latest.patient_id = p.id
           WHERE p.campaign_id = campaigns.id
-            AND p.deleted_at IS NULL
+            AND (p.deleted_at IS NULL OR p.deleted_at = '')
             AND latest.outcome = 'refer'
         )
-      WHERE deleted_at IS NULL
+      WHERE (deleted_at IS NULL OR deleted_at = '')
     ''');
 
-    return database.query(
-      'campaigns',
-      where: 'deleted_at IS NULL',
-      orderBy: 'created_at DESC',
+    return database.rawQuery(
+      "SELECT * FROM campaigns WHERE (deleted_at IS NULL OR deleted_at = '') ORDER BY created_at DESC",
     );
   }
 

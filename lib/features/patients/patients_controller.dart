@@ -124,67 +124,107 @@ class PatientsController extends ChangeNotifier {
     _loading = true;
     notifyListeners();
 
-    final campaignRows = await _campaignRepository.getAllCampaigns();
-    final allPatients = await _patientRepository.getPatients(pageSize: 500);
-    final latestByPatient = await _screeningRepository.getLatestScreeningsForPatients(
-      allPatients.map((row) => row['id'] as String),
-    );
-
-    final individualPatients = <PatientListItem>[];
-    final campaignPatients = <PatientListItem>[];
-
-    for (final row in allPatients) {
-      final patientId = row['id'] as String;
-      final latest = latestByPatient[patientId];
-      final age = (row['age'] as int?) ?? 0;
-      final patient = PatientListItem(
-        initials: (row['name'] as String)
-            .split(' ')
-            .map((word) => word.isEmpty ? '' : word[0])
-            .take(2)
-            .join(),
-        avatarGradient: const [Color(0xFF0D9488), Color(0xFF14B8A6)],
-        photoUrl: (row['photo_path'] as String?) ?? '',
-        name: row['name'] as String,
-        age: age,
-        gender: row['gender'] as String,
-        village: (row['village'] as String?) ?? '',
-        ageGroup: age < 18
-            ? 'child'
-            : age > 60
-            ? 'elderly'
-            : 'adult',
-        od: normaliseVisualAcuity(latest?['od_snellen'] as String?),
-        os: normaliseVisualAcuity(latest?['os_snellen'] as String?),
-        ou: normaliseVisualAcuity(latest?['ou_near_snellen'] as String?),
-        outcome: (latest?['outcome'] as String?) ?? 'pending',
-        date: latest?['screening_date'] != null
-            ? formatPatientDate(latest!['screening_date'] as String)
-            : 'Not screened',
-        id: patientId,
-        phone: (row['phone'] as String?) ?? '',
-        facility: _nullIfEmpty(latest?['referral_facility'] as String?),
-        referralStatus: _nullIfEmpty(latest?['referral_status'] as String?),
-        campaignId: _nullIfEmpty(row['campaign_id'] as String?),
-        conditions: ((row['conditions'] as String?) ?? '')
-            .split(',')
-            .map((value) => value.trim())
-            .where((value) => value.isNotEmpty)
-            .toList(),
+    try {
+      final campaignRows = await _campaignRepository.getAllCampaigns();
+      // Use a large page size to load all patients — the default 25 would
+      // silently cut off patients beyond the first page.
+      final allPatients = await _patientRepository.getPatients(pageSize: 2000);
+      final latestByPatient =
+          await _screeningRepository.getLatestScreeningsForPatients(
+        allPatients.map((row) => (row['id'] as Object?)?.toString() ?? ''),
       );
 
-      if (patient.campaignId == null) {
-        individualPatients.add(patient);
-      } else {
-        campaignPatients.add(patient);
-      }
-    }
+      // Build a set of valid campaign IDs so orphaned campaign_id values
+      // (pointing to a deleted campaign) fall back to the individual list.
+      final validCampaignIds = campaignRows
+          .map((c) => (c['id'] as Object?)?.toString() ?? '')
+          .where((id) => id.isNotEmpty)
+          .toSet();
 
-    _patients = individualPatients;
-    _campaigns = campaignRows;
-    _allCampaignPatients = campaignPatients;
-    _loading = false;
-    notifyListeners();
+      final individualPatients = <PatientListItem>[];
+      final campaignPatients = <PatientListItem>[];
+
+      for (final row in allPatients) {
+        try {
+          final patientId = (row['id'] as Object?)?.toString() ?? '';
+          if (patientId.isEmpty) continue;
+
+          final latest = latestByPatient[patientId];
+          final age = (row['age'] as int?) ?? 0;
+
+          // Safe cast for campaign_id — SQLite may return int or null
+          final rawCampaignId =
+              _nullIfEmpty((row['campaign_id'] as Object?)?.toString());
+          // Only treat as campaign patient if the campaign still exists
+          final campaignId =
+              (rawCampaignId != null && validCampaignIds.contains(rawCampaignId))
+                  ? rawCampaignId
+                  : null;
+
+          final patient = PatientListItem(
+            initials: ((row['name'] as Object?)?.toString() ?? '')
+                .split(' ')
+                .map((word) => word.isEmpty ? '' : word[0])
+                .take(2)
+                .join(),
+            avatarGradient: const [Color(0xFF0D9488), Color(0xFF14B8A6)],
+            photoUrl: (row['photo_path'] as String?) ?? '',
+            name: (row['name'] as Object?)?.toString() ?? '',
+            age: age,
+            gender: (row['gender'] as Object?)?.toString() ?? '',
+            village: (row['village'] as Object?)?.toString() ?? '',
+            ageGroup: age < 18
+                ? 'child'
+                : age > 60
+                    ? 'elderly'
+                    : 'adult',
+            od: normaliseVisualAcuity(
+                (latest?['od_snellen'] as Object?)?.toString()),
+            os: normaliseVisualAcuity(
+                (latest?['os_snellen'] as Object?)?.toString()),
+            ou: normaliseVisualAcuity(
+                (latest?['ou_near_snellen'] as Object?)?.toString()),
+            outcome: (latest?['outcome'] as Object?)?.toString() ?? 'pending',
+            date: latest?['screening_date'] != null
+                ? formatPatientDate(
+                    (latest!['screening_date'] as Object?)?.toString() ?? '')
+                : 'Not screened',
+            id: patientId,
+            phone: (row['phone'] as Object?)?.toString() ?? '',
+            facility: _nullIfEmpty(
+                (latest?['referral_facility'] as Object?)?.toString()),
+            referralStatus: _nullIfEmpty(
+                (latest?['referral_status'] as Object?)?.toString()),
+            campaignId: campaignId,
+            conditions:
+                ((row['conditions'] as Object?)?.toString() ?? '')
+                    .split(',')
+                    .map((value) => value.trim())
+                    .where((value) => value.isNotEmpty)
+                    .toList(),
+          );
+
+          if (patient.campaignId == null) {
+            individualPatients.add(patient);
+          } else {
+            campaignPatients.add(patient);
+          }
+        } catch (rowError, rowStack) {
+          // Skip malformed rows rather than crashing the whole load
+          debugPrint('[PatientsController] Skipping malformed row: $rowError\n$rowStack');
+        }
+      }
+
+      _patients = individualPatients;
+      _campaigns = campaignRows;
+      _allCampaignPatients = campaignPatients;
+    } catch (e, stack) {
+      debugPrint('[PatientsController] loadPatients error: $e\n$stack');
+      // Keep existing data on error so the screen doesn't go blank
+    } finally {
+      _loading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> deleteCampaign(String campaignId) async {

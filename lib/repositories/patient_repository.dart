@@ -17,12 +17,16 @@ class PatientRepository {
     int pageSize = AppPagination.patientPageSize,
   }) async {
     final database = await _db.db;
-    return database.query(
-      'patients',
-      where: 'deleted_at IS NULL',
-      orderBy: 'created_at DESC',
-      limit: pageSize,
-      offset: page * pageSize,
+    // Guard against deleted_at being stored as empty string '' instead of NULL
+    // (can happen on upgraded databases where the column was added via ALTER TABLE).
+    return database.rawQuery(
+      '''
+      SELECT * FROM patients
+      WHERE (deleted_at IS NULL OR deleted_at = '')
+      ORDER BY created_at DESC
+      LIMIT ? OFFSET ?
+      ''',
+      [pageSize, page * pageSize],
     );
   }
 
@@ -30,7 +34,7 @@ class PatientRepository {
   Future<int> getPatientCount() async {
     final database = await _db.db;
     final result = await database.rawQuery(
-      'SELECT COUNT(*) as count FROM patients WHERE deleted_at IS NULL',
+      "SELECT COUNT(*) as count FROM patients WHERE (deleted_at IS NULL OR deleted_at = '')",
     );
     return (result.first['count'] as int?) ?? 0;
   }
@@ -48,7 +52,7 @@ class PatientRepository {
     final q = '%${query.toLowerCase()}%';
     return database.rawQuery(
       '''SELECT * FROM patients
-         WHERE deleted_at IS NULL
+         WHERE (deleted_at IS NULL OR deleted_at = '')
          AND (LOWER(name) LIKE ? OR LOWER(id) LIKE ? OR LOWER(village) LIKE ?)
          ORDER BY created_at DESC
          LIMIT ? OFFSET ?''',
@@ -63,7 +67,7 @@ class PatientRepository {
     final q = '%${query.toLowerCase()}%';
     final result = await database.rawQuery(
       '''SELECT COUNT(*) as count FROM patients
-         WHERE deleted_at IS NULL
+         WHERE (deleted_at IS NULL OR deleted_at = '')
          AND (LOWER(name) LIKE ? OR LOWER(id) LIKE ? OR LOWER(village) LIKE ?)''',
       [q, q, q],
     );
