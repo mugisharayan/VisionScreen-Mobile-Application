@@ -1,15 +1,12 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:io';
 import 'dart:math' show sqrt;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:camera/camera.dart';
-import 'package:screen_brightness/screen_brightness.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:wakelock_plus/wakelock_plus.dart';
 import 'referral_letter_screen.dart';
 import 'face_distance_screen.dart';
 import '../features/screening/screening_constants.dart';
@@ -17,6 +14,8 @@ import '../features/screening/screening_flow_controller.dart';
 import '../services/permission_coordinator.dart';
 import '../utils/patient_validators.dart';
 import '../utils/visual_acuity.dart';
+import '../widgets/vs_ambient_light_check.dart';
+import '../widgets/vs_environment_check.dart';
 import '../widgets/vs_toast.dart';
 import '../widgets/vs_ui.dart';
 
@@ -27,7 +26,6 @@ const _teal3 = Color(0xFF5EEAD4);
 const _amber = Color(0xFFF59E0B);
 const _red = Color(0xFFEF4444);
 const _green = Color(0xFF22C55E);
-const _kMinLux = screeningMinLux;
 
 // ── Steps ─────────────────────────────────────────────────────────────────────
 // 0=patient, 1=checklist, 2=coverEye, 3=chart, 4=eyeResult, 5=summary
@@ -84,7 +82,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   CameraController? _photoCtrl;
   bool _showPhotoCamera = false;
   bool _newPatientSheetOpen = false;
-  StreamSubscription<dynamic>? _lightSub;
 
   // ── Animation ─────────────────────────────────────────────────────────────
   late AnimationController _pulseCtrl;
@@ -119,8 +116,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
       ..disposeResources()
       ..dispose();
     _pulseCtrl.dispose();
-    _lightSub?.cancel();
-    _lightSub = null;
     _photoCtrl?.dispose();
     _patientSearchCtrl.dispose();
     _newNameCtrl.dispose();
@@ -141,13 +136,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   List<Map<String, String>> get _patientListRuntime =>
       _controller.patientListRuntime;
   int? get _savedScreeningId => _controller.savedScreeningId;
-  double get _currentLux => _controller.currentLux;
-  bool get _luxChecked => _controller.luxChecked;
-  bool get _luxOk => _controller.luxOk;
-  bool get _manualLightCheckRequired => _controller.manualLightCheckRequired;
-  bool get _brightnessSet => _controller.brightnessSet;
-  double? get _originalBrightness => _controller.originalBrightness;
-  bool get _checklistDone => _controller.checklistDone;
   int get _currentEyeIndex => _controller.currentEyeIndex;
   int get _currentRow => _controller.currentRow;
   int get _currentRotation => _controller.currentRotation;
@@ -356,92 +344,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 
   void _showPhotoOptions() => _openPhotoCamera();
 
-  // ── Checklist logic ───────────────────────────────────────────────────────
-  void _runChecklist() {
-    _controller.runChecklist();
-    _checkLight();
-    _setMaxBrightness();
-  }
-
-  void _checkLight() {
-    _controller.resetLightCheck();
-    if (Platform.isIOS) {
-      _controller.requireManualLightCheck();
-      return;
-    }
-
-    // Cancel any previous subscription before opening a new one.
-    // EventChannel only allows one active listener — a second call to
-    // receiveBroadcastStream() without cancelling the first throws a
-    // platform exception that silently falls through to manual check.
-    _lightSub?.cancel();
-    _lightSub = null;
-
-    bool received = false;
-
-    // Fallback: if no reading arrives within 4 seconds, switch to manual.
-    final fallback = Future.delayed(const Duration(seconds: 4), () {
-      if (!received && mounted) {
-        received = true;
-        _lightSub?.cancel();
-        _lightSub = null;
-        _controller.requireManualLightCheck();
-      }
-    });
-
-    try {
-      _lightSub = const EventChannel('visionscreen/light')
-          .receiveBroadcastStream()
-          .listen(
-            (dynamic lux) {
-              if (received) return;
-              received = true;
-              _lightSub?.cancel();
-              _lightSub = null;
-              if (!mounted) return;
-              _controller.setLuxResult((lux as num).toDouble());
-            },
-            onError: (dynamic _) {
-              if (received) return;
-              received = true;
-              _lightSub?.cancel();
-              _lightSub = null;
-              if (!mounted) return;
-              _controller.requireManualLightCheck();
-            },
-            cancelOnError: true,
-          );
-      // Suppress unused variable warning — fallback is intentionally fire-and-forget.
-      fallback.ignore();
-    } catch (_) {
-      received = true;
-      _lightSub = null;
-      if (mounted) _controller.requireManualLightCheck();
-    }
-  }
-
-  Future<void> _setMaxBrightness() async {
-    try {
-      _controller.setOriginalBrightness(await ScreenBrightness().current);
-      await ScreenBrightness().setScreenBrightness(1.0);
-      await WakelockPlus.enable();
-      _controller.setBrightnessReady(true);
-    } catch (_) {
-      _controller.setBrightnessReady(true);
-    }
-  }
-
-  Future<void> _restoreBrightness() async {
-    try {
-      await WakelockPlus.disable();
-      if (_originalBrightness != null) {
-        await ScreenBrightness().setScreenBrightness(_originalBrightness!);
-      } else {
-        await ScreenBrightness().resetScreenBrightness();
-      }
-    } catch (_) {}
-  }
-
   void _startCountdown() {
     _controller.startDistanceChart();
   }
@@ -475,16 +377,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     if (v <= 0.3) return _green;
     if (v <= 0.5) return _amber;
     return _red;
-  }
-
-  double _blurSigma(String logmar) {
-    final v = double.tryParse(logmar);
-    if (v == null) return 18.0;
-    if (v <= 0.0) return 0.0;
-    if (v <= 0.3) return 1.5;
-    if (v <= 0.5) return 4.0;
-    if (v <= 1.0) return 9.0;
-    return 18.0;
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
@@ -587,18 +479,62 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
 
   Widget _offlineBanner() => Container(
     width: double.infinity,
-    color: _amber.withValues(alpha: 0.12),
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    decoration: BoxDecoration(
+      color: const Color(0xFFFFFBEB),
+      border: Border(
+        left: BorderSide(color: _amber, width: 4),
+        bottom: BorderSide(color: _amber.withValues(alpha: 0.2), width: 1),
+      ),
+    ),
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
     child: Row(
       children: [
-        const Icon(Icons.wifi_off_rounded, size: 14, color: _amber),
-        const SizedBox(width: 8),
-        Text(
-          'No internet — results will be saved locally',
-          style: GoogleFonts.inter(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: _amber,
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: _amber.withValues(alpha: 0.15),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.wifi_off_rounded, size: 14, color: _amber),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'You are offline',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF92400E),
+                ),
+              ),
+              Text(
+                'Results saved locally — sync when connected.',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  color: const Color(0xFF92400E),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: _amber.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(99),
+          ),
+          child: Text(
+            'LOCAL',
+            style: GoogleFonts.inter(
+              fontSize: 9,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF92400E),
+              letterSpacing: 0.8,
+            ),
           ),
         ),
       ],
@@ -851,7 +787,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     return VsBackTile(
       size: 36,
       onTap: () {
-        _restoreBrightness();
         Navigator.pop(context);
       },
     );
@@ -1058,7 +993,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
         if (_selectedPatientId != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-            child: _continueBtn('Continue to setup', _runChecklist),
+            child: _continueBtn('Continue to setup', _controller.runChecklist),
           ),
       ],
     );
@@ -1767,6 +1702,8 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     ),
   );
 
+  bool _lightBlocked = false;
+
   // PLACEHOLDERS
   Widget _buildChecklist() {
     return SingleChildScrollView(
@@ -1800,399 +1737,88 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             ),
           ),
           const SizedBox(height: 16),
-          // ── Check 1: Ambient light ──────────────────────────────────────
-          _checkTile(
-            icon: Icons.wb_sunny_rounded,
-            title: 'Ambient Light',
-            subtitle: _manualLightCheckRequired
-                ? (_luxChecked
-                      ? (_luxOk
-                            ? 'Confirmed manually by the operator'
-                            : 'Operator marked the room as too dim')
-                      : 'Confirm that the room is bright enough to see the chart clearly')
-                : _luxChecked
-                ? (_luxOk
-                      ? '${_currentLux.toStringAsFixed(0)} lux — meets screening threshold'
-                      : '${_currentLux.toStringAsFixed(0)} lux — too low (min ${_kMinLux.toInt()} lux)')
-                : 'Measuring ambient light...',
-            state: _manualLightCheckRequired
-                ? (_luxChecked
-                      ? (_luxOk ? _CheckState.pass : _CheckState.fail)
-                      : _CheckState.loading)
-                : _luxChecked
-                ? (_luxOk ? _CheckState.pass : _CheckState.fail)
-                : _CheckState.loading,
-          ),
-          if (_manualLightCheckRequired && !_luxChecked) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: _amber.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _amber.withValues(alpha: 0.2)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Light sensor not available on this device.',
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF1A2A3D),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Check that the chart is clearly visible and the patient faces the light source before continuing.',
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      color: const Color(0xFF5E7291),
-                      height: 1.45,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () =>
-                              _controller.confirmManualLightCheck(false),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(
-                              color: _red.withValues(alpha: 0.28),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          child: Text(
-                            'Need more light',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: _red,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () =>
-                              _controller.confirmManualLightCheck(true),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _teal,
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          child: Text(
-                            'Room is ready',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-          if (_luxChecked && !_luxOk) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: _red.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _red.withValues(alpha: 0.2)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Improve lighting before proceeding:',
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF1A2A3D),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  ...[
-                    'Move to a room with natural daylight',
-                    'Turn on all available lights',
-                    'Ensure patient faces the light source',
-                  ].map(
-                    (t) => Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            margin: const EdgeInsets.only(top: 5),
-                            width: 4,
-                            height: 4,
-                            decoration: const BoxDecoration(
-                              color: _red,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              t,
-                              style: GoogleFonts.inter(
-                                fontSize: 11,
-                                color: const Color(0xFF5E7291),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: _checkLight,
-                      icon: const Icon(
-                        Icons.refresh_rounded,
-                        size: 14,
-                        color: _teal,
-                      ),
-                      label: Text(
-                        'Re-check Lighting',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: _teal,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: _teal),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-          const SizedBox(height: 10),
-          // ── Check 2: Screen brightness ──────────────────────────────────
-          _checkTile(
-            icon: Icons.brightness_high_rounded,
-            title: 'Screen Brightness',
-            subtitle: _brightnessSet
-                ? 'Set to 100% automatically'
-                : 'Setting screen brightness...',
-            state: _brightnessSet ? _CheckState.pass : _CheckState.loading,
-          ),
-          const SizedBox(height: 32),
-          if (_checklistDone)
-            Material(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(20),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(20),
-                onTap: () {
-                  // Open face distance check before starting the test
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => FaceDistanceScreen(
-                        onDistanceConfirmed: () {
-                          Navigator.pop(context); // close face screen
-                          _controller.prepareNextEye();
-                        },
-                      ),
-                    ),
-                  );
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _teal.withValues(alpha: 0.4),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.check_circle_rounded,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Proceed to eye test',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'All checks passed. Ready to begin.',
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          color: Colors.white.withValues(alpha: 0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            )
-          else
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: _amber.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _amber.withValues(alpha: 0.2)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.lock_rounded, color: _amber, size: 16),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Complete all checks above to proceed.',
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        color: const Color(0xFF5E7291),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _checkTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required _CheckState state,
-  }) {
-    final color = state == _CheckState.pass
-        ? _green
-        : state == _CheckState.fail
-        ? _red
-        : _amber;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: state == _CheckState.pass
-              ? _green.withValues(alpha: 0.3)
-              : state == _CheckState.fail
-              ? _red.withValues(alpha: 0.3)
-              : const Color(0xFFEEF2F6),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
           Container(
-            width: 44,
-            height: 44,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            child: Icon(icon, size: 22, color: color),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF1A2A3D),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: _teal.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.checklist_rounded,
+                          size: 15,
+                          color: _teal,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Pre-test checklist',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF1A2A3D),
+                        ),
+                      ),
+
+                    ],
                   ),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    color: const Color(0xFF5E7291),
+                const Divider(height: 1, color: Color(0xFFEEF2F6)),
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      VsAmbientLightCheck(
+                        onStatusChanged: (blocked) {
+                          if (_lightBlocked != blocked) {
+                            setState(() => _lightBlocked = blocked);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      VsEnvironmentCheck(
+                        onReady: () {
+                          if (_lightBlocked) return;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => FaceDistanceScreen(
+                                onDistanceConfirmed: () {
+                                  Navigator.pop(context);
+                                  _controller.prepareNextEye();
+                                },
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          if (state == _CheckState.loading)
-            const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2, color: _amber),
-            )
-          else
-            Icon(
-              state == _CheckState.pass
-                  ? Icons.check_circle_rounded
-                  : Icons.cancel_rounded,
-              color: color,
-              size: 22,
-            ),
         ],
       ),
     );
@@ -2522,7 +2148,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     _dirBtn(Icons.arrow_back_rounded, 2),
-                    const SizedBox(width: 60),
+                    const SizedBox(width: 80),
                     _dirBtn(Icons.arrow_forward_rounded, 0),
                   ],
                 ),
@@ -2778,105 +2404,107 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   }
 
   Widget _blurPreview(String logmar) {
-    final sigma = _blurSigma(logmar);
+    final v = double.tryParse(logmar);
     final cls = VisualAcuity.classification(logmar);
+    final col = _vaColor(logmar);
+
+    // Description of what the patient likely experiences
+    final description = switch (cls) {
+      'Normal' => 'Patient can read small print and see fine detail clearly.',
+      'Near Normal' =>
+        'Slight blur on fine detail. Functional for most daily tasks.',
+      'Moderate Impairment' =>
+        'Difficulty reading standard print. May struggle with faces at distance.',
+      'Severe Impairment' =>
+        'Only large objects visible. Cannot read standard print unaided.',
+      'Profound Impairment' =>
+        'Very limited vision. Counts fingers only at close range.',
+      _ => 'Vision level could not be classified.',
+    };
+
+    final snellen = v != null ? VisualAcuity.toSnellen(logmar) : logmar;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Visual Simulation',
+          'What the patient sees',
           style: GoogleFonts.plusJakartaSans(
             fontSize: 14,
             fontWeight: FontWeight.w800,
             color: const Color(0xFF1A2A3D),
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          'Approximate view at this acuity level',
-          style: GoogleFonts.inter(
-            fontSize: 11,
-            color: const Color(0xFF8FA0B4),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: col.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: col.withValues(alpha: 0.2), width: 1.5),
           ),
-        ),
-        const SizedBox(height: 12),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(14),
-          child: Stack(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                height: 100,
-                width: double.infinity,
-                color: Colors.white,
-                child: Center(
-                  child: sigma == 0
-                      ? Text(
-                          'E',
-                          style: TextStyle(
-                            fontSize: 64,
-                            fontWeight: FontWeight.w900,
-                            color: _ink,
-                            fontFamily: 'Courier',
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: col.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.remove_red_eye_rounded,
+                  color: col,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          snellen,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: col,
                           ),
-                        )
-                      : ImageFiltered(
-                          imageFilter: ColorFilter.matrix([
-                            1,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            1,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            1,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            1,
-                            0,
-                          ]),
-                          child: ImageFiltered(
-                            imageFilter: _blurFilter(sigma),
-                            child: Text(
-                              'E',
-                              style: TextStyle(
-                                fontSize: 64,
-                                fontWeight: FontWeight.w900,
-                                color: _ink,
-                                fontFamily: 'Courier',
-                              ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: col.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          child: Text(
+                            cls,
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: col,
                             ),
                           ),
                         ),
-                ),
-              ),
-              Positioned(
-                bottom: 8,
-                right: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    cls,
-                    style: GoogleFonts.inter(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      ],
                     ),
-                  ),
+                    const SizedBox(height: 6),
+                    Text(
+                      description,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: const Color(0xFF5E7291),
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -2884,34 +2512,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
         ),
       ],
     );
-  }
-
-  // Use ColorFilter as blur approximation (no dart:ui ImageFilter needed)
-  ColorFilter _blurFilter(double sigma) {
-    // Darken + desaturate proportional to blur level as visual proxy
-    final f = (sigma / 18.0).clamp(0.0, 1.0);
-    return ColorFilter.matrix([
-      1 - f * 0.3,
-      0,
-      0,
-      0,
-      f * 30,
-      0,
-      1 - f * 0.3,
-      0,
-      0,
-      f * 30,
-      0,
-      0,
-      1 - f * 0.3,
-      0,
-      f * 30,
-      0,
-      0,
-      0,
-      1 - f * 0.5,
-      0,
-    ]);
   }
 
   // ── Step 6: Near Vision Intro ─────────────────────────────────────────────────────
@@ -3230,7 +2830,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     _nearDirBtn(Icons.arrow_back_rounded, 2),
-                    const SizedBox(width: 60),
+                    const SizedBox(width: 80),
                     _nearDirBtn(Icons.arrow_forward_rounded, 0),
                   ],
                 ),
@@ -3285,16 +2885,16 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   }) {
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         child: Ink(
-          width: 48,
-          height: 48,
+          width: 64,
+          height: 64,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(color: const Color(0xFFDDE4EC), width: 1.5),
             boxShadow: [
               BoxShadow(
@@ -3304,7 +2904,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               ),
             ],
           ),
-          child: Icon(icon, size: 20, color: _ink),
+          child: Icon(icon, size: 26, color: _ink),
         ),
       ),
     );
@@ -3879,7 +3479,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () async {
-                _restoreBrightness();
                 if (mounted) Navigator.pop(context);
               },
               icon: const Icon(
@@ -3923,8 +3522,6 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     );
   }
 }
-
-enum _CheckState { loading, pass, fail }
 
 // ETDRS bounding box — stroke = 1/5 of E size, gap = 1/2 of E size
 class _BoundingBoxPainter extends CustomPainter {
