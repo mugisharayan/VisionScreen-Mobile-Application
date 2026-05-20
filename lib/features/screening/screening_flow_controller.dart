@@ -37,10 +37,6 @@ class ScreeningFlowController extends ChangeNotifier {
   String? _newPhotoPath;
   List<Map<String, String>> _patientListRuntime = [];
   int? _savedScreeningId;
-  double _currentLux = 0.0;
-  bool _luxChecked = false;
-  bool _luxOk = false;
-  bool _manualLightCheckRequired = false;
   bool _brightnessSet = false;
   double? _originalBrightness;
   int _currentEyeIndex = 0;
@@ -155,21 +151,7 @@ class ScreeningFlowController extends ChangeNotifier {
       List.unmodifiable(_patientListRuntime);
 
   int? get savedScreeningId => _savedScreeningId;
-  double get currentLux => _currentLux;
-  bool get luxChecked => _luxChecked;
-  bool get luxOk => _luxOk;
-  bool get manualLightCheckRequired => _manualLightCheckRequired;
   bool get brightnessSet => _brightnessSet;
-  double? get originalBrightness => _originalBrightness;
-  void setOriginalBrightness(double? value) {
-    if (_originalBrightness == value) {
-      return;
-    }
-    _originalBrightness = value;
-    notifyListeners();
-  }
-
-  bool get checklistDone => _luxOk && _brightnessSet;
   int get currentEyeIndex => _currentEyeIndex;
   int get currentRow => _currentRow;
   int get currentRotation => _currentRotation;
@@ -253,42 +235,6 @@ class ScreeningFlowController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setLuxResult(double lux) {
-    _currentLux = lux;
-    _luxChecked = true;
-    _luxOk = _currentLux >= screeningMinLux;
-    _manualLightCheckRequired = false;
-    notifyListeners();
-  }
-
-  void requireManualLightCheck() {
-    _currentLux = 0.0;
-    _luxChecked = false;
-    _luxOk = false;
-    _manualLightCheckRequired = true;
-    notifyListeners();
-  }
-
-  void confirmManualLightCheck(bool isReady) {
-    _currentLux = isReady ? screeningMinLux : 0.0;
-    _luxChecked = true;
-    _luxOk = isReady;
-    _manualLightCheckRequired = true;
-    notifyListeners();
-  }
-
-  void resetLightCheck() {
-    _currentLux = 0.0;
-    _luxChecked = false;
-    _luxOk = false;
-    _manualLightCheckRequired = false;
-    notifyListeners();
-  }
-
-  void setBrightnessReady(bool value) {
-    _brightnessSet = value;
-    notifyListeners();
-  }
 
   void continueToChecklist() {
     _step = 1;
