@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -956,7 +956,17 @@ class _PatientsScreenState extends State<PatientsScreen> {
               ),
             ],
           ),
-          child: Column(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(15),
+            child: Stack(
+              children: [
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: Container(width: 4, color: accentColor),
+                ),
+                Column(
             children: [
               // -- Top body --
               Padding(
@@ -1386,6 +1396,9 @@ class _PatientsScreenState extends State<PatientsScreen> {
               ),
             ],
           ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -1519,29 +1532,42 @@ class _PatientsScreenState extends State<PatientsScreen> {
 
   // -- Empty state --
   Widget _buildEmpty() {
+    final isSearching = _query.isNotEmpty || _filter != 'All';
     return SizedBox(
-      height: 300,
+      height: 360,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.search_off_rounded,
-              size: 48,
-              color: Color(0xFFDDE4EC),
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: _teal.withValues(alpha: 0.07),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isSearching
+                    ? Icons.search_off_rounded
+                    : Icons.people_outline_rounded,
+                size: 38,
+                color: _teal.withValues(alpha: 0.5),
+              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Text(
-              'No patients found',
+              isSearching ? 'No results found' : 'No patients yet',
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
                 color: const Color(0xFF1A2A3D),
               ),
             ),
             const SizedBox(height: 6),
             Text(
-              'Try a different name, ID or village,\nor clear the filter.',
+              isSearching
+                  ? 'Try a different name, ID or village,\nor clear the filter.'
+                  : 'Register your first patient to get started\nwith vision screening.',
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
                 fontSize: 12,
@@ -1549,6 +1575,57 @@ class _PatientsScreenState extends State<PatientsScreen> {
                 height: 1.6,
               ),
             ),
+            if (!isSearching) ...[
+              const SizedBox(height: 24),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => MainShellScope.of(context)
+                      .selectTab(MainShellTab.home),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF134E4A), Color(0xFF0D9488)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _teal.withValues(alpha: 0.35),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.add_rounded,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Start a screening',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -2662,12 +2739,42 @@ class _CampaignDetailScreenState extends State<_CampaignDetailScreen> {
                 ? const Center(child: CircularProgressIndicator(color: _teal))
                 : _patients.isEmpty
                 ? Center(
-                    child: Text(
-                      'No patients in this campaign yet.',
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: const Color(0xFF94A3B8),
-                      ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 72,
+                          height: 72,
+                          decoration: BoxDecoration(
+                            color: _teal.withValues(alpha: 0.07),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.people_outline_rounded,
+                            size: 34,
+                            color: _teal.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No patients yet',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF1A2A3D),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Tap \'Add Patient\' below to start\nscreening in this campaign.',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: const Color(0xFF8FA0B4),
+                            height: 1.6,
+                          ),
+                        ),
+                      ],
                     ),
                   )
                 : RefreshIndicator(
