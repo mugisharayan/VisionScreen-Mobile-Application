@@ -8,7 +8,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'bulk_mode_screen.dart';
 import 'new_screening_screen.dart';
 import 'notifications_screen.dart';
-import 'training_screen.dart';
 import '../features/home/home_controller.dart';
 import '../utils/app_theme.dart';
 import '../utils/haptics.dart';
@@ -631,28 +630,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // -- ACTION GRID -------------------------------------------
   Widget _buildActionGrid() {
-    final actions = [
+    final secondaryActions = [
       _ActionData(
-        primary: true,
-        icon: Icons.remove_red_eye_rounded,
-        title: 'New Screening',
-        subtitle: 'Register and test patient',
-        accent: VsColors.brand,
-        illustration: const _EyeScanIllustration(),
-        onTap: () => Navigator.push(
-          context,
-          VsPageRoute(
-            builder: (_) => const NewScreeningScreen(startWithNewPatient: true),
-          ),
-        ).then((_) => _controller.refresh()),
-      ),
-      _ActionData(
-        primary: true,
+        primary: false,
         icon: Icons.groups_rounded,
         title: 'Bulk Mode',
         subtitle: 'Campaign screening',
         accent: VsColors.brand,
-        illustration: const _GroupIllustration(),
+        illustration: const SizedBox.shrink(),
         onTap: () => Navigator.push(
           context,
           VsPageRoute(builder: (_) => const BulkModeScreen()),
@@ -660,21 +645,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
       _ActionData(
         primary: false,
-        icon: Icons.school_rounded,
-        title: 'Training',
-        subtitle: 'Learn the system',
-        accent: VsColors.amber,
+        icon: Icons.people_alt_rounded,
+        title: 'Patients',
+        subtitle: 'View records',
+        accent: VsColors.sky,
         illustration: const SizedBox.shrink(),
-        onTap: () => Navigator.push(
-          context,
-          VsPageRoute(builder: (_) => const TrainingScreen()),
-        ),
+        onTap: () =>
+            MainShellScope.of(context).selectTab(MainShellTab.patients),
       ),
       _ActionData(
         primary: false,
         icon: Icons.list_alt_rounded,
         title: 'Activity',
-        subtitle: 'Screenings and follow-ups',
+        subtitle: 'Follow-ups',
         accent: VsColors.violet,
         illustration: const SizedBox.shrink(),
         onTap: () =>
@@ -682,23 +665,49 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
     ];
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final cardW = (constraints.maxWidth - 12) / 2;
-        const cardH = 140.0;
-        final ratio = cardW / cardH;
-
-        return GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: EdgeInsets.zero,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: ratio,
-          children: actions.map((a) => _PressableActionCard(data: a)).toList(),
-        );
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // ── Primary CTA — full-width gradient ──
+        _PressableActionCard(
+          data: _ActionData(
+            primary: true,
+            icon: Icons.remove_red_eye_rounded,
+            title: 'New Screening',
+            subtitle: 'Register a patient and run a visual acuity test',
+            accent: VsColors.brand,
+            illustration: const _EyeScanIllustration(),
+            onTap: () => Navigator.push(
+              context,
+              VsPageRoute(
+                builder: (_) =>
+                    const NewScreeningScreen(startWithNewPatient: true),
+              ),
+            ).then((_) => _controller.refresh()),
+          ),
+          fullWidth: true,
+        ),
+        const SizedBox(height: 12),
+        // ── Secondary row ──
+        Row(
+          children: secondaryActions
+              .map(
+                (a) => Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      left: secondaryActions.indexOf(a) == 0 ? 0 : 6,
+                      right: secondaryActions.indexOf(a) ==
+                              secondaryActions.length - 1
+                          ? 0
+                          : 6,
+                    ),
+                    child: _PressableActionCard(data: a),
+                  ),
+                ),
+              )
+              .toList(),
+        ),
+      ],
     );
   }
 }
@@ -777,8 +786,9 @@ class _ActionData {
 //               cards.
 // -------------------------------------------------------------
 class _PressableActionCard extends StatefulWidget {
-  const _PressableActionCard({required this.data});
+  const _PressableActionCard({required this.data, this.fullWidth = false});
   final _ActionData data;
+  final bool fullWidth;
 
   @override
   State<_PressableActionCard> createState() => _PressableActionCardState();
@@ -819,66 +829,120 @@ class _PressableActionCardState extends State<_PressableActionCard>
             scale: 1 - (_pressCtrl.value * 0.03),
             child: child,
           ),
-          child: a.primary ? _primaryCard(a) : _secondaryCard(a),
+          child: a.primary
+              ? _primaryCard(a, fullWidth: widget.fullWidth)
+              : _secondaryCard(a),
         ),
       ),
     );
   }
 
-  Widget _primaryCard(_ActionData a) {
+  Widget _primaryCard(_ActionData a, {required bool fullWidth}) {
     return Container(
       decoration: BoxDecoration(
         gradient: VsGradients.brand,
         borderRadius: BorderRadius.circular(VsRadius.lg),
         boxShadow: [
           BoxShadow(
-            color: VsColors.brand.withValues(alpha: 0.18),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: VsColors.brand.withValues(alpha: 0.28),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(child: Center(child: a.illustration)),
-          const SizedBox(height: 8),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      a.title,
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                      style: VsText.headline(color: Colors.white),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      a.subtitle,
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                      style: VsText.label(
-                        color: Colors.white.withValues(alpha: 0.85),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+      child: fullWidth
+          ? Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        a.title,
+                        style: VsText.headline(color: Colors.white).copyWith(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
+                      const SizedBox(height: 3),
+                      Text(
+                        a.subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: VsText.label(
+                          color: Colors.white.withValues(alpha: 0.85),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Start screening',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 13,
+                            color: Colors.white,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(width: 90, child: a.illustration),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(child: Center(child: a.illustration)),
+                const SizedBox(height: 8),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            a.title,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            style: VsText.headline(color: Colors.white),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            a.subtitle,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            style: VsText.label(
+                              color: Colors.white.withValues(alpha: 0.85),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 18,
+                      color: Colors.white,
                     ),
                   ],
                 ),
-              ),
-              const Icon(
-                Icons.arrow_forward_rounded,
-                size: 18,
-                color: Colors.white,
-              ),
-            ],
-          ),
-        ],
-      ),
+              ],
+            ),
     );
   }
 
@@ -890,57 +954,33 @@ class _PressableActionCardState extends State<_PressableActionCard>
         border: Border.all(color: VsColors.border),
         boxShadow: VsShadows.card,
       ),
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+      padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
               color: a.accent.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(VsRadius.md),
             ),
-            child: Icon(a.icon, color: a.accent, size: 20),
+            child: Icon(a.icon, color: a.accent, size: 18),
           ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      a.title,
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                      style: VsText.headline(),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      a.subtitle,
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                      style: VsText.label(),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: a.accent.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(VsRadius.pill),
-                ),
-                child: Icon(
-                  Icons.arrow_forward_rounded,
-                  size: 16,
-                  color: a.accent,
-                ),
-              ),
-            ],
+          const SizedBox(height: 10),
+          Text(
+            a.title,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            style: VsText.headline().copyWith(fontSize: 12),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            a.subtitle,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            style: VsText.label().copyWith(fontSize: 10),
           ),
         ],
       ),
@@ -1039,117 +1079,4 @@ class _EyeScanPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_EyeScanPainter old) => false;
-}
-
-// ── 2. Group / Campaign — 3 people silhouettes + clipboard ──
-class _GroupIllustration extends StatelessWidget {
-  const _GroupIllustration();
-  @override
-  Widget build(BuildContext context) => CustomPaint(
-    size: const Size(double.infinity, 44),
-    painter: _GroupPainter(),
-  );
-}
-
-class _GroupPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width, h = size.height;
-
-    final fill = Paint()
-      ..color = Colors.white.withValues(alpha: 0.85)
-      ..style = PaintingStyle.fill;
-
-    final fillDim = Paint()
-      ..color = Colors.white.withValues(alpha: 0.35)
-      ..style = PaintingStyle.fill;
-
-    final stroke = Paint()
-      ..color = Colors.white.withValues(alpha: 0.9)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..strokeCap = StrokeCap.round;
-
-    // Draw 3 person silhouettes at different x positions
-    void drawPerson(double cx, double baseY, double scale, Paint headFill) {
-      // Head
-      canvas.drawCircle(Offset(cx, baseY - 14 * scale), 5.5 * scale, headFill);
-      // Body arc
-      final bodyPath = Path();
-      bodyPath.moveTo(cx - 9 * scale, baseY + 2 * scale);
-      bodyPath.quadraticBezierTo(
-        cx,
-        baseY - 4 * scale,
-        cx + 9 * scale,
-        baseY + 2 * scale,
-      );
-      canvas.drawPath(bodyPath, stroke..strokeWidth = 1.5 * scale);
-      // Shoulders fill
-      canvas.drawOval(
-        Rect.fromCenter(
-          center: Offset(cx, baseY),
-          width: 16 * scale,
-          height: 7 * scale,
-        ),
-        headFill,
-      );
-    }
-
-    final midY = h * 0.72;
-    // Left person (dimmer, behind)
-    drawPerson(w * 0.28, midY, 0.82, fillDim);
-    // Right person (dimmer, behind)
-    drawPerson(w * 0.72, midY, 0.82, fillDim);
-    // Center person (main, bright)
-    drawPerson(w * 0.50, midY - 2, 1.0, fill);
-
-    // Clipboard on the right
-    final clipX = w * 0.84, clipY = h * 0.28;
-    final clipRect = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: Offset(clipX, clipY), width: 18, height: 22),
-      const Radius.circular(3),
-    );
-    canvas.drawRRect(clipRect, fillDim);
-    canvas.drawRRect(clipRect, stroke..strokeWidth = 1.2);
-    // Clip top
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromCenter(center: Offset(clipX, clipY - 11), width: 8, height: 4),
-        const Radius.circular(2),
-      ),
-      fill,
-    );
-    // Lines on clipboard
-    for (int i = 0; i < 3; i++) {
-      canvas.drawLine(
-        Offset(clipX - 5, clipY - 4 + i * 5.0),
-        Offset(clipX + 5, clipY - 4 + i * 5.0),
-        stroke
-          ..strokeWidth = 1.0
-          ..color = Colors.white.withValues(alpha: 0.6),
-      );
-    }
-
-    // Check mark badge
-    canvas.drawCircle(
-      Offset(w * 0.16, h * 0.28),
-      8,
-      Paint()
-        ..color = Colors.white.withValues(alpha: 0.25)
-        ..style = PaintingStyle.fill,
-    );
-    final check = Path();
-    check.moveTo(w * 0.16 - 4, h * 0.28);
-    check.lineTo(w * 0.16 - 1, h * 0.28 + 3);
-    check.lineTo(w * 0.16 + 4, h * 0.28 - 3);
-    canvas.drawPath(
-      check,
-      stroke
-        ..strokeWidth = 1.8
-        ..color = Colors.white.withValues(alpha: 0.9),
-    );
-  }
-
-  @override
-  bool shouldRepaint(_GroupPainter old) => false;
 }
