@@ -11,6 +11,8 @@ import 'face_distance_screen.dart';
 import '../utils/app_theme.dart';
 import '../utils/patient_validators.dart';
 import '../utils/visual_acuity.dart';
+import '../widgets/vs_ambient_light_check.dart';
+import '../widgets/vs_environment_check.dart';
 import '../widgets/vs_toast.dart';
 import '../widgets/vs_ui.dart';
 
@@ -90,6 +92,8 @@ class _BulkTumblingE extends CustomPainter {
 class _BulkModeScreenState extends State<BulkModeScreen> {
   // ── Section 1: Session Setup ─────────────────────────────
   int _section = 0; // 0=setup, 1=screening loop (coming next)
+  bool _envCheckDone = false;
+  bool _lightBlocked = false;
 
   final _campaignNameCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
@@ -983,6 +987,50 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
   }
 
   Widget _buildQuickRegister() {
+    // Show environment check first before allowing screening
+    if (!_envCheckDone) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Environment Check',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF1A2A3D),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Checking conditions before screening begins.',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: const Color(0xFF64748B),
+              ),
+            ),
+            const SizedBox(height: 20),
+            VsAmbientLightCheck(
+              onStatusChanged: (blocked) {
+                if (_lightBlocked != blocked) {
+                  setState(() => _lightBlocked = blocked);
+                }
+              },
+            ),
+            const SizedBox(height: 12),
+            VsEnvironmentCheck(
+              onReady: () {
+                if (!_lightBlocked && mounted) {
+                  setState(() => _envCheckDone = true);
+                }
+              },
+            ),
+          ],
+        ),
+      );
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
       child: Column(
@@ -1577,21 +1625,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     _dirBtn(Icons.arrow_back_rounded, 2),
-                    const SizedBox(width: 10),
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEEF2F6),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.remove_red_eye_rounded,
-                        size: 20,
-                        color: Color(0xFF8FA0B4),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 80),
                     _dirBtn(Icons.arrow_forward_rounded, 0),
                   ],
                 ),
@@ -1638,14 +1672,14 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
   Widget _dirBtn(IconData icon, int turns) => Material(
     color: Colors.transparent,
     child: InkWell(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(14),
       onTap: () => _recordResponse(turns == _rotation),
       child: Container(
-        width: 48,
-        height: 48,
+        width: 64,
+        height: 64,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(color: const Color(0xFFDDE4EC), width: 1.5),
           boxShadow: [
             BoxShadow(
@@ -1655,7 +1689,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
             ),
           ],
         ),
-        child: Icon(icon, size: 20, color: _ink),
+        child: Icon(icon, size: 26, color: _ink),
       ),
     ),
   );
