@@ -63,3 +63,6 @@ macos/**/xcuserdata/
 # Linux/Windows generated files
 linux/flutter/ephemeral/
 windows/flutter/ephemeral/
+
+# Generated system-testing document and build artifacts
+docs/
