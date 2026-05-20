@@ -235,7 +235,23 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
           : ImageFormatGroup.nv21,
     );
 
-    await _camCtrl!.initialize();
+    // Retry initialization — previous camera session may still be closing
+    const maxAttempts = 5;
+    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        await _camCtrl!.initialize();
+        break; // success
+      } on CameraException catch (e) {
+        if (attempt == maxAttempts) {
+          debugPrint('Camera init failed after $maxAttempts attempts: $e');
+          return;
+        }
+        // Wait for the previous session to fully release then retry
+        await Future.delayed(Duration(milliseconds: 300 * attempt));
+        if (!mounted) return;
+      }
+    }
+
     if (!mounted) return;
 
     setState(() {
@@ -518,6 +534,63 @@ class _FaceDistanceScreenState extends State<FaceDistanceScreen>
                 previewSize: _previewSize,
                 screenSize: MediaQuery.of(context).size,
                 color: _statusColor,
+              ),
+            ),
+
+          // ── No-face instruction overlay ──────────────────────
+          if (_camReady && _face == null)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: AnimatedOpacity(
+                  opacity: _face == null ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 400),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 72,
+                          height: 72,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.45),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.25),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.face_retouching_natural_rounded,
+                            size: 36,
+                            color: Colors.white.withValues(alpha: 0.85),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.55),
+                            borderRadius: BorderRadius.circular(99),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.15),
+                            ),
+                          ),
+                          child: Text(
+                            'Point the camera at the patient\'s face',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white.withValues(alpha: 0.9),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
 
