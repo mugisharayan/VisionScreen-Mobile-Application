@@ -4,11 +4,10 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.os.Handler
-import android.os.Looper
+import android.util.Log
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
-import io.flutter.plugin.common.MethodChannel
+import io.flutter.plugin.common.EventChannel
 
 class MainActivity : FlutterActivity() {
     private val channel = "com.visionscreen/ambient_light"
@@ -17,42 +16,38 @@ class MainActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
         val sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         val lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT)
-        val handler = Handler(Looper.getMainLooper())
 
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channel)
-            .setMethodCallHandler { call, result ->
-                if (call.method != "getLux") {
-                    result.notImplemented()
-                    return@setMethodCallHandler
-                }
-                if (lightSensor == null) {
-                    result.success(null)
-                    return@setMethodCallHandler
-                }
+        Log.d("AmbientLight", "Light sensor available: ${lightSensor != null}")
 
-                var settled = false
+        EventChannel(flutterEngine.dartExecutor.binaryMessenger, channel)
+            .setStreamHandler(object : EventChannel.StreamHandler {
+                private var listener: SensorEventListener? = null
 
-                val listener = object : SensorEventListener {
-                    override fun onSensorChanged(event: SensorEvent) {
-                        if (settled) return
-                        settled = true
-                        sensorManager.unregisterListener(this)
-                        result.success(event.values[0].toDouble())
+                override fun onListen(arguments: Any?, events: EventChannel.EventSink) {
+                    Log.d("AmbientLight", "onListen called")
+                    if (lightSensor == null) {
+                        Log.d("AmbientLight", "No light sensor, ending stream")
+                        events.endOfStream()
+                        return
                     }
-                    override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
+                    listener = object : SensorEventListener {
+                        override fun onSensorChanged(event: SensorEvent) {
+                            val lux = event.values[0].toDouble()
+                            Log.d("AmbientLight", "Lux reading: $lux")
+                            events.success(lux)
+                        }
+                        override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
+                    }
+                    sensorManager.registerListener(
+                        listener, lightSensor, SensorManager.SENSOR_DELAY_NORMAL
+                    )
                 }
 
-                sensorManager.registerListener(
-                    listener, lightSensor, SensorManager.SENSOR_DELAY_NORMAL
-                )
-
-                // Timeout after 10 s in case the sensor never fires
-                handler.postDelayed({
-                    if (settled) return@postDelayed
-                    settled = true
-                    sensorManager.unregisterListener(listener)
-                    result.success(null)
-                }, 10000)
-            }
+                override fun onCancel(arguments: Any?) {
+                    Log.d("AmbientLight", "onCancel called")
+                    listener?.let { sensorManager.unregisterListener(it) }
+                    listener = null
+                }
+            })
     }
 }
