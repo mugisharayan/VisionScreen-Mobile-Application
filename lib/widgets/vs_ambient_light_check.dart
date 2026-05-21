@@ -1,7 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:screen_brightness/screen_brightness.dart';
 
 const _green = Color(0xFF22C55E);
 const _amber = Color(0xFFF59E0B);
@@ -12,11 +12,7 @@ const _slate = Color(0xFF94A3B8);
 const _minLux = 50.0;   // below = too dark for screening
 const _maxLux = 5000.0; // above = too bright / glare
 
-// Fallback screen-brightness thresholds (0.0–1.0)
-const _minBrightness = 0.15;
-const _maxBrightness = 0.92;
-
-const _luxChannel = MethodChannel('com.visionscreen/ambient_light');
+const _luxChannel = EventChannel('com.visionscreen/ambient_light');
 
 enum _LightStatus { reading, ok, tooDark, tooBright, unavailable }
 
@@ -30,63 +26,50 @@ class VsAmbientLightCheck extends StatefulWidget {
 }
 
 class _VsAmbientLightCheckState extends State<VsAmbientLightCheck> {
-  _LightStatus _status = _LightStatus.ok;
+  _LightStatus _status = _LightStatus.reading;
   double? _lux;
-  bool _usedLuxSensor = false;
-  bool _measuring = false;
+  StreamSubscription? _lightSub;
 
   @override
   void initState() {
     super.initState();
-    // Pre-ticked: report ok immediately, sensor check skipped for now
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => widget.onStatusChanged(false),
-    );
+    _startListening();
   }
 
-  Future<void> _measure() async {
-    if (_measuring) return;
-    _measuring = true;
-    if (mounted) setState(() => _status = _LightStatus.reading);
-    try {
-      final raw = await _luxChannel.invokeMethod<double>('getLux');
-      if (!mounted) return;
-      if (raw != null) {
-        _usedLuxSensor = true;
-        _LightStatus s;
-        if (raw < _minLux) {
-          s = _LightStatus.tooDark;
-        } else if (raw > _maxLux) {
-          s = _LightStatus.tooBright;
-        } else {
-          s = _LightStatus.ok;
-        }
-        _update(s, raw);
-        _measuring = false;
-        return;
-      }
-    } catch (_) {
-      // sensor unavailable — fall through to brightness fallback
-    }
+  @override
+  void dispose() {
+    _lightSub?.cancel();
+    super.dispose();
+  }
 
-    // Fallback: use screen brightness
-    _usedLuxSensor = false;
+  void _startListening() {
+    _lightSub?.cancel();
+    setState(() => _status = _LightStatus.reading);
     try {
-      final value = await ScreenBrightness().system;
-      if (!mounted) return;
-      _LightStatus s;
-      if (value < _minBrightness) {
-        s = _LightStatus.tooDark;
-      } else if (value > _maxBrightness) {
-        s = _LightStatus.tooBright;
-      } else {
-        s = _LightStatus.ok;
-      }
-      _update(s, value);
+      _lightSub = _luxChannel.receiveBroadcastStream().listen(
+        (value) {
+          if (!mounted) return;
+          final lux = (value as num).toDouble();
+          _LightStatus s;
+          if (lux < _minLux) {
+            s = _LightStatus.tooDark;
+          } else if (lux > _maxLux) {
+            s = _LightStatus.tooBright;
+          } else {
+            s = _LightStatus.ok;
+          }
+          _update(s, lux);
+        },
+        onError: (_) {
+          if (mounted) _update(_LightStatus.unavailable, null);
+        },
+        onDone: () {
+          if (mounted) _update(_LightStatus.unavailable, null);
+        },
+      );
     } catch (_) {
       if (mounted) _update(_LightStatus.unavailable, null);
     }
-    _measuring = false;
   }
 
   void _update(_LightStatus s, double? value) {
@@ -101,8 +84,7 @@ class _VsAmbientLightCheckState extends State<VsAmbientLightCheck> {
 
   String _valueLabel() {
     if (_lux == null) return '';
-    if (_usedLuxSensor) return '${_lux!.round()} lux';
-    return '${(_lux! * 100).round()}% brightness';
+    return '${_lux!.toStringAsFixed(1)} lux';
   }
 
   @override
@@ -112,13 +94,13 @@ class _VsAmbientLightCheckState extends State<VsAmbientLightCheck> {
           null,
           _slate,
           'Ambient Light',
-          'Checking lighting conditions…',
+          _lux != null ? 'Reading… ${_valueLabel()}' : 'Checking lighting conditions…',
         ),
       _LightStatus.ok => (
           Icons.check_circle_rounded,
           _green,
           'Ambient Light',
-          'Good lighting',
+          'Good lighting — ${_valueLabel()}',
         ),
       _LightStatus.tooDark => (
           Icons.warning_rounded,
@@ -188,10 +170,10 @@ class _VsAmbientLightCheckState extends State<VsAmbientLightCheck> {
                   ),
                 ),
                 if (_status == _LightStatus.tooDark ||
-                    _status == _LightStatus.tooBright) ...[  
+                    _status == _LightStatus.tooBright) ...[
                   const SizedBox(height: 6),
                   GestureDetector(
-                    onTap: _measure,
+                    onTap: _startListening,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -225,7 +207,7 @@ class _VsAmbientLightCheckState extends State<VsAmbientLightCheck> {
           else if (_status == _LightStatus.tooDark ||
               _status == _LightStatus.tooBright)
             GestureDetector(
-              onTap: _measure,
+              onTap: _startListening,
               child: Icon(icon, color: color, size: 22),
             )
           else
