@@ -1703,6 +1703,25 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   );
 
   bool _lightBlocked = false;
+  bool _envReady = false;
+  bool _faceDistancePushed = false;
+
+  void _tryOpenFaceDetection() {
+    if (_lightBlocked || !_envReady || _faceDistancePushed) return;
+    _faceDistancePushed = true;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FaceDistanceScreen(
+          onDistanceConfirmed: () {
+            Navigator.pop(context);
+            _faceDistancePushed = false;
+            _controller.prepareNextEye();
+          },
+        ),
+      ),
+    ).then((_) => _faceDistancePushed = false);
+  }
 
   // PLACEHOLDERS
   Widget _buildChecklist() {
@@ -1793,24 +1812,15 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                         onStatusChanged: (blocked) {
                           if (_lightBlocked != blocked) {
                             setState(() => _lightBlocked = blocked);
+                            if (!blocked) _tryOpenFaceDetection();
                           }
                         },
                       ),
                       const SizedBox(height: 10),
                       VsEnvironmentCheck(
                         onReady: () {
-                          if (_lightBlocked) return;
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => FaceDistanceScreen(
-                                onDistanceConfirmed: () {
-                                  Navigator.pop(context);
-                                  _controller.prepareNextEye();
-                                },
-                              ),
-                            ),
-                          );
+                          _envReady = true;
+                          _tryOpenFaceDetection();
                         },
                       ),
                     ],
