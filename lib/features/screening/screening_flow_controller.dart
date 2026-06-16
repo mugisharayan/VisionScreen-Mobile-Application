@@ -37,8 +37,6 @@ class ScreeningFlowController extends ChangeNotifier {
   String? _newPhotoPath;
   List<Map<String, String>> _patientListRuntime = [];
   int? _savedScreeningId;
-  bool _brightnessSet = false;
-  double? _originalBrightness;
   int _currentEyeIndex = 0;
   int _currentRow = 0;
   int _currentRotation = 0;
@@ -138,6 +136,19 @@ class ScreeningFlowController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void addCondition(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return;
+    if (_newConditions.contains(trimmed)) return;
+    _newConditions.add(trimmed);
+    notifyListeners();
+  }
+
+  void removeCondition(String value) {
+    _newConditions.remove(value);
+    notifyListeners();
+  }
+
   String? get newPhotoPath => _newPhotoPath;
   void setNewPhotoPath(String? value) {
     if (_newPhotoPath == value) {
@@ -151,7 +162,6 @@ class ScreeningFlowController extends ChangeNotifier {
       List.unmodifiable(_patientListRuntime);
 
   int? get savedScreeningId => _savedScreeningId;
-  bool get brightnessSet => _brightnessSet;
   int get currentEyeIndex => _currentEyeIndex;
   int get currentRow => _currentRow;
   int get currentRotation => _currentRotation;

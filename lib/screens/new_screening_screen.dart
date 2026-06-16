@@ -79,6 +79,9 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   final _newNameCtrl = TextEditingController();
   final _newVillageCtrl = TextEditingController();
   final _newPhoneCtrl = TextEditingController();
+  final _newPatientFormKey = GlobalKey<FormState>();
+  bool _showNewPatientErrors = false;
+  final _conditionCtrl = TextEditingController();
   CameraController? _photoCtrl;
   bool _showPhotoCamera = false;
   bool _newPatientSheetOpen = false;
@@ -121,6 +124,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     _newNameCtrl.dispose();
     _newVillageCtrl.dispose();
     _newPhoneCtrl.dispose();
+    _conditionCtrl.dispose();
     super.dispose();
   }
 
@@ -1048,19 +1052,12 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
   );
 
   Widget _newPatientForm({required bool closeOnSuccess}) {
-    const conditions = [
-      {'label': 'Red Eyes', 'icon': Icons.remove_red_eye_rounded},
-      {'label': 'Swollen Eyes', 'icon': Icons.visibility_off_rounded},
-      {'label': 'Eye Discharge', 'icon': Icons.water_drop_rounded},
-      {'label': 'Blurred Vision', 'icon': Icons.blur_on_rounded},
-      {'label': 'Eye Pain', 'icon': Icons.warning_amber_rounded},
-      {'label': 'Previous Surgery', 'icon': Icons.medical_services_rounded},
-      {'label': 'Wears Glasses', 'icon': Icons.remove_red_eye_outlined},
-      {'label': 'Diabetes', 'icon': Icons.monitor_heart_rounded},
-      {'label': 'Hypertension', 'icon': Icons.favorite_rounded},
-    ];
-
-    return Column(
+    return Form(
+      key: _newPatientFormKey,
+      autovalidateMode: _showNewPatientErrors
+          ? AutovalidateMode.always
+          : AutovalidateMode.disabled,
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Photo capture
@@ -1164,7 +1161,12 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
         ),
         const SizedBox(height: 16),
         // Full name
-        _newField(_newNameCtrl, 'Full name', Icons.person_rounded),
+        _newField(
+          _newNameCtrl,
+          'Full name',
+          Icons.person_rounded,
+          validator: (v) => PatientValidators.validateName(v?.trim() ?? ''),
+        ),
         const SizedBox(height: 8),
         // DOB + Gender
         Row(
@@ -1206,57 +1208,76 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: _newDob != null
-                            ? _teal.withValues(alpha: 0.4)
-                            : const Color(0xFFEEF2F6),
+                        color: _showNewPatientErrors && _newDob == null
+                            ? _red
+                            : _newDob != null
+                                ? _teal.withValues(alpha: 0.4)
+                                : const Color(0xFFEEF2F6),
                         width: 1.5,
                       ),
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          Icons.cake_rounded,
-                          size: 16,
-                          color: _newDob != null
-                              ? _teal
-                              : const Color(0xFF8FA0B4),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _newDob == null
-                              ? Text(
-                                  'Date of birth',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 13,
-                                    color: const Color(0xFF8FA0B4),
-                                  ),
-                                )
-                              : Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '${_newDob!.day}/${_newDob!.month}/${_newDob!.year}',
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.cake_rounded,
+                              size: 16,
+                              color: _showNewPatientErrors && _newDob == null
+                                  ? _red
+                                  : _newDob != null
+                                      ? _teal
+                                      : const Color(0xFF8FA0B4),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _newDob == null
+                                  ? Text(
+                                      'Date of birth',
                                       style: GoogleFonts.inter(
                                         fontSize: 13,
-                                        color: const Color(0xFF1A2A3D),
-                                        fontWeight: FontWeight.w600,
+                                        color: _showNewPatientErrors && _newDob == null
+                                            ? _red
+                                            : const Color(0xFF8FA0B4),
                                       ),
+                                    )
+                                  : Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '${_newDob!.day}/${_newDob!.month}/${_newDob!.year}',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 13,
+                                            color: const Color(0xFF1A2A3D),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        Text(
+                                          '${_calcAge(_newDob!)} years old',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 10,
+                                            color: _teal,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    Text(
-                                      '${_calcAge(_newDob!)} years old',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 10,
-                                        color: _teal,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                            ),
+                            const Icon(
+                              Icons.calendar_today_rounded,
+                              size: 14,
+                              color: Color(0xFF8FA0B4),
+                            ),
+                          ],
                         ),
-                        const Icon(
-                          Icons.calendar_today_rounded,
-                          size: 14,
-                          color: Color(0xFF8FA0B4),
-                        ),
+                        if (_showNewPatientErrors && _newDob == null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Date of birth is required',
+                            style: GoogleFonts.inter(fontSize: 11, color: _red),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -1264,14 +1285,23 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               ),
             ),
             const SizedBox(width: 8),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
-              ),
-              child: Row(
-                children: ['M', 'F'].map((g) {
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: _showNewPatientErrors && _newGender.isEmpty
+                          ? _red
+                          : const Color(0xFFEEF2F6),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    children: ['M', 'F'].map((g) {
                   final active = _newGender == g;
                   return Material(
                     color: Colors.transparent,
@@ -1304,6 +1334,15 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                 }).toList(),
               ),
             ),
+                if (_showNewPatientErrors && _newGender.isEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Gender is required',
+                    style: GoogleFonts.inter(fontSize: 11, color: _red),
+                  ),
+                ],
+              ],
+            ),
           ],
         ),
         const SizedBox(height: 8),
@@ -1315,6 +1354,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
                 _newVillageCtrl,
                 'Village / area',
                 Icons.location_on_rounded,
+                validator: (v) => PatientValidators.validateVillage(v?.trim() ?? ''),
               ),
             ),
             const SizedBox(width: 8),
@@ -1364,9 +1404,10 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           'Phone number',
           Icons.phone_rounded,
           inputType: TextInputType.phone,
+          validator: (v) => PatientValidators.validatePhone(v?.trim() ?? ''),
         ),
         const SizedBox(height: 16),
-        // Current conditions
+        // Current conditions — free text entry
         Text(
           'Current eye conditions',
           style: GoogleFonts.plusJakartaSans(
@@ -1377,65 +1418,139 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
         ),
         const SizedBox(height: 4),
         Text(
-          'Select all that apply',
+          'Type a condition and press Add',
           style: GoogleFonts.inter(
             fontSize: 11,
             color: const Color(0xFF8FA0B4),
           ),
         ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: conditions.map((c) {
-            final label = c['label'] as String;
-            final icon = c['icon'] as IconData;
-            final selected = _newConditions.contains(label);
-            return Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(99),
-                onTap: () => _controller.toggleNewCondition(label),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 7,
+        const SizedBox(height: 8),
+        // Input row
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: const Color(0xFFEEF2F6),
+                    width: 1.5,
                   ),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? _teal.withValues(alpha: 0.1)
-                        : Colors.white,
-                    borderRadius: BorderRadius.circular(99),
-                    border: Border.all(
-                      color: selected ? _teal : const Color(0xFFDDE4EC),
-                      width: 1.5,
+                ),
+                child: TextField(
+                  controller: _conditionCtrl,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: const Color(0xFF1A2A3D),
+                  ),
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(
+                    hintText: 'e.g. Red Eyes, Blurred Vision…',
+                    hintStyle: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: const Color(0xFF8FA0B4),
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.visibility_rounded,
+                      size: 16,
+                      color: Color(0xFF8FA0B4),
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
                     ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        icon,
-                        size: 13,
-                        color: selected ? _teal : const Color(0xFF8FA0B4),
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        label,
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: selected ? _teal : const Color(0xFF5E7291),
-                        ),
-                      ),
-                    ],
+                  onSubmitted: (v) {
+                    _controller.addCondition(v);
+                    _conditionCtrl.clear();
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Material(
+              color: _teal,
+              borderRadius: BorderRadius.circular(10),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: () {
+                  _controller.addCondition(_conditionCtrl.text);
+                  _conditionCtrl.clear();
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  child: Text(
+                    'Add',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
-            );
-          }).toList(),
+            ),
+          ],
         ),
+        // Tags
+        if (_newConditions.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: _newConditions.map((condition) {
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: _teal.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(99),
+                  border: Border.all(
+                    color: _teal.withValues(alpha: 0.3),
+                    width: 1.2,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      condition,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: _teal,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    GestureDetector(
+                      onTap: () => _controller.removeCondition(condition),
+                      child: Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: _teal.withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close_rounded,
+                          size: 10,
+                          color: _teal,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
         const SizedBox(height: 16),
         // Register button
         SizedBox(
@@ -1446,20 +1561,17 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               final vil = _newVillageCtrl.text.trim();
               final phone = _newPhoneCtrl.text.trim();
 
-              // ── Validation ──────────────────────────────
+              // ── Validation — show all errors at once ──────────────
+              setState(() => _showNewPatientErrors = true);
+
               final nameErr = PatientValidators.validateName(name);
               final dobErr = PatientValidators.validateDob(_newDob);
               final vilErr = PatientValidators.validateVillage(vil);
               final phoneErr = PatientValidators.validatePhone(phone);
+              final genderErr = _newGender.isEmpty ? 'Gender is required' : null;
 
-              final firstError = nameErr ?? dobErr ?? vilErr ?? phoneErr;
-              if (firstError != null) {
-                VsToast.showText(
-                  context,
-                  firstError,
-                  backgroundColor: _red,
-                  duration: const Duration(seconds: 3),
-                );
+              if (nameErr != null || dobErr != null || vilErr != null ||
+                  phoneErr != null || genderErr != null) {
                 return;
               }
 
@@ -1494,6 +1606,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
               _newNameCtrl.clear();
               _newVillageCtrl.clear();
               _newPhoneCtrl.clear();
+              setState(() => _showNewPatientErrors = false);
               if (closeOnSuccess && mounted) {
                 Navigator.of(context).pop(true);
               }
@@ -1522,6 +1635,7 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
           ),
         ),
       ],
+      ),
     );
   }
 
@@ -1649,28 +1763,51 @@ class _NewScreeningScreenState extends State<NewScreeningScreen>
     String hint,
     IconData icon, {
     TextInputType inputType = TextInputType.text,
-  }) => Container(
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: const Color(0xFFEEF2F6), width: 1.5),
-    ),
-    child: TextField(
-      controller: ctrl,
-      keyboardType: inputType,
-      style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF1A2A3D)),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: GoogleFonts.inter(
-          fontSize: 13,
-          color: const Color(0xFF8FA0B4),
-        ),
-        prefixIcon: Icon(icon, size: 16, color: const Color(0xFF8FA0B4)),
-        border: InputBorder.none,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 12,
-        ),
+    String? Function(String?)? validator,
+  }) => TextFormField(
+    controller: ctrl,
+    keyboardType: inputType,
+    autovalidateMode: _showNewPatientErrors
+        ? AutovalidateMode.always
+        : AutovalidateMode.disabled,
+    validator: validator,
+    style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF1A2A3D)),
+    decoration: InputDecoration(
+      hintText: hint,
+      hintStyle: GoogleFonts.inter(
+        fontSize: 13,
+        color: const Color(0xFF8FA0B4),
+      ),
+      prefixIcon: Icon(icon, size: 16, color: const Color(0xFF8FA0B4)),
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 14,
+        vertical: 12,
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFEEF2F6), width: 1.5),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFEEF2F6), width: 1.5),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: _teal, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: _red, width: 1.5),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: _red, width: 1.5),
+      ),
+      errorStyle: GoogleFonts.inter(
+        fontSize: 11,
+        color: _red,
       ),
     ),
   );

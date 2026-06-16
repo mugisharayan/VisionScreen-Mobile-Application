@@ -111,6 +111,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
   String? _currentPatientId;
   int? _currentScreeningId;
   final _phoneCtrl = TextEditingController();
+  final _bulkConditionCtrl = TextEditingController();
   final List<String> _quickConditions = [];
 
   // ── Section 3: Eye test state ────────────────────────────
@@ -419,6 +420,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
     _locationCtrl.dispose();
     _nameCtrl.dispose();
     _phoneCtrl.dispose();
+    _bulkConditionCtrl.dispose();
     _facilityCtrl.dispose();
     super.dispose();
   }
@@ -909,6 +911,7 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
       _selectedFacility = null;
       _appointmentDate = null;
       _quickConditions.clear();
+      _bulkConditionCtrl.clear();
     });
   }
 
@@ -1307,95 +1310,147 @@ class _BulkModeScreenState extends State<BulkModeScreen> {
           ),
           const SizedBox(height: 20),
 
-          // Current eye conditions
+          // Current eye conditions — free text entry
           _label('Current eye conditions'),
           const SizedBox(height: 4),
           Text(
-            'Select all that apply',
+            'Type a condition and press Add',
             style: GoogleFonts.inter(
               fontSize: 11,
               color: const Color(0xFF8FA0B4),
             ),
           ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children:
-                [
-                  {'label': 'Red Eyes', 'icon': Icons.remove_red_eye_rounded},
-                  {
-                    'label': 'Swollen Eyes',
-                    'icon': Icons.visibility_off_rounded,
-                  },
-                  {'label': 'Eye Discharge', 'icon': Icons.water_drop_rounded},
-                  {'label': 'Blurred Vision', 'icon': Icons.blur_on_rounded},
-                  {'label': 'Eye Pain', 'icon': Icons.warning_amber_rounded},
-                  {
-                    'label': 'Previous Surgery',
-                    'icon': Icons.medical_services_rounded,
-                  },
-                  {
-                    'label': 'Wears Glasses',
-                    'icon': Icons.remove_red_eye_outlined,
-                  },
-                  {'label': 'Diabetes', 'icon': Icons.monitor_heart_rounded},
-                  {'label': 'Hypertension', 'icon': Icons.favorite_rounded},
-                ].map((c) {
-                  final label = c['label'] as String;
-                  final icon = c['icon'] as IconData;
-                  final selected = _quickConditions.contains(label);
-                  return Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(99),
-                      onTap: () => setState(
-                        () => selected
-                            ? _quickConditions.remove(label)
-                            : _quickConditions.add(label),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: const Color(0xFFEEF2F6),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: TextField(
+                    controller: _bulkConditionCtrl,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: const Color(0xFF1A2A3D),
+                    ),
+                    textCapitalization: TextCapitalization.words,
+                    decoration: InputDecoration(
+                      hintText: 'e.g. Red Eyes, Blurred Vision…',
+                      hintStyle: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: const Color(0xFF8FA0B4),
                       ),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 7,
-                        ),
-                        decoration: BoxDecoration(
-                          color: selected
-                              ? _teal.withValues(alpha: 0.1)
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(99),
-                          border: Border.all(
-                            color: selected ? _teal : const Color(0xFFDDE4EC),
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              icon,
-                              size: 13,
-                              color: selected ? _teal : const Color(0xFF8FA0B4),
-                            ),
-                            const SizedBox(width: 5),
-                            Text(
-                              label,
-                              style: GoogleFonts.inter(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: selected
-                                    ? _teal
-                                    : const Color(0xFF5E7291),
-                              ),
-                            ),
-                          ],
-                        ),
+                      prefixIcon: const Icon(
+                        Icons.visibility_rounded,
+                        size: 16,
+                        color: Color(0xFF8FA0B4),
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
                       ),
                     ),
-                  );
-                }).toList(),
+                    onSubmitted: (v) {
+                      final trimmed = v.trim();
+                      if (trimmed.isNotEmpty && !_quickConditions.contains(trimmed)) {
+                        setState(() => _quickConditions.add(trimmed));
+                      }
+                      _bulkConditionCtrl.clear();
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Material(
+                color: _teal,
+                borderRadius: BorderRadius.circular(10),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () {
+                    final trimmed = _bulkConditionCtrl.text.trim();
+                    if (trimmed.isNotEmpty && !_quickConditions.contains(trimmed)) {
+                      setState(() => _quickConditions.add(trimmed));
+                    }
+                    _bulkConditionCtrl.clear();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    child: Text(
+                      'Add',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
+          if (_quickConditions.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: _quickConditions.map((condition) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _teal.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(
+                      color: _teal.withValues(alpha: 0.3),
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        condition,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: _teal,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      GestureDetector(
+                        onTap: () => setState(() => _quickConditions.remove(condition)),
+                        child: Container(
+                          width: 16,
+                          height: 16,
+                          decoration: BoxDecoration(
+                            color: _teal.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.close_rounded,
+                            size: 10,
+                            color: _teal,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
           const SizedBox(height: 24),
 
           // Proceed button
